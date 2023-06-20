@@ -1,0 +1,9 @@
+--!strict
+--services
+--packages
+--modules
+--types
+--constants
+--references
+--variables
+--class
