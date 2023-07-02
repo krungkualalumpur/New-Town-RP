@@ -72,6 +72,7 @@ function Elevator.new(elevatorModel : Model)
 	local elevCageModel = self.Model:FindFirstChild("Elevator") :: Model
     local elevPart = elevCageModel.PrimaryPart :: BasePart
     local floors = self.Model:FindFirstChild("Floors")
+	local buttons = elevCageModel:FindFirstChild("Buttons")
 
     local prismaticConstraint = elevPart:FindFirstChild("PrismaticConstraint") :: PrismaticConstraint
 
@@ -106,7 +107,29 @@ function Elevator.new(elevatorModel : Model)
 				end
 			end
 		end
+
+		--init buttons
+		if buttons  then 
+
+			for _,v in pairs(buttons:GetChildren()) do
+				if v:IsA("Model") then
+					local clickDetector = Instance.new("ClickDetector")
+					clickDetector.MaxActivationDistance = 32
+					clickDetector.Parent = v.PrimaryPart
+					
+					self._Maid:GiveTask(clickDetector.MouseClick:Connect(function()
+						local floorDest = floors:FindFirstChild(v.Name) :: BasePart ?
+						if floorDest then
+							self:MoveElevator(floorDest)
+						end
+					end))
+				end
+			end
+
+		end
 	end
+
+
 
 	if highestFloor and lowestFloor then
 		highestFloor:SetAttribute("FloorTop", true)
@@ -122,16 +145,22 @@ function Elevator:MoveElevator(floorDest)
 	local elevCageModel = self.Model:FindFirstChild("Elevator") :: Model
     local elevPart = elevCageModel.PrimaryPart :: BasePart
     local floors = self.Model:FindFirstChild("Floors")
-	assert(floors and floorDest:IsDescendantOf(floors))
+	local buttons = elevCageModel:FindFirstChild("Buttons")
+	local doors = elevCageModel:FindFirstChild("Doors")
 
+	assert(floors and floorDest:IsDescendantOf(floors))
 	assert(floors)
+	assert(buttons)
+
     local prismaticConstraint = elevPart:FindFirstChild("PrismaticConstraint") :: PrismaticConstraint
 	
 	local function getPosNumRelativeToVel(elevRelativePosNum : number)
 		return elevRelativePosNum*prismaticConstraint.Velocity
 	end
 	
+
 	if prismaticConstraint then
+
 		--setting up queues
 		if not table.find(self._queue, floorDest.Name) then
 			table.insert(self._queue, floorDest.Name)
@@ -147,6 +176,11 @@ function Elevator:MoveElevator(floorDest)
 				end)
 			end	
 			print(self._queue)
+		end
+
+		do
+			local buttonFloor = buttons:FindFirstChild(floorDest.Name) :: Model ?
+			if buttonFloor and buttonFloor.PrimaryPart then buttonFloor.PrimaryPart.Material = Enum.Material.Neon end
 		end
 
 		--detecting if there's any queue left based on the direction/status
@@ -166,7 +200,10 @@ function Elevator:MoveElevator(floorDest)
 			if self.Status == "Descending" then self.Status = "Ascending" elseif self.Status == "Ascending" then self.Status = "Descending" end
 		end
 
+		--condition filters
 		if self._Maid.ElevatorMovement then return end
+		if self.Model:GetAttribute("isOpening") then return end
+
 		--		
 		--local elevRelativePosNum = getElevatorRelativePositionInNumber(elevPart, floorDest)
 		prismaticConstraint.Velocity = 10*(if self.Status == "Descending" then 1 else -1)
@@ -187,7 +224,7 @@ function Elevator:MoveElevator(floorDest)
 			customFloor = getMinValueInKey(floorPartsList)
 		end]]
 
-		local arrived = false
+		local arrivedFloorPart
 		local intDir
 		self._Maid.ElevatorMovement = RunService.Stepped:Connect(function()
 			local floorList = {}
@@ -204,19 +241,47 @@ function Elevator:MoveElevator(floorDest)
 			--print(floorList[self.CurrentFloor], floorList, self.CurrentFloor, nearestFloorPart and getElevatorRelativePositionInNumber(elevPart, nearestFloorPart))
 			if nearestFloorPart and table.find(self._queue, nearestFloorPart.Name) then
 				intDir = intDir or math.sign(getElevatorRelativePositionInNumber(elevPart, nearestFloorPart :: BasePart, false))
+				--print('eeeh?', intDir, math.sign(getElevatorRelativePositionInNumber(elevPart, nearestFloorPart :: BasePart, false)))
 				if intDir ~= math.sign(getElevatorRelativePositionInNumber(elevPart, nearestFloorPart :: BasePart, false)) then
 					--print('eeeh?', intDir, math.sign(getElevatorRelativePositionInNumber(elevPart, nearestFloorPart :: BasePart, false)))
-					arrived = true
+					arrivedFloorPart = nearestFloorPart
 				end
 				--arrived = true
 			end
 			--print(floorList[self.CurrentFloor], floorList)
-			if arrived then	
+			if arrivedFloorPart then	
+				print("hey?")
 				self._Maid.ElevatorMovement = nil
-				print(self._queue, "STOP")
 
 				prismaticConstraint.Velocity = 0	
-				table.remove(self._queue, table.find(self._queue, floorDest.Name))
+				table.remove(self._queue, table.find(self._queue, arrivedFloorPart.Name))
+
+				print("open door")
+				--button
+				do
+					local buttonFloor = buttons:FindFirstChild(arrivedFloorPart.Name) :: Model ?
+					if buttonFloor and buttonFloor.PrimaryPart then buttonFloor.PrimaryPart.Material = Enum.Material.Metal end
+				end
+				
+				if doors then
+					self.Model:SetAttribute("isOpening", true)
+					for _,v in pairs(doors:GetChildren()) do
+						if v:IsA("BasePart") then
+							v.Transparency = 1
+							v.CanCollide = false
+						end
+					end
+					task.wait(5)
+					self.Model:SetAttribute("isOpening", nil)
+					for _,v in pairs(doors:GetChildren()) do
+						if v:IsA("BasePart") then
+							v.Transparency = 0
+							v.CanCollide = true
+						end
+					end
+				end
+				print('close door')
+				
 
 				print(self._queue, "NEW LEEEW!")
 				task.wait()
@@ -285,11 +350,11 @@ end
 function Elevator.init(maid)
 	for _,elevModel in pairs(CollectionService:GetTagged("Elevator")) do
 		local elevator = Elevator.new(elevModel)
-		elevator:MoveElevator(elevModel:FindFirstChild("Floors"):FindFirstChild("3"))
+		--elevator:MoveElevator(elevModel:FindFirstChild("Floors"):FindFirstChild("3"))
 
-		elevator:MoveElevator(elevModel:FindFirstChild("Floors"):FindFirstChild("4"))
+		--elevator:MoveElevator(elevModel:FindFirstChild("Floors"):FindFirstChild("4"))
 		--task.wait(1)
-		elevator:MoveElevator(elevModel:FindFirstChild("Floors"):FindFirstChild("2"))
+		--elevator:MoveElevator(elevModel:FindFirstChild("Floors"):FindFirstChild("2"))
 
 	end
 end
