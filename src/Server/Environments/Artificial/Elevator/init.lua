@@ -163,7 +163,7 @@ function Elevator:MoveElevator(floorDest)
 
 		--switch direction/status
 		if not queuePresentForCurrentStatus then
-			if self.Status == "Descending" then self.Status = "Ascending" else if self.Status == "Ascending" then self.Status = "Descending" end
+			if self.Status == "Descending" then self.Status = "Ascending" elseif self.Status == "Ascending" then self.Status = "Descending" end
 		end
 
 		if self._Maid.ElevatorMovement then return end
@@ -188,12 +188,12 @@ function Elevator:MoveElevator(floorDest)
 		end]]
 
 		local arrived = false
-
+		local intDir
 		self._Maid.ElevatorMovement = RunService.Stepped:Connect(function()
 			local floorList = {}
 			for _,v in pairs(floors:GetChildren()) do
-				local elevRelativeFloorPosNum = getElevatorRelativePositionInNumber(elevPart, v :: BasePart, self.Status == "Descending")
-				floorList[v.Name] = math.abs(elevRelativeFloorPosNum)
+				local elevRelativeFloorPosNum = getElevatorRelativePositionInNumber(elevPart, v :: BasePart, false)
+				floorList[v.Name] = math.abs(elevRelativeFloorPosNum) --elevRelativeFloorPosNum 
 			end
 		
 			self.CurrentFloor = getMinValueInKey(floorList)
@@ -201,24 +201,29 @@ function Elevator:MoveElevator(floorDest)
 
 			local nearestFloorPart = floors:FindFirstChild(self.CurrentFloor) :: BasePart?
 
-
 			--print(floorList[self.CurrentFloor], floorList, self.CurrentFloor, nearestFloorPart and getElevatorRelativePositionInNumber(elevPart, nearestFloorPart))
 			if nearestFloorPart and table.find(self._queue, nearestFloorPart.Name) then
-				local floorNum = tonumber(self.CurrentFloor)
-				if self.Status == "Descending" and floorNum then
-					
+				intDir = intDir or math.sign(getElevatorRelativePositionInNumber(elevPart, nearestFloorPart :: BasePart, false))
+				if intDir ~= math.sign(getElevatorRelativePositionInNumber(elevPart, nearestFloorPart :: BasePart, false)) then
+					--print('eeeh?', intDir, math.sign(getElevatorRelativePositionInNumber(elevPart, nearestFloorPart :: BasePart, false)))
+					arrived = true
 				end
-				arrived = true
+				--arrived = true
 			end
+			--print(floorList[self.CurrentFloor], floorList)
 			if arrived then	
-
-				
 				self._Maid.ElevatorMovement = nil
-				
-				print(floorList[self.CurrentFloor])
+				print(self._queue, "STOP")
 
 				prismaticConstraint.Velocity = 0	
+				table.remove(self._queue, table.find(self._queue, floorDest.Name))
 
+				print(self._queue, "NEW LEEEW!")
+				task.wait()
+				local nextFloor = if self._queue[1] then floors:FindFirstChild(tostring(self._queue[1])) :: BasePart else nil
+				if nextFloor then
+					self:MoveElevator(nextFloor)
+				end
 				--[[if table.find(self._queue, floorDest.Name) then
 					print(self._queue, "STOP")
 					table.remove(self._queue, table.find(self._queue, floorDest.Name))
@@ -280,9 +285,11 @@ end
 function Elevator.init(maid)
 	for _,elevModel in pairs(CollectionService:GetTagged("Elevator")) do
 		local elevator = Elevator.new(elevModel)
-		elevator:MoveElevator(elevModel:FindFirstChild("Floors"):FindFirstChild("2"))
+		elevator:MoveElevator(elevModel:FindFirstChild("Floors"):FindFirstChild("3"))
+
+		elevator:MoveElevator(elevModel:FindFirstChild("Floors"):FindFirstChild("4"))
 		--task.wait(1)
-		--elevator:MoveElevator(elevModel:FindFirstChild("Floors"):FindFirstChild("2"))
+		elevator:MoveElevator(elevModel:FindFirstChild("Floors"):FindFirstChild("2"))
 
 	end
 end
