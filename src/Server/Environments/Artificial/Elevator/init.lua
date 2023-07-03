@@ -10,20 +10,36 @@ local Maid = require(ReplicatedStorage:WaitForChild("Packages"):WaitForChild("Ma
 --types
 type Maid = Maid.Maid
 
+type Direction = "Ascending" | "Descending"
+
+type CallQueueData = {
+	Direction : Direction,
+	Floor : string | number
+}
+
 export type Elevator = {
 	__index : Elevator,
 	_Maid : Maid,
 	_queue : {[number] : string | number},
+	_callDownQueue : {[number] : string | number},
+	_callUpQueue : {[number] : string | number},
 	Model : Model,
 	CurrentFloor : string,
-	Status : "Ascending" | "Descending", 
+	Status : Direction, 
 
 	new : (elevatorModel : Model) -> Elevator,
-	MoveElevator : (Elevator, floorDest : BasePart) -> (),
+	UpdateCurrentFloor : (Elevator) -> (),
+	InsertFloorQueue : (Elevator, floorDest : BasePart, CallDirection : Direction ?) -> (),
 	UpdateUI : (Elevator) -> (),
 	init : (maid : Maid) -> ()
 }
 --constants
+local FLOOR_TOP_KEY = "FloorTop"
+local FLOOR_BOTTOM_KEY = "FloorBottom"
+
+local SELECTED_COLOR = Color3.new(0.764706, 0.933333, 0.007843)
+local DEFAULT_COLOR = Color3.fromRGB(128, 127, 130)
+
 --references
 --variables
 --local functions
@@ -52,7 +68,132 @@ function getMinValueInKey(tbl : {[any] : number})
 end
 
 function getElevatorRelativePositionInNumber(elevPart : BasePart, floorDestPart : BasePart, flip : boolean) : number
-	return ((elevPart.Position - floorDestPart.Position)*(if flip then -1 else 1)).Unit:Dot((if flip then -1 else 1)*floorDestPart.CFrame.UpVector)--prismaticConstraint.Velocity	
+	return (elevPart.Position.Y - floorDestPart.Position.Y) -- ((elevPart.Position - floorDestPart.Position)).Unit:Dot(floorDestPart.CFrame.UpVector)--prismaticConstraint.Velocity	
+end
+
+local function openCageDoor(elevModel : Model, openTime : number, floorName : string ?)
+	local elevCageModel = elevModel:FindFirstChild("Elevator") :: Model
+	local elevPart = elevCageModel.PrimaryPart :: BasePart
+	local buttons = elevCageModel:FindFirstChild("Buttons")
+	local doors = elevCageModel:FindFirstChild("Doors")
+	local elevatorGates = elevModel:FindFirstChild("ElevatorGates")
+
+	local tweenTime = 2
+
+	if elevModel:GetAttribute("isOpening") then return end
+
+	local function onDoorOpen(doorPart : BasePart)
+		local cfVal = Instance.new("CFrameValue")
+		cfVal.Name = "CfVal"
+		cfVal.Value = doorPart.CFrame
+		cfVal.Parent = doorPart
+		
+--							v.Transparency = 1
+		doorPart.CanCollide = false
+		local tween = game:GetService("TweenService"):Create(doorPart, TweenInfo.new(tweenTime), {CFrame = cfVal.Value - doorPart.CFrame.RightVector*doorPart.Size.X*(if doorPart.Name == "R" then 2 else 1)}) 
+
+		--disables the weld momentarily
+		local weld = doorPart:FindFirstChild("Weld") :: Weld
+		if weld then
+			doorPart.Anchored = true
+			weld.Enabled = false
+		end
+
+		tween:Play()
+		tween.Completed:Wait()
+		tween:Destroy()
+	end
+
+	local function onDoorClose(doorPart : BasePart)
+		local cfVal = doorPart:FindFirstChild("CfVal") :: CFrameValue
+		if cfVal then
+			doorPart.CanCollide = true
+			local tween = game:GetService("TweenService"):Create(doorPart, TweenInfo.new(tweenTime), {CFrame = cfVal.Value}) 
+			tween:Play()
+			tween.Completed:Wait()
+			tween:Destroy()
+			cfVal:Destroy()
+
+				--reenables the weld 	
+			local weld = doorPart:FindFirstChild("Weld") :: Weld
+			if weld then
+				weld.Enabled = true
+				doorPart.Anchored = false
+			end
+			
+		end 
+	end
+
+	if doors then
+		elevModel:SetAttribute("isOpening", true)
+		for _,v in pairs(doors:GetChildren()) do
+			if v:IsA("BasePart") then
+				task.spawn(function()
+					onDoorOpen(v)
+				end)
+				--sound
+				local sound = Instance.new("Sound")
+				sound.SoundId = "rbxassetid://9114154039"
+				sound.Parent = v
+				sound:Play()
+				task.spawn(function()
+					sound.Ended:Wait()
+					sound:Destroy()
+				end)
+			end
+		end
+
+		if floorName and elevatorGates then
+			for _, elevatorGate in ipairs(elevatorGates:GetChildren()) do
+				local gatedoors = elevatorGate:FindFirstChild("Doors")
+				if elevatorGate.Name == floorName and gatedoors then
+					for _,v in pairs(gatedoors:GetChildren()) do
+						if v:IsA("BasePart") then
+							task.spawn(function()
+								onDoorOpen(v)
+							end)
+						end
+					end
+				end
+			end
+		end
+
+		task.wait(openTime)
+
+		for _,v in pairs(doors:GetChildren()) do
+			if v:IsA("BasePart")  then
+				task.spawn(function()
+					onDoorClose(v)
+				end)
+
+				--sound
+				local sound = Instance.new("Sound")
+				sound.SoundId = "rbxassetid://9114154039"
+				sound.Parent = v
+				sound:Play()
+				task.spawn(function()
+					sound.Ended:Wait()
+					sound:Destroy()
+				end)
+			end
+		end
+		if floorName and elevatorGates then
+			for _, elevatorGate in ipairs(elevatorGates:GetChildren()) do
+				local gatedoors = elevatorGate:FindFirstChild("Doors")
+				if elevatorGate.Name == floorName and gatedoors then
+					for _,v in pairs(gatedoors:GetChildren()) do
+						if v:IsA("BasePart") then
+							task.spawn(function()
+								onDoorClose(v)
+							end)
+						end
+					end
+				end
+			end
+		end
+		task.wait(tweenTime)
+		elevModel:SetAttribute("isOpening", nil)
+	end
 end
 
 
@@ -63,19 +204,24 @@ Elevator.__index = Elevator
 function Elevator.new(elevatorModel : Model)
     local self : Elevator = setmetatable({}, Elevator) :: any 
     self._queue = {}
+	self._callUpQueue = {}
+	self._callDownQueue = {}
     self.CurrentFloor = ""
 	self.Status = "Ascending"
     self.Model = elevatorModel
 	self._Maid = Maid.new()
 
-    --welding
 	local elevCageModel = self.Model:FindFirstChild("Elevator") :: Model
     local elevPart = elevCageModel.PrimaryPart :: BasePart
     local floors = self.Model:FindFirstChild("Floors")
 	local buttons = elevCageModel:FindFirstChild("Buttons")
+	local buttonAddons = elevCageModel:FindFirstChild("ButtonAddons")
+	local gates = self.Model:FindFirstChild("ElevatorGates")
 
     local prismaticConstraint = elevPart:FindFirstChild("PrismaticConstraint") :: PrismaticConstraint
-
+    
+	assert(elevCageModel.PrimaryPart)
+	--welding
     for _,v in pairs(elevCageModel:GetDescendants()) do
         if v:IsA("BasePart") then
             local weldConst = Instance.new("Weld")
@@ -112,34 +258,143 @@ function Elevator.new(elevatorModel : Model)
 		if buttons  then 
 
 			for _,v in pairs(buttons:GetChildren()) do
-				if v:IsA("Model") then
+				if v:IsA("Model") and v.PrimaryPart then
+					local textPart = v:FindFirstChild("TextPart") :: BasePart ?
+
+
 					local clickDetector = Instance.new("ClickDetector")
 					clickDetector.MaxActivationDistance = 32
-					clickDetector.Parent = v.PrimaryPart
+					clickDetector.Parent = v
 					
 					self._Maid:GiveTask(clickDetector.MouseClick:Connect(function()
 						local floorDest = floors:FindFirstChild(v.Name) :: BasePart ?
 						if floorDest then
-							self:MoveElevator(floorDest)
+							self:InsertFloorQueue(floorDest)
 						end
 					end))
+
+					if textPart then
+						local text = textPart:WaitForChild("SurfaceGui"):WaitForChild("TextLabel") :: TextLabel
+						text.Text = v.Name
+					end
 				end
 			end
 
+			if buttonAddons then
+				local openButton = buttonAddons:FindFirstChild("Open")
+				local closeButton= buttonAddons:FindFirstChild("Close")
+	
+				if openButton then
+					local openClickDetector = Instance.new("ClickDetector")
+					openClickDetector.MaxActivationDistance = 32
+					openClickDetector.Parent = openButton
+	
+					self._Maid:GiveTask(openClickDetector.MouseClick:Connect(function()
+						local currentFloor = floors:FindFirstChild(self.CurrentFloor) :: BasePart ?
+						if  currentFloor and (currentFloor.Position - elevCageModel.PrimaryPart.Position).Magnitude <= 1 then
+							self:InsertFloorQueue(currentFloor, self.Status)
+						end
+
+						--light effect
+						local light = openButton:WaitForChild("Light") :: BasePart
+						light.Color = SELECTED_COLOR
+						task.wait(0.25)
+						light.Color = DEFAULT_COLOR
+					end))
+				end
+				if closeButton then
+					local closeClickDetector = Instance.new("ClickDetector")
+					closeClickDetector.MaxActivationDistance = 32
+					closeClickDetector.Parent = closeButton
+	
+					self._Maid:GiveTask(closeClickDetector.MouseClick:Connect(function()
+						--light effect
+						local light = closeButton:WaitForChild("Light") :: BasePart
+						light.Color = SELECTED_COLOR
+						task.wait(0.25)
+						light.Color = DEFAULT_COLOR
+	
+					end))
+				end
+			end
 		end
+
+		
 	end
 
+	if gates and floors then
+		for _,gateModel in pairs(gates:GetChildren()) do
+			local callButtons = gateModel:WaitForChild("CallButtons") :: Model
+			local GateDoors = gateModel:WaitForChild("Doors") :: Model
 
+			
+			local upButton = callButtons:FindFirstChild("Up")
+			local downButton = callButtons:FindFirstChild("Down")
+
+			if upButton then
+				local upClickDetector = Instance.new("ClickDetector")
+				upClickDetector.MaxActivationDistance = 32
+				upClickDetector.Parent = upButton
+			
+
+				self._Maid:GiveTask(upClickDetector.MouseClick:Connect(function()
+					--print("Mba")
+					local floor = floors:FindFirstChild(gateModel.Name) :: BasePart ?
+					--[[if floor then
+						floor:SetAttribute("attribute")
+					end]]
+					if floor then
+						if not table.find(self._callUpQueue, floor.Name) then
+							--table.insert(self._callUpQueue, floor.Name) 
+							self:InsertFloorQueue(floor, "Ascending")
+						end
+					end
+				end))
+
+				local textLabel = upButton:WaitForChild("TextPart"):WaitForChild("SurfaceGui"):WaitForChild("TextLabel") :: TextLabel
+				textLabel.Text = "↑"
+			end
+
+			if downButton then
+				local downClickDetector = Instance.new("ClickDetector")
+				downClickDetector.MaxActivationDistance = 32
+				downClickDetector.Parent = downButton
+
+				self._Maid:GiveTask(downClickDetector.MouseClick:Connect(function()
+					--print("Mba")
+					local floor = floors:FindFirstChild(gateModel.Name) :: BasePart ?
+					--[[if floor then
+						floor:SetAttribute("attribute")
+					end]]
+					if floor then
+						if not table.find(self._callDownQueue, floor.Name) then
+							--table.insert(self._callDownQueue, floor.Name) 
+							self:InsertFloorQueue(floor, "Descending")
+						end
+					end
+				end))
+
+				local textLabel = downButton:WaitForChild("TextPart"):WaitForChild("SurfaceGui"):WaitForChild("TextLabel") :: TextLabel
+				textLabel.Text = "↓"
+			end
+
+			
+		end
+		
+	end
 
 	if highestFloor and lowestFloor then
-		highestFloor:SetAttribute("FloorTop", true)
-		lowestFloor:SetAttribute("FloorBottom", true)
+		highestFloor:SetAttribute(FLOOR_TOP_KEY, true)
+		lowestFloor:SetAttribute(FLOOR_BOTTOM_KEY, true)
 	end
+
+	self:UpdateCurrentFloor()
+	self:UpdateUI()
 
     return self
 end
 
-function Elevator:MoveElevator(floorDest)	
+function Elevator:InsertFloorQueue(floorDest, buttonCall : Direction ?)	
 
 
 	local elevCageModel = self.Model:FindFirstChild("Elevator") :: Model
@@ -147,10 +402,13 @@ function Elevator:MoveElevator(floorDest)
     local floors = self.Model:FindFirstChild("Floors")
 	local buttons = elevCageModel:FindFirstChild("Buttons")
 	local doors = elevCageModel:FindFirstChild("Doors")
+	local elevatorGates = self.Model:FindFirstChild("ElevatorGates")
 
 	assert(floors and floorDest:IsDescendantOf(floors))
 	assert(floors)
 	assert(buttons)
+	assert(elevCageModel.PrimaryPart)
+	assert(elevatorGates)
 
     local prismaticConstraint = elevPart:FindFirstChild("PrismaticConstraint") :: PrismaticConstraint
 	
@@ -162,39 +420,77 @@ function Elevator:MoveElevator(floorDest)
 	if prismaticConstraint then
 
 		--setting up queues
-		if not table.find(self._queue, floorDest.Name) then
-			table.insert(self._queue, floorDest.Name)
+		if buttonCall == nil then
+			if not table.find(self._queue, floorDest.Name) then
+				table.insert(self._queue, floorDest.Name)
 
-			--rearrange queues
-			if self.Status == "Ascending" then 
-				table.sort(self._queue, function(a : any, b : any) --ascending order
-					return a < b
-				end)
-			elseif self.Status == "Descending" then 
-				table.sort(self._queue, function(a : any, b : any) --descending order
-					return a > b
-				end)
-			end	
-			print(self._queue)
+				--rearrange queues (obselete)
+				--[[if self.Status == "Ascending" then 
+					table.sort(self._queue, function(a : any, b : any) --ascending order
+						return a < b
+					end)
+				elseif self.Status == "Descending" then 
+					table.sort(self._queue, function(a : any, b : any) --descending order
+						return a > b
+					end)
+				end	]]
+				print(self._queue)
+			end
+		elseif buttonCall == "Ascending" then
+			if not table.find(self._callUpQueue, floorDest.Name) then
+				table.insert(self._callUpQueue,  floorDest.Name)
+			end
+		elseif buttonCall == "Descending" then
+			if not table.find(self._callDownQueue, floorDest.Name) then
+				table.insert(self._callDownQueue,  floorDest.Name)
+			end
 		end
 
 		do
 			local buttonFloor = buttons:FindFirstChild(floorDest.Name) :: Model ?
-			if buttonFloor and buttonFloor.PrimaryPart then buttonFloor.PrimaryPart.Material = Enum.Material.Neon end
-		end
+			local buttonlight = if buttonFloor then buttonFloor:FindFirstChild("Light") :: BasePart else nil
+			if buttonFloor and buttonlight and buttonCall == nil then buttonlight.Color = SELECTED_COLOR end
 
-		--detecting if there's any queue left based on the direction/status
-		local queuePresentForCurrentStatus = false
-		for k,v in pairs(self._queue) do
-			local floorPart = floors:FindFirstChild(tostring(v))
-			if floorPart and floorPart:IsA("BasePart") then
-				local direction = math.sign(getElevatorRelativePositionInNumber(elevPart, floorPart, false))
-				if (self.Status == "Descending" and math.sign(direction) >= 0) or (self.Status == "Ascending" and math.sign(direction) <= 0) then
-					queuePresentForCurrentStatus = true
+			if buttonCall == "Ascending" then
+				local elevatorGate = elevatorGates:FindFirstChild(floorDest.Name)
+				if elevatorGate then
+					local callbuttons = elevatorGate:WaitForChild("CallButtons")
+					local up = callbuttons:FindFirstChild("Up")
+					if up then 
+						local light = up:WaitForChild("Light") :: BasePart
+						light.Color = SELECTED_COLOR
+					end
+				end
+			elseif buttonCall == "Descending" then
+				local elevatorGate = elevatorGates:FindFirstChild(floorDest.Name)
+				if elevatorGate then
+					local callbuttons = elevatorGate:WaitForChild("CallButtons")
+					local down = callbuttons:FindFirstChild("Down")
+					if down then 
+						local light = down:WaitForChild("Light") :: BasePart
+						light.Color = SELECTED_COLOR
+					end
 				end
 			end
 		end
 
+		--detecting if there's any queue left based on the direction/status
+		
+		local queuePresentForCurrentStatus = false
+		local function queueCheck(queue : {})
+			for k,v in pairs(queue) do
+				local floorPart = floors:FindFirstChild(tostring(v))
+				if floorPart and floorPart:IsA("BasePart") then
+					local direction = math.sign(getElevatorRelativePositionInNumber(elevPart, floorPart, false))
+					if (self.Status == "Descending" and math.sign(direction) >= 0) or (self.Status == "Ascending" and math.sign(direction) <= 0) then
+						queuePresentForCurrentStatus = true
+					end
+				end
+			end
+		end
+		queueCheck(self._queue)
+		queueCheck(self._callDownQueue)
+		queueCheck(self._callUpQueue)
 		--switch direction/status
 		if not queuePresentForCurrentStatus then
 			if self.Status == "Descending" then self.Status = "Ascending" elseif self.Status == "Ascending" then self.Status = "Descending" end
@@ -206,7 +502,7 @@ function Elevator:MoveElevator(floorDest)
 
 		--		
 		--local elevRelativePosNum = getElevatorRelativePositionInNumber(elevPart, floorDest)
-		prismaticConstraint.Velocity = 10*(if self.Status == "Descending" then 1 else -1)
+		prismaticConstraint.Velocity = 8*(if self.Status == "Descending" then 1 else -1)
 		--print(getElevatorRelativePositionInNumber(floorDest))
 		--local posNumRelativeToVelocity =   getPosNumRelativeToVel(elevRelativePosNum)
 
@@ -221,25 +517,21 @@ function Elevator:MoveElevator(floorDest)
 					end
 				end
 			end
-			customFloor = getMinValueInKey(floorPartsList)
+			customFloor = getMinValueInKey(floorPartsList) 
 		end]]
-
 		local arrivedFloorPart
 		local intDir
 		self._Maid.ElevatorMovement = RunService.Stepped:Connect(function()
-			local floorList = {}
-			for _,v in pairs(floors:GetChildren()) do
-				local elevRelativeFloorPosNum = getElevatorRelativePositionInNumber(elevPart, v :: BasePart, false)
-				floorList[v.Name] = math.abs(elevRelativeFloorPosNum) --elevRelativeFloorPosNum 
-			end
-		
-			self.CurrentFloor = getMinValueInKey(floorList)
+			local t0 = tick()
+			
+			self:UpdateCurrentFloor()
 			self:UpdateUI()
 
 			local nearestFloorPart = floors:FindFirstChild(self.CurrentFloor) :: BasePart?
 
-			--print(floorList[self.CurrentFloor], floorList, self.CurrentFloor, nearestFloorPart and getElevatorRelativePositionInNumber(elevPart, nearestFloorPart))
-			if nearestFloorPart and table.find(self._queue, nearestFloorPart.Name) then
+			--print(floorList[self.CurrentFloor], floorList, self.CurrentFloor, nearestFloorPart and getElevatorRelativePositionInNumber(elevPart, nearestFloorPart, false))
+			--print(elevPart.Position, nearestFloorPart and nearestFloorPart.Position)
+			if nearestFloorPart and (table.find(self._queue, nearestFloorPart.Name) or table.find(self._callDownQueue, nearestFloorPart.Name) or table.find(self._callUpQueue, nearestFloorPart.Name)) then
 				intDir = intDir or math.sign(getElevatorRelativePositionInNumber(elevPart, nearestFloorPart :: BasePart, false))
 				--print('eeeh?', intDir, math.sign(getElevatorRelativePositionInNumber(elevPart, nearestFloorPart :: BasePart, false)))
 				if intDir ~= math.sign(getElevatorRelativePositionInNumber(elevPart, nearestFloorPart :: BasePart, false)) then
@@ -248,46 +540,79 @@ function Elevator:MoveElevator(floorDest)
 				end
 				--arrived = true
 			end
+			print(elevCageModel.PrimaryPart.AssemblyLinearVelocity.Magnitude, ": elev veloc")
+
 			--print(floorList[self.CurrentFloor], floorList)
 			if arrivedFloorPart then	
-				print("hey?")
+				--arrivedFloorPart.Transparency = 0.25
+				--print("hey?")
 				self._Maid.ElevatorMovement = nil
 
 				prismaticConstraint.Velocity = 0	
-				table.remove(self._queue, table.find(self._queue, arrivedFloorPart.Name))
+				elevCageModel:PivotTo(CFrame.new(elevCageModel.PrimaryPart.Position.X, arrivedFloorPart.Position.Y, elevCageModel.PrimaryPart.Position.Z)*(elevCageModel.PrimaryPart.CFrame - elevCageModel.PrimaryPart.CFrame.Position))
+				elevCageModel.PrimaryPart.AssemblyLinearVelocity = Vector3.new()
+				
+				--removing table in the queues
+				if table.find(self._queue, arrivedFloorPart.Name) then
+					table.remove(self._queue, table.find(self._queue, arrivedFloorPart.Name))
+				end
+				if table.find(self._callUpQueue, arrivedFloorPart.Name) then
+					table.remove(self._callUpQueue, table.find(self._callUpQueue, arrivedFloorPart.Name))
+				end
+				if table.find(self._callDownQueue, arrivedFloorPart.Name) then
+					table.remove(self._callDownQueue, table.find(self._callDownQueue, arrivedFloorPart.Name))
+				end
 
-				print("open door")
+				--print("open door")
 				--button
 				do
 					local buttonFloor = buttons:FindFirstChild(arrivedFloorPart.Name) :: Model ?
-					if buttonFloor and buttonFloor.PrimaryPart then buttonFloor.PrimaryPart.Material = Enum.Material.Metal end
-				end
-				
-				if doors then
-					self.Model:SetAttribute("isOpening", true)
-					for _,v in pairs(doors:GetChildren()) do
-						if v:IsA("BasePart") then
-							v.Transparency = 1
-							v.CanCollide = false
-						end
-					end
-					task.wait(5)
-					self.Model:SetAttribute("isOpening", nil)
-					for _,v in pairs(doors:GetChildren()) do
-						if v:IsA("BasePart") then
-							v.Transparency = 0
-							v.CanCollide = true
-						end
-					end
-				end
-				print('close door')
-				
+					local buttonlight = if buttonFloor then buttonFloor:FindFirstChild("Light") :: BasePart else nil
+					if buttonFloor and buttonlight and buttonCall == nil then buttonlight.Color = DEFAULT_COLOR end
 
-				print(self._queue, "NEW LEEEW!")
+					
+					if buttonCall == "Ascending" then
+						local elevatorGate = elevatorGates:FindFirstChild(arrivedFloorPart.Name)
+						if elevatorGate then
+							local callbuttons = elevatorGate:WaitForChild("CallButtons")
+							local up = callbuttons:FindFirstChild("Up")
+							if up then 
+								local light = up:WaitForChild("Light") :: BasePart
+								light.Color = DEFAULT_COLOR
+							end
+						end
+					elseif buttonCall == "Descending" then
+						local elevatorGate = elevatorGates:FindFirstChild(arrivedFloorPart.Name)
+						if elevatorGate then
+							local callbuttons = elevatorGate:WaitForChild("CallButtons")
+							local down = callbuttons:FindFirstChild("Down")
+							if down then 
+								local light = down:WaitForChild("Light") :: BasePart
+								light.Color = DEFAULT_COLOR
+							end
+						end
+					end
+				
+			
+				end
+				
+				openCageDoor(self.Model, 4, self.CurrentFloor)
+				--print('close door')
+				--arrivedFloorPart.Transparency = 1
+
+				--print(self._queue, "NEW LEEEW!")
 				task.wait()
+				self:UpdateUI()
 				local nextFloor = if self._queue[1] then floors:FindFirstChild(tostring(self._queue[1])) :: BasePart else nil
+				local nextCalledUpFloor = if self._callUpQueue[1] then floors:FindFirstChild(tostring(self._callUpQueue[1])) :: BasePart else nil
+				local nextCalledDownFloor = if self._callDownQueue[1] then floors:FindFirstChild(tostring(self._callDownQueue[1])) :: BasePart else nil
+
 				if nextFloor then
-					self:MoveElevator(nextFloor)
+					self:InsertFloorQueue(nextFloor)
+				elseif nextCalledUpFloor then
+					self:InsertFloorQueue(nextCalledUpFloor, "Ascending")
+				elseif nextCalledDownFloor then
+					self:InsertFloorQueue(nextCalledDownFloor, "Descending")
 				end
 				--[[if table.find(self._queue, floorDest.Name) then
 					print(self._queue, "STOP")
@@ -337,14 +662,59 @@ function Elevator:MoveElevator(floorDest)
 	end
 end
 
+function Elevator:UpdateCurrentFloor()
+	local elevCageModel = self.Model:FindFirstChild("Elevator") :: Model
+    local elevPart = elevCageModel.PrimaryPart :: BasePart
+    local floors = self.Model:FindFirstChild("Floors")
+	local buttons = elevCageModel:FindFirstChild("Buttons")
+	local doors = elevCageModel:FindFirstChild("Doors")
+
+	assert(floors)
+
+	local floorList = {}
+	for _,v in pairs(floors:GetChildren()) do
+		local elevRelativeFloorPosNum = getElevatorRelativePositionInNumber(elevPart, v :: BasePart, false)
+		floorList[v.Name] = math.abs(elevRelativeFloorPosNum) --elevRelativeFloorPosNum 
+	end
+
+	self.CurrentFloor = getMinValueInKey(floorList)
+	return 
+end
+
 function Elevator:UpdateUI()
     local elevCageModel = self.Model:FindFirstChild("Elevator") :: Model
     local elevPart = elevCageModel.PrimaryPart :: BasePart
     local floors = self.Model:FindFirstChild("Floors")
+    local prismaticConstraint = elevPart:FindFirstChild("PrismaticConstraint") :: PrismaticConstraint
+	local elevatorGates = self.Model:FindFirstChild("ElevatorGates")
 
 	local floorIndicationPart = elevCageModel:FindFirstChild("Indications"):FindFirstChild("FloorLabel") 
+	local floorNameText = floorIndicationPart:FindFirstChild("SurfaceGui"):FindFirstChild("FloorName") :: TextLabel
+
+	local floordisplay = (if prismaticConstraint.Velocity == 0 then "" elseif self.Status == "Ascending" then '⬆️' else '⬇️') .. self.CurrentFloor
 	
-	floorIndicationPart:FindFirstChild("SurfaceGui"):FindFirstChild("FloorName").Text = self.CurrentFloor
+	if floorNameText.Text ~= floordisplay and math.floor(prismaticConstraint.Velocity) ~= 0 then
+		local sound = Instance.new("Sound")
+		sound.SoundId = "rbxassetid://6148388066"
+		sound.Parent = floorIndicationPart
+		sound:Play()
+		task.spawn(function()
+			sound.Ended:Wait()
+			sound:Destroy()
+		end)
+	end
+
+	floorIndicationPart:FindFirstChild("SurfaceGui"):FindFirstChild("FloorName").Text = floordisplay
+
+	if elevatorGates then
+		for _,elevGate in pairs(elevatorGates:GetChildren()) do
+			local elevatorFloor = elevGate:FindFirstChild("ElevatorFloor")
+			if elevatorFloor then
+				local floorName = elevatorFloor:WaitForChild("SurfaceGui"):WaitForChild("FloorName") :: TextLabel
+				floorName.Text = floordisplay
+			end
+		end
+	end
 end
 
 function Elevator.init(maid)
