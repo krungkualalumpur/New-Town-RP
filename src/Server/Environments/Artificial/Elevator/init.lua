@@ -43,6 +43,16 @@ local DEFAULT_COLOR = Color3.fromRGB(128, 127, 130)
 --references
 --variables
 --local functions
+function weld(part0 : BasePart, part1 : BasePart)
+	local weldConst = Instance.new("Weld") :: Weld
+	weldConst.Part0 = part0
+	weldConst.Part1 = part1
+	weldConst.C0 =  part0.CFrame:Inverse()
+	weldConst.C1 = part1.CFrame:Inverse()
+	weldConst.Parent = part0
+	return weldConst
+end
+
 function getMaxValueInKey(tbl : {number})
 	local maxVal = -math.huge
 	local key
@@ -224,12 +234,7 @@ function Elevator.new(elevatorModel : Model)
 	--welding
     for _,v in pairs(elevCageModel:GetDescendants()) do
         if v:IsA("BasePart") then
-            local weldConst = Instance.new("Weld")
-            weldConst.Part0 = v
-            weldConst.Part1 = elevPart
-            weldConst.C0 =  v.CFrame:Inverse()
-            weldConst.C1 = elevPart.CFrame:Inverse()
-            weldConst.Parent = v
+			weld(v, elevPart)
         end
     end
 
@@ -403,6 +408,7 @@ function Elevator:InsertFloorQueue(floorDest, buttonCall : Direction ?)
 	local buttons = elevCageModel:FindFirstChild("Buttons")
 	local doors = elevCageModel:FindFirstChild("Doors")
 	local elevatorGates = self.Model:FindFirstChild("ElevatorGates")
+	local playerDetector = elevCageModel:WaitForChild("PlayerDetector") :: BasePart
 
 	assert(floors and floorDest:IsDescendantOf(floors))
 	assert(floors)
@@ -548,10 +554,23 @@ function Elevator:InsertFloorQueue(floorDest, buttonCall : Direction ?)
 				--print("hey?")
 				self._Maid.ElevatorMovement = nil
 
+				--temporarily and quickly adding elevator weld for player to not make em fall off
+				local temporaryWelds = {}
+				for _,v in pairs(playerDetector:GetTouchingParts()) do
+					if v.Parent and v.Parent:FindFirstChild("Humanoid") then
+						table.insert(temporaryWelds, weld(v, elevCageModel.PrimaryPart))
+					end
+				end
+
 				prismaticConstraint.Velocity = 0	
 				elevCageModel:PivotTo(CFrame.new(elevCageModel.PrimaryPart.Position.X, arrivedFloorPart.Position.Y, elevCageModel.PrimaryPart.Position.Z)*(elevCageModel.PrimaryPart.CFrame - elevCageModel.PrimaryPart.CFrame.Position))
 				elevCageModel.PrimaryPart.AssemblyLinearVelocity = Vector3.new()
 				
+				--removing the elevator weld for the players
+				for _,v in pairs(temporaryWelds) do
+					v:Destroy()
+				end
+
 				--removing table in the queues
 				if table.find(self._queue, arrivedFloorPart.Name) then
 					table.remove(self._queue, table.find(self._queue, arrivedFloorPart.Name))
@@ -570,29 +589,29 @@ function Elevator:InsertFloorQueue(floorDest, buttonCall : Direction ?)
 					local buttonlight = if buttonFloor then buttonFloor:FindFirstChild("Light") :: BasePart else nil
 					if buttonFloor and buttonlight and buttonCall == nil then buttonlight.Color = DEFAULT_COLOR end
 
-					
-					if buttonCall == "Ascending" then
-						local elevatorGate = elevatorGates:FindFirstChild(arrivedFloorPart.Name)
-						if elevatorGate then
-							local callbuttons = elevatorGate:WaitForChild("CallButtons")
-							local up = callbuttons:FindFirstChild("Up")
-							if up then 
-								local light = up:WaitForChild("Light") :: BasePart
-								light.Color = DEFAULT_COLOR
+					if buttonCall ~= nil then
+						if self.Status == "Ascending" then
+							local elevatorGate = elevatorGates:FindFirstChild(arrivedFloorPart.Name)
+							if elevatorGate then
+								local callbuttons = elevatorGate:WaitForChild("CallButtons")
+								local up = callbuttons:FindFirstChild("Up")
+								if up then 
+									local light = up:WaitForChild("Light") :: BasePart
+									light.Color = DEFAULT_COLOR
+								end
 							end
-						end
-					elseif buttonCall == "Descending" then
-						local elevatorGate = elevatorGates:FindFirstChild(arrivedFloorPart.Name)
-						if elevatorGate then
-							local callbuttons = elevatorGate:WaitForChild("CallButtons")
-							local down = callbuttons:FindFirstChild("Down")
-							if down then 
-								local light = down:WaitForChild("Light") :: BasePart
-								light.Color = DEFAULT_COLOR
+						elseif self.Status == "Descending" then
+							local elevatorGate = elevatorGates:FindFirstChild(arrivedFloorPart.Name)
+							if elevatorGate then
+								local callbuttons = elevatorGate:WaitForChild("CallButtons")
+								local down = callbuttons:FindFirstChild("Down")
+								if down then 
+									local light = down:WaitForChild("Light") :: BasePart
+									light.Color = DEFAULT_COLOR
+								end
 							end
 						end
 					end
-				
 			
 				end
 				

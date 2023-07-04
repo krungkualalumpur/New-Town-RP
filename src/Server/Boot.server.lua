@@ -10,7 +10,7 @@ local Environments = require(ServerScriptService:WaitForChild("Environments"))
 --types
 --constants
 --references
-local maid = Maid.new
+local maid = Maid.new()
 --variables
 --script
 Environments.init(maid)
