@@ -10,12 +10,17 @@ dependencies = []
 [[package]]
 name = "do-not-publish/xyz"
 version = "0.1.0"
-dependencies = [["Fusion", "elttob/fusion@0.1.1-beta"], ["Maid", "nightcycle/maid@1.1.4"], ["MeshUtil", "nightcycle/mesh-util@1.0.3"], ["NetworkUtil", "nightcycle/network-util@1.7.0"], ["ProfileService", "brittonfischer/profileservice@2.1.5"], ["ServiceProxy", "nightcycle/service-proxy@1.0.0"], ["Signal", "nightcycle/signal@1.0.2"], ["TableUtil", "nightcycle/table-util@1.1.0"]]
+dependencies = [["ColdFusion8", "nightcycle/cold-fusion@8.0.0"], ["Fusion", "elttob/fusion@0.1.1-beta"], ["Maid", "nightcycle/maid@1.1.4"], ["MeshUtil", "nightcycle/mesh-util@1.0.3"], ["NetworkUtil", "nightcycle/network-util@1.7.0"], ["ProfileService", "brittonfischer/profileservice@2.1.5"], ["ServiceProxy", "nightcycle/service-proxy@1.0.0"], ["Signal", "nightcycle/signal@1.0.2"], ["TableUtil", "nightcycle/table-util@1.1.0"]]
 
 [[package]]
 name = "elttob/fusion"
 version = "0.1.1-beta"
 dependencies = []
+
+[[package]]
+name = "nightcycle/cold-fusion"
+version = "8.0.0"
+dependencies = [["Maid", "nightcycle/maid@1.1.4"], ["ServiceProxy", "nightcycle/service-proxy@1.0.0"], ["Signal", "nightcycle/signal@1.0.2"], ["TableUtil", "nightcycle/table-util@1.1.0"]]
 
 [[package]]
 name = "nightcycle/geometry-util"

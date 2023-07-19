@@ -6,7 +6,7 @@ local ServerScriptService = game:GetService("ServerScriptService")
 --packages
 local Maid = require(ReplicatedStorage:WaitForChild("Packages"):WaitForChild("Maid"))
 --modules
-local Environments = require(ServerScriptService:WaitForChild("Environments"))
+local Environments = require(ServerScriptService:WaitForChild("Server"):WaitForChild("Environments"))
 --types
 --constants
 --references
@@ -14,5 +14,5 @@ local maid = Maid.new()
 --variables
 --script
 Environments.init(maid)
-print("Hello world, du bist heissen?!")
+print("Hello world, du bist heissen?! PENAT LAAAA de stronkest")
 

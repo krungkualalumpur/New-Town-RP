@@ -9,16 +9,21 @@
       },
       "Packages" : {
         "$path": "Packages"
+      },
+      "Client" : {
+        "$path" : "src/Client"
       }
     },
 
     "ServerScriptService": {
-      "$path": "src/Server"
+      "Server" : {
+        "$path": "src/Server"
+      }
     },
 
     "StarterPlayer": {
       "StarterPlayerScripts": {
-        "$path": "src/Client"
+        "$path": "src/StarterPlayerScripts"
       }
     }
 

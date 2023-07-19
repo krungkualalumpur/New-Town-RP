@@ -4,6 +4,7 @@
 --modules
 --types
 --constants
---references
 --variables
+--references
+--local functions
 --class
