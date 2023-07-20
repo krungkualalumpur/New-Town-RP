@@ -7,6 +7,12 @@ local ColdFusion = require(ReplicatedStorage:WaitForChild("Packages"):WaitForChi
 --modules
 --types
 type Maid = Maid.Maid
+
+type Fuse = ColdFusion.Fuse
+type State<T> = ColdFusion.State<T>
+type ValueState<T> = ColdFusion.ValueState<T>
+type CanBeState<T> = ColdFusion.State<T>
+
 --constants
 local PADDING_SIZE =  UDim.new(0, 10)
 
@@ -17,7 +23,7 @@ local BACKGROUND_COLOR = Color3.fromRGB(200,200,200)
 --class
 return function(
     maid : Maid,
-    interactKeyCode : Enum.KeyCode
+    interactKeyCode : State<Enum.KeyCode>
 )
     local _fuse = ColdFusion.fuse(maid)
     local _new = _fuse.new
@@ -46,7 +52,9 @@ return function(
                 Size = UDim2.fromScale(0.25, 1),
                 BackgroundColor3 = BACKGROUND_COLOR,
                 TextScaled = true,
-                Text = interactKeyCode.Name
+                Text =  _Computed(function(keyCode : Enum.KeyCode)
+                    return keyCode.Name
+                end, interactKeyCode)
             }),
             _new("TextLabel")({
                 Size = UDim2.fromScale(0.75, 1),

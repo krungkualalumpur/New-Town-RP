@@ -37,8 +37,13 @@ end
 
 function Interactable.Interact(model : Model)
     if model.PrimaryPart then
-        if CollectionService:GetTagged("Door") then
+        if CollectionService:HasTag(model, "Door") or CollectionService:HasTag(model, "Window") then
             Interactable.InteractSwing(model,true)
+        end
+
+        local interactableData = Interactable.getData(model)
+        if (CollectionService:HasTag(model, "Switch")) and (interactableData.Class) and (interactableData.IsSwitch ~= nil) then
+            Interactable.InteractSwitch(model)
         end
         --just for fun :P
         --local exp = Instance.new("Explosion")
@@ -55,12 +60,22 @@ function Interactable.InteractToolGiver(model : Model)
     return
 end
 
-function Interactable.InteractSwitch(model : Model, on : boolean)
+function Interactable.InteractSwitch(model : Model)
     local data = Interactable.getData(model)
     assert(data.IsSwitch ~= nil, "IsSwitch attribute non-existant!")
     
     data.IsSwitch = not data.IsSwitch
     Interactable.setData(model, data)
+
+    if data.IsSwitch then
+        if data.Class == "Curtain" then
+            print("MAS JAJANG ON!")
+        end
+    else
+        if data.Class == "Curtain" then
+            print("MAS JAJANG OFF!")
+        end
+    end
 end
 
 function Interactable.InteractSwing(model : Model,on : boolean)

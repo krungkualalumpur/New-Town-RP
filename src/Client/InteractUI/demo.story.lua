@@ -3,6 +3,7 @@
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 --packages
 local Maid = require(ReplicatedStorage:WaitForChild("Packages"):WaitForChild("Maid"))
+local ColdFusion = require(ReplicatedStorage:WaitForChild("Packages"):WaitForChild("ColdFusion8"))
 --modules
 local InteractUI = require(ReplicatedStorage:WaitForChild("Client"):WaitForChild("InteractUI"))
 --types
@@ -14,7 +15,11 @@ local InteractUI = require(ReplicatedStorage:WaitForChild("Client"):WaitForChild
 return function(target : CoreGui)
     local maid = Maid.new() 
 
-    local out = InteractUI(maid, Enum.KeyCode.E)
+    local _fuse = ColdFusion.fuse(maid)
+
+    local _Value = _fuse.Value
+
+    local out = InteractUI(maid, _Value(Enum.KeyCode.E))
     out.Parent = target
 
     return function() 

@@ -20,6 +20,7 @@ type Maid = Maid.Maid
 type PlatformType = "Keyboard" | "Mobile" | "Console"
 type InputEventType = "Toggle" | "Press" | "Hold" | "Release"
 
+type ActiveFn = (InputObject) -> () 
 
 type KeyMap = 
     {
@@ -29,8 +30,8 @@ type KeyMap =
 
 type Map = {
     [PlatformType] : KeyMap,
-    OnBegin : (... any) -> any,
-    OnEnded : (... any) -> any,
+    OnBegin : ActiveFn,
+    OnEnded : ActiveFn,
     isActive : boolean,
     InputEventType : InputEventType
 }
@@ -47,12 +48,12 @@ export type InputHandler = {
     },
     
     new : (isStart : boolean) -> InputHandler,
-    Map : (InputHandler, inputName : string, platformType : PlatformType,  inputs : {Enum.KeyCode | Enum.UserInputType}, inputEventType : InputEventType, OnBegin : (... any) -> any, OnEnded : (... any) -> any) -> nil,
+    Map : (InputHandler, inputName : string, platformType : PlatformType,  inputs : {Enum.KeyCode | Enum.UserInputType}, inputEventType : InputEventType, OnBegin : ActiveFn, OnEnded : ActiveFn) -> nil,
     Unmap : (InputHandler, inputName : string) -> nil,
-    SetActive : (InputHandler, InputName : string, isActive : boolean) -> nil,
+    SetActive : (InputHandler, InputName : string, inputObject : InputObject, isActive : boolean) -> nil,
     IsActive : (InputHandler, InputName : string) -> boolean,
     OnInputEvent : (InputHandler, InputObject : InputObject, began : boolean, detectMouseMovement : boolean ?) -> nil,
-    HandleEventType : (InputHandler, InputName: string, InputEventType: InputEventType, InputBegan: boolean) -> nil,
+    HandleEventType : (InputHandler, InputName: string, InputEventType: InputEventType, InputBegan: boolean, inputObject : InputObject) -> nil,
     Destroy : (InputHandler) -> nil,
 }
 --constants
@@ -150,7 +151,7 @@ function inputHandler:OnInputEvent(InputObject : InputObject, began : boolean, f
             end
 
             if isInput then
-                self:HandleEventType(inputName, map.InputEventType, began)
+                self:HandleEventType(inputName, map.InputEventType, began, InputObject)
             end
             --self._InputState
         end
@@ -173,8 +174,8 @@ function inputHandler:Map(
     platformType : PlatformType, 
     inputs : {Enum.KeyCode | Enum.UserInputType}, 
     inputEventType : InputEventType, 
-    OnBegin : (... any) -> any, 
-    OnEnded :(...any) -> any
+    OnBegin : ActiveFn, 
+    OnEnded : ActiveFn
 )
 
     local _map : Map = {
@@ -193,7 +194,7 @@ function inputHandler:Unmap(inputName : string)
     return nil
 end
 
-function inputHandler:SetActive(InputName : string, isActive : boolean)
+function inputHandler:SetActive(InputName : string, inputObject : InputObject, isActive : boolean)
     local currentPlatformType : PlatformType = getClientPlatform()
 
     assert(currentPlatformType, "Unable to detect current platform type!")
@@ -204,9 +205,9 @@ function inputHandler:SetActive(InputName : string, isActive : boolean)
         if inputName == InputName then
             map.isActive = isActive
             if isActive then
-                map.OnBegin()
+                map.OnBegin(inputObject)
             else
-                map.OnEnded()
+                map.OnEnded(inputObject)
             end
         end
     end
@@ -222,27 +223,27 @@ function inputHandler:IsActive(InputName : string)
     return false
 end
 
-function inputHandler:HandleEventType(InputName: string, InputEventType: InputEventType, InputBegan: boolean)
+function inputHandler:HandleEventType(InputName: string, InputEventType: InputEventType, InputBegan: boolean, inputObject : InputObject)
 
     -- Handle input began event.
     if InputBegan then
 
         -- 'TOGGLE' case: we flip the activation state.
         if InputEventType == "Toggle" then 
-            self:SetActive(InputName, not self:IsActive(InputName)) 
+            self:SetActive(InputName,  inputObject, not self:IsActive(InputName)) 
             return 
         end
 
         -- 'PRESS' case: we activate the event, then immediately de-activate it manually.
         if InputEventType == "Press" then 
-            self:SetActive(InputName, true)
-            self:SetActive(InputName, false)
+            self:SetActive(InputName, inputObject,true)
+            self:SetActive(InputName, inputObject,false)
             return 
         end --active = toggle... 
 
         -- 'HOLD' case: input is now being held, activate.
         if InputEventType == "Hold" and not self:IsActive(InputName) then 
-            self:SetActive(InputName, true) 
+            self:SetActive(InputName,inputObject, true) 
             return 
         end
     else
@@ -250,14 +251,14 @@ function inputHandler:HandleEventType(InputName: string, InputEventType: InputEv
         -- Handle input ended event.
         -- 'HOLD' case: we de-activate as the input is no longer held.
         if InputEventType == "Hold" and self:IsActive(InputName) then 
-            self:SetActive(InputName, false)
+            self:SetActive(InputName,inputObject, false)
             return 
         end
 
         -- 'RELEASE' case: same logic as press, but for when the input is released.
         if InputEventType == "Release" then 
-            self:SetActive(InputName, true)
-            self:SetActive(InputName, false)
+            self:SetActive(InputName,inputObject, true)
+            self:SetActive(InputName,inputObject, false)
             return 
         end
     end

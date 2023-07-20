@@ -6,6 +6,7 @@ local Maid = require(ReplicatedStorage:WaitForChild("Packages"):WaitForChild("Ma
 --modules
 local InputHandler = require(ReplicatedStorage:WaitForChild("Client"):WaitForChild("InputHandler"))
 local GuiSys = require(ReplicatedStorage:WaitForChild("Client"):WaitForChild("GuiSys"))
+local OptimizationSys = require(ReplicatedStorage:WaitForChild("Client"):WaitForChild("OptimizationSys"))
 --types
 --constants
 --variables
@@ -13,6 +14,8 @@ local GuiSys = require(ReplicatedStorage:WaitForChild("Client"):WaitForChild("Gu
 local maid = Maid.new()
 --local functions
 --class
-InputHandler.new(true)
+maid:GiveTask(InputHandler.new(true))
+
 GuiSys.init(maid)
+OptimizationSys.init(maid)
 
