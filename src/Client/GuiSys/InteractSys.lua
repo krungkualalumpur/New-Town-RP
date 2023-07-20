@@ -14,6 +14,9 @@ local ColdFusion = require(ReplicatedStorage:WaitForChild("Packages"):WaitForChi
 
 --modules
 local InputHandler = require(ReplicatedStorage:WaitForChild("Client"):WaitForChild("InputHandler"))
+
+local InteractableUtil = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("InteractableUtil"))
+
 --types
 type Maid = Maid.Maid
 
@@ -49,7 +52,8 @@ local function createInteract(maid : Maid, interactFrame : Frame, interactNameTa
             if inst then
                 assert(CollectionService:HasTag(inst, INTERACTABLE_TAG), "Not tagged as interactable yet!")
                 if (inst) and (interactCode == inputObject.KeyCode) and (inst:HasTag(interactNameTag)) then
-                    NetworkUtil.fireServer(ON_INTERACT, inst)
+                    InteractableUtil.Interact(inst :: Model)
+                   -- NetworkUtil.fireServer(ON_INTERACT, inst)
                 end
             end
             return 
@@ -114,7 +118,7 @@ function interactSys.init(maid : Maid, interactFrame : Frame, interactKeyCode : 
                     local v3,isWithinRange = camera:WorldToScreenPoint(pos)
                     interactFrame.Visible = isWithinRange
                     interactFrame.Position = UDim2.fromOffset(v3.X - interactFrame.AbsoluteSize.X*0.5, v3.Y - interactFrame.AbsoluteSize.Y*0.5)
-                    instancePointer.Value = nearestInst 
+                    instancePointer.Value = nearestInst
                 else
                     interactFrame.Visible = false
                     instancePointer.Value = nil
