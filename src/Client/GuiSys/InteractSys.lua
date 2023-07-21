@@ -50,9 +50,8 @@ local function createInteract(maid : Maid, interactFrame : Frame, interactNameTa
         function(inputObject : InputObject) 
             local inst = instancePointer.Value
             if inst then
-                assert(CollectionService:HasTag(inst, INTERACTABLE_TAG), "Not tagged as interactable yet!")
                 if (inst) and (interactCode == inputObject.KeyCode) and (inst:HasTag(interactNameTag)) then
-                    InteractableUtil.Interact(inst :: Model)
+                    InteractableUtil.Interact(inst :: Model, Player)
                    -- NetworkUtil.fireServer(ON_INTERACT, inst)
                 end
             end
@@ -70,6 +69,14 @@ local function createInteract(maid : Maid, interactFrame : Frame, interactNameTa
             currentInputKeyCodeState:Set(interactCode)
         end
     end))
+
+    CollectionService:GetInstanceAddedSignal(interactNameTag):Connect(function(inst)
+        table.insert(Interactables, inst)
+    end)
+
+    CollectionService:GetInstanceRemovedSignal(interactNameTag):Connect(function(inst)
+        table.remove(Interactables, table.find(Interactables, inst))
+    end)
 end
 
 --class
@@ -84,15 +91,10 @@ function interactSys.init(maid : Maid, interactFrame : Frame, interactKeyCode : 
         end
     end
 
-    CollectionService:GetInstanceAddedSignal(INTERACTABLE_TAG):Connect(function(inst)
-        table.insert(Interactables, inst)
-    end)
-
-    CollectionService:GetInstanceRemovedSignal(INTERACTABLE_TAG):Connect(function(inst)
-        table.remove(Interactables, table.find(Interactables, inst))
-    end)
+    
 
     createInteract(maid, interactFrame, "Interactable", "E", Enum.KeyCode.E, interactKeyCode)
+    createInteract(maid, interactFrame, "Tool", "F", Enum.KeyCode.F, interactKeyCode)
 
     --loop to find the nearest
     do

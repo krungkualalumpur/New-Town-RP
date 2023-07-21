@@ -5,16 +5,22 @@ local CollectionService = game:GetService("CollectionService")
 local RunService = game:GetService("RunService")
 local Players = game:GetService("Players")
 --packages
+local Maid = require(ReplicatedStorage:WaitForChild("Packages"):WaitForChild("Maid"))
 local NetworkUtil = require(ReplicatedStorage:WaitForChild("Packages"):WaitForChild("NetworkUtil"))
 --modules
+local ToolActions = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("ToolActions"))
 --types
 export type InteractableData = {
     Class : string,
     IsSwitch : boolean ?
 }
 --constants
-local ON_INTERACT = "On_Interact"
 local SOUND_NAME = "SFX"
+
+--remotes
+local ON_INTERACT = "On_Interact"
+local ON_TOOL_INTERACT = "On_Tool_Interact"
+
 --references
 --variables
 --local functions
@@ -78,16 +84,22 @@ function Interactable.setData(model : Model, data : InteractableData)
     return nil 
 end
 
-function Interactable.Interact(model : Model)
-    if model.PrimaryPart then
+function Interactable.Interact(model : Model, player : Player)
+    --if model.PrimaryPart then
         if CollectionService:HasTag(model, "Door") or CollectionService:HasTag(model, "Window") then
             Interactable.InteractSwing(model,true)
+        end 
+
+        
+        if CollectionService:HasTag(model, "Tool") then
+            Interactable.InteractToolGiver(model, player)
         end
 
         local interactableData = Interactable.getData(model)
-        if (CollectionService:HasTag(model, "Switch")) and (interactableData.Class) and (interactableData.IsSwitch ~= nil) then
+        if (interactableData.Class) and (interactableData.IsSwitch ~= nil) then
             Interactable.InteractSwitch(model)
         end
+
         --just for fun :P
         --local exp = Instance.new("Explosion")
         --exp.BlastRadius = 35
@@ -96,14 +108,92 @@ function Interactable.Interact(model : Model)
         --exp.Position = model.PrimaryPart.Position
         --exp.Parent = workspace
        
-    end
+   -- end
 end
 
-function Interactable.InteractToolGiver(model : Model)
+function Interactable.InteractToolGiver(model : Model, player : Player)
+    local function createWeld(handle: BasePart, part: BasePart)
+        local weld = Instance.new("WeldConstraint")
+        weld.Part0 = part
+        weld.Part1 = handle 
+        weld.Parent = handle
+        return weld
+    end
+    
+    local function createTool(inst : Instance)
+        local tool = Instance.new("Tool")
+        local clonedInst = inst:Clone()
+        clonedInst.Parent = tool
+        if clonedInst:IsA("BasePart") then clonedInst.Anchored = false end
+        for _,v in pairs(clonedInst:GetDescendants()) do
+            if v:IsA("BasePart") then
+                v.Anchored = false
+            end
+        end
+        tool.Name = clonedInst.Name
+
+        --adds handle
+        local cf, size 
+        if clonedInst:IsA("Model") then
+            cf, size =  clonedInst:GetBoundingBox()
+        elseif clonedInst:IsA("BasePart") then
+            cf, size = clonedInst.CFrame, clonedInst.Size
+        else 
+            cf, size = CFrame.new(), Vector3.new()
+        end
+
+        local handle = Instance.new("Part")
+        handle.Name = "Handle"
+        handle.CanCollide = false
+        handle.Transparency = 1
+        handle.CFrame, handle.Size = cf, size
+        handle.Parent = tool
+        --welds
+        if clonedInst:IsA("BasePart") then
+            createWeld(handle, clonedInst)
+        end
+        for _,v in pairs(clonedInst:GetDescendants()) do
+            if v:IsA("BasePart") then
+                createWeld(handle, v)
+            end
+        end
+
+        --func
+        local maid = Maid.new()
+        maid:GiveTask(tool.Activated:Connect(function()
+            local character = player.Character 
+            if character then    
+                local toolAction = ToolActions.getActionInfo(model:GetAttribute("ToolClass"))
+                toolAction.Activated(inst, character:WaitForChild("Humanoid") :: Humanoid)
+            end
+        end))
+        maid:GiveTask(tool.Destroying:Connect(function()
+            maid:Destroy()
+        end))
+        return tool
+    end
+
+    if RunService:IsServer() then
+        if not model:GetAttribute("DescendantsAreTools") then
+            createTool(model).Parent = player:WaitForChild("Backpack")
+        else
+            for _,v in pairs(model:GetChildren()) do
+                if v:GetAttribute("IsTool") then
+                    createTool(v).Parent = player:WaitForChild("Backpack")
+                end
+            end
+        end
+    else
+        NetworkUtil.fireServer(ON_TOOL_INTERACT, model)
+    end
+    
     return
 end
 
 function Interactable.InteractSwitch(model : Model)
+    local IsWaterAttributeKey = "IsWater"
+    local IsParticleAttributeKey = "IsParticle"
+
     local data = Interactable.getData(model)
     assert(data.IsSwitch ~= nil, "IsSwitch attribute non-existant!")
     
@@ -123,30 +213,102 @@ function Interactable.InteractSwitch(model : Model)
             end
         end
     end
+
     if data.IsSwitch then
         if data.Class == "Blind" then
             adjustModel(model, function(part : BasePart)
                 switchTransparency(part, true)
             end, 3657933537)
         elseif data.Class == "Water" then
+            print("Wala2")
             adjustModel(model, function(part : BasePart)
-                if part:GetAttribute("isWater") then
-                    switchTransparency(part, true)
+                if part:GetAttribute(IsWaterAttributeKey) ~= nil then
+                    part.Transparency = 0.5
+                end
+                if part:GetAttribute(IsParticleAttributeKey) ~= nil then
+                    local particleEmitter = part:FindFirstChild("ParticleEmitter") :: ParticleEmitter ?
+                    if particleEmitter then
+                        particleEmitter.Enabled = true
+                    end
                 end
             end, 2218767018, true)
+        elseif data.Class == "Circuit" then
+            local SwitchPartName = "SwitchPart"
+            if RunService:IsClient() then
+                NetworkUtil.fireServer(ON_INTERACT, model)
+                return
+            end
+
+            local circuitModel = if model.Parent and model.Parent.Parent and model.Parent.Parent:GetAttribute("IsCircuitModel") then model.Parent.Parent else nil
+            assert(circuitModel, "No circuit model detected!")
+            local lampSwitchPart = model:FindFirstChild(SwitchPartName)
+
+            for _,lampModel in pairs(circuitModel:GetChildren()) do
+                if CollectionService:HasTag(lampModel, "Lamp") then
+                    for _, light in pairs(lampModel:GetDescendants()) do
+                        if light:IsA("Light") then
+                            light.Enabled = true
+                            local neonPart = light.Parent :: BasePart ?
+                            if neonPart then
+                                neonPart.Material = Enum.Material.Neon
+                            end
+                        end
+                    end
+                end
+            end
+            if lampSwitchPart then
+                playSound(9125620381, false,  lampSwitchPart)
+            end
         end
+
     else
+
         if data.Class == "Blind" then
             adjustModel(model, function(part : BasePart)
                 switchTransparency(part, false)
             end, 3657935906)
         elseif data.Class == "Water" then
+            print("Wala1")
             adjustModel(model, function(part : BasePart)
-                if part:GetAttribute("isWater") then
-                    switchTransparency(part, false)
+                if part:GetAttribute(IsWaterAttributeKey) ~= nil then
+                    part.Transparency = 1
                 end
-            end, 2218767018, true)
+                if part:GetAttribute(IsParticleAttributeKey) ~= nil then
+                    local particleEmitter = part:FindFirstChild("ParticleEmitter") :: ParticleEmitter ?
+                    if particleEmitter then
+                        particleEmitter.Enabled = false
+                    end
+                end
+            end)
+        elseif data.Class == "Circuit" then
+            local SwitchPartName = "SwitchPart"
+            if RunService:IsClient() then
+                NetworkUtil.fireServer(ON_INTERACT, model)
+                return
+            end
+
+            local circuitModel = if model.Parent and model.Parent.Parent and model.Parent.Parent:GetAttribute("IsCircuitModel") then model.Parent.Parent else nil
+            assert(circuitModel, "No circuit model detected!")
+            local lampSwitchPart = model:FindFirstChild(SwitchPartName)
+
+            for _,lampModel in pairs(circuitModel:GetChildren()) do
+                if CollectionService:HasTag(lampModel, "Lamp") then
+                    for _, light in pairs(lampModel:GetDescendants()) do
+                        if light:IsA("Light") then
+                            light.Enabled = false
+                            local neonPart = light.Parent :: BasePart ?
+                            if neonPart then
+                                neonPart.Material = Enum.Material.SmoothPlastic
+                            end
+                        end
+                    end
+                end
+            end
+            if lampSwitchPart then
+                playSound(9125620381, false,  lampSwitchPart)
+            end
         end
+
     end
 end
 

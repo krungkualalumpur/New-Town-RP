@@ -12,7 +12,8 @@ local InteractableUtil = require(ReplicatedStorage:WaitForChild("Shared"):WaitFo
 --types
 --constants
 local ON_INTERACT = "On_Interact"
- 
+local ON_TOOL_INTERACT = "On_Tool_Interact"
+
 --references
 --variables
 --class
@@ -20,11 +21,5 @@ return {
     init = function(maid)
         Artificial.init(maid)
         Nature.init(maid)
-
-        maid:GiveTask(NetworkUtil.onServerEvent(ON_INTERACT, function(plr : Player, inst : Instance)
-            if inst:IsA("Model") then
-                InteractableUtil.Interact(inst)
-            end
-        end))
     end
 }
