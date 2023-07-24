@@ -34,8 +34,9 @@ local ON_INTERACT = "On_Interact"
 local Interactables = {} :: {[number] : Model}
 --references
 local Player = Players.LocalPlayer
+local Mouse = Player:GetMouse()
 --local functions
-local function createInteract(maid : Maid, interactFrame : Frame, interactNameTag : string, interactInputKey : string, interactCode : Enum.KeyCode, currentInputKeyCodeState : ValueState<Enum.KeyCode>)
+local function createInteract(maid : Maid, interactFrame : Frame, interactNameTag : string, interactInputKey : string, interactCode : Enum.KeyCode | Enum.UserInputType, currentInputKeyCodeState : ValueState<Enum.KeyCode | Enum.UserInputType>)
     local instancePointer = interactFrame:FindFirstChild("InstancePointer") :: ObjectValue    
 
     InputHandler:Map(
@@ -45,9 +46,11 @@ local function createInteract(maid : Maid, interactFrame : Frame, interactNameTa
         "Press" ,
         function(inputObject : InputObject) 
             local inst = instancePointer.Value
-            if inst then
-                if (inst) and (interactCode == inputObject.KeyCode) and (inst:HasTag(interactNameTag)) then
-                    InteractableUtil.Interact(inst :: Model, Player)
+            if (inst) then
+                if  (inst:HasTag(interactNameTag)) then
+                    if (interactCode == inputObject.KeyCode) then 
+                        InteractableUtil.Interact(inst :: Model, Player)                        
+                    end
                    -- NetworkUtil.fireServer(ON_INTERACT, inst)
                 end
             end
@@ -66,30 +69,70 @@ local function createInteract(maid : Maid, interactFrame : Frame, interactNameTa
         end
     end))
 
-    CollectionService:GetInstanceAddedSignal(interactNameTag):Connect(function(inst)
-        table.insert(Interactables, inst)
-    end)
+    if interactCode.EnumType == Enum.KeyCode then
+        for _,v: Model in pairs(CollectionService:GetTagged(interactNameTag)) do
+            if v:IsA("Model") then
+                table.insert(Interactables, v)
+            end
+        end
+        CollectionService:GetInstanceAddedSignal(interactNameTag):Connect(function(inst)
+            table.insert(Interactables, inst)
+        end)
 
-    CollectionService:GetInstanceRemovedSignal(interactNameTag):Connect(function(inst)
-        table.remove(Interactables, table.find(Interactables, inst))
-    end)
+        CollectionService:GetInstanceRemovedSignal(interactNameTag):Connect(function(inst)
+            table.remove(Interactables, table.find(Interactables, inst))
+        end)
+    elseif interactCode.EnumType == Enum.UserInputType then
+        local _fuse = ColdFusion.fuse(maid)
+        local _new = _fuse.new
+        local _import = _fuse.import
+        local _bind = _fuse.bind
+        local _clone = _fuse.clone
+        
+        local _Computed = _fuse.Computed
+        local _Value = _fuse.Value
+
+        for _,inst in pairs(CollectionService:GetTagged(interactNameTag)) do
+            local _maid = Maid.new()
+
+            _maid:GiveTask(_new("BillboardGui")({
+                AlwaysOnTop = true,
+                MaxDistance = MAXIMUM_INTERACT_DISTANCE,
+                Size = UDim2.fromScale(0.8, 0.8),
+                Parent = inst,
+                Children = {
+                    _new("ImageLabel")({
+                        BackgroundTransparency = 1,
+                        Size = UDim2.fromScale(1, 1),
+                        Image = "rbxassetid://12804017021"
+                    })
+                }
+            }))
+
+            local clickDetector = Instance.new("ClickDetector")
+            clickDetector.MaxActivationDistance = 18
+            clickDetector.Parent = inst
+            
+            _maid:GiveTask(clickDetector.MouseClick:Connect(function()
+                InteractableUtil.Interact(inst :: Model, Player)                        
+            end))
+
+            _maid:GiveTask(clickDetector.Destroying:Connect(function()
+                _maid:Destroy()
+            end))
+        end
+    end
 end
 
 --class
 local interactSys = {}
 
-function interactSys.init(maid : Maid, interactFrame : Frame, interactKeyCode : ValueState<Enum.KeyCode>)   
+function interactSys.init(maid : Maid, interactFrame : Frame, interactKeyCode : ValueState<Enum.KeyCode | Enum.UserInputType>)   
     local instancePointer = interactFrame:FindFirstChild("InstancePointer") :: ObjectValue
 
-    for _,v: Model in pairs(CollectionService:GetTagged(INTERACTABLE_TAG)) do
-        if v:IsA("Model") then
-            table.insert(Interactables, v)
-        end
-    end
 
-    
-
-    createInteract(maid, interactFrame, "Interactable", "E", Enum.KeyCode.E, interactKeyCode)
+    createInteract(maid, interactFrame, "Interactable", "Interact", Enum.KeyCode.E, interactKeyCode)
+    createInteract(maid, interactFrame, "ClickInteractable", "ClickToInteract", Enum.UserInputType.MouseButton1, interactKeyCode)
     createInteract(maid, interactFrame, "Tool", "F", Enum.KeyCode.F, interactKeyCode)
 
     --loop to find the nearest

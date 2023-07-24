@@ -11,6 +11,12 @@ local InteractSys = require(ReplicatedStorage:WaitForChild("Client"):WaitForChil
 local InteractUI = require(ReplicatedStorage:WaitForChild("Client"):WaitForChild("InteractUI"))
 --types
 type Maid = Maid.Maid
+
+type Fuse = ColdFusion.Fuse
+type State<T> = ColdFusion.State<T>
+type ValueState<T> = ColdFusion.ValueState<T>
+type CanBeState<T> = ColdFusion.State<T>
+
 type GuiSys = {
     __index : GuiSys,
     InteractUI : GuiObject,
@@ -39,7 +45,7 @@ function guiSys.new(maid : Maid)
     local _Computed = _fuse.Computed
     local _Value = _fuse.Value
     
-    local interactKeyCode = _Value(Enum.KeyCode.E)
+    local interactKeyCode : ValueState<Enum.KeyCode | Enum.UserInputType> = _Value(Enum.KeyCode.E) :: any
     
     local self : GuiSys = setmetatable({}, guiSys) :: any
     self.InteractUI = InteractUI(maid, interactKeyCode)

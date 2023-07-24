@@ -19,7 +19,7 @@ return function(target : CoreGui)
 
     local _Value = _fuse.Value
 
-    local out = InteractUI(maid, _Value(Enum.KeyCode.E))
+    local out = InteractUI(maid, _Value(Enum.UserInputType.MouseButton1))
     out.Parent = target
 
     return function() 

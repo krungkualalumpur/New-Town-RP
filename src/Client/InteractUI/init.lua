@@ -14,7 +14,7 @@ type ValueState<T> = ColdFusion.ValueState<T>
 type CanBeState<T> = ColdFusion.State<T>
 
 --constants
-local PADDING_SIZE =  UDim.new(0, 10)
+local PADDING_SIZE =  UDim.new(0, 5)
 
 local BACKGROUND_COLOR = Color3.fromRGB(200,200,200)
 --variables
@@ -23,7 +23,7 @@ local BACKGROUND_COLOR = Color3.fromRGB(200,200,200)
 --class
 return function(
     maid : Maid,
-    interactKeyCode : State<Enum.KeyCode>
+    interactKeyCode : State<Enum.KeyCode | Enum.UserInputType>
 )
     local _fuse = ColdFusion.fuse(maid)
     local _new = _fuse.new
@@ -45,18 +45,36 @@ return function(
             }),
             _new("UIListLayout")({
                 FillDirection = Enum.FillDirection.Horizontal,
+                SortOrder = Enum.SortOrder.LayoutOrder
             }),
             _new("UICorner")({}),
 
-            _new("TextLabel")({
+            _new("TextButton")({
+                LayoutOrder = 1,
+                Visible = _Computed(function(keyCode : Enum.KeyCode | Enum.UserInputType)
+                    return (keyCode.EnumType == Enum.KeyCode)
+                end, interactKeyCode),
                 Size = UDim2.fromScale(0.25, 1),
                 BackgroundColor3 = BACKGROUND_COLOR,
                 TextScaled = true,
-                Text =  _Computed(function(keyCode : Enum.KeyCode)
+                Text =  _Computed(function(keyCode : Enum.KeyCode | Enum.UserInputType)
                     return keyCode.Name
                 end, interactKeyCode)
             }),
+            _new("ImageButton")({
+                LayoutOrder = 1,
+                Visible = _Computed(function(userInputType : Enum.KeyCode | Enum.UserInputType)
+                    return (userInputType.EnumType == Enum.UserInputType)
+                end, interactKeyCode),
+                Size = UDim2.fromScale(0.25, 1),
+                BackgroundColor3 = BACKGROUND_COLOR,
+                Image =  _Computed(function(userInputType : Enum.KeyCode | Enum.UserInputType)
+                    return if userInputType == Enum.UserInputType.MouseButton1 then "rbxassetid://13353032921" else ""
+                end, interactKeyCode)
+            }),
+
             _new("TextLabel")({
+                LayoutOrder = 2,
                 Size = UDim2.fromScale(0.75, 1),
                 Text = "Interact",
             }),

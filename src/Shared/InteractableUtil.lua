@@ -98,8 +98,11 @@ function Interactable.Interact(model : Model, player : Player)
         local interactableData = Interactable.getData(model)
         if (interactableData.Class) and (interactableData.IsSwitch ~= nil) then
             Interactable.InteractSwitch(model)
+        elseif (interactableData.Class) and interactableData.IsSwitch == nil then
+            Interactable.InteractNonSwitch(model, player)
         end
 
+        
         --just for fun :P
         --local exp = Instance.new("Explosion")
         --exp.BlastRadius = 35
@@ -316,6 +319,60 @@ function Interactable.InteractSwitch(model : Model)
         end
 
     end
+end
+
+function Interactable.InteractNonSwitch(model : Model, plr : Player)
+    local data = Interactable.getData(model)
+    
+    if data.Class == "CharacterCustomization" then
+        if RunService:IsClient() then             
+            NetworkUtil.fireServer(ON_INTERACT, model)
+            return 
+        end
+
+        local function CustomeReplacement(character : Model, instClassName : "Shirt" | "Pants" , id : number)
+            local foundInst = character:FindFirstChild(instClassName) :: Instance  -- Tries to find Shirt
+            if not foundInst then -- if there is no shirt
+                local newInst = Instance.new(instClassName) 
+                newInst.Name = instClassName
+                foundInst = newInst
+            elseif foundInst then -- if there is a shirt
+                foundInst:Destroy()
+                local newInst = Instance.new(instClassName :: "Shirt" | "Pants")
+                newInst.Name = instClassName
+                foundInst = newInst 
+            end
+            if foundInst:IsA("Shirt") then
+                print("aphe2", id, foundInst)
+                foundInst.ShirtTemplate = "rbxassetid://" .. tostring(id)
+                print(foundInst.ShirtTemplate)
+            elseif foundInst:IsA("Pants") then
+                print("aphe3", id, foundInst)
+                foundInst.PantsTemplate = "rbxassetid://" .. tostring(id)
+            end
+            foundInst.Parent = character
+        end
+
+        local character = plr.Character
+        if character and model:GetAttribute("HasShirt") then
+            for _,v in pairs(model:GetDescendants()) do
+                if v:IsA("Shirt") then -- shirt
+                    local idNum = tonumber(string.match(v.ShirtTemplate, "%d+"))
+                    if idNum then
+                        CustomeReplacement(character, "Shirt", idNum)
+                    end
+                elseif v:IsA("Pants") then -- pants
+                    local idNum = tonumber(string.match(v.PantsTemplate, "%d+"))
+                    if idNum then
+                        CustomeReplacement(character, "Pants", idNum)
+                    end
+                end
+            end
+        else
+
+        end
+    end
+        
 end
 
 function Interactable.InteractSwing(model : Model,on : boolean)
