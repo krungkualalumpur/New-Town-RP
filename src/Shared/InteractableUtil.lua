@@ -241,7 +241,7 @@ function Interactable.InteractSwitch(model : Model)
 
             local circuitModel = if model.Parent and model.Parent.Parent and model.Parent.Parent:GetAttribute("IsCircuitModel") then model.Parent.Parent else nil
             assert(circuitModel, "No circuit model detected!")
-            local lampSwitchPart = model:FindFirstChild(SwitchPartName)
+            local lampSwitchPart = model:FindFirstChild(SwitchPartName) :: BasePart?
 
             for _,lampModel in pairs(circuitModel:GetChildren()) do
                 if CollectionService:HasTag(lampModel, "Lamp") then
@@ -257,6 +257,9 @@ function Interactable.InteractSwitch(model : Model)
                 end
             end
             if lampSwitchPart then
+                local cf = lampSwitchPart.CFrame
+                lampSwitchPart.CFrame = (cf - cf.Position)*CFrame.Angles(-50,0,0) + cf.Position
+
                 playSound(9125620381, false,  lampSwitchPart)
             end
         end
@@ -289,7 +292,7 @@ function Interactable.InteractSwitch(model : Model)
 
             local circuitModel = if model.Parent and model.Parent.Parent and model.Parent.Parent:GetAttribute("IsCircuitModel") then model.Parent.Parent else nil
             assert(circuitModel, "No circuit model detected!")
-            local lampSwitchPart = model:FindFirstChild(SwitchPartName)
+            local lampSwitchPart = model:FindFirstChild(SwitchPartName) :: BasePart ?
 
             for _,lampModel in pairs(circuitModel:GetChildren()) do
                 if CollectionService:HasTag(lampModel, "Lamp") then
@@ -305,6 +308,9 @@ function Interactable.InteractSwitch(model : Model)
                 end
             end
             if lampSwitchPart then
+                local cf = lampSwitchPart.CFrame
+                lampSwitchPart.CFrame = (cf - cf.Position)*CFrame.Angles(50,0,0) + cf.Position
+
                 playSound(9125620381, false,  lampSwitchPart)
             end
         end

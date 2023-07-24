@@ -2,6 +2,7 @@
 --services
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local CollectionService = game:GetService("CollectionService")
+local Players = game:GetService("Players")
 --packages
 local Maid = require(ReplicatedStorage:WaitForChild("Packages"):WaitForChild("Maid"))
 --modules
@@ -12,6 +13,7 @@ type Maid = Maid.Maid
 local ZONE_TAG = "RenderZone"
 --variables
 --references
+local Player = Players.LocalPlayer
 --local functions
 local function getInsideZone(plr : Player, zonePart : Instance)
     print(plr.Name, " entered in zone ", zonePart, " !")
@@ -36,6 +38,8 @@ end
 local optimizationSys = {}
 
 function optimizationSys.init(maid : Maid)
+    local filter = {}
+
     --interior pointers set up
     for _, interior : Model | BasePart in pairs(CollectionService:GetTagged("Interior")) do
         local cf, size
@@ -72,10 +76,19 @@ function optimizationSys.init(maid : Maid)
             parentPointer.Value = interiorInstance.Parent
             parentPointer.Parent = pointer 
         end
-        getOutsideZone(game.Players.LocalPlayer, zonePart)
+       -- getOutsideZone(game.Players.LocalPlayer, zonePart)
+    end
+
+    for _,zonePart in pairs(CollectionService:GetTagged(ZONE_TAG)) do
+        local character = Player.Character or Player.CharacterAdded:Wait()
+        if Zone.ItemIsInside(zonePart, character.PrimaryPart) then
+            getInsideZone(Player, zonePart)
+        else
+            getOutsideZone(Player, zonePart)
+        end
     end
    
-    local zone = Zone.new(CollectionService:GetTagged(ZONE_TAG), maid)
+    local zone = Zone.new(CollectionService:GetTagged(ZONE_TAG), maid, filter)
     zone.playerEntered:Connect(function(plr : Player, zonePart : BasePart)
         if plr == game.Players.LocalPlayer then
             getInsideZone(plr, zonePart)
@@ -89,6 +102,13 @@ function optimizationSys.init(maid : Maid)
         end
         return
     end)
+
+    table.insert(filter, Player.Character)
+
+    maid:GiveTask(Player.CharacterAdded:Connect(function(char)
+        table.clear(filter)
+        table.insert(filter, char)
+    end))
 end
 
 return optimizationSys

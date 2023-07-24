@@ -24,7 +24,7 @@ export type Zone  = {
     __index : Zone,
     _Maid  : Maid,
     
-    new : (ZoneParts : {BasePart} ?, maid : Maid ?) -> Zone,
+    new : (ZoneParts : {BasePart} ?, maid : Maid ?, filters :({[number] : Instance} | Instance) ?) -> Zone,
 
     ZoneParts : {[number] : Maid},
     PlayersInside : {[number] : Player},
@@ -45,6 +45,8 @@ export type Zone  = {
     AddZoneInstance : (Zone, zone : Part) -> nil,
     RemoveZoneInstance : (Zone, zone : Part) -> nil,
 
+	ItemIsInside : (zonePart : BasePart, hit : BasePart) -> boolean,
+
 	Destroy : (Zone) -> nil
 }
 --constants
@@ -56,6 +58,7 @@ local function getMetaIndex(haystack : any, needle : any)
 	local index
 	for k,v in pairs(mt.__index) do
 		if v == needle then
+			--print(v, needle)
 			index = k
 			break
 		end
@@ -157,11 +160,32 @@ local function GetEvent(proxySetTbl : any , getFilter : ((t : any, k : number | 
 	return OnEvent
 end
 
+
+local function checkIfInside(zonePart : BasePart, hit : BasePart)
+	local pos = hit.Position
+	--local snappedPos = NumberUtil.snapVector3(zonePart, pos, 0.1)
+	local size = zonePart.Size + Vector3.new(1,1,1)*hit.Size.Magnitude
+	local snappedRelativePos = zonePart.CFrame:PointToObjectSpace(pos)--local snappedRelativePos = zonePart.CFrame:PointToObjectSpace(snappedPos)
+	--print("X: ", math.floor(math.abs(snappedRelativePos.X)) .. " < =" .. math.ceil(size.X*0.5))
+	--print("Y: ", math.floor(math.abs(snappedRelativePos.Y)) .. " < =" .. math.ceil(size.Y*0.5))
+	--print("Z: ", math.floor(math.abs(snappedRelativePos.Z)) .. " < =" .. math.ceil(size.Z*0.5))
+	--print(pos, snappedRelativePos, hit)
+	if (math.floor(math.abs(snappedRelativePos.X)) <= math.ceil(size.X*0.5)) and  (math.floor(math.abs(snappedRelativePos.Y)) <= math.ceil(size.Y*0.5)) and (math.floor(math.abs(snappedRelativePos.Z)) <= math.ceil(size.Z*0.5)) then 
+		return true			
+	end
+
+	--if table.find(workspace:GetPartBoundsInBox(zonePart.CFrame, size), hit) then
+		--return true
+	--end
+	return false
+end
+
+
 --module
 local Zone = {} :: Zone 
 Zone.__index = Zone
 
-function Zone.new(ZoneParts : {BasePart} ?, maid : Maid ?) 
+function Zone.new(ZoneParts : {BasePart} ?, maid : Maid ?, filters :( {[number] : Instance} | Instance)?) 
 	local self : Zone = setmetatable({}, Zone) :: any
     self._Maid = maid or Maid.new()
 	self.ZoneParts = equipProxy({})
@@ -193,6 +217,7 @@ function Zone.new(ZoneParts : {BasePart} ?, maid : Maid ?)
 	end))
 
 	self.itemEntered =  self._Maid:GiveTask(GetEvent(self.ItemsInside, function(k, i, v) 
+		--print(v, " enteeru")
 		if v and v.hit and v.Zone then 
 			return true 
 		else 
@@ -220,24 +245,6 @@ function Zone.new(ZoneParts : {BasePart} ?, maid : Maid ?)
 		return v
 	end))
 
-	local function checkIfInside(zonePart : BasePart, hit : BasePart)
-		local pos = hit.Position
-		--local snappedPos = NumberUtil.snapVector3(zonePart, pos, 0.1)
-		local size = zonePart.Size + Vector3.new(1,1,1)*hit.Size.Magnitude
-		local snappedRelativePos = zonePart.CFrame:PointToObjectSpace(pos)--local snappedRelativePos = zonePart.CFrame:PointToObjectSpace(snappedPos)
-		--print("X: ", math.floor(math.abs(snappedRelativePos.X)) .. " < =" .. math.ceil(size.X*0.5))
-		--print("Y: ", math.floor(math.abs(snappedRelativePos.Y)) .. " < =" .. math.ceil(size.Y*0.5))
-		--print("Z: ", math.floor(math.abs(snappedRelativePos.Z)) .. " < =" .. math.ceil(size.Z*0.5))
-		if (math.floor(math.abs(snappedRelativePos.X)) <= math.ceil(size.X*0.5)) and  (math.floor(math.abs(snappedRelativePos.Y)) <= math.ceil(size.Y*0.5)) and (math.floor(math.abs(snappedRelativePos.Z)) <= math.ceil(size.Z*0.5)) then 
-			return true			
-		end
-
-		--if table.find(workspace:GetPartBoundsInBox(zonePart.CFrame, size), hit) then
-			--return true
-		--end
-		return false
-	end
-
 	local function onHitEnter(zone, hit)
 		--need to roundify number lah
 		--if not checkIfInside(part, hit.Position) then return end
@@ -246,24 +253,27 @@ function Zone.new(ZoneParts : {BasePart} ?, maid : Maid ?)
 		local hitInfo
 		if mt and mt.__index then 
 			for _, existingHitInfo in pairs(mt.__index) do
-				if existingHitInfo.hit == hit then
+				if existingHitInfo.hit == hit and existingHitInfo.Zone == zone then
 					hitInfo = existingHitInfo
 				end
 			end
 		end
 		
+		--print(hitInfo,  " enter")
 		if not hitInfo then
+			--print("lagie")
 			local enterMaid = Maid.new()
 			local success =  onAddSignal(self.ItemsInside, {hit = hit, Zone = zone, Maid = enterMaid}) 
 
 			if success then
+				--print('3')
 				local player = if hit.Parent and hit.Parent:IsA("Model")  and (hit.Parent.PrimaryPart == hit) then game:GetService("Players"):GetPlayerFromCharacter(hit.Parent) else nil
 				if player then
 					local plrInfo	
 					local plrMt = getmetatable(self.PlayersInside :: any)
 					if plrMt and plrMt.__index then 
 						for _, existingPlrInfo in pairs(plrMt.__index) do
-							if existingPlrInfo.Player == player then
+							if existingPlrInfo.Player == player and existingPlrInfo.Zone == zone then
 								plrInfo = existingPlrInfo
 							end
 						end
@@ -284,12 +294,12 @@ function Zone.new(ZoneParts : {BasePart} ?, maid : Maid ?)
 		local hitInfo
 		if mt and mt.__index then 
 			for _, existingHitInfo in pairs(mt.__index) do
-				if existingHitInfo.hit == hit then
+				if existingHitInfo.hit == hit and existingHitInfo.Zone == zone then
 					hitInfo = existingHitInfo
 				end
 			end
 		end
-		
+		--print(hitInfo, " quiit")
 		if not hitInfo then return end
 		local success = onQuitSignal(self.ItemsInside, self._itemsQuitted, hitInfo)
 		if success then
@@ -300,7 +310,7 @@ function Zone.new(ZoneParts : {BasePart} ?, maid : Maid ?)
 				local plrMt = getmetatable(self.PlayersInside :: any)
 				if plrMt and plrMt.__index then 
 					for _, existingPlrInfo in pairs(plrMt.__index) do
-						if existingPlrInfo.Player == player then
+						if existingPlrInfo.Player == player and existingPlrInfo.Zone == zone then
 							plrInfo = existingPlrInfo
 						end
 					end
@@ -313,11 +323,49 @@ function Zone.new(ZoneParts : {BasePart} ?, maid : Maid ?)
 		end
 	end
 
+	--tracking
+    self._Maid:GiveTask(self.itemEntered:Connect(function(hit : BasePart, zonePart : BasePart) 
+		local _maid = Maid.new()
+		_maid:GiveTask(RunService.Stepped:Connect(function()
+			local isInside = checkIfInside(zonePart, hit)
+			if not isInside then
+				_maid:Destroy()
+				onHitQuit(zonePart, hit)
+			end
+		end))
+
+		--detect on distroy...
+		_maid:GiveTask(hit.Destroying:Connect(function()
+			_maid:Destroy()
+			onHitQuit(zonePart, hit)
+		end))
+		_maid:GiveTask(zonePart.Destroying:Connect(function()
+			_maid:Destroy()
+		end))
+
+		return nil
+	end))
+
+
+	--zone signals
 	self._Maid:GiveTask(self.onZoneAdded:Connect(function(_maid : Maid)
         local part : Part = _maid.Zone :: any
 		--REMEMBER MAID LATER FOR DIS!
 		_maid:GiveTask(part.Touched:Connect(function(hit : BasePart)
-			onHitEnter(part, hit)
+			if not filters then
+				onHitEnter(part, hit)
+			elseif (typeof(filters) == "Instance") then
+				if (filters == hit) or (hit:IsDescendantOf(filters)) then
+					onHitEnter(part, hit)
+				end
+			elseif (typeof(filters) == "table") then
+				for _,filter in pairs(filters) do
+					if (filter == hit) or (hit:IsDescendantOf(filter)) then
+						onHitEnter(part, hit)
+						break
+					end
+				end
+			end
 		end))
 
 
@@ -349,34 +397,10 @@ function Zone.new(ZoneParts : {BasePart} ?, maid : Maid ?)
 	for i,v in pairs(ZoneParts or {}) do
         local _maid = Maid.new()
         _maid.Zone = v
-        print(v, _maid.Zone)
+     --   print(v, _maid.Zone)
 		self.ZoneParts[i] = _maid
 		task.wait()
 	end
-
-	--tracking
-    self._Maid:GiveTask(self.itemEntered:Connect(function(hit : BasePart, zonePart : BasePart) 
-		local _maid = Maid.new()
-		_maid:GiveTask(RunService.Stepped:Connect(function()
-			local isInside = checkIfInside(zonePart, hit)
-			if not isInside then
-				_maid:Destroy()
-				onHitQuit(zonePart, hit)
-			end
-		end))
-
-		--detect on distroy...
-		_maid:GiveTask(hit.Destroying:Connect(function()
-			_maid:Destroy()
-			onHitQuit(zonePart, hit)
-		end))
-		_maid:GiveTask(zonePart.Destroying:Connect(function()
-			_maid:Destroy()
-		end))
-
-		return nil
-	end))
-
 	--test only
 	--self._Maid:GiveTask(self.itemExited:Connect(function(v, zonePart)
 
@@ -419,6 +443,7 @@ function Zone:RemoveZoneInstance(zone : Part)
     return nil
 end
 
+
 function Zone:Destroy()
 	self._Maid:Destroy()
 
@@ -434,5 +459,7 @@ function Zone:Destroy()
 	setmetatable(self, nil)
 	return nil
 end
+
+Zone.ItemIsInside = checkIfInside
 
 return Zone

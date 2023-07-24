@@ -36,11 +36,7 @@ local Interactables = {} :: {[number] : Model}
 local Player = Players.LocalPlayer
 --local functions
 local function createInteract(maid : Maid, interactFrame : Frame, interactNameTag : string, interactInputKey : string, interactCode : Enum.KeyCode, currentInputKeyCodeState : ValueState<Enum.KeyCode>)
-    local instancePointer = interactFrame:FindFirstChild("InstancePointer") :: ObjectValue
-
-   
-    print(#Interactables, interactNameTag)
-    
+    local instancePointer = interactFrame:FindFirstChild("InstancePointer") :: ObjectValue    
 
     InputHandler:Map(
         interactInputKey, 
@@ -115,7 +111,7 @@ function interactSys.init(maid : Maid, interactFrame : Frame, interactKeyCode : 
                         end
                     end
                 end
-                if nearestInst then
+                if nearestInst and not nearestInst:GetAttribute("IsClick") then
                     local pos = if nearestInst.PrimaryPart then nearestInst.PrimaryPart.Position else nearestInst:GetBoundingBox().Position
                     local v3,isWithinRange = camera:WorldToScreenPoint(pos)
                     interactFrame.Visible = isWithinRange
