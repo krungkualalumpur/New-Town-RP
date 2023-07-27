@@ -97,8 +97,8 @@ local function createInteract(maid : Maid, interactFrame : Frame, interactNameTa
 
             _maid:GiveTask(_new("BillboardGui")({
                 AlwaysOnTop = true,
-                MaxDistance = MAXIMUM_INTERACT_DISTANCE,
-                Size = UDim2.fromScale(0.8, 0.8),
+                MaxDistance = MAXIMUM_INTERACT_DISTANCE*0.5,
+                Size = UDim2.fromScale(0.6, 0.6),
                 Parent = inst,
                 Children = {
                     _new("ImageLabel")({
