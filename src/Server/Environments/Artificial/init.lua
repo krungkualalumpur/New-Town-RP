@@ -6,6 +6,7 @@ local ServerScriptService = game:GetService("ServerScriptService")
 --modules
 local Elevator = require(ServerScriptService:WaitForChild("Server"):WaitForChild("Environments"):WaitForChild("Artificial"):WaitForChild("Elevator"))
 local Seat = require(ServerScriptService:WaitForChild("Server"):WaitForChild("Environments"):WaitForChild("Artificial"):WaitForChild("Seat"))
+local Minigame = require(ServerScriptService:WaitForChild("Server"):WaitForChild("Environments"):WaitForChild("Artificial"):WaitForChild("Minigame"))
 --types
 --constants
 --references
@@ -15,5 +16,6 @@ return {
     init = function(maid)
         Elevator.init(maid)
         Seat.init(maid)
+        Minigame.init(maid)
     end
 }

@@ -31,6 +31,8 @@ export type Elevator = {
 	UpdateCurrentFloor : (Elevator) -> (),
 	InsertFloorQueue : (Elevator, floorDest : BasePart, CallDirection : Direction ?) -> (),
 	UpdateUI : (Elevator) -> (),
+	ResetElevator : (Elevator) -> (),
+	Destroy : (Elevator) -> (),
 	init : (maid : Maid) -> ()
 }
 --constants
@@ -213,13 +215,15 @@ Elevator.__index = Elevator
 
 function Elevator.new(elevatorModel : Model)
     local self : Elevator = setmetatable({}, Elevator) :: any 
-    self._queue = {}
+	self._Maid = Maid.new()
+	self._queue = {}
 	self._callUpQueue = {}
 	self._callDownQueue = {}
     self.CurrentFloor = ""
 	self.Status = "Ascending"
-    self.Model = elevatorModel
-	self._Maid = Maid.new()
+    self.Model = self._Maid:GiveTask(elevatorModel)
+
+	self._Maid.BackupModel = self.Model:Clone()
 
 	local elevCageModel = self.Model:FindFirstChild("Elevator") :: Model
     local elevPart = elevCageModel.PrimaryPart :: BasePart
@@ -244,6 +248,7 @@ function Elevator.new(elevatorModel : Model)
 	
 	local highestFloor
 	local lowestFloor
+	--print(floors)
 	if floors then
 		for _,floorPart in pairs(floors:GetChildren()) do
 			if floorPart:IsA("BasePart") then
@@ -261,7 +266,6 @@ function Elevator.new(elevatorModel : Model)
 
 		--init buttons
 		if buttons  then 
-
 			for _,v in pairs(buttons:GetChildren()) do
 				if v:IsA("Model") and v.PrimaryPart then
 					local textPart = v:FindFirstChild("TextPart") :: BasePart ?
@@ -340,8 +344,7 @@ function Elevator.new(elevatorModel : Model)
 				local upClickDetector = Instance.new("ClickDetector")
 				upClickDetector.MaxActivationDistance = 32
 				upClickDetector.Parent = upButton
-			
-
+				
 				self._Maid:GiveTask(upClickDetector.MouseClick:Connect(function()
 					--print("Mba")
 					local floor = floors:FindFirstChild(gateModel.Name) :: BasePart ?
@@ -440,7 +443,7 @@ function Elevator:InsertFloorQueue(floorDest, buttonCall : Direction ?)
 						return a > b
 					end)
 				end	]]
-				print(self._queue)
+				--print(self._queue)
 			end
 		elseif buttonCall == "Ascending" then
 			if not table.find(self._callUpQueue, floorDest.Name) then
@@ -527,9 +530,11 @@ function Elevator:InsertFloorQueue(floorDest, buttonCall : Direction ?)
 		end]]
 		local arrivedFloorPart
 		local intDir
-		self._Maid.ElevatorMovement = RunService.Stepped:Connect(function()
-			local t0 = tick()
-			
+
+		local timeoutMaxTolerance, currentRate = 6, 0 --seconds of error tolerance
+		local intInterval = tick() -- for checking
+
+		self._Maid.ElevatorMovement = RunService.Stepped:Connect(function()			
 			self:UpdateCurrentFloor()
 			self:UpdateUI()
 
@@ -546,7 +551,22 @@ function Elevator:InsertFloorQueue(floorDest, buttonCall : Direction ?)
 				end
 				--arrived = true
 			end
-			print(elevCageModel.PrimaryPart.AssemblyLinearVelocity.Magnitude, ": elev veloc")
+
+			--checking if elev is stuck
+			if (tick() - intInterval) >= 1 then
+				intInterval = tick()
+				if (not elevCageModel.PrimaryPart) or (math.floor(elevCageModel.PrimaryPart.AssemblyLinearVelocity.Magnitude) == 0) then  --if got flung out
+					currentRate += 1
+				else
+					currentRate = 0
+				end
+				print(currentRate, " : current tolerance rate")
+				if currentRate >= timeoutMaxTolerance then
+					self:ResetElevator()
+					--print('TUIT TUIT RESPAWN THOIMMEE TUIT TUIT!')
+					return
+				end
+			end
 
 			--print(floorList[self.CurrentFloor], floorList)
 			if arrivedFloorPart then	
@@ -707,8 +727,8 @@ function Elevator:UpdateUI()
     local prismaticConstraint = elevPart:FindFirstChild("PrismaticConstraint") :: PrismaticConstraint
 	local elevatorGates = self.Model:FindFirstChild("ElevatorGates")
 
-	local floorIndicationPart = elevCageModel:FindFirstChild("Indications"):FindFirstChild("FloorLabel") 
-	local floorNameText = floorIndicationPart:FindFirstChild("SurfaceGui"):FindFirstChild("FloorName") :: TextLabel
+	local floorIndicationPart = elevCageModel:WaitForChild("Indications"):WaitForChild("FloorLabel") 
+	local floorNameText = floorIndicationPart:WaitForChild("SurfaceGui"):WaitForChild("FloorName") :: TextLabel
 
 	local floordisplay = (if prismaticConstraint.Velocity == 0 then "" elseif self.Status == "Ascending" then '⬆️' else '⬇️') .. self.CurrentFloor
 	
@@ -723,8 +743,9 @@ function Elevator:UpdateUI()
 		end)
 	end
 
-	floorIndicationPart:FindFirstChild("SurfaceGui"):FindFirstChild("FloorName").Text = floordisplay
-
+	local floorNameText2 = floorIndicationPart:WaitForChild("SurfaceGui"):WaitForChild("FloorName") :: TextLabel
+	floorNameText2.Text = floordisplay 
+ 
 	if elevatorGates then
 		for _,elevGate in pairs(elevatorGates:GetChildren()) do
 			local elevatorFloor = elevGate:FindFirstChild("ElevatorFloor")
@@ -734,6 +755,29 @@ function Elevator:UpdateUI()
 			end
 		end
 	end
+end
+
+function Elevator:ResetElevator()
+	local elevModel = if self._Maid.BackupModel then self._Maid.BackupModel:Clone() else nil
+	local parent = self.Model.Parent
+
+	if elevModel then
+		self:Destroy()
+ 
+		elevModel.Parent = parent
+		Elevator.new(elevModel)
+	end	
+end
+
+function Elevator:Destroy()
+	self._Maid:Destroy()
+	
+	local t : any = self 
+	for k,v in pairs(t) do
+		t[k] = nil
+	end
+
+	setmetatable(self, nil)
 end
 
 function Elevator.init(maid)
