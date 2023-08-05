@@ -9,6 +9,7 @@ local ColdFusion = require(ReplicatedStorage:WaitForChild("Packages"):WaitForChi
 --modules
 local InteractSys = require(ReplicatedStorage:WaitForChild("Client"):WaitForChild("GuiSys"):WaitForChild("InteractSys"))
 local InteractUI = require(ReplicatedStorage:WaitForChild("Client"):WaitForChild("InteractUI"))
+local MainUI = require(ReplicatedStorage:WaitForChild("Client"):WaitForChild("MainUI"))
 --types
 type Maid = Maid.Maid
 
@@ -19,6 +20,7 @@ type CanBeState<T> = ColdFusion.State<T>
 
 type GuiSys = {
     __index : GuiSys,
+    MainUI : GuiObject,
     InteractUI : GuiObject,
 
     new : (maid : Maid) -> GuiSys,
@@ -48,13 +50,16 @@ function guiSys.new(maid : Maid)
     local interactKeyCode : ValueState<Enum.KeyCode | Enum.UserInputType> = _Value(Enum.KeyCode.E) :: any
     
     local self : GuiSys = setmetatable({}, guiSys) :: any
+    self.MainUI = MainUI(maid)
     self.InteractUI = InteractUI(maid, interactKeyCode)
 
+    self.MainUI.Parent = Player:WaitForChild("PlayerGui"):WaitForChild("ScreenGui")
     self.InteractUI.Parent = Player:WaitForChild("PlayerGui"):WaitForChild("ScreenGui")
 
     currentGuiSys = self
 
     InteractSys.init(maid, self.InteractUI :: Frame, interactKeyCode)
+
 
     return self 
 end
