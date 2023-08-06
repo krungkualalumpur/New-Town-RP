@@ -11,6 +11,7 @@ local Maid = require(ReplicatedStorage:WaitForChild("Packages"):WaitForChild("Ma
 local Elevator = require(ServerScriptService:WaitForChild("Server"):WaitForChild("Environments"):WaitForChild("Artificial"):WaitForChild("Elevator"))
 local Seat = require(ServerScriptService:WaitForChild("Server"):WaitForChild("Environments"):WaitForChild("Artificial"):WaitForChild("Seat"))
 local Minigame = require(ServerScriptService:WaitForChild("Server"):WaitForChild("Environments"):WaitForChild("Artificial"):WaitForChild("Minigame"))
+local Vehicle = require(ServerScriptService:WaitForChild("Server"):WaitForChild("Environments"):WaitForChild("Artificial"):WaitForChild("Vehicle"))
 --types
 type Maid = Maid.Maid
 --constants
@@ -101,6 +102,7 @@ return {
         Elevator.init(maid)
         Seat.init(maid)
         Minigame.init(maid)
+        Vehicle.init(maid)
 
         initNightLight(maid)
     end

@@ -33,7 +33,7 @@ function Seat.init(maid : Maid)
                         animationsPlaying[k] = nil
                     end
                 end
-
+                
                 for _,v in pairs(seat:GetChildren()) do
                     if v:IsA("Animation") then
                         local animation = animator:LoadAnimation(v)
