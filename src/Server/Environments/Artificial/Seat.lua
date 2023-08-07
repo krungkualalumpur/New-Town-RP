@@ -20,7 +20,7 @@ function Seat.init(maid : Maid)
         local seat = v :: Seat
        
         maid:GiveTask(seat:GetPropertyChangedSignal("Occupant"):Connect(function()
-            local humanoid : Humanoid = seat.Occupant
+            local humanoid : Humanoid ? = seat.Occupant
             if humanoid then
                 local animator = humanoid:WaitForChild("Animator") :: Animator
             

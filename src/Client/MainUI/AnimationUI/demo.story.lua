@@ -5,22 +5,20 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Maid = require(ReplicatedStorage:WaitForChild("Packages"):WaitForChild("Maid"))
 local ColdFusion = require(ReplicatedStorage:WaitForChild("Packages"):WaitForChild("ColdFusion8"))
 --modules
-local MainUI = require(ReplicatedStorage:WaitForChild("Client"):WaitForChild("MainUI"))
-local BackpackUI = require(ReplicatedStorage:WaitForChild("Client"):WaitForChild("MainUI"):WaitForChild("BackpackUI"))
-
+local AnimationUI = require(ReplicatedStorage:WaitForChild("Client"):WaitForChild("MainUI"):WaitForChild("AnimationUI"))
 --types
 --constants
 --variables
 --references
 --local functions
-local function getItemInfo(
-    class : string,
-    name : string
+local function getAnimInfo(
+    animName : string,
+    animId : number
 )
     return {
-        Class = class,
-        Name = name
-    }
+        Name = animName,
+        AnimationId = "rbxassetid://" .. tostring(animId)
+    }   
 end
 --class
 return function(target : CoreGui)
@@ -35,8 +33,14 @@ return function(target : CoreGui)
     local _Computed = _fuse.Computed
     local _Value = _fuse.Value
 
-    local frame = MainUI(maid)
-    frame.Parent = target
+    local animationUI = AnimationUI(
+        maid,
+        {
+            getAnimInfo("Hepi", 1223131),
+            getAnimInfo("Sed", 1223131)
+        }
+    )
+    animationUI.Parent = target
 
     return function() 
         maid:Destroy()

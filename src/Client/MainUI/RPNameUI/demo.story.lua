@@ -5,23 +5,12 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Maid = require(ReplicatedStorage:WaitForChild("Packages"):WaitForChild("Maid"))
 local ColdFusion = require(ReplicatedStorage:WaitForChild("Packages"):WaitForChild("ColdFusion8"))
 --modules
-local MainUI = require(ReplicatedStorage:WaitForChild("Client"):WaitForChild("MainUI"))
-local BackpackUI = require(ReplicatedStorage:WaitForChild("Client"):WaitForChild("MainUI"):WaitForChild("BackpackUI"))
-
+local RPNameUI = require(ReplicatedStorage:WaitForChild("Client"):WaitForChild("MainUI"):WaitForChild("RPNameUI"))
 --types
 --constants
 --variables
 --references
 --local functions
-local function getItemInfo(
-    class : string,
-    name : string
-)
-    return {
-        Class = class,
-        Name = name
-    }
-end
 --class
 return function(target : CoreGui)
     local maid = Maid.new() 
@@ -35,7 +24,7 @@ return function(target : CoreGui)
     local _Computed = _fuse.Computed
     local _Value = _fuse.Value
 
-    local frame = MainUI(maid)
+    local frame = RPNameUI(maid)
     frame.Parent = target
 
     return function() 

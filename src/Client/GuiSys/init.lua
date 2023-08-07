@@ -60,6 +60,8 @@ function guiSys.new(maid : Maid)
 
     InteractSys.init(maid, self.InteractUI :: Frame, interactKeyCode)
 
+    --setting default backpack to untrue it 
+    game:GetService("StarterGui"):SetCoreGuiEnabled(Enum.CoreGuiType.Backpack,false)
 
     return self 
 end

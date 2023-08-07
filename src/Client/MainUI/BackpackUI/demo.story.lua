@@ -5,9 +5,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Maid = require(ReplicatedStorage:WaitForChild("Packages"):WaitForChild("Maid"))
 local ColdFusion = require(ReplicatedStorage:WaitForChild("Packages"):WaitForChild("ColdFusion8"))
 --modules
-local MainUI = require(ReplicatedStorage:WaitForChild("Client"):WaitForChild("MainUI"))
 local BackpackUI = require(ReplicatedStorage:WaitForChild("Client"):WaitForChild("MainUI"):WaitForChild("BackpackUI"))
-
 --types
 --constants
 --variables
@@ -35,8 +33,40 @@ return function(target : CoreGui)
     local _Computed = _fuse.Computed
     local _Value = _fuse.Value
 
-    local frame = MainUI(maid)
-    frame.Parent = target
+    local function getRandomItemInfo()
+        local rand1 = math.random(1,2)
+        
+        local function getRandomNum()
+            return math.random(1, 120)
+        end
+        
+        return getItemInfo(
+            if rand1 == 1 then "ha" else "hi", 
+            string.format("%s%s%s", string.char(getRandomNum()), string.char(getRandomNum()), string.char(getRandomNum()))
+        )
+    end 
+
+    local items = _Value({
+        getRandomItemInfo(),
+        getRandomItemInfo(),
+        getRandomItemInfo(),
+        getRandomItemInfo(),
+        getRandomItemInfo(),
+        getRandomItemInfo(),
+        getRandomItemInfo(), 
+        getRandomItemInfo(),
+        getRandomItemInfo(),
+        getRandomItemInfo(),
+
+    })  
+
+    local backpackUI = BackpackUI(
+        maid, 
+        {"ha", "hi"},
+        items
+    )
+    backpackUI.Parent = target
+    print(backpackUI)
 
     return function() 
         maid:Destroy()
