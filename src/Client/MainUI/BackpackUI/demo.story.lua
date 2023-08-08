@@ -4,9 +4,12 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 --packages
 local Maid = require(ReplicatedStorage:WaitForChild("Packages"):WaitForChild("Maid"))
 local ColdFusion = require(ReplicatedStorage:WaitForChild("Packages"):WaitForChild("ColdFusion8"))
+local Signal = require(ReplicatedStorage:WaitForChild("Packages"):WaitForChild("Signal"))
 --modules
+local BackpackUtil = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("BackpackUtil"))
 local BackpackUI = require(ReplicatedStorage:WaitForChild("Client"):WaitForChild("MainUI"):WaitForChild("BackpackUI"))
 --types
+type ToolData = BackpackUtil.ToolData<boolean>
 --constants
 --variables
 --references
@@ -14,10 +17,11 @@ local BackpackUI = require(ReplicatedStorage:WaitForChild("Client"):WaitForChild
 local function getItemInfo(
     class : string,
     name : string
-)
+) : ToolData
     return {
         Class = class,
-        Name = name
+        Name = name,
+        IsEquipped = false
     }
 end
 --class
@@ -58,15 +62,28 @@ return function(target : CoreGui)
         getRandomItemInfo(),
         getRandomItemInfo(),
 
-    })  
+    }) 
+
+    local onEquip = maid:GiveTask(Signal.new())
+    local onDelete = maid:GiveTask(Signal.new())
 
     local backpackUI = BackpackUI(
         maid, 
         {"ha", "hi"},
-        items
+        items,
+        onEquip, 
+        onDelete
     )
     backpackUI.Parent = target
     print(backpackUI)
+
+    maid:GiveTask(onEquip:Connect(function(itemName : string)
+        print("Onclick1 ", itemName)
+    end))
+    maid:GiveTask(onDelete:Connect(function(itemName : string)
+        print("Onclick2 ", itemName)
+
+    end))
 
     return function() 
         maid:Destroy()

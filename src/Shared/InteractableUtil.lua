@@ -2,12 +2,14 @@
 --services
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local CollectionService = game:GetService("CollectionService")
+local ServerScriptService = game:GetService("ServerScriptService")
 local RunService = game:GetService("RunService")
 local Players = game:GetService("Players")
 --packages
 local Maid = require(ReplicatedStorage:WaitForChild("Packages"):WaitForChild("Maid"))
 local NetworkUtil = require(ReplicatedStorage:WaitForChild("Packages"):WaitForChild("NetworkUtil"))
 --modules
+local BackpackUtil = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("BackpackUtil"))
 local ToolActions = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("ToolActions"))
 --types
 export type InteractableData = {
@@ -177,15 +179,32 @@ function Interactable.InteractToolGiver(model : Model, player : Player)
     end
 
     if RunService:IsServer() then
+        local playerManager = require(ServerScriptService:WaitForChild("Server"):WaitForChild("PlayerManager"))
+        local plrInfo = playerManager.get(player)
+
         if not model:GetAttribute("DescendantsAreTools") then
-            createTool(model).Parent = player:WaitForChild("Backpack")
+          
+            local newTool = createTool(model)
+            newTool.Parent = player:WaitForChild("Backpack")
+            -----
+            plrInfo:InsertToBackpack(newTool)
+            print(plrInfo.Backpack)
+            -----
         else
             for _,v in pairs(model:GetChildren()) do
                 if v:GetAttribute("IsTool") then
-                    createTool(v).Parent = player:WaitForChild("Backpack")
+                    local newTool = BackpackUtil.getToolFromName(v.Name)
+                   -- createTool(newModel).Parent = player:WaitForChild("Backpack")
+                     ----- 
+                    assert(newTool) 
+                    plrInfo:InsertToBackpack(newTool)
+                    print(plrInfo.Backpack)
+                    ----- 
                 end
             end
         end
+
+          
     else
         NetworkUtil.fireServer(ON_TOOL_INTERACT, model)
     end

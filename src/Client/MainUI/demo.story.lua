@@ -7,9 +7,9 @@ local ColdFusion = require(ReplicatedStorage:WaitForChild("Packages"):WaitForChi
 --modules
 local MainUI = require(ReplicatedStorage:WaitForChild("Client"):WaitForChild("MainUI"))
 local BackpackUI = require(ReplicatedStorage:WaitForChild("Client"):WaitForChild("MainUI"):WaitForChild("BackpackUI"))
-
 --types
 --constants
+--remotes
 --variables
 --references
 --local functions

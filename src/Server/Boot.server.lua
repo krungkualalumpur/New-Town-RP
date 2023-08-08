@@ -8,7 +8,11 @@ local Maid = require(ReplicatedStorage:WaitForChild("Packages"):WaitForChild("Ma
 --modules
 local Environments = require(ServerScriptService:WaitForChild("Server"):WaitForChild("Environments"))
 local RoleplaySys = require(ServerScriptService:WaitForChild("Server"):WaitForChild("RoleplaySys"))
+
+local PlayerManager = require(ServerScriptService:WaitForChild("Server"):WaitForChild("PlayerManager"))
 local CharacterManager = require(ServerScriptService:WaitForChild("Server"):WaitForChild("CharacterManager"))
+
+local BackpackUtil = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("BackpackUtil"))
 --types
 --constants
 --references
@@ -17,6 +21,10 @@ local maid = Maid.new()
 --script
 Environments.init(maid)
 RoleplaySys.init(maid)
+
+PlayerManager.init(maid)
 CharacterManager.init(maid)
+
+BackpackUtil.init(maid)
 print("Hello world, du bist heissen?! PENAT LAAAA de stronkest")
 

@@ -5,13 +5,14 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 --packages
 local Maid = require(ReplicatedStorage:WaitForChild("Packages"):WaitForChild("Maid"))
 local ColdFusion = require(ReplicatedStorage:WaitForChild("Packages"):WaitForChild("ColdFusion8"))
+local Signal = require(ReplicatedStorage:WaitForChild("Packages"):WaitForChild("Signal"))
 --modules
+local BackpackUtil = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("BackpackUtil"))
 --types
 type Maid = Maid.Maid
-type ItemInfo = {
-    Name : string,
-    Class : string
-}
+type Signal = Signal.Signal
+
+type ToolData = BackpackUtil.ToolData<boolean>
 
 type Fuse = ColdFusion.Fuse
 type CanBeState<T> = ColdFusion.CanBeState<T>
@@ -23,10 +24,51 @@ local BACKGROUND_COLOR = Color3.fromRGB(190,190,190)
 local PRIMARY_COLOR = Color3.fromRGB(255,255,255)
 local SECONDARY_COLOR = Color3.fromRGB(25,25,25)
 local PADDING_SIZE = UDim.new(0,15)
+--remotes
 --variables
 --references
 --local functions
-local function getItemButton(maid : Maid, itemName : string)
+local function getButton(
+    maid : Maid, 
+    text : CanBeState<string>, 
+    fn : () -> ()
+)
+    local _fuse = ColdFusion.fuse(maid)
+    local _new = _fuse.new
+    local _import = _fuse.import
+    local _bind = _fuse.bind
+    local _clone = _fuse.clone
+
+    local _Computed = _fuse.Computed
+    local _Value = _fuse.Value
+
+    local out = _new("TextButton")({
+        AutoButtonColor = true,
+        Size = UDim2.fromScale(1, 0.25),
+        Text = text,
+
+        Children = {
+            _new("UICorner")({}),
+            _new("UIGradient")({})
+        },
+        Events = {
+            Activated = function()
+                fn()
+            end
+        }
+    })
+
+    return out
+end
+
+local function getItemButton(
+    maid : Maid, 
+    key : number,
+    itemInfo: ToolData,
+    onBackpackButtonEquipClickSignal : Signal,
+    onBackpackButtonDeleteClickSignal : Signal
+)
+
     local _fuse = ColdFusion.fuse(maid)
     local _new = _fuse.new
     local _import = _fuse.import
@@ -39,7 +81,6 @@ local function getItemButton(maid : Maid, itemName : string)
     local out = _new("ImageButton")({
         BackgroundTransparency = 0.5,
         BackgroundColor3 = SECONDARY_COLOR,
-        AutoButtonColor = true,
         Children = {
             _new("UICorner")({}),
             _new("UIListLayout")({
@@ -51,12 +92,40 @@ local function getItemButton(maid : Maid, itemName : string)
                 Size = UDim2.fromScale(1, 0.25),
                 TextColor3 = PRIMARY_COLOR,
                 TextStrokeTransparency = 0.5,
-                Text = itemName
+                Text = itemInfo.Name
             }),
             _new("ViewportFrame")({
                 LayoutOrder = 2,
                 BackgroundTransparency = 1,
                 Size = UDim2.fromScale(1, 0.75),
+
+                Children = {
+                    _new("UIPadding")({
+                        PaddingBottom = PADDING_SIZE,
+                        PaddingTop = PADDING_SIZE,
+                        PaddingLeft = PADDING_SIZE,
+                        PaddingRight = PADDING_SIZE
+                    }),
+                    _new("UIListLayout")({
+                        VerticalAlignment = Enum.VerticalAlignment.Bottom,
+                        Padding = UDim.new(PADDING_SIZE.Scale*0.5, PADDING_SIZE.Offset*0.5),
+                    }),
+                   
+                    getButton(
+                        maid, 
+                        if not itemInfo.IsEquipped then "Equip" else "Unequip",
+                        function()
+                            onBackpackButtonEquipClickSignal:Fire(key, if not itemInfo.IsEquipped then itemInfo.Name else nil)
+                        end
+                    ),
+                    getButton(
+                        maid, 
+                        "Delete",
+                        function()
+                            onBackpackButtonDeleteClickSignal:Fire(key, itemInfo.Name)
+                        end
+                    )
+                }
             })
         }
     })
@@ -68,8 +137,10 @@ local function getItemTypeFrame(
     maid : Maid, 
     typeName : string,
     Items : State<{
-        [number] : string
-    }>
+        [number] : ToolData
+    }>,
+    onBackpackButtonEquipClickSignal : Signal,
+    onBackpackButtonDeleteClickSignal : Signal
 )
     local _fuse = ColdFusion.fuse(maid)
     local _new = _fuse.new
@@ -125,10 +196,20 @@ local function getItemTypeFrame(
     })
 
  
-    Items:ForValues(function(v, pairMaid : Maid)
-        local itemButton = getItemButton(pairMaid, v)
+    Items:ForPairs(function(k, v : ToolData, pairMaid : Maid)
+        local _pairFuse = ColdFusion.fuse(pairMaid)
+        local _pairValue = _pairFuse.Value
+
+        local itemButton = getItemButton(
+            pairMaid,
+            k,
+            v,
+            onBackpackButtonEquipClickSignal,
+            onBackpackButtonDeleteClickSignal
+        )
+        
         itemButton.Parent = itemFrameList
-        return v
+        return k, v
     end)
 
     return out
@@ -137,7 +218,10 @@ end
 return function(
     maid : Maid,
     itemTypes : {[number] : string},
-    itemsOwned : ValueState<{[number] : ItemInfo}>
+    itemsOwned : ValueState<{[number] : ToolData}>,
+
+    onBackpackButtonEquipClickSignal : Signal,
+    onBackpackButtonDeleteClickSignal : Signal
 )
     local _fuse = ColdFusion.fuse(maid)
     local _new = _fuse.new
@@ -148,8 +232,11 @@ return function(
     local _Computed = _fuse.Computed
     local _Value = _fuse.Value
 
+
+    local isVisible = _Value(true) --fixing the wierd state not working thing by attaching it to the properties table for the sake of updating the equip
     local contentFrame = _new("ScrollingFrame")({
         Name = "ContentFrame",
+        Visible = isVisible,
         AutomaticCanvasSize = Enum.AutomaticSize.Y,
         CanvasSize = UDim2.new(),
         BackgroundColor3 = SECONDARY_COLOR,
@@ -177,17 +264,23 @@ return function(
     }) :: GuiObject
 
     for k,typeName in pairs(itemTypes) do
-        local itemsFiltered = _Computed(function(items : {[number] : ItemInfo})
+        local itemsFiltered = _Computed(function(items : {[number] : ToolData})
             local filteredItemsByTypes = {}
-            for _,itemInfo : ItemInfo in pairs(items) do
+            for _,itemInfo : ToolData in pairs(items) do
                 if itemInfo.Class == typeName then
-                    table.insert(filteredItemsByTypes, itemInfo.Name)
+                    table.insert(filteredItemsByTypes, itemInfo)
                 end
             end
 
             return filteredItemsByTypes
-        end, itemsOwned)
-        local itemTypeFrame = getItemTypeFrame(maid, typeName, itemsFiltered)
+        end, itemsOwned, isVisible)
+        local itemTypeFrame = getItemTypeFrame(
+            maid, 
+            typeName, 
+            itemsFiltered,
+            onBackpackButtonEquipClickSignal,
+            onBackpackButtonDeleteClickSignal
+        )
         itemTypeFrame.Parent = contentFrame
 
        --[[ task.spawn(function()
@@ -218,6 +311,8 @@ return function(
             contentFrame
         }
     }) :: Frame
+
+
 
     return out
 end

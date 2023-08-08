@@ -3,13 +3,14 @@
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 --packages
 local Maid = require(ReplicatedStorage:WaitForChild("Packages"):WaitForChild("Maid"))
+local NetworkUtil = require(ReplicatedStorage:WaitForChild("Packages"):WaitForChild("NetworkUtil"))
 local ColdFusion = require(ReplicatedStorage:WaitForChild("Packages"):WaitForChild("ColdFusion8"))
+local Signal = require(ReplicatedStorage:WaitForChild("Packages"):WaitForChild("Signal"))
 --modules
 local BackpackUI = require(ReplicatedStorage:WaitForChild("Client"):WaitForChild("MainUI"):WaitForChild("BackpackUI"))
 local AnimationUI = require(ReplicatedStorage:WaitForChild("Client"):WaitForChild("MainUI"):WaitForChild("AnimationUI"))
 local RPNameUI = require(ReplicatedStorage:WaitForChild("Client"):WaitForChild("MainUI"):WaitForChild("RPNameUI"))
 local ExitButton = require(ReplicatedStorage:WaitForChild("Client"):WaitForChild("ExitButton"))
-
 local BackpackUtil = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("BackpackUtil"))
 
 --types
@@ -27,6 +28,13 @@ local PRIMARY_COLOR = Color3.fromRGB(255,255,255)
 local SECONDARY_COLOR = Color3.fromRGB(42, 32, 190)
 
 local PADDING_SIZE = UDim.new(0,10)
+--remotes
+local GET_PLAYER_BACKPACK = "GetPlayerBackpack"
+local UPDATE_PLAYER_BACKPACK = "UpdatePlayerBackpack"
+
+local EQUIP_BACKPACK = "EquipBackpack"
+local DELETE_BACKPACK = "DeleteBackpack"
+
 --variables
 --references
 --local functions
@@ -149,7 +157,6 @@ return function(maid : Maid)
 
     
     local function getExitButton(ui : GuiObject)
-        
         local exitButton = ExitButton.new(
             ui:WaitForChild("ContentFrame") :: GuiObject, 
             _Value(true),
@@ -161,21 +168,57 @@ return function(maid : Maid)
         exitButton.Instance.Parent = ui:FindFirstChild("ContentFrame")
     end
     
+    --local itemInfo = {}
+    --for _,v in pairs(BackpackUtil.getAllItemNames()) do
+      --  local toolModel = BackpackUtil.getToolFromName(v)
+      --  if toolModel then
+       --     local toolData = BackpackUtil.getData(toolModel, true)
+       --     table.insert(itemInfo, toolData)
+       -- end
+   -- end
+
+    local backpack = _Value(NetworkUtil.invokeServer(GET_PLAYER_BACKPACK))
+    maid:GiveTask(NetworkUtil.onClientEvent(UPDATE_PLAYER_BACKPACK, function(newbackpackval : {BackpackUtil.ToolData<boolean>})
+        backpack:Set(newbackpackval)
+    end))
+
+
     _Computed(function(status : UIStatus)
         statusMaid:DoCleaning() 
         if status == "Backpack" then
+            local onBackpackButtonEquipClickSignal = statusMaid:GiveTask(Signal.new())
+            local onBackpackButtonDeleteClickSignal = statusMaid:GiveTask(Signal.new())
+
+            statusMaid:GiveTask(onBackpackButtonEquipClickSignal:Connect(function(toolKey : number, toolName : string ?)
+                NetworkUtil.invokeServer(
+                    EQUIP_BACKPACK,
+                    toolKey,
+                    toolName
+                )
+                backpack:Set(NetworkUtil.invokeServer(GET_PLAYER_BACKPACK))
+            end))
+            statusMaid:GiveTask(onBackpackButtonDeleteClickSignal:Connect(function(toolKey : number, toolName : string)
+                NetworkUtil.invokeServer(
+                    DELETE_BACKPACK,
+                    toolKey,
+                    toolName
+                )
+                backpack:Set(NetworkUtil.invokeServer(GET_PLAYER_BACKPACK))
+            end))
+
             local backpackUI = BackpackUI(
                 statusMaid,
-                BackpackUtil.getItemClasses(),
-                _Value({
-                    getItemInfo("Food", "Banana"),
-                    getItemInfo("Food", "Umaga")
-                })
+                BackpackUtil.getAllItemClasses(),
+                backpack,
+
+                onBackpackButtonEquipClickSignal,
+                onBackpackButtonDeleteClickSignal
             )
 
             backpackUI.Parent = out
             
             getExitButton(backpackUI)
+            backpack:Set(NetworkUtil.invokeServer(GET_PLAYER_BACKPACK))
         elseif status == "Animation" then 
             local animationUI = AnimationUI(
                 statusMaid, {
