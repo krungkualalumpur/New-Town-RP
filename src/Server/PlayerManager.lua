@@ -29,6 +29,7 @@ export type PlayerManager = {
     init : (maid : Maid) -> ()
 }
 --constants
+local MAX_TOOLS_COUNT = 10
 --remotes
 local GET_PLAYER_BACKPACK = "GetPlayerBackpack"
 local UPDATE_PLAYER_BACKPACK = "UpdatePlayerBackpack"
@@ -53,6 +54,12 @@ function PlayerManager.new(player : Player)
 end
 
 function PlayerManager:InsertToBackpack(tool : Instance)
+    if #self.Backpack >= MAX_TOOLS_COUNT then
+        --notif
+        print("Already has max amount of tools to have ")
+        return
+    end
+    
     local toolData : BackpackUtil.ToolData<boolean> = BackpackUtil.getData(tool, false) :: any
     toolData.IsEquipped = false
     table.insert(self.Backpack, toolData)
@@ -81,7 +88,7 @@ function PlayerManager:SetBackpackEquip(isEquip : boolean, toolKey : number)
 
     toolInfo.IsEquipped = isEquip
 
-    NetworkUtil.fireClient(UPDATE_PLAYER_BACKPACK, self.Player, self.Backpack)
+    NetworkUtil.fireClient(UPDATE_PLAYER_BACKPACK, self.Player, self:GetBackpack(true, true))
 
     return
 end
@@ -169,7 +176,23 @@ function PlayerManager.init(maid : Maid)
 
         return nil
     end)
-    NetworkUtil.onServerInvoke(DELETE_BACKPACK, function(plr : Player)
+    NetworkUtil.onServerInvoke(DELETE_BACKPACK, function(plr : Player, toolKey : number, toolName : string)
+        local plrInfo = PlayerManager.get(plr)
+        local character = plr.Character or plr.CharacterAdded:Wait()
+
+        local toolInfo = plrInfo.Backpack[toolKey]
+
+        if toolInfo.Name == toolName then
+            if toolInfo.IsEquipped then
+                for _,v in pairs(character:GetChildren()) do
+                    if v:IsA("Tool") then
+                        v:Destroy()
+                    end
+                end
+            end
+
+            table.remove(plrInfo.Backpack, toolKey)
+        end
         return nil
     end)
 

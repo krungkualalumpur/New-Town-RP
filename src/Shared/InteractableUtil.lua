@@ -20,6 +20,8 @@ export type InteractableData = {
 local SOUND_NAME = "SFX"
 
 --remotes
+local UPDATE_PLAYER_BACKPACK = "UpdatePlayerBackpack"
+
 local ON_INTERACT = "On_Interact"
 local ON_TOOL_INTERACT = "On_Tool_Interact"
 
@@ -203,6 +205,7 @@ function Interactable.InteractToolGiver(model : Model, player : Player)
                 end
             end
         end
+        NetworkUtil.fireClient(UPDATE_PLAYER_BACKPACK, plrInfo.Player,  plrInfo:GetBackpack(true, true))
 
           
     else

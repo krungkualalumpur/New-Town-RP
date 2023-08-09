@@ -195,7 +195,6 @@ return function(maid : Maid)
                     toolKey,
                     toolName
                 )
-                backpack:Set(NetworkUtil.invokeServer(GET_PLAYER_BACKPACK))
             end))
             statusMaid:GiveTask(onBackpackButtonDeleteClickSignal:Connect(function(toolKey : number, toolName : string)
                 NetworkUtil.invokeServer(

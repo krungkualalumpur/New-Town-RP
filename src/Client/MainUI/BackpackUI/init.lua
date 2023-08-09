@@ -271,7 +271,6 @@ return function(
                     table.insert(filteredItemsByTypes, itemInfo)
                 end
             end
-
             return filteredItemsByTypes
         end, itemsOwned, isVisible)
         local itemTypeFrame = getItemTypeFrame(
