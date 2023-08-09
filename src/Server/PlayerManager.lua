@@ -56,7 +56,7 @@ end
 function PlayerManager:InsertToBackpack(tool : Instance)
     if #self.Backpack >= MAX_TOOLS_COUNT then
         --notif
-        print("Already has max amount of tools to have ")
+        print("Already has max amount of tools to have")
         return
     end
     
@@ -192,6 +192,8 @@ function PlayerManager.init(maid : Maid)
             end
 
             table.remove(plrInfo.Backpack, toolKey)
+
+            NetworkUtil.fireClient(UPDATE_PLAYER_BACKPACK, plr, plrInfo:GetBackpack(true, true))
         end
         return nil
     end)

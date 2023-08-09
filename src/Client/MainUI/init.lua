@@ -202,7 +202,6 @@ return function(maid : Maid)
                     toolKey,
                     toolName
                 )
-                backpack:Set(NetworkUtil.invokeServer(GET_PLAYER_BACKPACK))
             end))
 
             local backpackUI = BackpackUI(
