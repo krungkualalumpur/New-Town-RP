@@ -51,13 +51,19 @@ local function getButton(
         LayoutOrder = layoutOrder,
         BackgroundColor3 = BACKGROUND_COLOR,
         BackgroundTransparency = 0,
-        Size = UDim2.new(0.5, 0,0.4,0),
+        Size = UDim2.new(0.2, 0,0.4,0),
         Text = text,
         TextColor3 = TEXT_COLOR,
 
         Children = {
             _new("UICorner")({}),
-            _new("UIGradient")({})
+            _new("UIGradient")({}),
+            _new("UIListLayout")({
+                FillDirection = Enum.FillDirection.Vertical,
+                VerticalAlignment = Enum.VerticalAlignment.Bottom,
+                HorizontalAlignment = Enum.HorizontalAlignment.Center
+
+            })
         },
         Events = {
             Activated = function()
@@ -65,6 +71,31 @@ local function getButton(
             end
         }
     })
+    return out
+end
+
+local function getSelectButton(maid : Maid, text : string, fn : () -> (), layoutOrder)
+    local _fuse = ColdFusion.fuse(maid)
+    local _new = _fuse.new
+    local _import = _fuse.import
+    local _bind = _fuse.bind
+    local _clone = _fuse.clone
+
+    local _Computed = _fuse.Computed
+    local _Value = _fuse.Value
+
+    local out = getButton(maid, text, fn, layoutOrder)
+    _bind(out)({
+        Children = {
+            _new("Frame")({
+                Size = UDim2.fromScale(0.8, 0.2),
+                Children = {
+                    _new("UICorner")({})
+                }
+            })
+        }
+    })
+
     return out
 end
 
@@ -204,7 +235,35 @@ return function(
                         Padding = PADDING_SIZE,
                         HorizontalAlignment = Enum.HorizontalAlignment.Center
                     }),
-                    _new("TextButton")({
+                    getSelectButton(
+                        maid, 
+                        "Face", 
+                        function()
+                        end, 
+                        1
+                    ),
+                    getSelectButton(
+                        maid, 
+                        "Shirt", 
+                        function()
+                        end, 
+                        2
+                    ),
+                    getSelectButton(
+                        maid, 
+                        "Pants", 
+                        function()
+                        end, 
+                        3
+                    ),
+                    getSelectButton(
+                        maid, 
+                        "Accessories", 
+                        function()
+                        end, 
+                        4
+                    ),
+                    --[[_new("TextButton")({
                         BackgroundColor3 = BACKGROUND_COLOR,
                         Size = UDim2.fromScale(0.2, 1),
                         Text = "Test",
@@ -235,7 +294,7 @@ return function(
                         Children = {
                             _new("UICorner")({})
                         }
-                    })
+                    })]]
                 }
             }),
             _new("ScrollingFrame")({
