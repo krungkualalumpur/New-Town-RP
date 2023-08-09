@@ -159,7 +159,7 @@ function PlayerManager.init(maid : Maid)
                         local character = plr.Character or plr.CharacterAdded:Wait()
                         if character then    
                             local toolAction = ToolActions.getActionInfo(toolData.Class)
-                            toolAction.Activated(equippedTool, character:WaitForChild("Humanoid") :: Humanoid)
+                            toolAction.Activated(equippedTool, plr)
                         end
                     end))
                     

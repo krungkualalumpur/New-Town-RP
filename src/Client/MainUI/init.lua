@@ -1,6 +1,7 @@
 --!strict
 --services
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local Players = game:GetService("Players")
 --packages
 local Maid = require(ReplicatedStorage:WaitForChild("Packages"):WaitForChild("Maid"))
 local NetworkUtil = require(ReplicatedStorage:WaitForChild("Packages"):WaitForChild("NetworkUtil"))
@@ -9,14 +10,20 @@ local Signal = require(ReplicatedStorage:WaitForChild("Packages"):WaitForChild("
 --modules
 local BackpackUI = require(ReplicatedStorage:WaitForChild("Client"):WaitForChild("MainUI"):WaitForChild("BackpackUI"))
 local AnimationUI = require(ReplicatedStorage:WaitForChild("Client"):WaitForChild("MainUI"):WaitForChild("AnimationUI"))
-local RPNameUI = require(ReplicatedStorage:WaitForChild("Client"):WaitForChild("MainUI"):WaitForChild("RPNameUI"))
+local CustomizationUI = require(ReplicatedStorage:WaitForChild("Client"):WaitForChild("MainUI"):WaitForChild("CustomizationUI"))
 local ExitButton = require(ReplicatedStorage:WaitForChild("Client"):WaitForChild("ExitButton"))
 local BackpackUtil = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("BackpackUtil"))
+local AnimationUtil = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("AnimationUtil"))
 
 --types
 type Maid = Maid.Maid
+type Signal = Signal.Signal
 
-type UIStatus = "Backpack" | "Animation" | "RP_Name" | nil
+type UIStatus = "Backpack" | "Animation" | "Customization" | nil
+type AnimationInfo = {
+    Name : string,
+    AnimationId : string
+}
 
 type Fuse = ColdFusion.Fuse
 type State<T> = ColdFusion.State<T>
@@ -25,15 +32,11 @@ type CanBeState<T> = ColdFusion.State<T>
 --constants
 local BACKGROUND_COLOR = Color3.fromRGB(100,100,100)
 local PRIMARY_COLOR = Color3.fromRGB(255,255,255)
-local SECONDARY_COLOR = Color3.fromRGB(42, 32, 190)
+local SECONDARY_COLOR = Color3.fromRGB(42, 42, 42)
 
 local PADDING_SIZE = UDim.new(0,10)
 --remotes
 local GET_PLAYER_BACKPACK = "GetPlayerBackpack"
-local UPDATE_PLAYER_BACKPACK = "UpdatePlayerBackpack"
-
-local EQUIP_BACKPACK = "EquipBackpack"
-local DELETE_BACKPACK = "DeleteBackpack"
 
 --variables
 --references
@@ -77,23 +80,29 @@ function getButton(
     local button = _new("ImageButton")({
         Name = buttonName,
         LayoutOrder = order,
-        BackgroundTransparency = 1,
+        BackgroundColor3 = BACKGROUND_COLOR,
+        BackgroundTransparency = 0.5,
         Size = UDim2.fromScale(0.5, 0.1),
         AutoButtonColor = true,
         Image = "rbxassetid://" .. tostring(ImageId),
         Children = {
+            _new("UIStroke")({
+                Thickness = 2,
+                Color = PRIMARY_COLOR
+            }),
+            _new("UICorner")({}),
             _new("UIAspectRatioConstraint")({}),
             _new("TextLabel")({
                 AutomaticSize = Enum.AutomaticSize.XY,
-                BackgroundTransparency = 0.8,
+                BackgroundTransparency = 1,
                 BackgroundColor3 = BACKGROUND_COLOR,
                 Size = UDim2.fromScale(1, 0.3),
-                Position = UDim2.fromScale(1, 0.5),
+                Position = UDim2.fromScale(1.2, 0.5),
                 Text = buttonName,
                 TextColor3 = PRIMARY_COLOR,
                 TextStrokeColor3 = SECONDARY_COLOR,
-                TextStrokeTransparency = 0.5
-    
+                TextStrokeTransparency = 0.5,
+                TextXAlignment = Enum.TextXAlignment.Left
             })
         },
         Events = {
@@ -103,7 +112,14 @@ function getButton(
     return button
 end
 --class
-return function(maid : Maid)
+return function(
+    maid : Maid,
+
+    backpack : ValueState<{BackpackUtil.ToolData<boolean>}>,
+
+    backpackOnEquip : Signal,
+    backpackOnDelete : Signal
+)
     print("nailak")
     
     local _fuse = ColdFusion.fuse(maid)
@@ -142,12 +158,12 @@ return function(maid : Maid)
                     getButton(maid, 2815418737, function()
                         UIStatus:Set(if UIStatus:Get() ~= "Backpack" then "Backpack" else nil)
                     end, "Backpack", 1),
-                    getButton(maid, 7059328055, function()
+                    getButton(maid, 11127689024, function()
                         UIStatus:Set(if UIStatus:Get() ~= "Animation" then "Animation" else nil)
                     end, "Animation", 2),
-                    getButton(maid, 5755108026, function()
-                        UIStatus:Set(if UIStatus:Get() ~= "RP_Name" then "RP_Name" else nil)
-                    end, "RP_Name", 3)
+                    getButton(maid, 13285102351, function()
+                        UIStatus:Set(if UIStatus:Get() ~= "Customization" then "Customization" else nil)
+                    end, "Customization", 3)
                     --getButton(maid, 227600967),
 
                 }
@@ -177,11 +193,7 @@ return function(maid : Maid)
        -- end
    -- end
 
-    local backpack = _Value(NetworkUtil.invokeServer(GET_PLAYER_BACKPACK))
-    maid:GiveTask(NetworkUtil.onClientEvent(UPDATE_PLAYER_BACKPACK, function(newbackpackval : {BackpackUtil.ToolData<boolean>})
-        backpack:Set(newbackpackval)
-    end))
-
+  
 
     _Computed(function(status : UIStatus)
         statusMaid:DoCleaning() 
@@ -190,18 +202,11 @@ return function(maid : Maid)
             local onBackpackButtonDeleteClickSignal = statusMaid:GiveTask(Signal.new())
 
             statusMaid:GiveTask(onBackpackButtonEquipClickSignal:Connect(function(toolKey : number, toolName : string ?)
-                NetworkUtil.invokeServer(
-                    EQUIP_BACKPACK,
-                    toolKey,
-                    toolName
-                )
+                backpackOnEquip:Fire(toolKey, toolName)
+               
             end))
             statusMaid:GiveTask(onBackpackButtonDeleteClickSignal:Connect(function(toolKey : number, toolName : string)
-                NetworkUtil.invokeServer(
-                    DELETE_BACKPACK,
-                    toolKey,
-                    toolName
-                )
+                backpackOnDelete:Fire(toolKey, toolName)
             end))
 
             local backpackUI = BackpackUI(
@@ -216,22 +221,32 @@ return function(maid : Maid)
             backpackUI.Parent = out
             
             getExitButton(backpackUI)
-            backpack:Set(NetworkUtil.invokeServer(GET_PLAYER_BACKPACK))
+            if game:GetService("RunService"):IsRunning() then
+                backpack:Set(NetworkUtil.invokeServer(GET_PLAYER_BACKPACK))
+            end
         elseif status == "Animation" then 
+            local onAnimClickSignal = statusMaid:GiveTask(Signal.new())
             local animationUI = AnimationUI(
-                statusMaid, {
-                    getAnimInfo("Hepi", 1212010),
-                    getAnimInfo("Sed", 1212010)
-                }   
+                statusMaid, 
+                {
+                    getAnimInfo("Dance1", 6487673963),
+                    getAnimInfo("Dance2", 6487678676),
+                    getAnimInfo("Get Out", 6487639560),
+                    getAnimInfo("Happy", 6487656144),
+                },
+                onAnimClickSignal
             ) :: Frame
             animationUI.Parent = out
+            statusMaid:GiveTask(onAnimClickSignal:Connect(function(animInfo : AnimationInfo)
+                AnimationUtil.playAnim(Players.LocalPlayer, animInfo.AnimationId)
+            end))
 
             getExitButton(animationUI)
-        elseif status == "RP_Name" then
-            local RPNameUI = RPNameUI(statusMaid) :: Frame
-            RPNameUI.Parent = out
+        elseif status == "Customization" then
+            local CustomizationUI = CustomizationUI(statusMaid) :: Frame
+            CustomizationUI.Parent = out
 
-            getExitButton(RPNameUI)
+            getExitButton(CustomizationUI)
         end
         return nil
     end, UIStatus)

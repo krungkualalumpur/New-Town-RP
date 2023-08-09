@@ -5,9 +5,12 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 --packages
 local Maid = require(ReplicatedStorage:WaitForChild("Packages"):WaitForChild("Maid"))
 local ColdFusion = require(ReplicatedStorage:WaitForChild("Packages"):WaitForChild("ColdFusion8"))
+local Signal = require(ReplicatedStorage:WaitForChild("Packages"):WaitForChild("Signal"))
 --modules
 --types
 type Maid = Maid.Maid
+type Signal = Signal.Signal
+
 type AnimationInfo = {
     Name : string,
     AnimationId : string
@@ -28,7 +31,7 @@ local PADDING_SIZE = UDim.new(0,15)
 --variables
 --references
 --local functions
-local function getAnimationButton(maid : Maid, animationInfo : AnimationInfo)
+local function getAnimationButton(maid : Maid, animationInfo : AnimationInfo, onAnimClick : Signal)
     local _fuse = ColdFusion.fuse(maid)
     local _new = _fuse.new
     local _import = _fuse.import
@@ -44,6 +47,10 @@ local function getAnimationButton(maid : Maid, animationInfo : AnimationInfo)
         Size = UDim2.new(1, 0,0.08,0),
         AutoButtonColor = true,
         Children = {
+            _new("UIStroke")({
+                Color = SECONDARY_COLOR,
+                Thickness = 1.5
+            }),
             _new("UICorner")({}),
             
             _new("UIListLayout")({
@@ -56,12 +63,11 @@ local function getAnimationButton(maid : Maid, animationInfo : AnimationInfo)
                 TextColor3 = TEXT_COLOR,
                 TextSize = 22,
                 Text = animationInfo.Name,
-                
             })
         },
         Events = {
             Activated = function()
-                print("anim on play yeah!")
+                onAnimClick:Fire(animationInfo)
             end
         }
     })
@@ -72,7 +78,8 @@ end
 --class
 return function(
     maid : Maid,
-    Animations : {[number] : AnimationInfo}
+    Animations : {[number] : AnimationInfo},
+    OnAnimClick : Signal
 )
     local _fuse = ColdFusion.fuse(maid)
     local _new = _fuse.new
@@ -104,10 +111,12 @@ return function(
                 Padding = PADDING_SIZE
             }),
             _new("TextLabel")({
+                LayoutOrder = 0,
                 BackgroundTransparency = 1,
                 Size = UDim2.fromScale(1, 0.06),
                 RichText = true,
                 TextScaled = true,
+                TextStrokeTransparency = 0.5,
                 Text = "<b>Animations</b>",
                 TextColor3 = TEXT_COLOR
             }) 
@@ -115,7 +124,11 @@ return function(
     })
 
     for _,v in pairs(Animations) do
-        local animButton = getAnimationButton(maid, v)
+        local animButton = getAnimationButton(
+            maid, 
+            v,
+            OnAnimClick
+        )
         animButton.Parent = contentFrame
     end
 
@@ -130,11 +143,12 @@ return function(
                 PaddingRight = PADDING_SIZE
             }),
             _new("UIListLayout")({
-                FillDirection = Enum.FillDirection.Horizontal
+                FillDirection = Enum.FillDirection.Horizontal,
+                SortOrder = Enum.SortOrder.LayoutOrder,
             }),
             _new("Frame")({
                 BackgroundTransparency = 1,
-                Size = UDim2.fromScale(0.4, 1)
+                Size = UDim2.fromScale(0.035, 1)
             }),
             contentFrame
         }

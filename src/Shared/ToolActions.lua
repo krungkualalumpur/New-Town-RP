@@ -5,6 +5,7 @@ local RunService = game:GetService("RunService")
 local Players = game:GetService("Players")
 --packages
 --modules
+local AnimationUtil = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("AnimationUtil"))
 --types
 --constants
 local SOUND_NAME = "SFX"
@@ -27,26 +28,16 @@ end
 local ActionLists = {
     {
         ToolClass = "Consumption",
-        Activated = function(foodInst : Instance, humanoid : Humanoid)
-            local hrp = if humanoid.Parent and humanoid.Parent:IsA("Model") then humanoid.Parent.PrimaryPart else nil
+        Activated = function(foodInst : Instance, player : Player)
+            AnimationUtil.playAnim(player, 5569663688)
             
-            local animator = humanoid:WaitForChild("Animator") :: Animator
-            
-            local animation = Instance.new("Animation")
-            animation.AnimationId = "rbxassetid://5569663688"
-
-            local animTrack : AnimationTrack = animator:LoadAnimation(animation)
-
-            animTrack:Play()
-            
-            task.spawn(function()
-                animTrack.Ended:Wait()
-                animation:Destroy()
-            end)
-
             --play sound
-            playSound(4511723890, false, hrp)
-            print("eating" , foodInst.Name)
+            local character = player.Character
+            if character then
+                local hrp = character.PrimaryPart
+                playSound(4511723890, false, hrp)
+                print("eating" , foodInst.Name)
+            end
         end
     },
     {

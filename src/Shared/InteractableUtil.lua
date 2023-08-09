@@ -171,7 +171,7 @@ function Interactable.InteractToolGiver(model : Model, player : Player)
             local character = player.Character 
             if character then    
                 local toolAction = ToolActions.getActionInfo(model:GetAttribute("ToolClass"))
-                toolAction.Activated(inst, character:WaitForChild("Humanoid") :: Humanoid)
+                toolAction.Activated(inst, player)
             end
         end))
         maid:GiveTask(tool.Destroying:Connect(function()

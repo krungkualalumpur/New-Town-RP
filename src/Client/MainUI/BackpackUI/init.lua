@@ -44,8 +44,12 @@ local function getButton(
 
     local out = _new("TextButton")({
         AutoButtonColor = true,
-        Size = UDim2.fromScale(1, 0.25),
+        BackgroundColor3 = SECONDARY_COLOR,
+        BackgroundTransparency = 0.6,
+        Size = UDim2.fromScale(1, 0.5),
         Text = text,
+        TextStrokeTransparency = 0.5,
+        TextColor3 = PRIMARY_COLOR,
 
         Children = {
             _new("UICorner")({}),
@@ -78,10 +82,53 @@ local function getItemButton(
     local _Computed = _fuse.Computed
     local _Value = _fuse.Value
 
+    local viewportVisualZoom = 0.75
+
+    local toolModel = BackpackUtil.getToolFromName(itemInfo.Name) 
+    if toolModel then 
+        toolModel = toolModel:Clone()
+    end
+
+    if not game:GetService("RunService"):IsRunning() then
+        if not toolModel then
+            local part = _new("Part")({
+                CFrame = CFrame.new(),
+                Size = Vector3.new(1,1,1)
+            })
+
+            toolModel = _new("Model")({
+                PrimaryPart = part,
+                Children = {
+                    part
+                }
+            }) :: Model
+        end
+    end
+
+    if toolModel then
+        if toolModel:IsA("BasePart") then
+            viewportVisualZoom *= toolModel.Size.Magnitude
+        elseif toolModel:IsA("Model") then
+            viewportVisualZoom *= toolModel:GetExtentsSize().Magnitude
+        end
+    end
+
+    local viewportCam = _new("Camera")({
+        CFrame = if toolModel then (if toolModel:IsA("Model") and toolModel.PrimaryPart then 
+            CFrame.lookAt(toolModel.PrimaryPart.Position + toolModel.PrimaryPart.CFrame.LookVector/viewportVisualZoom + toolModel.PrimaryPart.CFrame.RightVector/viewportVisualZoom + toolModel.PrimaryPart.CFrame.UpVector/viewportVisualZoom, toolModel.PrimaryPart.Position) 
+        elseif toolModel:IsA("BasePart") then
+            CFrame.lookAt(toolModel.Position + toolModel.CFrame.LookVector/viewportVisualZoom + toolModel.CFrame.RightVector/viewportVisualZoom + toolModel.CFrame.UpVector/viewportVisualZoom, toolModel.Position) 
+        else CFrame.new()) else nil
+    })
+
     local out = _new("ImageButton")({
         BackgroundTransparency = 0.5,
         BackgroundColor3 = SECONDARY_COLOR,
         Children = {
+            _new("UIStroke")({
+                Color = SECONDARY_COLOR,
+                Thickness = 1.5
+            }),
             _new("UICorner")({}),
             _new("UIListLayout")({
                 SortOrder = Enum.SortOrder.LayoutOrder
@@ -98,7 +145,8 @@ local function getItemButton(
                 LayoutOrder = 2,
                 BackgroundTransparency = 1,
                 Size = UDim2.fromScale(1, 0.75),
-
+                CurrentCamera = viewportCam,
+                
                 Children = {
                     _new("UIPadding")({
                         PaddingBottom = PADDING_SIZE,
@@ -110,7 +158,7 @@ local function getItemButton(
                         VerticalAlignment = Enum.VerticalAlignment.Bottom,
                         Padding = UDim.new(PADDING_SIZE.Scale*0.5, PADDING_SIZE.Offset*0.5),
                     }),
-                   
+
                     getButton(
                         maid, 
                         if not itemInfo.IsEquipped then "Equip" else "Unequip",
@@ -124,7 +172,14 @@ local function getItemButton(
                         function()
                             onBackpackButtonDeleteClickSignal:Fire(key, itemInfo.Name)
                         end
-                    )
+                    ),
+
+                    viewportCam,
+                    _new("WorldModel")({
+                        Children = {
+                            toolModel
+                        }
+                    })
                 }
             })
         }
@@ -301,11 +356,13 @@ return function(
                 PaddingRight = PADDING_SIZE
             }),
             _new("UIListLayout")({
-                FillDirection = Enum.FillDirection.Horizontal
+                FillDirection = Enum.FillDirection.Horizontal,
+                SortOrder = Enum.SortOrder.LayoutOrder,
             }),
             _new("Frame")({
+                LayoutOrder = 0,
                 BackgroundTransparency = 1,
-                Size = UDim2.fromScale(0.3, 1)
+                Size = UDim2.fromScale(0.035, 1)
             }),
             contentFrame
         }
