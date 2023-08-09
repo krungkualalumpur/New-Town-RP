@@ -13,6 +13,7 @@ local PlayerManager = require(ServerScriptService:WaitForChild("Server"):WaitFor
 local CharacterManager = require(ServerScriptService:WaitForChild("Server"):WaitForChild("CharacterManager"))
 
 local BackpackUtil = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("BackpackUtil"))
+local CustomizationUtil = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("CustomizationUtil"))
 --types
 --constants
 --references
@@ -26,5 +27,6 @@ PlayerManager.init(maid)
 CharacterManager.init(maid)
 
 BackpackUtil.init(maid)
+CustomizationUtil.init(maid)
 print("Hello world, du bist heissen?! PENAT LAAAA de stronkest")
 

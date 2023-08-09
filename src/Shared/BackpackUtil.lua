@@ -2,6 +2,7 @@
 --services
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local CollectionService = game:GetService("CollectionService")
+local RunService = game:GetService("RunService")
 --packages
 local Maid = require(ReplicatedStorage:WaitForChild("Packages"):WaitForChild("Maid"))
 --modules
@@ -123,19 +124,21 @@ end
 
 --initializing backpack
 function BackpackUtil.init(maid : Maid)
-    local ToolCollections = Instance.new("Folder")
-    ToolCollections.Name = "Tools"
-    ToolCollections.Parent = ReplicatedStorage
+    if RunService:IsServer() then
+        local ToolCollections = Instance.new("Folder")
+        ToolCollections.Name = "Tools"
+        ToolCollections.Parent = ReplicatedStorage
 
-    print(CollectionService:GetTagged("Tool"))
-    for _,v in pairs(CollectionService:GetTagged("Tool")) do
-        for k, child in pairs(v:GetDescendants()) do
-            if child:GetAttribute("IsTool") and not BackpackUtil.getToolFromName(child.Name) then
-                local newTool = child:Clone()
-                newTool.Parent = ToolCollections
-                CollectionService:AddTag(newTool, "Tool")
-                newTool:SetAttribute("ToolClass", "Consumption")
-                newTool:SetAttribute("DisplayTypeName", "Food")
+        print(CollectionService:GetTagged("Tool"))
+        for _,v in pairs(CollectionService:GetTagged("Tool")) do
+            for k, child in pairs(v:GetDescendants()) do
+                if child:GetAttribute("IsTool") and not BackpackUtil.getToolFromName(child.Name) then
+                    local newTool = child:Clone()
+                    newTool.Parent = ToolCollections
+                    CollectionService:AddTag(newTool, "Tool")
+                    newTool:SetAttribute("ToolClass", "Consumption")
+                    newTool:SetAttribute("DisplayTypeName", "Food")
+                end
             end
         end
     end

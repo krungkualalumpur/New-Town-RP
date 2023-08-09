@@ -7,6 +7,8 @@ local Maid = require(ReplicatedStorage:WaitForChild("Packages"):WaitForChild("Ma
 local ColdFusion = require(ReplicatedStorage:WaitForChild("Packages"):WaitForChild("ColdFusion8"))
 local Signal = require(ReplicatedStorage:WaitForChild("Packages"):WaitForChild("Signal"))
 --modules
+local CustomizationUtil = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("CustomizationUtil"))
+local CustomizationList = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("CustomizationUtil"):WaitForChild("CustomizationList"))
 --types
 type Maid = Maid.Maid
 type AnimationInfo = {
@@ -14,6 +16,8 @@ type AnimationInfo = {
     AnimationId : string
 }
 type Signal = Signal.Signal
+
+type CustomizationPage = CustomizationList.CustomizationClass
 
 type Fuse = ColdFusion.Fuse
 type CanBeState<T> = ColdFusion.CanBeState<T>
@@ -51,7 +55,7 @@ local function getButton(
         LayoutOrder = layoutOrder,
         BackgroundColor3 = BACKGROUND_COLOR,
         BackgroundTransparency = 0,
-        Size = UDim2.new(0.2, 0,0.4,0),
+        Size = UDim2.new(0.4, 0,0.15,0),
         Text = text,
         TextColor3 = TEXT_COLOR,
 
@@ -86,6 +90,7 @@ local function getSelectButton(maid : Maid, text : string, fn : () -> (), layout
 
     local out = getButton(maid, text, fn, layoutOrder)
     _bind(out)({
+        Size = UDim2.new(0.2, 0,0.4,0),
         Children = {
             _new("Frame")({
                 Size = UDim2.fromScale(0.8, 0.2),
@@ -101,7 +106,9 @@ end
 
 local function getAccessoryButton(
     maid : Maid, 
-    AccessoryId : number
+    AccessoryId : number,
+    AccessoryName : string,
+    isVisible : State<boolean>
 )
     local _fuse = ColdFusion.fuse(maid)
     local _new = _fuse.new
@@ -112,13 +119,11 @@ local function getAccessoryButton(
     local _Computed = _fuse.Computed
     local _Value = _fuse.Value
 
-    local Width = 48
-    local Height = 48
-
     local out = _new("ImageButton")({
         AutoButtonColor = true,
         BackgroundTransparency = 0.5,
         BackgroundColor3 = SECONDARY_COLOR,
+        Visible = isVisible,
         Children = {
             _new("UIStroke")({
                 Color = SECONDARY_COLOR,
@@ -135,18 +140,25 @@ local function getAccessoryButton(
                 Size = UDim2.fromScale(1, 0.25),
                 TextColor3 = PRIMARY_COLOR,
                 TextStrokeTransparency = 0.5,
-                Text = "Tjinta"
+                Text = AccessoryName
             }),
             _new("ImageLabel")({
                 LayoutOrder = 2,
                 BackgroundTransparency = 1,
                 Size = UDim2.fromScale(1, 0.85),
-                Image = "https://www.roblox.com/Thumbs/Asset.ashx?width="..Width.."&height="..Height.."&assetId="..AccessoryId,
+                Image = CustomizationUtil.getAssetImageFromId(AccessoryId),
 
                 Children = {
                     _new("UIAspectRatioConstraint")({})
                 }
             })
+        },
+        Events = {
+            Activated = function()
+                if game:GetService("RunService"):IsRunning() then
+                    CustomizationUtil.Customize(game.Players.LocalPlayer, AccessoryId)
+                end
+            end
         }
     })
 
@@ -155,7 +167,8 @@ end
 
 --class
 return function(
-    maid : Maid
+    maid : Maid,
+    Customizations : {CustomizationList.Customization}
 )
     local _fuse = ColdFusion.fuse(maid)
     local _new = _fuse.new
@@ -166,10 +179,12 @@ return function(
     local _Computed = _fuse.Computed
     local _Value = _fuse.Value
  
+    local customizationPage : ValueState<CustomizationPage ?> = _Value(nil) :: any
+
     local RPName = _new("Frame")({
         BackgroundColor3 = SECONDARY_COLOR,
         BackgroundTransparency = 0.5,
-        Size = UDim2.fromScale(0.18, 0.15),
+        Size = UDim2.fromScale(0.18, 0.35),
         Children = {
             _new("UIPadding")({
                 PaddingBottom = PADDING_SIZE,
@@ -185,9 +200,10 @@ return function(
             _new("TextLabel")({
                 LayoutOrder = 1,
                 BackgroundTransparency = 1,
-                Size = UDim2.new(1, 0, 0.05, 0),
+                Size = UDim2.new(1, 0, 0.025, 0),
                 RichText = true,
-                Text = "<b>RP Name</b>",
+                TextSize = 18,
+                Text = "<b>Roleplay Name</b>",
                 TextColor3 = PRIMARY_COLOR,
                 TextStrokeTransparency = 0.5,
             }),
@@ -201,14 +217,66 @@ return function(
                 TextWrapped = true,
                 PlaceholderText = "Insert your RP name here",
                 PlaceholderColor3 = BACKGROUND_COLOR,
-                Size = UDim2.new(1, 0, 0.45, 0),
+                Size = UDim2.new(1, 0, 0.15, 0),
             }),
             getButton(maid, "Apply", function()
+            end, 3),
 
-            end, 3)
+            _new("Frame")({
+                Name = "Buffer",
+                LayoutOrder = 4,
+                BackgroundTransparency = 1,
+                Size = UDim2.fromScale(1, 0.1),
+            }),
+
+            _new("TextLabel")({
+                LayoutOrder = 5,
+                BackgroundTransparency = 1,
+                Size = UDim2.new(1, 0, 0.025, 0),
+                RichText = true,
+                Text = "<b>Bio</b>",
+                TextColor3 = PRIMARY_COLOR,
+                TextStrokeTransparency = 0.5,
+            }),
+            _new("TextBox")({
+                BackgroundColor3 = TERTIARY_COLOR,
+                BackgroundTransparency = 0.5,
+                LayoutOrder = 6,
+                TextColor3 = PRIMARY_COLOR,
+                TextStrokeTransparency = 0,
+                TextScaled = true,
+                TextWrapped = true,
+                PlaceholderText = "Insert your bio here",
+                PlaceholderColor3 = BACKGROUND_COLOR,
+                Size = UDim2.new(1, 0, 0.15, 0),
+            }),
+            getButton(maid, "Apply", function()
+            end, 7)
         }
     })
+    
 
+    local charCosContent =  _new("ScrollingFrame")({
+        Name = "Contents",
+        BackgroundTransparency = 1,
+        AutomaticCanvasSize = Enum.AutomaticSize.Y,
+        LayoutOrder = 2,
+        Size = UDim2.fromScale(1, 0.8),
+        CanvasSize = UDim2.new(),
+        Children = {
+            _new("UICorner")({}),
+            _new("UIPadding")({
+                PaddingBottom = PADDING_SIZE,
+                PaddingTop = PADDING_SIZE,
+                PaddingRight = PADDING_SIZE,
+                PaddingLeft = PADDING_SIZE
+            }),
+            _new("UIGridLayout")({
+                CellPadding = UDim2.fromOffset(5, 5),
+                CellSize = UDim2.fromOffset(100, 100)
+            }),
+        }
+    })
     local characterCustomizationFrame = _new("Frame")({
         BackgroundColor3 = SECONDARY_COLOR,
         BackgroundTransparency = 0.5,
@@ -222,7 +290,6 @@ return function(
             }),
             _new("UIListLayout")({
                 SortOrder = Enum.SortOrder.LayoutOrder,
-                Padding = PADDING_SIZE,
             }),
             _new("Frame")({
                 Name = "PageOpts",
@@ -239,6 +306,7 @@ return function(
                         maid, 
                         "Face", 
                         function()
+                            customizationPage:Set("Face")
                         end, 
                         1
                     ),
@@ -246,6 +314,7 @@ return function(
                         maid, 
                         "Shirt", 
                         function()
+                            customizationPage:Set("Shirt")
                         end, 
                         2
                     ),
@@ -253,6 +322,7 @@ return function(
                         maid, 
                         "Pants", 
                         function()
+                            customizationPage:Set("Pants")
                         end, 
                         3
                     ),
@@ -260,6 +330,7 @@ return function(
                         maid, 
                         "Accessories", 
                         function()
+                            customizationPage:Set("Accessory")
                         end, 
                         4
                     ),
@@ -297,43 +368,23 @@ return function(
                     })]]
                 }
             }),
-            _new("ScrollingFrame")({
-                Name = "Contents",
-                BackgroundTransparency = 1,
-                AutomaticCanvasSize = Enum.AutomaticSize.Y,
-                LayoutOrder = 2,
-                Size = UDim2.fromScale(1, 0.8),
-                CanvasSize = UDim2.new(),
-                Children = {
-                    _new("UICorner")({}),
-                    _new("UIPadding")({
-                        PaddingBottom = PADDING_SIZE,
-                        PaddingTop = PADDING_SIZE,
-                        PaddingRight = PADDING_SIZE,
-                        PaddingLeft = PADDING_SIZE
-                    }),
-                    _new("UIGridLayout")({
-                        CellPadding = UDim2.fromOffset(5, 5),
-                        CellSize = UDim2.fromOffset(100, 100)
-                    }),
-                    getAccessoryButton(
-                        maid, 
-                        21635565
-                    ),
-                    getAccessoryButton(
-                        maid, 
-                        10361759114
-                    ),
-                    getAccessoryButton(
-                        maid, 
-                        10115360545
-                    )
-                    
-                }
-            })
-
+            charCosContent
         }
     })
+
+    for _, custom in pairs(Customizations) do
+        local isVisible = _Computed(function(page : CustomizationPage ?)
+            return if custom.Class == page then true else false 
+        end, customizationPage)
+        local button = getAccessoryButton(
+            maid, 
+            custom.TemplateId,
+            custom.Name,
+            isVisible
+        )
+        button.Parent = charCosContent
+    end
+
 
     local contentFrame = _new("Frame")({
         Name = "ContentFrame",

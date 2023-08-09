@@ -15,6 +15,7 @@ local ExitButton = require(ReplicatedStorage:WaitForChild("Client"):WaitForChild
 local BackpackUtil = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("BackpackUtil"))
 local AnimationUtil = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("AnimationUtil"))
 
+local CustomizationList = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("CustomizationUtil"):WaitForChild("CustomizationList"))
 --types
 type Maid = Maid.Maid
 type Signal = Signal.Signal
@@ -243,7 +244,10 @@ return function(
 
             getExitButton(animationUI)
         elseif status == "Customization" then
-            local CustomizationUI = CustomizationUI(statusMaid) :: Frame
+            local CustomizationUI = CustomizationUI(
+                statusMaid,
+                CustomizationList
+            ) :: Frame
             CustomizationUI.Parent = out
 
             getExitButton(CustomizationUI)
