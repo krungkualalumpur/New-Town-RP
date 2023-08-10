@@ -5,6 +5,8 @@ local Players = game:GetService("Players")
 --packages
 local Maid = require(ReplicatedStorage:WaitForChild("Packages"):WaitForChild("Maid"))
 --modules
+local CustomizationUtil = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("CustomizationUtil"))
+local CustomizationList = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("CustomizationUtil"):WaitForChild("CustomizationList"))
 --types
 type Maid = Maid.Maid
 --constants
@@ -28,6 +30,16 @@ function CharacterManager.init(maid : Maid)
         _maid:GiveTask(plr.Destroying:Connect(function()
             _maid:Destroy()
         end))
+
+        --testing char only
+        --[[local testacc
+        for _,v in pairs(CustomizationList) do
+            if v.Class == "Accessory" then
+                testacc = v
+            end
+        end
+        
+        CustomizationUtil.Customize(plr, testacc.TemplateId)]]
     end
 
     for _, plr : Player in pairs(Players:GetPlayers()) do

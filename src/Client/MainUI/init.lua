@@ -15,6 +15,7 @@ local ExitButton = require(ReplicatedStorage:WaitForChild("Client"):WaitForChild
 local BackpackUtil = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("BackpackUtil"))
 local AnimationUtil = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("AnimationUtil"))
 
+local CustomizationUtil = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("CustomizationUtil"))
 local CustomizationList = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("CustomizationUtil"):WaitForChild("CustomizationList"))
 --types
 type Maid = Maid.Maid
@@ -244,11 +245,39 @@ return function(
 
             getExitButton(animationUI)
         elseif status == "Customization" then
+            local onCustomeButtonClick = statusMaid:GiveTask(Signal.new())
+            print(onCustomeButtonClick)
+
             local CustomizationUI = CustomizationUI(
                 statusMaid,
-                CustomizationList
+                CustomizationList,
+                onCustomeButtonClick
             ) :: Frame
             CustomizationUI.Parent = out
+
+            statusMaid:GiveTask(onCustomeButtonClick:Connect(function(costumeName : string, costumeId : number, isEquipped : ValueState<boolean>?)
+                if game:GetService("RunService"):IsRunning() then
+                    CustomizationUtil.Customize(game.Players.LocalPlayer, costumeId)
+                end
+                if isEquipped  and game:GetService("RunService"):IsRunning() then 
+                    print("Custome clicked ", costumeName, costumeId) 
+
+                    local player = Players.LocalPlayer
+                    local character = player.Character or player.CharacterAdded:Wait()
+                    
+                    local currentAccessory 
+                    for _,v in pairs(character:GetChildren()) do
+                        if v:IsA("Accessory") and (CustomizationUtil.getAccessoryId(v) == costumeId) then
+                            currentAccessory = v
+                            break
+                        end
+                    end
+                   -- local currentAccessory = character:FindFirstChild(customeModelName)
+                    isEquipped:Set(if currentAccessory then true else false)
+                elseif isEquipped and not game:GetService("RunService"):IsRunning() then
+                    isEquipped:Set(not isEquipped:Get())
+                end
+            end))
 
             getExitButton(CustomizationUI)
         end

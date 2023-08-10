@@ -108,7 +108,9 @@ local function getAccessoryButton(
     maid : Maid, 
     AccessoryId : number,
     AccessoryName : string,
-    isVisible : State<boolean>
+    isVisible : State<boolean>,
+    onButtonClick : Signal,
+    isEquipped : ValueState<boolean>?
 )
     local _fuse = ColdFusion.fuse(maid)
     local _new = _fuse.new
@@ -145,19 +147,33 @@ local function getAccessoryButton(
             _new("ImageLabel")({
                 LayoutOrder = 2,
                 BackgroundTransparency = 1,
-                Size = UDim2.fromScale(1, 0.85),
+                Size = UDim2.fromScale(1, 0.75),
                 Image = CustomizationUtil.getAssetImageFromId(AccessoryId),
 
                 Children = {
-                    _new("UIAspectRatioConstraint")({})
+                    _new("UIAspectRatioConstraint")({}),
+                    _new("UIListLayout")({
+                        VerticalAlignment = Enum.VerticalAlignment.Bottom,
+                        HorizontalAlignment = Enum.HorizontalAlignment.Right
+                    }),
+                    _new("ImageLabel")({
+                        LayoutOrder = 3,
+                        Visible = isEquipped or false,
+                        BackgroundTransparency = 1,
+                        Size = UDim2.fromScale(0.3, 0.3),
+                        Image = "rbxassetid://12622542256",
+                        Children = {}
+                    })
                 }
-            })
+            }),
+           
         },
         Events = {
             Activated = function()
-                if game:GetService("RunService"):IsRunning() then
+                onButtonClick:Fire(AccessoryName, AccessoryId, isEquipped)
+                --[[if game:GetService("RunService"):IsRunning() then
                     CustomizationUtil.Customize(game.Players.LocalPlayer, AccessoryId)
-                end
+                end]]
             end
         }
     })
@@ -168,8 +184,10 @@ end
 --class
 return function(
     maid : Maid,
-    Customizations : {CustomizationList.Customization}
+    Customizations : {CustomizationList.Customization},
+    onCostumeButtonClick : Signal
 )
+    print(onCostumeButtonClick)
     local _fuse = ColdFusion.fuse(maid)
     local _new = _fuse.new
     local _import = _fuse.import
@@ -220,6 +238,7 @@ return function(
                 Size = UDim2.new(1, 0, 0.15, 0),
             }),
             getButton(maid, "Apply", function()
+                print("apply rp name!")
             end, 3),
 
             _new("Frame")({
@@ -251,6 +270,8 @@ return function(
                 Size = UDim2.new(1, 0, 0.15, 0),
             }),
             getButton(maid, "Apply", function()
+                print("apply bio!")
+                
             end, 7)
         }
     })
@@ -376,13 +397,36 @@ return function(
         local isVisible = _Computed(function(page : CustomizationPage ?)
             return if custom.Class == page then true else false 
         end, customizationPage)
+        
+        local isEquipped
+
+        if custom.Class == "Accessory" then
+            isEquipped = _Value(false)
+        end
+
         local button = getAccessoryButton(
-            maid, 
+            maid,  
             custom.TemplateId,
             custom.Name,
-            isVisible
+            isVisible,
+            onCostumeButtonClick,
+            isEquipped
         )
         button.Parent = charCosContent
+
+        if game:GetService("RunService"):IsRunning() then
+            local player = game:GetService("Players").LocalPlayer
+            local character = player.Character or player.CharacterAdded:Wait()
+
+            if isEquipped then
+                for _,v in pairs(character:GetChildren()) do
+                    if v:IsA("Accessory") and (CustomizationUtil.getAccessoryId(v) == custom.TemplateId)  then
+                        isEquipped:Set(true)
+                        break
+                    end
+                end
+            end
+        end
     end
 
 

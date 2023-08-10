@@ -10,6 +10,7 @@ local NetworkUtil = require(ReplicatedStorage:WaitForChild("Packages"):WaitForCh
 local CustomizationList = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("CustomizationUtil"):WaitForChild("CustomizationList"))
 --types
 type Maid = Maid.Maid
+export type DescType = "PlayerName" | "PlayerBio"
 --constants
 --remotes
 local ON_CUSTOMIZE_CHAR = "OnCustomizeCharacter"
@@ -18,6 +19,10 @@ local ON_CUSTOMIZE_CHAR = "OnCustomizeCharacter"
 --local functions
 --class
 local CustomizationUtil = {}
+
+function CustomizationUtil.getAccessoryId(accessory : Accessory)
+    return accessory:GetAttribute("CustomeId")
+end
 
 function CustomizationUtil.getAssetImageFromId(id : number, width : number ?, height : number ?)
     local Width = width or 48
@@ -34,18 +39,21 @@ function CustomizationUtil.Customize(plr : Player, customizationId : number)
         local assetInstance = asset:GetChildren()[1]
         assert(asset, "Unable to load the asset")
 
-        print('1', assetInstance)
         if assetInstance:IsA("Decal") then
-            print('2')
             --it's a face
             local head = character:FindFirstChild("Head") :: BasePart or nil
             local face = if head then head:FindFirstChild("face") :: Decal else nil
-            print(head, face)
             if face then 
                 face.Texture = assetInstance.Texture
             end
         elseif assetInstance:IsA("Accessory") then
-            humanoid:AddAccessory(assetInstance)
+            local existingAccessory = character:FindFirstChild(assetInstance.Name)
+            if not existingAccessory then
+                humanoid:AddAccessory(assetInstance)
+                assetInstance:SetAttribute("CustomeId", customizationId)
+            else
+                existingAccessory:Destroy()
+            end
         elseif assetInstance:IsA("Shirt") then
             local shirt = character:FindFirstChild("Shirt") :: Shirt or Instance.new("Shirt")
             shirt.Parent = character
@@ -57,14 +65,23 @@ function CustomizationUtil.Customize(plr : Player, customizationId : number)
         end
         asset:Destroy()  
     else
-        NetworkUtil.fireServer(ON_CUSTOMIZE_CHAR, customizationId)
+        NetworkUtil.invokeServer(ON_CUSTOMIZE_CHAR, customizationId)
     end 
+end
+
+function CustomizationUtil.setDesc(plr : Player, descType : DescType)
+    if descType == "PlayerName" then
+        
+    elseif descType == "PlayerBio" then
+        
+    end
 end
 
 function CustomizationUtil.init(maid : Maid)
     if RunService:IsServer() then
-        NetworkUtil.onServerEvent(ON_CUSTOMIZE_CHAR, function(plr : Player, customisationId : number)
+        NetworkUtil.onServerInvoke(ON_CUSTOMIZE_CHAR, function(plr : Player, customisationId : number)
             CustomizationUtil.Customize(plr, customisationId)
+            return nil
         end)
     end
 end
