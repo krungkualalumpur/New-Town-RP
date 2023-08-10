@@ -69,12 +69,60 @@ function CustomizationUtil.Customize(plr : Player, customizationId : number)
     end 
 end
 
-function CustomizationUtil.setDesc(plr : Player, descType : DescType)
+function CustomizationUtil.setDesc(plr : Player, descType : DescType, descName : string)
+    local displayNameGUIName = "DisplayNameGUI"
+    local frameName = "Frame"
+    local nameTextName = "NameText"
+    local biotextName = "BioText"
+
+    local textColor = Color3.fromRGB(255,255,255)
+
+    local character = plr.Character or plr.CharacterAdded:Wait()
+    
+    local billboardGui = character:FindFirstChild(displayNameGUIName) :: BillboardGui or Instance.new("BillboardGui")
+    billboardGui.Name = displayNameGUIName
+    billboardGui.ExtentsOffsetWorldSpace = Vector3.new(0,1.3,0)
+    billboardGui.Size = UDim2.fromScale(3, 1.5)
+    billboardGui.Parent = character
+   
+    local frame = billboardGui:FindFirstChild(frameName) :: Frame or Instance.new("Frame")
+    frame.Size = UDim2.fromScale(1, 1)
+    frame.BackgroundTransparency = 1
+    frame.Name = frameName
+    frame.Parent = billboardGui
+
+    local uilistlayout = frame:FindFirstChild("UIListLayout") :: UIListLayout or Instance.new("UIListLayout") 
+    uilistlayout.Padding = UDim.new(0, 10)
+    uilistlayout.SortOrder = Enum.SortOrder.LayoutOrder
+    uilistlayout.Parent = frame
+
+    local nameText = frame:FindFirstChild(nameTextName) :: TextLabel or Instance.new("TextLabel")
+    nameText.Size = UDim2.fromScale(1,0.4)
+    nameText.TextColor3 = textColor
+    nameText.TextStrokeTransparency = 0.5
+    nameText.TextScaled = true
+    nameText.Name =  nameTextName
+    nameText.BackgroundTransparency = 1
+    nameText.LayoutOrder = 1
+    nameText.Parent = frame
+
+    local bioText= frame:FindFirstChild(biotextName) :: TextLabel or Instance.new("TextLabel")
+    bioText.Size = UDim2.fromScale(1,0.6)
+    bioText.Name = biotextName
+    bioText.TextColor3 = textColor
+    bioText.TextStrokeTransparency = 0.5
+    bioText.TextSize = 25
+    bioText.BackgroundTransparency = 1
+    bioText.LayoutOrder = 2
+    bioText.Parent = frame
+
     if descType == "PlayerName" then
-        
+        nameText.Text = descName
     elseif descType == "PlayerBio" then
-        
+        bioText.Text = descName
     end
+    
+    
 end
 
 function CustomizationUtil.init(maid : Maid)

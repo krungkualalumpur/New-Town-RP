@@ -31,6 +31,9 @@ function CharacterManager.init(maid : Maid)
             _maid:Destroy()
         end))
 
+        CustomizationUtil.setDesc(plr, "PlayerName", plr.Name)
+        CustomizationUtil.setDesc(plr, "PlayerBio", "")
+
         --testing char only
         --[[local testacc
         for _,v in pairs(CustomizationList) do

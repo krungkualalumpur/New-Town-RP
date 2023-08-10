@@ -7,6 +7,7 @@ local Maid = require(ReplicatedStorage:WaitForChild("Packages"):WaitForChild("Ma
 local InputHandler = require(ReplicatedStorage:WaitForChild("Client"):WaitForChild("InputHandler"))
 local GuiSys = require(ReplicatedStorage:WaitForChild("Client"):WaitForChild("GuiSys"))
 local OptimizationSys = require(ReplicatedStorage:WaitForChild("Client"):WaitForChild("OptimizationSys"))
+local CharacterManager = require(ReplicatedStorage:WaitForChild("Client"):WaitForChild("CharacterManager"))
 --types
 --constants
 --variables
@@ -18,4 +19,4 @@ maid:GiveTask(InputHandler.new(true))
 
 GuiSys.init(maid)
 OptimizationSys.init(maid)
-
+CharacterManager.init(maid)
