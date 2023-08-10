@@ -14,6 +14,7 @@ local InteractUI = require(ReplicatedStorage:WaitForChild("Client"):WaitForChild
 local MainUI = require(ReplicatedStorage:WaitForChild("Client"):WaitForChild("MainUI"))
 
 local BackpackUtil = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("BackpackUtil"))
+local CustomizationUtil = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("CustomizationUtil"))
 
 --types
 type Maid = Maid.Maid
@@ -67,14 +68,22 @@ function guiSys.new(maid : Maid)
 
     local backpackOnEquip = maid:GiveTask(Signal.new())
     local backpackOnDelete = maid:GiveTask(Signal.new())
+    
+    local nameCustomizationOnClick = maid:GiveTask(Signal.new()) 
 
     self.MainUI = MainUI(
         maid,
         backpack,
         
         backpackOnEquip,
-        backpackOnDelete
+        backpackOnDelete,
+
+        nameCustomizationOnClick
     )
+
+    maid:GiveTask(nameCustomizationOnClick:Connect(function(descType, text)
+        CustomizationUtil.setDesc(Player, descType, text)
+    end))
 
     maid:GiveTask(backpackOnEquip:Connect(function(toolKey : number, toolName : string ?)
         NetworkUtil.invokeServer(

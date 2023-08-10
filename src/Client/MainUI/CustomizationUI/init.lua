@@ -30,6 +30,8 @@ local PRIMARY_COLOR = Color3.fromRGB(255,255,255)
 local SECONDARY_COLOR = Color3.fromRGB(25,25,25)
 local TERTIARY_COLOR = Color3.fromRGB(0,0,0)
 
+local SELECT_COLOR = Color3.fromRGB(105, 255, 102)
+
 local TEXT_COLOR = Color3.fromRGB(25,25,25)
 local PADDING_SIZE = UDim.new(0,15)
 --variables
@@ -78,7 +80,7 @@ local function getButton(
     return out
 end
 
-local function getSelectButton(maid : Maid, text : string, fn : () -> (), layoutOrder)
+local function getSelectButton(maid : Maid, text : string, isSelected : State<boolean>, fn : () -> (), layoutOrder)
     local _fuse = ColdFusion.fuse(maid)
     local _new = _fuse.new
     local _import = _fuse.import
@@ -90,9 +92,12 @@ local function getSelectButton(maid : Maid, text : string, fn : () -> (), layout
 
     local out = getButton(maid, text, fn, layoutOrder)
     _bind(out)({
+        BackgroundColor3 = PRIMARY_COLOR,
         Size = UDim2.new(0.2, 0,0.4,0),
         Children = {
             _new("Frame")({
+                BackgroundColor3 = SELECT_COLOR,
+                Visible = isSelected,
                 Size = UDim2.fromScale(0.8, 0.2),
                 Children = {
                     _new("UICorner")({})
@@ -185,7 +190,9 @@ end
 return function(
     maid : Maid,
     Customizations : {CustomizationList.Customization},
-    onCostumeButtonClick : Signal
+    onCostumeButtonClick : Signal,
+
+    onNameCustomeButtonClick : Signal
 )
     print(onCostumeButtonClick)
     local _fuse = ColdFusion.fuse(maid)
@@ -197,7 +204,43 @@ return function(
     local _Computed = _fuse.Computed
     local _Value = _fuse.Value
  
-    local customizationPage : ValueState<CustomizationPage ?> = _Value(nil) :: any
+    local customizationPage : ValueState<CustomizationPage ?> = _Value("Face") :: any
+    local RPNameTextBox = _new("TextBox")({
+        BackgroundColor3 = TERTIARY_COLOR,
+        BackgroundTransparency = 0.5,
+        LayoutOrder = 2,
+        TextColor3 = PRIMARY_COLOR,
+        TextStrokeTransparency = 0,
+        TextScaled = true,
+        TextWrapped = true,
+        PlaceholderText = "Insert your RP name here",
+        PlaceholderColor3 = BACKGROUND_COLOR,
+        Size = UDim2.new(1, 0, 0.15, 0),
+        Children = {
+            _new("UITextSizeConstraint")({
+                MinTextSize = 0,
+                MaxTextSize = 15
+            })
+        }
+    }) :: TextBox
+    local bioTextBox = _new("TextBox")({
+        BackgroundColor3 = TERTIARY_COLOR,
+        BackgroundTransparency = 0.5,
+        LayoutOrder = 6,
+        TextColor3 = PRIMARY_COLOR,
+        TextStrokeTransparency = 0,
+        TextScaled = true,
+        TextWrapped = true,
+        PlaceholderText = "Insert your bio here",
+        PlaceholderColor3 = BACKGROUND_COLOR,
+        Size = UDim2.new(1, 0, 0.15, 0),
+        Children = {
+            _new("UITextSizeConstraint")({
+                MinTextSize = 0,
+                MaxTextSize = 15
+            })
+        }
+    }):: TextBox
 
     local RPName = _new("Frame")({
         BackgroundColor3 = SECONDARY_COLOR,
@@ -218,60 +261,41 @@ return function(
             _new("TextLabel")({
                 LayoutOrder = 1,
                 BackgroundTransparency = 1,
-                Size = UDim2.new(1, 0, 0.025, 0),
+                Size = UDim2.new(1, 0, 0.08, 0),
+                TextScaled = true,
                 RichText = true,
                 TextSize = 18,
                 Text = "<b>Roleplay Name</b>",
                 TextColor3 = PRIMARY_COLOR,
                 TextStrokeTransparency = 0.5,
             }),
-            _new("TextBox")({
-                BackgroundColor3 = TERTIARY_COLOR,
-                BackgroundTransparency = 0.5,
-                LayoutOrder = 2,
-                TextColor3 = PRIMARY_COLOR,
-                TextStrokeTransparency = 0,
-                TextScaled = true,
-                TextWrapped = true,
-                PlaceholderText = "Insert your RP name here",
-                PlaceholderColor3 = BACKGROUND_COLOR,
-                Size = UDim2.new(1, 0, 0.15, 0),
-            }),
+            RPNameTextBox,
             getButton(maid, "Apply", function()
                 print("apply rp name!")
+                onNameCustomeButtonClick:Fire("PlayerName" :: CustomizationUtil.DescType, RPNameTextBox.Text)
             end, 3),
 
             _new("Frame")({
                 Name = "Buffer",
                 LayoutOrder = 4,
                 BackgroundTransparency = 1,
-                Size = UDim2.fromScale(1, 0.1),
+                Size = UDim2.fromScale(1, 0.05),
             }),
 
             _new("TextLabel")({
                 LayoutOrder = 5,
                 BackgroundTransparency = 1,
-                Size = UDim2.new(1, 0, 0.025, 0),
+                Size = UDim2.new(1, 0, 0.08, 0),
                 RichText = true,
                 Text = "<b>Bio</b>",
+                TextScaled = true,
                 TextColor3 = PRIMARY_COLOR,
                 TextStrokeTransparency = 0.5,
             }),
-            _new("TextBox")({
-                BackgroundColor3 = TERTIARY_COLOR,
-                BackgroundTransparency = 0.5,
-                LayoutOrder = 6,
-                TextColor3 = PRIMARY_COLOR,
-                TextStrokeTransparency = 0,
-                TextScaled = true,
-                TextWrapped = true,
-                PlaceholderText = "Insert your bio here",
-                PlaceholderColor3 = BACKGROUND_COLOR,
-                Size = UDim2.new(1, 0, 0.15, 0),
-            }),
+            bioTextBox,
             getButton(maid, "Apply", function()
                 print("apply bio!")
-                
+                onNameCustomeButtonClick:Fire("PlayerBio" :: CustomizationUtil.DescType, bioTextBox.Text)
             end, 7)
         }
     })
@@ -326,6 +350,9 @@ return function(
                     getSelectButton(
                         maid, 
                         "Face", 
+                        _Computed(function(customPage : CustomizationPage ?) 
+                            return if customPage == "Face" then true else false 
+                        end, customizationPage),
                         function()
                             customizationPage:Set("Face")
                         end, 
@@ -334,6 +361,9 @@ return function(
                     getSelectButton(
                         maid, 
                         "Shirt", 
+                        _Computed(function(customPage : CustomizationPage ?) 
+                            return if customPage == "Shirt" then true else false 
+                        end, customizationPage),
                         function()
                             customizationPage:Set("Shirt")
                         end, 
@@ -342,6 +372,9 @@ return function(
                     getSelectButton(
                         maid, 
                         "Pants", 
+                        _Computed(function(customPage : CustomizationPage ?) 
+                            return if customPage == "Pants" then true else false 
+                        end, customizationPage),
                         function()
                             customizationPage:Set("Pants")
                         end, 
@@ -350,10 +383,13 @@ return function(
                     getSelectButton(
                         maid, 
                         "Accessories", 
+                        _Computed(function(customPage : CustomizationPage ?) 
+                            return if customPage == "Accessory" then true else false 
+                        end, customizationPage),
                         function()
                             customizationPage:Set("Accessory")
                         end, 
-                        4
+                        4 
                     ),
                     --[[_new("TextButton")({
                         BackgroundColor3 = BACKGROUND_COLOR,

@@ -120,7 +120,9 @@ return function(
     backpack : ValueState<{BackpackUtil.ToolData<boolean>}>,
 
     backpackOnEquip : Signal,
-    backpackOnDelete : Signal
+    backpackOnDelete : Signal,
+
+    nameOnCustomize : Signal
 )
     print("nailak")
     
@@ -251,7 +253,10 @@ return function(
             local CustomizationUI = CustomizationUI(
                 statusMaid,
                 CustomizationList,
-                onCustomeButtonClick
+                onCustomeButtonClick,
+
+                nameOnCustomize
+
             ) :: Frame
             CustomizationUI.Parent = out
 

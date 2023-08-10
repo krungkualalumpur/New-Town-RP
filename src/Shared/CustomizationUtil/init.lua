@@ -3,6 +3,7 @@
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local InsertService = game:GetService("InsertService")
 local RunService = game:GetService("RunService")
+local TextService = game:GetService("TextService")
 --packages
 local Maid = require(ReplicatedStorage:WaitForChild("Packages"):WaitForChild("Maid"))
 local NetworkUtil = require(ReplicatedStorage:WaitForChild("Packages"):WaitForChild("NetworkUtil"))
@@ -13,6 +14,7 @@ type Maid = Maid.Maid
 export type DescType = "PlayerName" | "PlayerBio"
 --constants
 --remotes
+local ON_CUSTOMIZE_AVATAR_NAME = "OnCustomizeAvatarName"
 local ON_CUSTOMIZE_CHAR = "OnCustomizeCharacter"
 --variables
 --references
@@ -70,65 +72,82 @@ function CustomizationUtil.Customize(plr : Player, customizationId : number)
 end
 
 function CustomizationUtil.setDesc(plr : Player, descType : DescType, descName : string)
-    local displayNameGUIName = "DisplayNameGUI"
-    local frameName = "Frame"
-    local nameTextName = "NameText"
-    local biotextName = "BioText"
+    if RunService:IsServer() then
+        local displayNameGUIName = "DisplayNameGUI"
+        local frameName = "Frame"
+        local nameTextName = "NameText"
+        local biotextName = "BioText"
 
-    local textColor = Color3.fromRGB(255,255,255)
+        local textColor = Color3.fromRGB(255,255,255)
 
-    local character = plr.Character or plr.CharacterAdded:Wait()
+        local character = plr.Character or plr.CharacterAdded:Wait()
+        
+        local billboardGui = character:FindFirstChild(displayNameGUIName) :: BillboardGui or Instance.new("BillboardGui")
+        billboardGui.Name = displayNameGUIName
+        billboardGui.ExtentsOffsetWorldSpace = Vector3.new(0,1.25,0)
+        billboardGui.Size = UDim2.fromScale(3, 1.5)
+        billboardGui.Parent = character
     
-    local billboardGui = character:FindFirstChild(displayNameGUIName) :: BillboardGui or Instance.new("BillboardGui")
-    billboardGui.Name = displayNameGUIName
-    billboardGui.ExtentsOffsetWorldSpace = Vector3.new(0,1.3,0)
-    billboardGui.Size = UDim2.fromScale(3, 1.5)
-    billboardGui.Parent = character
-   
-    local frame = billboardGui:FindFirstChild(frameName) :: Frame or Instance.new("Frame")
-    frame.Size = UDim2.fromScale(1, 1)
-    frame.BackgroundTransparency = 1
-    frame.Name = frameName
-    frame.Parent = billboardGui
+        local frame = billboardGui:FindFirstChild(frameName) :: Frame or Instance.new("Frame")
+        frame.Size = UDim2.fromScale(1, 1)
+        frame.BackgroundTransparency = 1
+        frame.Name = frameName
+        frame.Parent = billboardGui
 
-    local uilistlayout = frame:FindFirstChild("UIListLayout") :: UIListLayout or Instance.new("UIListLayout") 
-    uilistlayout.Padding = UDim.new(0, 10)
-    uilistlayout.SortOrder = Enum.SortOrder.LayoutOrder
-    uilistlayout.Parent = frame
+        local uilistlayout = frame:FindFirstChild("UIListLayout") :: UIListLayout or Instance.new("UIListLayout") 
+        uilistlayout.Padding = UDim.new(0, 10)
+        uilistlayout.SortOrder = Enum.SortOrder.LayoutOrder
+        uilistlayout.Parent = frame
 
-    local nameText = frame:FindFirstChild(nameTextName) :: TextLabel or Instance.new("TextLabel")
-    nameText.Size = UDim2.fromScale(1,0.4)
-    nameText.TextColor3 = textColor
-    nameText.TextStrokeTransparency = 0.5
-    nameText.TextScaled = true
-    nameText.Name =  nameTextName
-    nameText.BackgroundTransparency = 1
-    nameText.LayoutOrder = 1
-    nameText.Parent = frame
+        local nameText = frame:FindFirstChild(nameTextName) :: TextLabel or Instance.new("TextLabel")
+        nameText.Size = UDim2.fromScale(1,0.4)
+        nameText.TextColor3 = textColor
+        nameText.TextStrokeTransparency = 0.5
+        nameText.TextScaled = true
+        nameText.Name =  nameTextName
+        nameText.BackgroundTransparency = 1
+        nameText.LayoutOrder = 1
+        nameText.Parent = frame
 
-    local bioText= frame:FindFirstChild(biotextName) :: TextLabel or Instance.new("TextLabel")
-    bioText.Size = UDim2.fromScale(1,0.6)
-    bioText.Name = biotextName
-    bioText.TextColor3 = textColor
-    bioText.TextStrokeTransparency = 0.5
-    bioText.TextSize = 25
-    bioText.BackgroundTransparency = 1
-    bioText.LayoutOrder = 2
-    bioText.Parent = frame
+        local bioText= frame:FindFirstChild(biotextName) :: TextLabel or Instance.new("TextLabel")
+        bioText.Size = UDim2.fromScale(1,0.3)
+        bioText.Name = biotextName
+        bioText.TextColor3 = textColor
+        bioText.TextStrokeTransparency = 0.5
+        bioText.TextScaled = true
+        bioText.BackgroundTransparency = 1
+        bioText.LayoutOrder = 2
+        bioText.Parent = frame
 
-    if descType == "PlayerName" then
-        nameText.Text = descName
-    elseif descType == "PlayerBio" then
-        bioText.Text = descName
+
+        --filters
+        local result : TextFilterResult
+        local s, e = pcall(function()
+            result = TextService:FilterStringAsync(descName, plr.UserId)
+        end)
+        descName = result:GetNonChatStringForBroadcastAsync()
+        if not s or not descName then
+            error(e or "Desc name not av")
+        end
+
+        if descType == "PlayerName" then
+            nameText.Text = descName
+        elseif descType == "PlayerBio" then
+            bioText.Text = descName
+        end
+    else
+        NetworkUtil.invokeServer(ON_CUSTOMIZE_AVATAR_NAME, descType, descName)
     end
-    
-    
 end
 
 function CustomizationUtil.init(maid : Maid)
     if RunService:IsServer() then
         NetworkUtil.onServerInvoke(ON_CUSTOMIZE_CHAR, function(plr : Player, customisationId : number)
             CustomizationUtil.Customize(plr, customisationId)
+            return nil
+        end)
+        NetworkUtil.onServerInvoke(ON_CUSTOMIZE_AVATAR_NAME, function(plr : Player, descType : DescType, descName : string)
+            CustomizationUtil.setDesc(plr, descType, descName)
             return nil
         end)
     end

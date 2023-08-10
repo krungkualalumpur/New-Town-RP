@@ -31,11 +31,15 @@ return function(target : CoreGui)
     local _Value = _fuse.Value
 
     local onCustomeClick = maid:GiveTask(Signal.new())
+    local onNameCostumizationClick = maid:GiveTask(Signal.new())
+
     local frame = CustomizationUI(
         maid,
 
         CustomizationList,
-        onCustomeClick
+        onCustomeClick,
+
+        onNameCostumizationClick
     )
     frame.Parent = target
 
@@ -44,6 +48,10 @@ return function(target : CoreGui)
         if enabled then
             enabled:Set(not enabled:Get())
         end
+    end))
+
+    maid:GiveTask(onNameCostumizationClick:Connect(function()
+
     end))
 
     return function() 
