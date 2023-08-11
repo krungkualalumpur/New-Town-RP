@@ -71,12 +71,14 @@ local function createInteract(maid : Maid, interactFrame : Frame, interactNameTa
 
     if interactCode.EnumType == Enum.KeyCode then
         for _,v: Model in pairs(CollectionService:GetTagged(interactNameTag)) do
-            if v:IsA("Model") then
+            if v:IsA("Model") and v:IsDescendantOf(workspace) then
                 table.insert(Interactables, v)
             end
         end
         CollectionService:GetInstanceAddedSignal(interactNameTag):Connect(function(inst)
-            table.insert(Interactables, inst)
+            if inst:IsDescendantOf(workspace) then
+                table.insert(Interactables, inst)
+            end
         end)
 
         CollectionService:GetInstanceRemovedSignal(interactNameTag):Connect(function(inst)

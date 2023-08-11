@@ -119,79 +119,20 @@ function Interactable.Interact(model : Model, player : Player)
 end
 
 function Interactable.InteractToolGiver(model : Model, player : Player)
-    local function createWeld(handle: BasePart, part: BasePart)
-        local weld = Instance.new("WeldConstraint")
-        weld.Part0 = part
-        weld.Part1 = handle 
-        weld.Parent = handle
-        return weld
-    end
-    
-    local function createTool(inst : Instance)
-        local tool = Instance.new("Tool")
-        local clonedInst = inst:Clone()
-        clonedInst.Parent = tool
-        if clonedInst:IsA("BasePart") then clonedInst.Anchored = false end
-        for _,v in pairs(clonedInst:GetDescendants()) do
-            if v:IsA("BasePart") then
-                v.Anchored = false
-            end
-        end
-        tool.Name = clonedInst.Name
-
-        --adds handle
-        local cf, size 
-        if clonedInst:IsA("Model") then
-            cf, size =  clonedInst:GetBoundingBox()
-        elseif clonedInst:IsA("BasePart") then
-            cf, size = clonedInst.CFrame, clonedInst.Size
-        else 
-            cf, size = CFrame.new(), Vector3.new()
-        end
-
-        local handle = Instance.new("Part")
-        handle.Name = "Handle"
-        handle.CanCollide = false
-        handle.Transparency = 1
-        handle.CFrame, handle.Size = cf, size
-        handle.Parent = tool
-        --welds
-        if clonedInst:IsA("BasePart") then
-            createWeld(handle, clonedInst)
-        end
-        for _,v in pairs(clonedInst:GetDescendants()) do
-            if v:IsA("BasePart") then
-                createWeld(handle, v)
-            end
-        end
-
-        --func
-        local maid = Maid.new()
-        maid:GiveTask(tool.Activated:Connect(function()
-            local character = player.Character 
-            if character then    
-                local toolAction = ToolActions.getActionInfo(model:GetAttribute("ToolClass"))
-                toolAction.Activated(inst, player)
-            end
-        end))
-        maid:GiveTask(tool.Destroying:Connect(function()
-            maid:Destroy()
-        end))
-        return tool
-    end
-
     if RunService:IsServer() then
         local playerManager = require(ServerScriptService:WaitForChild("Server"):WaitForChild("PlayerManager"))
         local plrInfo = playerManager.get(player)
 
         if not model:GetAttribute("DescendantsAreTools") then
           
-            local newTool = createTool(model)
-            newTool.Parent = player:WaitForChild("Backpack")
+            --local newTool = createTool(model)
+            local newTool = BackpackUtil.getToolFromName(model.Name)
             -----
-            plrInfo:InsertToBackpack(newTool)
+            if newTool then
+                plrInfo:InsertToBackpack(newTool)
+            end
             print(plrInfo.Backpack)
-            -----
+            ----- 
         else
             for _,v in pairs(model:GetChildren()) do
                 if v:GetAttribute("IsTool") then
@@ -206,8 +147,6 @@ function Interactable.InteractToolGiver(model : Model, player : Player)
             end
         end
         NetworkUtil.fireClient(UPDATE_PLAYER_BACKPACK, plrInfo.Player,  plrInfo:GetBackpack(true, true))
-
-          
     else
         NetworkUtil.fireServer(ON_TOOL_INTERACT, model)
     end
@@ -393,6 +332,8 @@ function Interactable.InteractNonSwitch(model : Model, plr : Player)
         else
 
         end
+    elseif data.Class == "ToolsUI" then
+
     end
         
 end

@@ -123,9 +123,7 @@ return function(
     backpackOnDelete : Signal,
 
     nameOnCustomize : Signal
-)
-    print("nailak")
-    
+)    
     local _fuse = ColdFusion.fuse(maid)
     local _new = _fuse.new
     local _import = _fuse.import

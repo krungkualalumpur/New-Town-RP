@@ -54,6 +54,7 @@ local ToolActions = {}
 
 function ToolActions.getActionInfo(toolClass : string)
     for _,v in pairs(ActionLists) do
+        print(v.ToolClass, toolClass)
         if v.ToolClass == toolClass then
             return v 
         end

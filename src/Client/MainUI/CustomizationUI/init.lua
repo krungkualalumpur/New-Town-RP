@@ -92,13 +92,16 @@ local function getSelectButton(maid : Maid, text : string, isSelected : State<bo
 
     local out = getButton(maid, text, fn, layoutOrder)
     _bind(out)({
+        AutoButtonColor = false,
         BackgroundColor3 = PRIMARY_COLOR,
         Size = UDim2.new(0.2, 0,0.4,0),
         Children = {
             _new("Frame")({
                 BackgroundColor3 = SELECT_COLOR,
                 Visible = isSelected,
-                Size = UDim2.fromScale(0.8, 0.2),
+                Size = _Computed(function(selected : boolean)
+                    return if selected then UDim2.fromScale(0.8, 0.2) else UDim2.fromScale(0, 0.2)
+                end, isSelected):Tween(0.2),
                 Children = {
                     _new("UICorner")({})
                 }

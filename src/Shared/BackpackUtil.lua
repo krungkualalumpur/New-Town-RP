@@ -29,6 +29,7 @@ local function createTool(inst : Instance)
     local tool = Instance.new("Tool")
     local clonedInst = inst:Clone()
     clonedInst.Parent = tool
+    
     if clonedInst:IsA("BasePart") then clonedInst.Anchored = false end
     for _,v in pairs(clonedInst:GetDescendants()) do
         if v:IsA("BasePart") then
@@ -63,6 +64,11 @@ local function createTool(inst : Instance)
         end
     end
 
+    --removing the tags
+    for _,tag in pairs(CollectionService:GetTags(clonedInst)) do
+        CollectionService:RemoveTag(clonedInst, tag)
+    end
+    
     return tool
 end
 --class
@@ -125,19 +131,16 @@ end
 --initializing backpack
 function BackpackUtil.init(maid : Maid)
     if RunService:IsServer() then
-        local ToolCollections = Instance.new("Folder")
-        ToolCollections.Name = "Tools"
-        ToolCollections.Parent = ReplicatedStorage
+        local ToolCollections = ReplicatedStorage:WaitForChild("Assets"):WaitForChild("Tools")
 
-        print(CollectionService:GetTagged("Tool"))
         for _,v in pairs(CollectionService:GetTagged("Tool")) do
             for k, child in pairs(v:GetDescendants()) do
                 if child:GetAttribute("IsTool") and not BackpackUtil.getToolFromName(child.Name) then
                     local newTool = child:Clone()
                     newTool.Parent = ToolCollections
                     CollectionService:AddTag(newTool, "Tool")
-                    newTool:SetAttribute("ToolClass", "Consumption")
-                    newTool:SetAttribute("DisplayTypeName", "Food")
+                    newTool:SetAttribute("ToolClass", v:GetAttribute("ToolClass"))
+                    newTool:SetAttribute("DisplayTypeName", v:GetAttribute("DisplayTypeName"))
                 end
             end
         end

@@ -46,13 +46,16 @@ return function(target : CoreGui)
     local onBackpackEquip = maid:GiveTask(Signal.new())
     local onBackpackDelete = maid:GiveTask(Signal.new())
 
+    local nameOnCustomize = maid:GiveTask(Signal.new())
+
     local frame = MainUI(
         maid,
         
         backpack :: any,
 
         onBackpackEquip,
-        onBackpackDelete
+        onBackpackDelete,
+        nameOnCustomize
     )
     frame.Parent = target
 
@@ -62,6 +65,10 @@ return function(target : CoreGui)
 
     maid:GiveTask(onBackpackDelete:Connect(function()
         print("Delete")
+    end))
+
+    maid:GiveTask(nameOnCustomize:Connect(function()
+        print("Customize Name")
     end))
 
     return function() 
