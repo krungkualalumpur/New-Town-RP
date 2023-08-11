@@ -30,7 +30,9 @@ return function(target : CoreGui)
         Position = UDim2.fromScale(0.5, 0.2),
         Parent = target
     })) :: GuiObject]]
-    local frame = _maid:GiveTask(ExitButton.new(exampleFrame, _Value(true)))
+    local isExitButtonVisible = _Value(true)
+
+    local frame = _maid:GiveTask(ExitButton.new(exampleFrame, isExitButtonVisible))
     frame.Instance.Parent = target
     
     return function()

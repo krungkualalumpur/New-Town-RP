@@ -11,17 +11,20 @@ local Signal = require(ReplicatedStorage:WaitForChild("Packages"):WaitForChild("
 local BackpackUI = require(ReplicatedStorage:WaitForChild("Client"):WaitForChild("MainUI"):WaitForChild("BackpackUI"))
 local AnimationUI = require(ReplicatedStorage:WaitForChild("Client"):WaitForChild("MainUI"):WaitForChild("AnimationUI"))
 local CustomizationUI = require(ReplicatedStorage:WaitForChild("Client"):WaitForChild("MainUI"):WaitForChild("CustomizationUI"))
+local ToolsUI = require(ReplicatedStorage:WaitForChild("Client"):WaitForChild("ToolsUI"))
+
 local ExitButton = require(ReplicatedStorage:WaitForChild("Client"):WaitForChild("ExitButton"))
 local BackpackUtil = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("BackpackUtil"))
 local AnimationUtil = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("AnimationUtil"))
 
 local CustomizationUtil = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("CustomizationUtil"))
 local CustomizationList = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("CustomizationUtil"):WaitForChild("CustomizationList"))
+
 --types
 type Maid = Maid.Maid
 type Signal = Signal.Signal
 
-type UIStatus = "Backpack" | "Animation" | "Customization" | nil
+export type UIStatus = "Backpack" | "Animation" | "Customization" | nil
 type AnimationInfo = {
     Name : string,
     AnimationId : string
@@ -118,6 +121,7 @@ return function(
     maid : Maid,
 
     backpack : ValueState<{BackpackUtil.ToolData<boolean>}>,
+    UIStatus : ValueState<UIStatus>,
 
     backpackOnEquip : Signal,
     backpackOnDelete : Signal,
@@ -134,8 +138,6 @@ return function(
     local _Value = _fuse.Value
 
     local statusMaid = maid:GiveTask(Maid.new())
-    local UIStatus : ValueState<UIStatus> = _Value(nil) :: any
-
 
     local out = _new("Frame")({
         BackgroundTransparency = 1,
@@ -158,13 +160,17 @@ return function(
                         VerticalAlignment = Enum.VerticalAlignment.Center
                     }),   
                     getButton(maid, 2815418737, function()
+                        print(UIStatus:Get())
                         UIStatus:Set(if UIStatus:Get() ~= "Backpack" then "Backpack" else nil)
+                        print(UIStatus:Get())
                     end, "Backpack", 1),
                     getButton(maid, 11127689024, function()
                         UIStatus:Set(if UIStatus:Get() ~= "Animation" then "Animation" else nil)
+                        print(UIStatus:Get())
                     end, "Animation", 2),
                     getButton(maid, 13285102351, function()
                         UIStatus:Set(if UIStatus:Get() ~= "Customization" then "Customization" else nil)
+                        print(UIStatus:Get())
                     end, "Customization", 3)
                     --getButton(maid, 227600967),
 
@@ -173,11 +179,11 @@ return function(
         }
     }) :: Frame
 
-    
+    local isExitButtonVisible = _Value(true)
     local function getExitButton(ui : GuiObject)
         local exitButton = ExitButton.new(
             ui:WaitForChild("ContentFrame") :: GuiObject, 
-            _Value(true),
+            isExitButtonVisible,
             function()
                 UIStatus:Set(nil)
                 return nil 
@@ -185,21 +191,12 @@ return function(
         ) 
         exitButton.Instance.Parent = ui:FindFirstChild("ContentFrame")
     end
-    
-    --local itemInfo = {}
-    --for _,v in pairs(BackpackUtil.getAllItemNames()) do
-      --  local toolModel = BackpackUtil.getToolFromName(v)
-      --  if toolModel then
-       --     local toolData = BackpackUtil.getData(toolModel, true)
-       --     table.insert(itemInfo, toolData)
-       -- end
-   -- end
-
   
-
-    _Computed(function(status : UIStatus)
+    local val = _Computed(function(status : UIStatus)
+        print("test1?")
         statusMaid:DoCleaning() 
         if status == "Backpack" then
+            print("Test2?")
             local onBackpackButtonEquipClickSignal = statusMaid:GiveTask(Signal.new())
             local onBackpackButtonDeleteClickSignal = statusMaid:GiveTask(Signal.new())
 
@@ -284,7 +281,12 @@ return function(
 
             getExitButton(CustomizationUI)
         end
-        return nil
+        return ""
     end, UIStatus)
+
+    local strVal = _new("StringValue")({
+        Value = val  
+    })
+    
     return out
 end

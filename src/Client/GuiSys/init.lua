@@ -12,13 +12,17 @@ local ColdFusion = require(ReplicatedStorage:WaitForChild("Packages"):WaitForChi
 local InteractSys = require(ReplicatedStorage:WaitForChild("Client"):WaitForChild("GuiSys"):WaitForChild("InteractSys"))
 local InteractUI = require(ReplicatedStorage:WaitForChild("Client"):WaitForChild("InteractUI"))
 local MainUI = require(ReplicatedStorage:WaitForChild("Client"):WaitForChild("MainUI"))
+local ExitButton = require(ReplicatedStorage:WaitForChild("Client"):WaitForChild("ExitButton"))
 
 local BackpackUtil = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("BackpackUtil"))
 local CustomizationUtil = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("CustomizationUtil"))
+local ToolsUI = require(ReplicatedStorage:WaitForChild("Client"):WaitForChild("ToolsUI"))
 
 --types
 type Maid = Maid.Maid
 type Signal = Signal.Signal
+
+type OptInfo = ToolsUI.OptInfo
 
 type Fuse = ColdFusion.Fuse
 type State<T> = ColdFusion.State<T>
@@ -29,14 +33,19 @@ type GuiSys = {
     __index : GuiSys,
     MainUI : GuiObject,
     InteractUI : GuiObject,
+    OpenedUI : GuiObject ?,
 
     new : (maid : Maid) -> GuiSys,
     init : (maid : Maid) -> ()
 }
 --constants
 --remotes
+local ON_ITEM_OPTIONS_OPENED = "OnItemOptionsOpened"
+
 local GET_PLAYER_BACKPACK = "GetPlayerBackpack"
 local UPDATE_PLAYER_BACKPACK = "UpdatePlayerBackpack"
+
+local ADD_BACKPACK = "AddBackpack" 
 
 local EQUIP_BACKPACK = "EquipBackpack"
 local DELETE_BACKPACK = "DeleteBackpack"
@@ -51,6 +60,8 @@ local guiSys : GuiSys = {} :: any
 guiSys.__index = guiSys
 
 function guiSys.new(maid : Maid)
+    local target = Player:WaitForChild("PlayerGui"):WaitForChild("ScreenGui")
+    
     local _fuse = ColdFusion.fuse(maid)
     local _new = _fuse.new
     local _import = _fuse.import
@@ -71,10 +82,14 @@ function guiSys.new(maid : Maid)
     
     local nameCustomizationOnClick = maid:GiveTask(Signal.new()) 
 
+    local MainUIStatus : ValueState<MainUI.UIStatus> = _Value(nil) :: any
+
     self.MainUI = MainUI(
         maid,
         backpack,
         
+        MainUIStatus,
+
         backpackOnEquip,
         backpackOnDelete,
 
@@ -100,19 +115,64 @@ function guiSys.new(maid : Maid)
         )
     end))
 
-
     self.InteractUI = InteractUI(maid, interactKeyCode)
 
-    self.MainUI.Parent = Player:WaitForChild("PlayerGui"):WaitForChild("ScreenGui")
-    self.InteractUI.Parent = Player:WaitForChild("PlayerGui"):WaitForChild("ScreenGui")
+    self.MainUI.Parent = target
+    self.InteractUI.Parent = target
 
     currentGuiSys = self
 
     InteractSys.init(maid, self.InteractUI :: Frame, interactKeyCode)
 
-
     maid:GiveTask(NetworkUtil.onClientEvent(UPDATE_PLAYER_BACKPACK, function(newbackpackval : {BackpackUtil.ToolData<boolean>})
         backpack:Set(newbackpackval)
+    end))
+
+   local currentOptInfo : ValueState<OptInfo ?> = _Value(nil) :: any   
+    local onItemGet = maid:GiveTask(Signal.new())
+
+    local isExitButtonVisible = _Value(true)
+    NetworkUtil.onClientInvoke(ON_ITEM_OPTIONS_OPENED, function(
+        listName : string,
+        ToolsList : {[number] : OptInfo}
+    )
+       
+        local toolsUI = ToolsUI(
+            maid,
+            listName, 
+            ToolsList,
+
+            currentOptInfo,
+
+            onItemGet
+        ) :: GuiObject
+        ExitButton.new(
+            toolsUI, 
+            isExitButtonVisible,
+            function()
+                maid.ItemOptionsUI = nil
+                return 
+            end
+        )
+
+        maid.ItemOptionsUI = toolsUI
+        toolsUI.Parent = target
+
+        return nil
+    end)
+   
+    maid:GiveTask(onItemGet:Connect(function()
+        print("kiatisuk ", currentOptInfo:Get()) 
+        local optInfo : ToolsUI.OptInfo ? = currentOptInfo:Get()
+        local char = Player.Character or Player.CharacterAdded:Wait()
+        
+        if optInfo then
+            NetworkUtil.invokeServer(
+                ADD_BACKPACK,
+                optInfo.Name
+            )
+            print("equip it")
+        end
     end))
 
     --setting default backpack to untrue it 
@@ -123,6 +183,8 @@ end
 
 function guiSys.init(maid : Maid)
     local newGuiSys = guiSys.new(maid)
+
+
     return
 end
 

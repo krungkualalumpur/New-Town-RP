@@ -6,11 +6,12 @@ local Maid = require(ReplicatedStorage:WaitForChild("Packages"):WaitForChild("Ma
 local ColdFusion = require(ReplicatedStorage:WaitForChild("Packages"):WaitForChild("ColdFusion8"))
 local Signal = require(ReplicatedStorage:WaitForChild("Packages"):WaitForChild("Signal"))
 --modules
+local BackpackUtil = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("BackpackUtil"))
 --types
 type Maid = Maid.Maid
 type Signal = Signal.Signal
 
-type OptInfo = {
+export type OptInfo = {
     Name : string,
     Desc : string
 } 
@@ -26,7 +27,7 @@ local PADDING_SIZE =  UDim.new(0.02, 0)
 
 local BACKGROUND_COLOR = Color3.fromRGB(200,200,200)
 local PRIMARY_COLOR = Color3.fromRGB(255,255,255)
-local SECONDARY_COLOR = Color3.new(0.678431, 0.615686, 0.027451)
+local SECONDARY_COLOR = Color3.new(0.705882, 0.639216, 0.019608)
 local TERTIARY_COLOR = Color3.fromRGB(25,25,25)
 
 --variables
@@ -48,7 +49,7 @@ local function getButton(
 
     local out = _new("TextButton")({
         AutoButtonColor = true,
-        LayoutOrder = 3,
+        LayoutOrder = 4,
         Size = UDim2.fromScale(0.25, 0.15),
         Text = text,
         Children = {
@@ -159,7 +160,10 @@ return function(
     maid : Maid,
     listName : string,
     ToolsList : {[number] : OptInfo},
-    OnListClicked : Signal
+
+    currentOptInfo : ValueState<OptInfo ?>,
+
+    onItemGet : Signal
 )
     local _fuse = ColdFusion.fuse(maid)
     local _new = _fuse.new
@@ -169,8 +173,6 @@ return function(
 
     local _Computed = _fuse.Computed
     local _Value = _fuse.Value
-
-    local currentOptInfo : ValueState<OptInfo ?> = _Value(nil) :: any
 
     local ListContent = _new("ScrollingFrame")({
         LayoutOrder = 2,
@@ -252,7 +254,31 @@ return function(
     }) 
 
 
-    local onItemGet = maid:GiveTask(Signal.new())
+    local itemViewportFrame =   _new("ViewportFrame")({
+        LayoutOrder = 3,
+        BackgroundTransparency = 1,
+        Size = UDim2.fromScale(1, 0.25),
+        Children = {
+            _new("UIAspectRatioConstraint")({})
+        }
+    }) :: ViewportFrame
+
+    local currentCam = _new("Camera")({
+        Parent = itemViewportFrame,
+        CFrame = _Computed(function(optInfo : OptInfo ?)
+            local modelDisplay = if optInfo then BackpackUtil.getToolFromName(optInfo.Name) else nil
+            print(modelDisplay, " berliann")
+            if modelDisplay then modelDisplay:Clone().Parent = itemViewportFrame end
+
+            local toolModel = if optInfo then BackpackUtil.getToolFromName(optInfo.Name) else nil
+            return if toolModel and toolModel:IsA("Model") and toolModel.PrimaryPart then CFrame.lookAt(toolModel.PrimaryPart.Position + toolModel.PrimaryPart.CFrame.LookVector*0.5 + toolModel.PrimaryPart.CFrame.RightVector + toolModel.PrimaryPart.CFrame.UpVector, toolModel.PrimaryPart.Position) else CFrame.new()
+        end, currentOptInfo)
+    }) :: Camera
+    
+    itemViewportFrame.CurrentCamera = currentCam
+
+
+    
     local selectedInfoFrame = _new("Frame")({
         LayoutOrder = 0,
         Visible = _Computed(function(info : OptInfo ?)
@@ -288,7 +314,7 @@ return function(
             _new("TextLabel")({
                 LayoutOrder = 2,
                 BackgroundTransparency = 1,
-                Size = UDim2.fromScale(1, 0.55),
+                Size = UDim2.fromScale(1, 0.35),
                 TextColor3 = PRIMARY_COLOR,
                 Text = _Computed(function(info : OptInfo ?)
                     return if info then info.Desc else ""
@@ -303,6 +329,7 @@ return function(
                     })
                 }
             }),
+            itemViewportFrame,
             getButton(
                 maid,
                 "Get",
@@ -311,10 +338,6 @@ return function(
         }
     })
     selectedInfoFrame.Parent = out
-
-    maid:GiveTask(onItemGet:Connect(function()
-        print("Test")
-    end))
 
     local onListSelected = maid:GiveTask(Signal.new())
 
@@ -332,7 +355,6 @@ return function(
 
     maid:GiveTask(onListSelected:Connect(function(optInfo : OptInfo)
         currentOptInfo:Set(if currentOptInfo:Get() ~= optInfo then optInfo else nil)
-        print("Soul on fire")
     end))
 
 

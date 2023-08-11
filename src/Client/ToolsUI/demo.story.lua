@@ -4,9 +4,11 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 --packages
 local Maid = require(ReplicatedStorage:WaitForChild("Packages"):WaitForChild("Maid"))
 local ColdFusion = require(ReplicatedStorage:WaitForChild("Packages"):WaitForChild("ColdFusion8"))
+local Signal = require(ReplicatedStorage:WaitForChild("Packages"):WaitForChild("Signal"))
 --modules
 local ToolsUI = require(ReplicatedStorage:WaitForChild("Client"):WaitForChild("ToolsUI"))
 --types
+type Signal = Signal.Signal
 --constants
 --variables
 --references
@@ -25,16 +27,23 @@ return function(target : CoreGui)
 
     local _Value = _fuse.Value
 
+    local currentOptInfo = _Value(nil :: any)
+    local onItemGet = maid:GiveTask(Signal.new())
     local out = ToolsUI(
         maid,
         'ade tipi',
         {
             getOptInfo("Satay", "A delicious one yay"),
             getOptInfo("Pempek", "A delicious one yay")
-
-        }
+        },
+        currentOptInfo,
+        onItemGet
     )
     out.Parent = target
+
+    maid:GiveTask(onItemGet:Connect(function()
+        print(currentOptInfo:Get(), " on get euy!")
+    end))
 
     return function() 
         maid:Destroy()

@@ -12,6 +12,8 @@ local NetworkUtil = require(ReplicatedStorage:WaitForChild("Packages"):WaitForCh
 local BackpackUtil = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("BackpackUtil"))
 local ToolActions = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("ToolActions"))
 --types
+type Maid = Maid.Maid
+
 export type InteractableData = {
     Class : string,
     IsSwitch : boolean ?
@@ -24,6 +26,8 @@ local UPDATE_PLAYER_BACKPACK = "UpdatePlayerBackpack"
 
 local ON_INTERACT = "On_Interact"
 local ON_TOOL_INTERACT = "On_Tool_Interact"
+
+local ON_ITEM_OPTIONS_OPENED = "OnItemOptionsOpened"
 
 --references
 --variables
@@ -285,6 +289,7 @@ end
 function Interactable.InteractNonSwitch(model : Model, plr : Player)
     local data = Interactable.getData(model)
     
+    print("aaaw!", model)
     if data.Class == "CharacterCustomization" then
         if RunService:IsClient() then             
             NetworkUtil.fireServer(ON_INTERACT, model)
@@ -333,7 +338,35 @@ function Interactable.InteractNonSwitch(model : Model, plr : Player)
 
         end
     elseif data.Class == "ToolsUI" then
-
+        print("yeeahh")
+        if RunService:IsServer() then
+            print("is server nyaah")
+            local function getItemInfo(
+                name : string,
+                desc : string
+            )
+                return {
+                    Name = name,
+                    Desc = desc
+                }
+            end
+            --require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("BackpackUtil")).getData(model :: Model, false)
+            print("klang tang ")
+            local itemlist = model:FindFirstChild("ItemList")
+            assert(itemlist, 'Item list folder not detected!')
+            local listName = itemlist:GetAttribute("ListName")
+            local listTbl = {}
+            for _,v in pairs(itemlist:GetChildren()) do
+                if v:IsA("StringValue") then
+                    table.insert(listTbl, getItemInfo(v.Name, v.Value))
+                end
+            end
+            task.wait()
+            NetworkUtil.invokeClient(ON_ITEM_OPTIONS_OPENED, plr, listName, listTbl)
+        else
+            print("come on wtf??")
+            NetworkUtil.invokeServer(ON_ITEM_OPTIONS_OPENED, model)
+        end
     end
         
 end
@@ -352,6 +385,15 @@ function Interactable.InteractSwing(model : Model,on : boolean)
     elseif RunService:IsClient() then
         NetworkUtil.fireServer(ON_INTERACT, model)
     end
+end
+
+function Interactable.init(maid : Maid)
+    NetworkUtil.getRemoteFunction(ON_ITEM_OPTIONS_OPENED) 
+
+    NetworkUtil.onServerInvoke(ON_ITEM_OPTIONS_OPENED, function(plr : Player, model : Model)
+        Interactable.InteractNonSwitch(model, plr)
+        return nil
+    end)
 end
 
 return Interactable

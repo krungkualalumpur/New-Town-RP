@@ -9,6 +9,10 @@ local Signal = require(ReplicatedStorage:WaitForChild("Packages"):WaitForChild("
 local MainUI = require(ReplicatedStorage:WaitForChild("Client"):WaitForChild("MainUI"))
 local BackpackUI = require(ReplicatedStorage:WaitForChild("Client"):WaitForChild("MainUI"):WaitForChild("BackpackUI"))
 --types
+type Fuse = ColdFusion.Fuse
+type State<T> = ColdFusion.State<T>
+type ValueState<T> = ColdFusion.ValueState<T>
+type CanBeState<T> = ColdFusion.State<T>
 --constants
 --remotes
 --variables
@@ -36,6 +40,8 @@ return function(target : CoreGui)
     local _Computed = _fuse.Computed
     local _Value = _fuse.Value
 
+    local MainUIStatus : ValueState<MainUI.UIStatus> = _Value(nil) :: any
+
     local backpack = _Value({
         getItemInfo(
             "Food",
@@ -52,6 +58,8 @@ return function(target : CoreGui)
         maid,
         
         backpack :: any,
+
+        MainUIStatus,
 
         onBackpackEquip,
         onBackpackDelete,

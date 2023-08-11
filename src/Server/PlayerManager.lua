@@ -36,6 +36,8 @@ local UPDATE_PLAYER_BACKPACK = "UpdatePlayerBackpack"
 
 local EQUIP_BACKPACK = "EquipBackpack"
 local DELETE_BACKPACK = "DeleteBackpack"
+
+local ADD_BACKPACK = "AddBackpack" 
 --variables
 local Registry = {}
 --references
@@ -195,6 +197,16 @@ function PlayerManager.init(maid : Maid)
 
             NetworkUtil.fireClient(UPDATE_PLAYER_BACKPACK, plr, plrInfo:GetBackpack(true, true))
         end
+        return nil
+    end)
+
+    NetworkUtil.onServerInvoke(ADD_BACKPACK, function(plr : Player, toolName)
+        local plrInfo = PlayerManager.get(plr)
+
+        
+        local toolModel = BackpackUtil.getToolFromName(toolName)
+
+        if toolModel then plrInfo:InsertToBackpack(toolModel) end
         return nil
     end)
 
