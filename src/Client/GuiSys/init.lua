@@ -136,7 +136,8 @@ function guiSys.new(maid : Maid)
         listName : string,
         ToolsList : {[number] : OptInfo}
     )
-       
+        currentOptInfo:Set(nil)
+        
         local toolsUI = ToolsUI(
             maid,
             listName, 

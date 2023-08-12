@@ -163,6 +163,7 @@ local function getItemButton(
                         maid, 
                         if not itemInfo.IsEquipped then "Equip" else "Unequip",
                         function()
+                            print(key, " keeeh?")
                             onBackpackButtonEquipClickSignal:Fire(key, if not itemInfo.IsEquipped then itemInfo.Name else nil)
                         end
                     ),
@@ -170,6 +171,7 @@ local function getItemButton(
                         maid, 
                         "Delete",
                         function()
+                            print(key, " keeeh?")
                             onBackpackButtonDeleteClickSignal:Fire(key, itemInfo.Name)
                         end
                     ),
@@ -192,7 +194,7 @@ local function getItemTypeFrame(
     maid : Maid, 
     typeName : string,
     Items : State<{
-        [number] : ToolData
+        [number] : ToolData & {Key : number}
     }>,
     onBackpackButtonEquipClickSignal : Signal,
     onBackpackButtonDeleteClickSignal : Signal
@@ -251,20 +253,20 @@ local function getItemTypeFrame(
     })
 
  
-    Items:ForPairs(function(k, v : ToolData, pairMaid : Maid)
+    Items:ForValues(function(v : ToolData & {Key : number}, pairMaid : Maid)
         local _pairFuse = ColdFusion.fuse(pairMaid)
         local _pairValue = _pairFuse.Value
 
         local itemButton = getItemButton(
             pairMaid,
-            k,
+            v.Key,  
             v,
             onBackpackButtonEquipClickSignal,
             onBackpackButtonDeleteClickSignal
         )
         
         itemButton.Parent = itemFrameList
-        return k, v
+        return v
     end)
 
     return out
@@ -321,13 +323,16 @@ return function(
     for k,typeName in pairs(itemTypes) do
         local itemsFiltered = _Computed(function(items : {[number] : ToolData})
             local filteredItemsByTypes = {}
-            for _,itemInfo : ToolData in pairs(items) do
+            for k,itemInfo : ToolData in pairs(items) do
                 if itemInfo.Class == typeName then
-                    table.insert(filteredItemsByTypes, itemInfo)
+                    local modifiedItemInfo : ToolData & {Key : number} = itemInfo :: any
+                    modifiedItemInfo.Key = k
+                    table.insert(filteredItemsByTypes, modifiedItemInfo)
                 end
             end
             return filteredItemsByTypes
         end, itemsOwned, isVisible)
+        print(k, typeName, " test??!! ") 
         local itemTypeFrame = getItemTypeFrame(
             maid, 
             typeName, 

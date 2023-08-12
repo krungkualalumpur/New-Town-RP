@@ -65,6 +65,7 @@ function PlayerManager:InsertToBackpack(tool : Instance)
     local toolData : BackpackUtil.ToolData<boolean> = BackpackUtil.getData(tool, false) :: any
     toolData.IsEquipped = false
     table.insert(self.Backpack, toolData)
+    print(self.Backpack)
 end
 
 function PlayerManager:GetBackpack(hasDisplayType : boolean, hasEquipInfo : boolean)
@@ -153,6 +154,7 @@ function PlayerManager.init(maid : Maid)
             if tool then
                 local toolData = plrInfo.Backpack[toolKey]
 
+                print(toolData.Name, toolName, toolData.IsEquipped)
                 if (toolData.Name == toolName) and not toolData.IsEquipped then
                     local equippedTool = BackpackUtil.createTool(tool)
                         --func for the tool upon it being activated
@@ -161,7 +163,7 @@ function PlayerManager.init(maid : Maid)
                         local character = plr.Character or plr.CharacterAdded:Wait()
                         if character then    
                             local toolAction = ToolActions.getActionInfo(toolData.Class)
-                            toolAction.Activated(equippedTool, plr)
+                            toolAction.Activated(equippedTool, plr, BackpackUtil.getData(tool, true))
                         end
                     end))
                     
@@ -171,7 +173,7 @@ function PlayerManager.init(maid : Maid)
                         maid:Destroy()
                     end))
 
-                    plrInfo:SetBackpackEquip(true, toolKey)
+                    plrInfo:SetBackpackEquip(true, toolKey) 
                 end 
             end 
         end
@@ -207,6 +209,8 @@ function PlayerManager.init(maid : Maid)
         local toolModel = BackpackUtil.getToolFromName(toolName)
 
         if toolModel then plrInfo:InsertToBackpack(toolModel) end
+
+        NetworkUtil.fireClient(UPDATE_PLAYER_BACKPACK, plr, plrInfo:GetBackpack(true, true))
         return nil
     end)
 

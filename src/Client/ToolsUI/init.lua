@@ -79,6 +79,8 @@ local function getOptButton(
     local _Computed = _fuse.Computed
     local _Value = _fuse.Value
 
+    local toolInstance = BackpackUtil.getToolFromName(optInfo.Name) 
+
     local out = _new("ImageButton")({
         Size =  UDim2.fromScale(1, 0.125),
 
@@ -132,7 +134,41 @@ local function getOptButton(
                 BackgroundTransparency = 1,
                 Size = UDim2.fromScale(0.36, 1)
             }),
-            _new("TextLabel")({
+            _new("Frame")({
+                LayoutOrder = 3,
+                Name = "Price",
+                BackgroundTransparency = 1,
+                Size = UDim2.fromScale(1, 1),
+                Children = {
+                    _new("UIListLayout")({
+                        SortOrder = Enum.SortOrder.LayoutOrder,
+                        Padding = UDim.new(0.08,0),
+                        VerticalAlignment = Enum.VerticalAlignment.Bottom
+                    }),
+                    _new("TextLabel")({
+                        LayoutOrder = 1,
+                        Name = "Test",
+                        TextYAlignment = Enum.TextYAlignment.Bottom,
+                        BackgroundTransparency = 1,
+                        Size = UDim2.fromScale(0.15, 0.2),
+                        Font = Enum.Font.SourceSansSemibold,
+                        Text = if toolInstance then BackpackUtil.getData(toolInstance, true).Class else "",
+                        TextColor3 = SECONDARY_COLOR,
+                    }),
+                    _new("TextLabel")({
+                        LayoutOrder = 2,
+                        Name = "Price",
+                        TextYAlignment = Enum.TextYAlignment.Bottom,
+                        BackgroundTransparency = 1,
+                        Size = UDim2.fromScale(0.15, 0.2),
+                        Font = Enum.Font.SourceSansSemibold,
+                        Text = "Rp. 0",
+                        TextColor3 = SECONDARY_COLOR,
+                        
+                    })
+                },
+            }),
+           --[[  _new("TextLabel")({
                 LayoutOrder = 3,
                 Name = "Price",
                 TextYAlignment = Enum.TextYAlignment.Bottom,
@@ -142,7 +178,7 @@ local function getOptButton(
                 Text = "Rp. 0",
                 TextColor3 = SECONDARY_COLOR,
                 
-            })
+            }) ]]
         },
 
         Events = {

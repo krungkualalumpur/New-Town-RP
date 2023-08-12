@@ -5,6 +5,7 @@ local RunService = game:GetService("RunService")
 local Players = game:GetService("Players")
 --packages
 --modules
+local BackpackUtil = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("BackpackUtil"))
 local AnimationUtil = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("AnimationUtil"))
 --types
 --constants
@@ -28,14 +29,25 @@ end
 local ActionLists = {
     {
         ToolClass = "Consumption",
-        Activated = function(foodInst : Instance, player : Player)
-            AnimationUtil.playAnim(player, 5569663688)
-            
+        Activated = function(foodInst : Instance, player : Player, toolData : BackpackUtil.ToolData<nil>)            
+            local animId = 0
+            local soundId = 0
+
+            print(toolData.Class) 
+            if toolData.Class == "Food" then
+                animId = 5569663688
+                soundId = 4511723890
+            elseif toolData.Class == "Drink" then
+                animId = 5569673797
+                soundId = 1820372394
+            end
+            AnimationUtil.playAnim(player, animId)
+                
             --play sound
             local character = player.Character
             if character then
                 local hrp = character.PrimaryPart
-                playSound(4511723890, false, hrp)
+                playSound(soundId, false, hrp)
                 print("eating" , foodInst.Name)
             end
         end

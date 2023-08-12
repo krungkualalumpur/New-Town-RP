@@ -82,7 +82,10 @@ local function createInteract(maid : Maid, interactFrame : Frame, interactNameTa
         end)
 
         CollectionService:GetInstanceRemovedSignal(interactNameTag):Connect(function(inst)
-            table.remove(Interactables, table.find(Interactables, inst))
+            local n = table.find(Interactables, inst)
+            if n then
+                table.remove(Interactables, n)
+            end
         end)
     elseif interactCode.EnumType == Enum.UserInputType then
         local _fuse = ColdFusion.fuse(maid)
