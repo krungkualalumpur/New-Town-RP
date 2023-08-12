@@ -93,7 +93,9 @@ function guiSys.new(maid : Maid)
         backpackOnEquip,
         backpackOnDelete,
 
-        nameCustomizationOnClick
+        nameCustomizationOnClick,
+        
+        target
     )
 
     maid:GiveTask(nameCustomizationOnClick:Connect(function(descType, text)

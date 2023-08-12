@@ -45,7 +45,7 @@ return function(target : CoreGui)
     local backpack = _Value({
         getItemInfo(
             "Food",
-            "Oneng Oncee" 
+            "Satay" 
         )
     })
 
@@ -54,7 +54,7 @@ return function(target : CoreGui)
 
     local nameOnCustomize = maid:GiveTask(Signal.new())
 
-    local frame = MainUI(
+    MainUI(
         maid,
         
         backpack :: any,
@@ -63,9 +63,10 @@ return function(target : CoreGui)
 
         onBackpackEquip,
         onBackpackDelete,
-        nameOnCustomize
+        nameOnCustomize,
+
+        target
     )
-    frame.Parent = target
 
     maid:GiveTask(onBackpackEquip:Connect(function()
         print("Equip")

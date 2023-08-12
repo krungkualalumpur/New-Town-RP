@@ -4,12 +4,17 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 local Players = game:GetService("Players")
 --packages
+local Maid = require(ReplicatedStorage:WaitForChild("Packages"):WaitForChild("Maid"))
+local NetworkUtil = require(ReplicatedStorage:WaitForChild("Packages"):WaitForChild("NetworkUtil"))
 --modules
 local BackpackUtil = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("BackpackUtil"))
 local AnimationUtil = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("AnimationUtil"))
 --types
+type Maid = Maid.Maid
 --constants
 local SOUND_NAME = "SFX"
+--remotes
+local ON_TOOL_ACTIVATED = "OnToolActivated"
 --variables
 --references
 --local functions
@@ -29,7 +34,19 @@ end
 local ActionLists = {
     {
         ToolClass = "Consumption",
-        Activated = function(foodInst : Instance, player : Player, toolData : BackpackUtil.ToolData<nil>)            
+        Activated = function(player : Player, toolData : BackpackUtil.ToolData<nil>)            
+            local character = player.Character or player.CharacterAdded:Wait()
+            local foodInst : Instance
+
+            for _,v in pairs(character:GetChildren()) do
+                if v:IsA("Tool") and v.Name == toolData.Name then
+                    foodInst = v
+                    break
+                end
+            end
+
+            assert(foodInst, "Unable to find the equipped tool!")
+
             local animId = 0
             local soundId = 0
 
@@ -54,7 +71,7 @@ local ActionLists = {
     },
     {
         ToolClass = "Object",
-        Activated = function()
+        Activated = function( player : Player, toolData : BackpackUtil.ToolData<nil>)
             
         end
     }
@@ -64,6 +81,16 @@ local ActionLists = {
 --class
 local ToolActions = {}
 
+function ToolActions.onToolActivated(toolClass : string, player : Player, toolData : BackpackUtil.ToolData<nil>)
+    if RunService:IsServer() then
+        local actionInfo = ToolActions.getActionInfo(toolClass)
+        actionInfo.Activated( player, toolData)
+    else
+        NetworkUtil.fireServer(ON_TOOL_ACTIVATED, toolClass, player, toolData)
+    end
+    return
+end
+
 function ToolActions.getActionInfo(toolClass : string)
     for _,v in pairs(ActionLists) do
         print(v.ToolClass, toolClass)
@@ -72,6 +99,15 @@ function ToolActions.getActionInfo(toolClass : string)
         end
     end
     error("Tool info not found!")
+end
+
+function ToolActions.init(maid) 
+    if RunService:IsServer() then
+        NetworkUtil.onServerEvent(ON_TOOL_ACTIVATED, function(plr : Player, toolClass : string, foodInst : Instance, toolData : BackpackUtil.ToolData<nil>)
+            print(toolClass, " eeh")
+            ToolActions.onToolActivated(toolClass, plr, toolData)
+        end)
+    end
 end
 
 return ToolActions

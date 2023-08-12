@@ -20,11 +20,14 @@ local AnimationUtil = require(ReplicatedStorage:WaitForChild("Shared"):WaitForCh
 local CustomizationUtil = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("CustomizationUtil"))
 local CustomizationList = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("CustomizationUtil"):WaitForChild("CustomizationList"))
 
+local ToolActions = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("ToolActions"))
+
 --types
 type Maid = Maid.Maid
 type Signal = Signal.Signal
 
 export type UIStatus = "Backpack" | "Animation" | "Customization" | nil
+type ToolData = BackpackUtil.ToolData<boolean>
 type AnimationInfo = {
     Name : string,
     AnimationId : string
@@ -66,7 +69,7 @@ local function getAnimInfo(
     }   
 end
 
-function getButton(
+function getImageButton(
     maid : Maid,
     ImageId : number,
     activatedFn : () -> (),
@@ -116,6 +119,48 @@ function getButton(
     })
     return button
 end
+
+local function getViewport(
+    maid : Maid,
+
+    objectToTrack : Instance
+)
+    local _fuse = ColdFusion.fuse(maid)
+    local _new = _fuse.new
+    local _import = _fuse.import
+    local _bind = _fuse.bind
+    local _clone = _fuse.clone
+
+    local _Computed = _fuse.Computed
+    local _Value = _fuse.Value
+
+    local currentCam = _new("Camera")({
+        CFrame = if objectToTrack:IsA("Model") and objectToTrack.PrimaryPart then 
+            CFrame.lookAt(objectToTrack.PrimaryPart.Position + objectToTrack.PrimaryPart.CFrame.LookVector*objectToTrack:GetExtentsSize().Magnitude, objectToTrack.PrimaryPart.Position)
+        elseif objectToTrack:IsA("BasePart") then
+            CFrame.lookAt(objectToTrack.Position + objectToTrack.CFrame.LookVector*objectToTrack.Size.Magnitude, objectToTrack.Position)
+        else
+            nil
+    })
+
+    local out = _new("ViewportFrame")({
+        CurrentCamera = currentCam,
+        Children = {
+            _new("UICorner")({}),
+            _new("UIAspectRatioConstraint")({}),
+        
+            currentCam,
+            
+            _new("WorldModel")({
+                Children = {
+                    objectToTrack
+                }
+            })
+        }
+    })
+    return out
+end
+
 --class
 return function(
     maid : Maid,
@@ -126,7 +171,9 @@ return function(
     backpackOnEquip : Signal,
     backpackOnDelete : Signal,
 
-    nameOnCustomize : Signal
+    nameOnCustomize : Signal,
+
+    target : Instance
 )    
     local _fuse = ColdFusion.fuse(maid)
     local _new = _fuse.new
@@ -137,9 +184,129 @@ return function(
     local _Computed = _fuse.Computed
     local _Value = _fuse.Value
 
+    local viewportMaid = maid:GiveTask(Maid.new())
     local statusMaid = maid:GiveTask(Maid.new())
+ 
+    local onEquipFrame = _new("Frame")({
+        LayoutOrder = 1, 
+        Parent = target,
+        AnchorPoint = Vector2.new(0.5,0),
+        Visible = _Computed(function(items : {[number] : ToolData})
+            local isVisible = false
+            for _,v in pairs(items) do
+                if v.IsEquipped then
+                    isVisible = true
+                end
+            end
+            return isVisible
+        end, backpack),
+        Position = UDim2.fromScale(0.5, 0),
+        BackgroundTransparency = 1,
+        BackgroundColor3 = Color3.fromRGB(10,200,10),
+        Size = UDim2.fromScale(0.1, 1),
+        Children = {
+            _new("UIPadding")({
+                PaddingBottom = PADDING_SIZE,
+                PaddingTop = PADDING_SIZE,
+                PaddingLeft = PADDING_SIZE,
+                PaddingRight = PADDING_SIZE
+            }),
+            _new("UIListLayout")({
+                VerticalAlignment = Enum.VerticalAlignment.Bottom,
+                HorizontalAlignment = Enum.HorizontalAlignment.Center,
+                SortOrder = Enum.SortOrder.LayoutOrder,
+                Padding = PADDING_SIZE
+            }),
+            _new("TextLabel")({
+                LayoutOrder = 1,
+                BackgroundTransparency = 1,
+                Size = UDim2.fromScale(1, 0.1),
+                Text = _Computed(function(items : {[number] : ToolData})
+                    local text = "" 
+                    for _,v in pairs(items) do
+                        if v.IsEquipped then
+                            text = v.Name
+                            break
+                        end
+                    end
+                    return text
+                end, backpack),
+                TextColor3 = PRIMARY_COLOR,
+                TextStrokeTransparency = 0.5,
+
+                TextScaled = true,
+                Children = {
+                    _new("UITextSizeConstraint")({
+                        MaxTextSize = 25
+                    })
+                }
+            }),
+          
+            _new("TextButton")({
+                LayoutOrder = 3,
+                AutoButtonColor = true,
+                BackgroundTransparency = 0,
+                Size = UDim2.fromScale(1, 0.05),
+                RichText = true,
+                Text = "<b>INTERACT</b>",
+                TextColor3 = SECONDARY_COLOR,
+                Children = {
+                    _new("UICorner")({})
+                },
+                Events = {
+                    Activated = function()      
+                        for _,v in pairs(backpack:Get()) do
+                            if v.IsEquipped then
+                                local toolModel = BackpackUtil.getToolFromName(v.Name)
+                                if toolModel then
+                                    local toolData = BackpackUtil.getData(toolModel, false)
+                                    ToolActions.onToolActivated(toolData.Class, game.Players.LocalPlayer, BackpackUtil.getData(toolModel, true))
+                                end
+                                break
+                            end
+                        end  
+                        --ToolActions.onToolActivated(, foodInst, player, toolData)
+                    end
+                }
+            }),
+        }
+    })
+
+    local val =  _Computed(function(backpackList : {[number] : ToolData})
+        viewportMaid:DoCleaning()
+        local object 
+        
+        for _,v in pairs(backpackList) do
+            if v.IsEquipped then
+                local oriobject = BackpackUtil.getToolFromName(v.Name)
+                if oriobject then object = oriobject:Clone() end 
+                break
+            end
+        end
+        
+        if object then
+            _bind(getViewport(
+                viewportMaid,
+                object 
+            ))({
+                LayoutOrder = 2,
+                Size = UDim2.fromScale(1, 0.1),
+                BackgroundTransparency = 0.5,
+                BackgroundColor3 = BACKGROUND_COLOR,
+                Parent = onEquipFrame
+            })
+
+            print("sangaat")
+        end  
+        return ""
+    end, backpack)
+
+    _new("StringValue")({
+        Value = val
+    })
 
     local out = _new("Frame")({
+        Parent = target,
         BackgroundTransparency = 1,
         Size = UDim2.fromScale(1, 1),
         Children = {
@@ -149,6 +316,7 @@ return function(
                 VerticalAlignment = Enum.VerticalAlignment.Center
             }),
             _new("Frame")({
+                LayoutOrder = 0,
                 BackgroundTransparency = 1,
                 Size = UDim2.fromScale(0.1, 1),
                 Position = UDim2.fromScale(0, 0),   
@@ -159,23 +327,24 @@ return function(
                         Padding = PADDING_SIZE,
                         VerticalAlignment = Enum.VerticalAlignment.Center
                     }),   
-                    getButton(maid, 2815418737, function()
+                    getImageButton(maid, 2815418737, function()
                         print(UIStatus:Get())
                         UIStatus:Set(if UIStatus:Get() ~= "Backpack" then "Backpack" else nil)
                         print(UIStatus:Get())
                     end, "Backpack", 1),
-                    getButton(maid, 11127689024, function()
+                    getImageButton(maid, 11127689024, function()
                         UIStatus:Set(if UIStatus:Get() ~= "Animation" then "Animation" else nil)
                         print(UIStatus:Get())
                     end, "Animation", 2),
-                    getButton(maid, 13285102351, function()
+                    getImageButton(maid, 13285102351, function()
                         UIStatus:Set(if UIStatus:Get() ~= "Customization" then "Customization" else nil)
                         print(UIStatus:Get())
                     end, "Customization", 3)
-                    --getButton(maid, 227600967),
+                    --getImageButton(maid, 227600967),
 
                 }
-            })
+            }),
+
         }
     }) :: Frame
 

@@ -159,13 +159,12 @@ function PlayerManager.init(maid : Maid)
                     local equippedTool = BackpackUtil.createTool(tool)
                         --func for the tool upon it being activated
                     local maid = Maid.new()
-                    maid:GiveTask(equippedTool.Activated:Connect(function()
-                        local character = plr.Character or plr.CharacterAdded:Wait()
-                        if character then    
-                            local toolAction = ToolActions.getActionInfo(toolData.Class)
-                            toolAction.Activated(equippedTool, plr, BackpackUtil.getData(tool, true))
-                        end
-                    end))
+                    --maid:GiveTask(equippedTool.Activated:Connect(function()
+                    --    local character = plr.Character or plr.CharacterAdded:Wait()
+                    --    if character then    
+                    --        ToolActions.onToolActivated(toolData.Class, plr, BackpackUtil.getData(tool, true))
+                    --    end
+                    --end))
                     
                     equippedTool.Parent = character
                     maid:GiveTask(equippedTool.Destroying:Connect(function()

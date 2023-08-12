@@ -163,7 +163,6 @@ local function getItemButton(
                         maid, 
                         if not itemInfo.IsEquipped then "Equip" else "Unequip",
                         function()
-                            print(key, " keeeh?")
                             onBackpackButtonEquipClickSignal:Fire(key, if not itemInfo.IsEquipped then itemInfo.Name else nil)
                         end
                     ),
@@ -171,7 +170,6 @@ local function getItemButton(
                         maid, 
                         "Delete",
                         function()
-                            print(key, " keeeh?")
                             onBackpackButtonDeleteClickSignal:Fire(key, itemInfo.Name)
                         end
                     ),
@@ -332,7 +330,7 @@ return function(
             end
             return filteredItemsByTypes
         end, itemsOwned, isVisible)
-        print(k, typeName, " test??!! ") 
+
         local itemTypeFrame = getItemTypeFrame(
             maid, 
             typeName, 
@@ -341,13 +339,6 @@ return function(
             onBackpackButtonDeleteClickSignal
         )
         itemTypeFrame.Parent = contentFrame
-
-       --[[ task.spawn(function()
-            task.wait(1) 
-            items:Set({"Indonesia", " deaaw"})
-        end)]]
-
-        
     end
 
     local out = _new("Frame")({
@@ -362,6 +353,7 @@ return function(
             }),
             _new("UIListLayout")({
                 FillDirection = Enum.FillDirection.Horizontal,
+                VerticalAlignment = Enum.VerticalAlignment.Bottom,
                 SortOrder = Enum.SortOrder.LayoutOrder,
             }),
             _new("Frame")({
@@ -369,7 +361,7 @@ return function(
                 BackgroundTransparency = 1,
                 Size = UDim2.fromScale(0.035, 1)
             }),
-            contentFrame
+            contentFrame        
         }
     }) :: Frame
 

@@ -15,6 +15,8 @@ local CharacterManager = require(ServerScriptService:WaitForChild("Server"):Wait
 local BackpackUtil = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("BackpackUtil"))
 local CustomizationUtil = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("CustomizationUtil"))
 local InteractableUtil = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("InteractableUtil"))
+local ToolActions = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("ToolActions"))
+
 --types
 --constants
 --references
@@ -30,5 +32,6 @@ CharacterManager.init(maid)
 BackpackUtil.init(maid)
 CustomizationUtil.init(maid)
 InteractableUtil.init(maid)
+ToolActions.init(maid)
 print("Hello world, du bist heissen?! PENAT LAAAA de stronkest")
 
