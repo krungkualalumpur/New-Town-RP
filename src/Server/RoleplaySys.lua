@@ -6,6 +6,8 @@ local ServerScriptService = game:GetService("ServerScriptService")
 local Maid = require(ReplicatedStorage:WaitForChild("Packages"):WaitForChild("Maid"))
 local NetworkUtil = require(ReplicatedStorage:WaitForChild("Packages"):WaitForChild("NetworkUtil"))
 --modules
+local PlayerManager = require(ServerScriptService:WaitForChild("Server"):WaitForChild("PlayerManager"))
+
 local InteractableUtil = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("InteractableUtil"))
 --types
 type Maid = Maid.Maid
@@ -27,7 +29,8 @@ function RoleplaySys.init(maid : Maid)
 
     maid:GiveTask(NetworkUtil.onServerEvent(ON_TOOL_INTERACT, function(plr : Player, inst : Instance)
         if inst:IsA("Model") then
-            InteractableUtil.InteractToolGiver(inst, plr)
+            local plrInfo = PlayerManager.get(plr)
+            InteractableUtil.InteractToolGiver(plrInfo, inst, plr)
         end
     end))
 end

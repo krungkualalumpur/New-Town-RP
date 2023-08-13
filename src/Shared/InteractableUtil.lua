@@ -92,7 +92,7 @@ function Interactable.setData(model : Model, data : InteractableData)
     return nil 
 end
 
-function Interactable.Interact(model : Model, player : Player)
+function Interactable.Interact(model : Model, player : Player, plrInfo : any)
     --if model.PrimaryPart then
         if CollectionService:HasTag(model, "Door") or CollectionService:HasTag(model, "Window") then
             Interactable.InteractSwing(model,true)
@@ -100,7 +100,13 @@ function Interactable.Interact(model : Model, player : Player)
 
         
         if CollectionService:HasTag(model, "Tool") then
-            Interactable.InteractToolGiver(model, player)
+            if RunService:IsClient() then
+                Interactable.onClientToolInteract(model)
+            else
+                if plrInfo then
+                    Interactable.InteractToolGiver(plrInfo, model, player)
+                end
+            end
         end
 
         local interactableData = Interactable.getData(model)
@@ -122,11 +128,8 @@ function Interactable.Interact(model : Model, player : Player)
    -- end
 end
 
-function Interactable.InteractToolGiver(model : Model, player : Player)
+function Interactable.InteractToolGiver(plrInfo : any,  model : Model, player : Player)
     if RunService:IsServer() then
-        local playerManager = require(ServerScriptService:WaitForChild("Server"):WaitForChild("PlayerManager"))
-        local plrInfo = playerManager.get(player)
-
         if not model:GetAttribute("DescendantsAreTools") then
           
             --local newTool = createTool(model)
@@ -151,11 +154,15 @@ function Interactable.InteractToolGiver(model : Model, player : Player)
             end
         end
         NetworkUtil.fireClient(UPDATE_PLAYER_BACKPACK, plrInfo.Player,  plrInfo:GetBackpack(true, true))
-    else
-        NetworkUtil.fireServer(ON_TOOL_INTERACT, model)
+    --else
+        --NetworkUtil.fireServer(ON_TOOL_INTERACT, model)
     end
     
     return
+end
+
+function Interactable.onClientToolInteract(model : Model)
+    NetworkUtil.fireServer(ON_TOOL_INTERACT, model)
 end
 
 function Interactable.InteractSwitch(model : Model)

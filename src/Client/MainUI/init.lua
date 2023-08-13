@@ -46,6 +46,7 @@ local PADDING_SIZE = UDim.new(0,10)
 --remotes
 local GET_PLAYER_BACKPACK = "GetPlayerBackpack"
 
+local A
 --variables
 --references
 --local functions
@@ -67,6 +68,45 @@ local function getAnimInfo(
         Name = animName,
         AnimationId = "rbxassetid://" .. tostring(animId)
     }   
+end
+
+function getButton(
+    maid : Maid,
+    buttonName : string,
+    activatedFn : () -> (),
+    order : number
+)
+    local _fuse = ColdFusion.fuse(maid)
+    local _new = _fuse.new
+    local _import = _fuse.import
+    local _bind = _fuse.bind
+    local _clone = _fuse.clone
+
+    local _Computed = _fuse.Computed
+    local _Value = _fuse.Value
+
+    local out = _new("TextButton")({
+        Name = buttonName .. "Button",
+        LayoutOrder = order,
+        AutoButtonColor = true,
+        BackgroundTransparency = 0,
+        AutomaticSize = Enum.AutomaticSize.X,
+        Size = UDim2.fromScale(0, 0.05),
+        TextXAlignment = Enum.TextXAlignment.Center,
+        RichText = true,
+        Text = "\t<b>" .. buttonName .. "</b>\t",
+        TextColor3 = SECONDARY_COLOR,
+        Children = {
+            _new("UICorner")({})
+        },
+        Events = {
+            Activated = function()
+                activatedFn()
+            end
+        }
+    })
+
+    return out
 end
 
 function getImageButton(
@@ -242,7 +282,42 @@ return function(
                 }
             }),
           
-            _new("TextButton")({
+            getButton(
+                maid,
+                "INTERACT" ,
+                function()
+                    for _,v in pairs(backpack:Get()) do
+                        if v.IsEquipped then
+                            local toolModel = BackpackUtil.getToolFromName(v.Name)
+                            if toolModel then
+                                local toolData = BackpackUtil.getData(toolModel, false)
+                                ToolActions.onToolActivated(toolData.Class, game.Players.LocalPlayer, BackpackUtil.getData(toolModel, true))
+                            end
+                            break
+                        end
+                    end  
+                end,
+                3
+            ),
+            _bind(getButton(
+                maid,
+                "X" ,
+                function()
+                    for k,v in pairs(backpack:Get()) do
+                        print(v)
+                        if v.IsEquipped == true then
+                            backpackOnEquip:Fire(k)
+                            break
+                        end
+                    end  
+                   
+                end,
+                4
+            ))({
+                BackgroundColor3 = Color3.fromRGB(255,10,10),
+                TextColor3 = PRIMARY_COLOR
+            })
+            --[[_new("TextButton")({
                 LayoutOrder = 3,
                 AutoButtonColor = true,
                 BackgroundTransparency = 0,
@@ -268,7 +343,7 @@ return function(
                         --ToolActions.onToolActivated(, foodInst, player, toolData)
                     end
                 }
-            }),
+            })]],
         }
     })
 
@@ -310,6 +385,13 @@ return function(
         BackgroundTransparency = 1,
         Size = UDim2.fromScale(1, 1),
         Children = {
+            _new("UIPadding")({
+                PaddingBottom = PADDING_SIZE,
+                PaddingTop = PADDING_SIZE,
+                PaddingLeft = PADDING_SIZE,
+                PaddingRight = PADDING_SIZE
+            }),
+            
             _new("UIListLayout")({
                 FillDirection = Enum.FillDirection.Horizontal,
                 SortOrder = Enum.SortOrder.LayoutOrder,
@@ -361,7 +443,7 @@ return function(
         exitButton.Instance.Parent = ui:FindFirstChild("ContentFrame")
     end
   
-    local val = _Computed(function(status : UIStatus)
+    local strval = _Computed(function(status : UIStatus)
         print("test1?")
         statusMaid:DoCleaning() 
         if status == "Backpack" then
@@ -454,7 +536,7 @@ return function(
     end, UIStatus)
 
     local strVal = _new("StringValue")({
-        Value = val  
+        Value = strval  
     })
     
     return out

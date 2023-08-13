@@ -8,6 +8,7 @@ local NetworkUtil = require(ReplicatedStorage:WaitForChild("Packages"):WaitForCh
 --modules
 local BackpackUtil = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("BackpackUtil"))
 local ToolActions = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("ToolActions"))
+local NotificationUtil = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("NotificationUtil"))
 --types
 type Maid = Maid.Maid
 
@@ -58,6 +59,7 @@ end
 function PlayerManager:InsertToBackpack(tool : Instance)
     if #self.Backpack >= MAX_TOOLS_COUNT then
         --notif
+        NotificationUtil.Notify(self.Player, "Already has max amount of tools to have")
         print("Already has max amount of tools to have")
         return
     end

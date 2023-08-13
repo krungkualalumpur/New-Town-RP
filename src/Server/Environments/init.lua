@@ -15,8 +15,8 @@ local InteractableUtil = require(ReplicatedStorage:WaitForChild("Shared"):WaitFo
 --types
 type Maid = Maid.Maid
 --constants
-local ON_INTERACT = "On_Interact"
-local ON_TOOL_INTERACT = "On_Tool_Interact"
+--local ON_INTERACT = "On_Interact"
+--local ON_TOOL_INTERACT = "On_Tool_Interact"
 
 --variables
 --references

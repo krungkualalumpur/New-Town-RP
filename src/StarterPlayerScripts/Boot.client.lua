@@ -8,6 +8,8 @@ local InputHandler = require(ReplicatedStorage:WaitForChild("Client"):WaitForChi
 local GuiSys = require(ReplicatedStorage:WaitForChild("Client"):WaitForChild("GuiSys"))
 local OptimizationSys = require(ReplicatedStorage:WaitForChild("Client"):WaitForChild("OptimizationSys"))
 local CharacterManager = require(ReplicatedStorage:WaitForChild("Client"):WaitForChild("CharacterManager"))
+
+local NotificationUtil = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("NotificationUtil"))
 --types
 --constants
 --variables
@@ -20,3 +22,5 @@ maid:GiveTask(InputHandler.new(true))
 GuiSys.init(maid)
 OptimizationSys.init(maid)
 CharacterManager.init(maid)
+
+NotificationUtil.init(maid)

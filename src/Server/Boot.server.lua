@@ -16,7 +16,7 @@ local BackpackUtil = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChi
 local CustomizationUtil = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("CustomizationUtil"))
 local InteractableUtil = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("InteractableUtil"))
 local ToolActions = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("ToolActions"))
-
+local NotificationUtil = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("NotificationUtil"))
 --types
 --constants
 --references
@@ -33,5 +33,7 @@ BackpackUtil.init(maid)
 CustomizationUtil.init(maid)
 InteractableUtil.init(maid)
 ToolActions.init(maid)
+
+NotificationUtil.init(maid)
 print("Hello world, du bist heissen?! PENAT LAAAA de stronkest")
 

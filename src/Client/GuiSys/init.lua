@@ -12,7 +12,9 @@ local ColdFusion = require(ReplicatedStorage:WaitForChild("Packages"):WaitForChi
 local InteractSys = require(ReplicatedStorage:WaitForChild("Client"):WaitForChild("GuiSys"):WaitForChild("InteractSys"))
 local InteractUI = require(ReplicatedStorage:WaitForChild("Client"):WaitForChild("InteractUI"))
 local MainUI = require(ReplicatedStorage:WaitForChild("Client"):WaitForChild("MainUI"))
+local NotificationUI = require(ReplicatedStorage:WaitForChild("Client"):WaitForChild("NotificationUI"))
 local ExitButton = require(ReplicatedStorage:WaitForChild("Client"):WaitForChild("ExitButton"))
+
 
 local BackpackUtil = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("BackpackUtil"))
 local CustomizationUtil = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("CustomizationUtil"))
@@ -31,11 +33,16 @@ type CanBeState<T> = ColdFusion.State<T>
 
 type GuiSys = {
     __index : GuiSys,
+    _Maid : Maid,
     MainUI : GuiObject,
     InteractUI : GuiObject,
-    OpenedUI : GuiObject ?,
+    NotificationUI : GuiObject,
 
-    new : (maid : Maid) -> GuiSys,
+    NotificationStatus : ValueState<string ?>,
+
+    new : () -> GuiSys,
+    Notify : (GuiSys, text : string) -> nil,
+    Destroy : (GuiSys) -> nil,
     init : (maid : Maid) -> ()
 }
 --constants
@@ -59,9 +66,11 @@ local currentGuiSys : GuiSys
 local guiSys : GuiSys = {} :: any
 guiSys.__index = guiSys
 
-function guiSys.new(maid : Maid)
-    local target = Player:WaitForChild("PlayerGui"):WaitForChild("ScreenGui")
+function guiSys.new()
+    local maid = Maid.new()
     
+    local target = Player:WaitForChild("PlayerGui"):WaitForChild("ScreenGui")
+
     local _fuse = ColdFusion.fuse(maid)
     local _new = _fuse.new
     local _import = _fuse.import
@@ -71,9 +80,17 @@ function guiSys.new(maid : Maid)
     local _Computed = _fuse.Computed
     local _Value = _fuse.Value
     
+    local notificationUItarget = _new("ScreenGui")({
+        Name = "NotificationScreenGui",
+        Parent = Player:WaitForChild("PlayerGui"),
+        DisplayOrder = 10
+    })
+
     local interactKeyCode : ValueState<Enum.KeyCode | Enum.UserInputType> = _Value(Enum.KeyCode.E) :: any
     
     local self : GuiSys = setmetatable({}, guiSys) :: any
+    self._Maid = maid
+    self.NotificationStatus = _Value(nil :: string ?)
 
     local backpack = _Value(NetworkUtil.invokeServer(GET_PLAYER_BACKPACK))
 
@@ -119,8 +136,15 @@ function guiSys.new(maid : Maid)
 
     self.InteractUI = InteractUI(maid, interactKeyCode)
 
+    self.NotificationUI = NotificationUI(
+        maid,
+        self.NotificationStatus
+    )
+
     self.MainUI.Parent = target
     self.InteractUI.Parent = target
+    self.NotificationUI.Parent = notificationUItarget
+    print(self.NotificationUI, self.NotificationUI.Parent, " kok ora ene yo")
 
     currentGuiSys = self
 
@@ -184,9 +208,30 @@ function guiSys.new(maid : Maid)
     return self 
 end
 
-function guiSys.init(maid : Maid)
-    local newGuiSys = guiSys.new(maid)
+function guiSys:Notify(text : string)
+    print("Test1")
+    self.NotificationStatus:Set(nil)
+    print(self.NotificationStatus:Get())
+    task.wait(0.1)
+    self.NotificationStatus:Set(text)
+    print(self.NotificationStatus:Get())
+    return
+end
 
+function guiSys:Destroy()
+    self._Maid:Destroy()
+
+    local t : GuiSys = self :: any
+    for k,v in pairs(t) do
+        t[k] = nil
+    end
+    
+    setmetatable(self, nil)
+    return
+end
+
+function guiSys.init(maid : Maid)
+    local newGuiSys = maid:GiveTask(guiSys.new())
 
     return
 end
