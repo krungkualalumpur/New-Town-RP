@@ -159,7 +159,7 @@ function CustomizationUtil.init(maid : Maid)
 
             local humanoid = character:WaitForChild("Humanoid") :: Humanoid
 
-            local temp_hum_desc = game.Players:GetHumanoidDescriptionFromUserId(1) --gross method/hacky
+            local temp_hum_desc = game.Players:GetHumanoidDescriptionFromUserId(1) --gross method/hacky way to refresh character
             local hum_desc = game.Players:GetHumanoidDescriptionFromUserId(plr.UserId)
 
             if hum_desc then
