@@ -31,6 +31,7 @@ local SECONDARY_COLOR = Color3.fromRGB(25,25,25)
 local TERTIARY_COLOR = Color3.fromRGB(0,0,0)
 
 local SELECT_COLOR = Color3.fromRGB(105, 255, 102)
+local RESET_COLOR = Color3.fromRGB(200,100,100)
 
 local TEXT_COLOR = Color3.fromRGB(25,25,25)
 local PADDING_SIZE = UDim.new(0,15)
@@ -60,6 +61,7 @@ local function getButton(
         Size = UDim2.new(0.4, 0,0.15,0),
         Text = text,
         TextColor3 = TEXT_COLOR,
+        RichText = true,
 
         Children = {
             _new("UICorner")({}),
@@ -195,7 +197,8 @@ return function(
     Customizations : {CustomizationList.Customization},
     onCostumeButtonClick : Signal,
 
-    onNameCustomeButtonClick : Signal
+    onNameCustomeButtonClick : Signal,
+    onCharacterResetClick : Signal
 )
     print(onCostumeButtonClick)
     local _fuse = ColdFusion.fuse(maid)
@@ -248,7 +251,7 @@ return function(
     local RPName = _new("Frame")({
         BackgroundColor3 = SECONDARY_COLOR,
         BackgroundTransparency = 0.5,
-        Size = UDim2.fromScale(0.18, 0.35),
+        Size = UDim2.fromScale(0.18*2, 0.35),
         Children = {
             _new("UIPadding")({
                 PaddingBottom = PADDING_SIZE,
@@ -328,7 +331,7 @@ return function(
     local characterCustomizationFrame = _new("Frame")({
         BackgroundColor3 = SECONDARY_COLOR,
         BackgroundTransparency = 0.5,
-        Size = UDim2.fromScale(0.5, 0.6),
+        Size = UDim2.fromScale(0.5*2, 0.6),
         Children = {
             _new("UIPadding")({
                 PaddingBottom = PADDING_SIZE,
@@ -472,7 +475,7 @@ return function(
     local contentFrame = _new("Frame")({
         Name = "ContentFrame",
         BackgroundTransparency = 1,
-        Size = UDim2.fromScale(1, 1),
+        Size = UDim2.fromScale(0.5, 1),
         Children = {
             _new("UIListLayout")({
                 FillDirection = Enum.FillDirection.Vertical,
@@ -480,6 +483,26 @@ return function(
             }),
             RPName,
             characterCustomizationFrame
+        }
+    })
+
+    local contentFrame2 = _new("Frame")({
+        BackgroundTransparency = 1,
+        Size = UDim2.fromScale(0.42, 1),
+        Children = {
+            _new("UIListLayout")({
+                VerticalAlignment = Enum.VerticalAlignment.Center
+            }),
+            _bind(getButton(maid, "<b>\t Reset Outfit \t</b>", function()
+                onCharacterResetClick:Fire()
+            end, 1))({
+                BackgroundColor3 = RESET_COLOR,
+                AutomaticSize = Enum.AutomaticSize.X,
+                Size = UDim2.fromScale(0, 0.05),
+                TextColor3 = PRIMARY_COLOR
+            })
+          
+
         }
     })
 
@@ -496,7 +519,8 @@ return function(
             _new("UIListLayout")({
                 SortOrder = Enum.SortOrder.LayoutOrder,
                 FillDirection = Enum.FillDirection.Horizontal,
-                VerticalAlignment = Enum.VerticalAlignment.Center
+                VerticalAlignment = Enum.VerticalAlignment.Center,
+                Padding = PADDING_SIZE
             }),
             _new("Frame")({
                 BackgroundTransparency = 1,
@@ -504,7 +528,11 @@ return function(
                 Size = UDim2.fromScale(0.035, 1)
             }),
             contentFrame,
+            contentFrame2
         }
     })
+
+   
+    
     return out
 end

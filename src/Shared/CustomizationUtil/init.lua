@@ -4,6 +4,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local InsertService = game:GetService("InsertService")
 local RunService = game:GetService("RunService")
 local TextService = game:GetService("TextService")
+local Players = game:GetService("Players")
 --packages
 local Maid = require(ReplicatedStorage:WaitForChild("Packages"):WaitForChild("Maid"))
 local NetworkUtil = require(ReplicatedStorage:WaitForChild("Packages"):WaitForChild("NetworkUtil"))
@@ -16,6 +17,9 @@ export type DescType = "PlayerName" | "PlayerBio"
 --remotes
 local ON_CUSTOMIZE_AVATAR_NAME = "OnCustomizeAvatarName"
 local ON_CUSTOMIZE_CHAR = "OnCustomizeCharacter"
+
+local ON_CHARACTER_APPEARANCE_RESET = "OnCharacterAppearanceReset"
+
 --variables
 --references
 --local functions
@@ -150,6 +154,19 @@ function CustomizationUtil.init(maid : Maid)
             CustomizationUtil.setDesc(plr, descType, descName)
             return nil
         end)
+        maid:GiveTask(NetworkUtil.onServerEvent(ON_CHARACTER_APPEARANCE_RESET, function(plr : Player)
+            local character = plr.Character or plr.CharacterAdded:Wait()
+
+            local humanoid = character:WaitForChild("Humanoid") :: Humanoid
+
+            local temp_hum_desc = game.Players:GetHumanoidDescriptionFromUserId(1) --gross method/hacky
+            local hum_desc = game.Players:GetHumanoidDescriptionFromUserId(plr.UserId)
+
+            if hum_desc then
+                humanoid:ApplyDescription(temp_hum_desc)
+                humanoid:ApplyDescription(hum_desc)
+            end
+        end))
     end
 end
 

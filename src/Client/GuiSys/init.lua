@@ -56,6 +56,8 @@ local ADD_BACKPACK = "AddBackpack"
 
 local EQUIP_BACKPACK = "EquipBackpack"
 local DELETE_BACKPACK = "DeleteBackpack"
+
+local ON_CHARACTER_APPEARANCE_RESET = "OnCharacterAppearanceReset"
 --variables
 local Player = Players.LocalPlayer
 --references
@@ -99,6 +101,8 @@ function guiSys.new()
     
     local nameCustomizationOnClick = maid:GiveTask(Signal.new()) 
 
+    local onCharacterReset = maid:GiveTask(Signal.new())
+
     local MainUIStatus : ValueState<MainUI.UIStatus> = _Value(nil) :: any
 
     self.MainUI = MainUI(
@@ -112,6 +116,8 @@ function guiSys.new()
 
         nameCustomizationOnClick,
         
+        onCharacterReset,
+
         target
     )
 
@@ -200,6 +206,10 @@ function guiSys.new()
             )
             print("equip it")
         end
+    end))
+
+    maid:GiveTask(onCharacterReset:Connect(function()
+        NetworkUtil.fireServer(ON_CHARACTER_APPEARANCE_RESET)
     end))
 
     --setting default backpack to untrue it 

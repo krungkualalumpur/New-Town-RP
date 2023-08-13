@@ -1,6 +1,7 @@
 --!strict
 --services
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local Players = game:GetService("Players")
 --packages
 local Maid = require(ReplicatedStorage:WaitForChild("Packages"):WaitForChild("Maid"))
 local ColdFusion = require(ReplicatedStorage:WaitForChild("Packages"):WaitForChild("ColdFusion8"))
@@ -23,6 +24,19 @@ local DELAY_TIME = 5
 --variables
 --references
 --local functions
+local function getSound(soundId : number, target : Instance ?)
+    local maid = Maid.new()
+
+    local sound = maid:GiveTask(Instance.new("Sound"))
+    sound.SoundId = "rbxassetid://"..tostring(soundId)
+    sound.Parent = target
+    sound:Play()
+    maid:GiveTask(sound.Ended:Connect(function()
+        maid:Destroy()
+    end))
+    return
+end
+
 function getNotificationFrame(
     maid : Maid,
     text : string
@@ -144,8 +158,8 @@ return function(
     }) :: Frame
 
     local computedTextStatus = _Computed(function(text : string ?)
-        print("pngp priestess ", text)
         if text then
+            getSound(5153734236, out.Parent)
             local _maid = Maid.new()
             local notifFrame = getNotificationFrame(
                 _maid,   

@@ -213,6 +213,8 @@ return function(
 
     nameOnCustomize : Signal,
 
+    onCharacterReset : Signal,
+
     target : Instance
 )    
     local _fuse = ColdFusion.fuse(maid)
@@ -494,6 +496,7 @@ return function(
             getExitButton(animationUI)
         elseif status == "Customization" then
             local onCustomeButtonClick = statusMaid:GiveTask(Signal.new())
+
             print(onCustomeButtonClick)
 
             local CustomizationUI = CustomizationUI(
@@ -501,8 +504,8 @@ return function(
                 CustomizationList,
                 onCustomeButtonClick,
 
-                nameOnCustomize
-
+                nameOnCustomize,
+                onCharacterReset
             ) :: Frame
             CustomizationUI.Parent = out
 
