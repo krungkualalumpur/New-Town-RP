@@ -54,6 +54,8 @@ return function(target : CoreGui)
 
     local nameOnCustomize = maid:GiveTask(Signal.new())
 
+    local onCharReset = maid:GiveTask(Signal.new())
+
     MainUI(
         maid,
         
@@ -64,7 +66,8 @@ return function(target : CoreGui)
         onBackpackEquip,
         onBackpackDelete,
         nameOnCustomize,
-
+        onCharReset,
+        
         target
     )
 

@@ -1,1 +1,0 @@
-insertedNum = input()

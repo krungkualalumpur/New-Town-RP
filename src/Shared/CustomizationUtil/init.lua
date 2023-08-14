@@ -18,7 +18,6 @@ export type DescType = "PlayerName" | "PlayerBio"
 local ON_CUSTOMIZE_AVATAR_NAME = "OnCustomizeAvatarName"
 local ON_CUSTOMIZE_CHAR = "OnCustomizeCharacter"
 
-local ON_CHARACTER_APPEARANCE_RESET = "OnCharacterAppearanceReset"
 
 --variables
 --references
@@ -154,19 +153,7 @@ function CustomizationUtil.init(maid : Maid)
             CustomizationUtil.setDesc(plr, descType, descName)
             return nil
         end)
-        maid:GiveTask(NetworkUtil.onServerEvent(ON_CHARACTER_APPEARANCE_RESET, function(plr : Player)
-            local character = plr.Character or plr.CharacterAdded:Wait()
-
-            local humanoid = character:WaitForChild("Humanoid") :: Humanoid
-
-            local temp_hum_desc = game.Players:GetHumanoidDescriptionFromUserId(1) --gross method/hacky way to refresh character
-            local hum_desc = game.Players:GetHumanoidDescriptionFromUserId(plr.UserId)
-
-            if hum_desc then
-                humanoid:ApplyDescription(temp_hum_desc)
-                humanoid:ApplyDescription(hum_desc)
-            end
-        end))
+       
     end
 end
 

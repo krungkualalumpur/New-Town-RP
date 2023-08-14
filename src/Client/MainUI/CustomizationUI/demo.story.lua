@@ -33,13 +33,17 @@ return function(target : CoreGui)
     local onCustomeClick = maid:GiveTask(Signal.new())
     local onNameCostumizationClick = maid:GiveTask(Signal.new())
 
+    local onCharReset = maid:GiveTask(Signal.new())
+
     local frame = CustomizationUI(
         maid,
 
         CustomizationList,
         onCustomeClick,
 
-        onNameCostumizationClick
+        onNameCostumizationClick,
+
+        onCharReset
     )
     frame.Parent = target
 

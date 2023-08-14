@@ -152,6 +152,7 @@ local function getAccessoryButton(
                 Size = UDim2.fromScale(1, 0.25),
                 TextColor3 = PRIMARY_COLOR,
                 TextStrokeTransparency = 0.5,
+                TextScaled = true,
                 Text = AccessoryName
             }),
             _new("ImageLabel")({
