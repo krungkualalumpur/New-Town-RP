@@ -18,13 +18,6 @@ local ON_CHARACTER_APPEARANCE_RESET = "OnCharacterAppearanceReset"
 --variables
 --references
 --local functions
-function ClearAppearance(NPC : Model)
-    for _, Obj in ipairs(NPC:GetChildren()) do
-        if Obj:IsA("Shirt") or Obj:IsA("Pants") or Obj:IsA("Accessory") then
-            Obj:Destroy()
-        end
-    end
-end
 --class
 local CharacterManager = {}
 

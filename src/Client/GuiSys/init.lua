@@ -18,13 +18,13 @@ local ExitButton = require(ReplicatedStorage:WaitForChild("Client"):WaitForChild
 
 local BackpackUtil = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("BackpackUtil"))
 local CustomizationUtil = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("CustomizationUtil"))
-local ToolsUI = require(ReplicatedStorage:WaitForChild("Client"):WaitForChild("ToolsUI"))
+local ItemOptionsUI = require(ReplicatedStorage:WaitForChild("Client"):WaitForChild("ItemOptionsUI"))
 
 --types
 type Maid = Maid.Maid
 type Signal = Signal.Signal
 
-type OptInfo = ToolsUI.OptInfo
+type OptInfo = ItemOptionsUI.OptInfo
 
 type Fuse = ColdFusion.Fuse
 type State<T> = ColdFusion.State<T>
@@ -170,7 +170,7 @@ function guiSys.new()
     )
         currentOptInfo:Set(nil)
         
-        local toolsUI = ToolsUI(
+        local itemOptionsUI: GuiObject = ItemOptionsUI(
             maid,
             listName, 
             ToolsList,
@@ -180,7 +180,7 @@ function guiSys.new()
             onItemGet
         ) :: GuiObject
         ExitButton.new(
-            toolsUI, 
+            itemOptionsUI, 
             isExitButtonVisible,
             function()
                 maid.ItemOptionsUI = nil
@@ -188,15 +188,15 @@ function guiSys.new()
             end
         )
 
-        maid.ItemOptionsUI = toolsUI
-        toolsUI.Parent = target
+        maid.ItemOptionsUI = itemOptionsUI
+        itemOptionsUI.Parent = target
 
         return nil
     end)
    
     maid:GiveTask(onItemGet:Connect(function()
         print("kiatisuk ", currentOptInfo:Get()) 
-        local optInfo : ToolsUI.OptInfo ? = currentOptInfo:Get()
+        local optInfo : ItemOptionsUI.OptInfo ? = currentOptInfo:Get()
         local char = Player.Character or Player.CharacterAdded:Wait()
         
         if optInfo then

@@ -6,7 +6,7 @@ local Maid = require(ReplicatedStorage:WaitForChild("Packages"):WaitForChild("Ma
 local ColdFusion = require(ReplicatedStorage:WaitForChild("Packages"):WaitForChild("ColdFusion8"))
 local Signal = require(ReplicatedStorage:WaitForChild("Packages"):WaitForChild("Signal"))
 --modules
-local BackpackUtil = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("BackpackUtil"))
+local ItemUtil = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("ItemUtil"))
 --types
 type Maid = Maid.Maid
 type Signal = Signal.Signal
@@ -79,7 +79,7 @@ local function getOptButton(
     local _Computed = _fuse.Computed
     local _Value = _fuse.Value
 
-    local toolInstance = BackpackUtil.getToolFromName(optInfo.Name) 
+    local toolInstance = ItemUtil.getItemFromName(optInfo.Name) 
 
     local out = _new("ImageButton")({
         Size =  UDim2.fromScale(1, 0.125),
@@ -152,7 +152,7 @@ local function getOptButton(
                         BackgroundTransparency = 1,
                         Size = UDim2.fromScale(0.15, 0.2),
                         Font = Enum.Font.SourceSansSemibold,
-                        Text = if toolInstance then BackpackUtil.getData(toolInstance, true).Class else "",
+                        Text = if toolInstance then ItemUtil.getData(toolInstance, true).Class else "",
                         TextColor3 = SECONDARY_COLOR,
                     }),
                     _new("TextLabel")({
@@ -302,12 +302,15 @@ return function(
     local currentCam = _new("Camera")({
         Parent = itemViewportFrame,
         CFrame = _Computed(function(optInfo : OptInfo ?)
-            local modelDisplay = if optInfo then BackpackUtil.getToolFromName(optInfo.Name) else nil
-            print(modelDisplay, " berliann")
+            for _,v in pairs(itemViewportFrame:GetChildren()) do
+                if v:IsA("Model") or v:IsA("WorldModel") then
+                    v:Destroy()
+                end
+            end
+            local modelDisplay = if optInfo then ItemUtil.getItemFromName(optInfo.Name) else nil
             if modelDisplay then modelDisplay:Clone().Parent = itemViewportFrame end
 
-            local toolModel = if optInfo then BackpackUtil.getToolFromName(optInfo.Name) else nil
-            return if toolModel and toolModel:IsA("Model") and toolModel.PrimaryPart then CFrame.lookAt(toolModel.PrimaryPart.Position + toolModel.PrimaryPart.CFrame.LookVector*0.5 + toolModel.PrimaryPart.CFrame.RightVector + toolModel.PrimaryPart.CFrame.UpVector, toolModel.PrimaryPart.Position) else CFrame.new()
+            return if modelDisplay and modelDisplay:IsA("Model") and modelDisplay.PrimaryPart then CFrame.lookAt(modelDisplay.PrimaryPart.Position + ((modelDisplay.PrimaryPart.CFrame.LookVector*0.5 + modelDisplay.PrimaryPart.CFrame.RightVector + modelDisplay.PrimaryPart.CFrame.UpVector)*modelDisplay.PrimaryPart.Size), modelDisplay.PrimaryPart.Position) else CFrame.new()
         end, currentOptInfo)
     }) :: Camera
     

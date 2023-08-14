@@ -77,7 +77,7 @@ local BackpackUtil = {}
 function BackpackUtil.getData(toolModel : Instance, classAsDisplayType : boolean) : ToolData<nil>
     return {
         Name = toolModel.Name,
-        Class = if classAsDisplayType and toolModel:GetAttribute("DisplayTypeName") then toolModel:GetAttribute("DisplayTypeName") else toolModel:GetAttribute("ToolClass"),
+        Class = if classAsDisplayType and toolModel:GetAttribute("DisplayTypeName") then toolModel:GetAttribute("DisplayTypeName") else toolModel:GetAttribute("Class"),
     }
 end
 
@@ -94,7 +94,7 @@ end
 function BackpackUtil.getAllItemClasses()
     local classes = {}
     for _, toolModel in pairs(CollectionService:GetTagged("Tool")) do
-        local className = toolModel:GetAttribute("DisplayTypeName") or toolModel:GetAttribute("ToolClass")
+        local className = toolModel:GetAttribute("DisplayTypeName") or toolModel:GetAttribute("Class")
         if className then
             if not table.find(classes, className) then
                 table.insert(classes, className) 
@@ -139,7 +139,7 @@ function BackpackUtil.init(maid : Maid)
                     local newTool = child:Clone()
                     newTool.Parent = ToolCollections
                     CollectionService:AddTag(newTool, "Tool")
-                    newTool:SetAttribute("ToolClass", v:GetAttribute("ToolClass"))
+                    newTool:SetAttribute("Class", v:GetAttribute("Class"))
                     newTool:SetAttribute("DisplayTypeName", v:GetAttribute("DisplayTypeName"))
                 end
             end

@@ -344,10 +344,9 @@ function Interactable.InteractNonSwitch(model : Model, plr : Player)
         else
 
         end
-    elseif data.Class == "ToolsUI" then
-        print("yeeahh")
+    elseif data.Class == "ItemOptionsUI" then
+        print("1?")
         if RunService:IsServer() then
-            print("is server nyaah")
             local function getItemInfo(
                 name : string,
                 desc : string
@@ -358,8 +357,8 @@ function Interactable.InteractNonSwitch(model : Model, plr : Player)
                 }
             end
             --require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("BackpackUtil")).getData(model :: Model, false)
-            print("klang tang ")
             local itemlist = model:FindFirstChild("ItemList")
+            print("aaaa???")
             assert(itemlist, 'Item list folder not detected!')
             local listName = itemlist:GetAttribute("ListName")
             local listTbl = {}
@@ -371,7 +370,7 @@ function Interactable.InteractNonSwitch(model : Model, plr : Player)
             task.wait()
             NetworkUtil.invokeClient(ON_ITEM_OPTIONS_OPENED, plr, listName, listTbl)
         else
-            print("come on wtf??")
+            print("2?")
             NetworkUtil.invokeServer(ON_ITEM_OPTIONS_OPENED, model)
         end
     end
@@ -398,6 +397,7 @@ function Interactable.init(maid : Maid)
     NetworkUtil.getRemoteFunction(ON_ITEM_OPTIONS_OPENED) 
 
     NetworkUtil.onServerInvoke(ON_ITEM_OPTIONS_OPENED, function(plr : Player, model : Model)
+        print("3")
         Interactable.InteractNonSwitch(model, plr)
         return nil
     end)

@@ -146,14 +146,13 @@ end
 function CustomizationUtil.init(maid : Maid)
     if RunService:IsServer() then
         NetworkUtil.onServerInvoke(ON_CUSTOMIZE_CHAR, function(plr : Player, customisationId : number)
-            CustomizationUtil.Customize(plr, customisationId)
+            CustomizationUtil.Customize(plr, customisationId) 
             return nil
         end)
         NetworkUtil.onServerInvoke(ON_CUSTOMIZE_AVATAR_NAME, function(plr : Player, descType : DescType, descName : string)
             CustomizationUtil.setDesc(plr, descType, descName)
             return nil
         end)
-       
     end
 end
 

@@ -6,7 +6,7 @@ local Maid = require(ReplicatedStorage:WaitForChild("Packages"):WaitForChild("Ma
 local ColdFusion = require(ReplicatedStorage:WaitForChild("Packages"):WaitForChild("ColdFusion8"))
 local Signal = require(ReplicatedStorage:WaitForChild("Packages"):WaitForChild("Signal"))
 --modules
-local ToolsUI = require(ReplicatedStorage:WaitForChild("Client"):WaitForChild("ToolsUI"))
+local ItemOptionsUI = require(ReplicatedStorage:WaitForChild("Client"):WaitForChild("ItemOptionsUI"))
 --types
 type Signal = Signal.Signal
 --constants
@@ -29,7 +29,7 @@ return function(target : CoreGui)
 
     local currentOptInfo = _Value(nil :: any)
     local onItemGet = maid:GiveTask(Signal.new())
-    local out = ToolsUI(
+    local out = ItemOptionsUI(
         maid,
         'ade tipi',
         {
