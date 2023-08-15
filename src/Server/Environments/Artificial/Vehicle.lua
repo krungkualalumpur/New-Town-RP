@@ -6,11 +6,15 @@ local PhysicsService = game:GetService("PhysicsService")
 local RunService = game:GetService("RunService")
 --packages
 local Maid = require(ReplicatedStorage:WaitForChild("Packages"):WaitForChild("Maid"))
+local NetworkUtil = require(ReplicatedStorage:WaitForChild("Packages"):WaitForChild("NetworkUtil"))
 --modules
 --types
 type Maid = Maid.Maid
 --constants
 local BOAT_CLASS_KEY = "Boat"
+
+--remotes
+local SPAWN_VEHICLE = "SpawnVehicle"
 --variables
 --references
 --local functions
@@ -54,6 +58,10 @@ function Vehicle.init(maid : Maid)
     PhysicsService:CollisionGroupSetCollidable(borderCollisionKey, shipCollisionKey, true)
     PhysicsService:CollisionGroupSetCollidable(defaultCollisionKey, borderCollisionKey, false)
 
+    NetworkUtil.onServerInvoke(SPAWN_VEHICLE, function(plr : Player, vehicleInfo)
+        print(vehicleInfo, " mueng")
+        return nil
+    end)
 end
 
 return Vehicle

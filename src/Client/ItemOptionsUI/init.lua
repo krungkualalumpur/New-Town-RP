@@ -12,6 +12,7 @@ type Maid = Maid.Maid
 type Signal = Signal.Signal
 
 export type OptInfo = {
+    Type : ItemUtil.ItemType,
     Name : string,
     Desc : string
 } 
@@ -315,8 +316,6 @@ return function(
     }) :: Camera
     
     itemViewportFrame.CurrentCamera = currentCam
-
-
     
     local selectedInfoFrame = _new("Frame")({
         LayoutOrder = 0,

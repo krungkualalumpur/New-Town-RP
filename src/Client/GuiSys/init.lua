@@ -57,6 +57,8 @@ local ADD_BACKPACK = "AddBackpack"
 local EQUIP_BACKPACK = "EquipBackpack"
 local DELETE_BACKPACK = "DeleteBackpack"
 
+local SPAWN_VEHICLE = "SpawnVehicle"
+
 local ON_CHARACTER_APPEARANCE_RESET = "OnCharacterAppearanceReset"
 --variables
 local Player = Players.LocalPlayer
@@ -200,10 +202,17 @@ function guiSys.new()
         local char = Player.Character or Player.CharacterAdded:Wait()
         
         if optInfo then
-            NetworkUtil.invokeServer(
-                ADD_BACKPACK,
-                optInfo.Name
-            )
+            if optInfo.Type == "Tool" then
+                NetworkUtil.invokeServer(
+                    ADD_BACKPACK,
+                    optInfo.Name
+                )
+            elseif optInfo.Type == "Vehicle" then
+                NetworkUtil.invokeServer(
+                    SPAWN_VEHICLE,
+                    optInfo.Name
+                )
+            end
             print("equip it")
         end
     end))

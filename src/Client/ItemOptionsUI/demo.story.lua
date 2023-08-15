@@ -16,7 +16,8 @@ type Signal = Signal.Signal
 local function getOptInfo(name : string, desc : string)
     return {
         Name = name,
-        Desc = desc
+        Desc = desc,
+        Type = "Tool"
     }
 end
 --class

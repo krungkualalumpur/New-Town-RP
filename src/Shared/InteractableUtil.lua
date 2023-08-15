@@ -9,6 +9,7 @@ local Players = game:GetService("Players")
 local Maid = require(ReplicatedStorage:WaitForChild("Packages"):WaitForChild("Maid"))
 local NetworkUtil = require(ReplicatedStorage:WaitForChild("Packages"):WaitForChild("NetworkUtil"))
 --modules
+local ItemUtil = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("ItemUtil"))
 local BackpackUtil = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("BackpackUtil"))
 local ToolActions = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("ToolActions"))
 --types
@@ -351,14 +352,16 @@ function Interactable.InteractNonSwitch(model : Model, plr : Player)
                 name : string,
                 desc : string
             )
-                return {
-                    Name = name,
-                    Desc = desc
-                }
-            end
+            local itemType = ItemUtil.getItemTypeByName(name)
+            return {
+                Name = name,
+                Desc = desc,  
+                Type = itemType      
+            } end
+
             --require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("BackpackUtil")).getData(model :: Model, false)
             local itemlist = model:FindFirstChild("ItemList")
-            print("aaaa???")
+
             assert(itemlist, 'Item list folder not detected!')
             local listName = itemlist:GetAttribute("ListName")
             local listTbl = {}

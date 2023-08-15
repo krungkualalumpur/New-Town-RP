@@ -6,9 +6,12 @@ local CollectionService = game:GetService("CollectionService")
 --modules
 local BackpackUtil = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("BackpackUtil"))
 --types
+export type ItemType = "Tool" | "Vehicle"
+
 export type ItemInfo = {
     Name : string,
     Class : string,
+    Type : ItemType
 }
 --constants
 --variables
@@ -17,21 +20,27 @@ export type ItemInfo = {
 --class
 local ItemUtil = {}
 
-function ItemUtil.getData(model : Instance, classAsDisplayType : boolean) : ItemInfo
+function ItemUtil.getData(model : Instance, classAsDisplayType : boolean) : ItemInfo 
+    local itemType : ItemInfo = ItemUtil.getItemTypeByName(model.Name) :: any
     if CollectionService:GetTagged("Tool") then
-        return BackpackUtil.getData(model, classAsDisplayType)
+        local toolData : ItemInfo = BackpackUtil.getData(model, classAsDisplayType) :: any
+        assert(itemType)
+        toolData.Type = itemType :: any
+        return toolData
+    elseif CollectionService:GetTagged("Vehicle") then
+        return {
+            Name = model.Name,
+            Class = model:GetAttribute("Class"),
+            Type = "Vehicle"
+        }
     end
-    return {
-        Class = model:GetAttribute("Class"),
-        Name = model.Name
-    }
+    error("No data for this object")
 end
 
 function ItemUtil.getItemFromName(name : string)
     local function getByTag(tag : string)
         for _,v in pairs(CollectionService:GetTagged(tag)) do
-            local itemData = ItemUtil.getData(v, true)
-            if itemData.Name == name then
+            if v.Name == name then
                 return v
             end
         end
@@ -40,6 +49,13 @@ function ItemUtil.getItemFromName(name : string)
     
     
     return getByTag("Tool") or getByTag("Vehicle")
+end
+
+function ItemUtil.getItemTypeByName(name : string) : ItemType ?
+    local inst = ItemUtil.getItemFromName(name)
+    return if CollectionService:HasTag(inst, "Tool") then "Tool" 
+        elseif CollectionService:HasTag(inst, "Vehicle") then "Vehicle"
+    else nil
 end
 
 return ItemUtil
