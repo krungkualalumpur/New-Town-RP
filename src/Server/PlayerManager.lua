@@ -6,24 +6,35 @@ local Players = game:GetService("Players")
 local Maid = require(ReplicatedStorage:WaitForChild("Packages"):WaitForChild("Maid"))
 local NetworkUtil = require(ReplicatedStorage:WaitForChild("Packages"):WaitForChild("NetworkUtil"))
 --modules
+local InteractableUtil = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("InteractableUtil"))
+local ItemUtil = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("ItemUtil"))
 local BackpackUtil = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("BackpackUtil"))
 local ToolActions = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("ToolActions"))
 local NotificationUtil = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("NotificationUtil"))
+
 --types
 type Maid = Maid.Maid
 
 type ToolData<isEquipped> = BackpackUtil.ToolData<isEquipped>
+
+export type VehicleData = ItemUtil.ItemInfo & {
+    IsSpawned : boolean
+}
 
 export type PlayerManager = {
     __index : PlayerManager,
 
     Player : Player,
     Backpack : {[number] : ToolData<boolean>},
+    Vehicles : {[number] : ItemUtil.ItemInfo},
 
     new : (player : Player) -> PlayerManager,
     InsertToBackpack : (PlayerManager, tool : Instance) -> (),
     GetBackpack : (PlayerManager, hasDisplayType : boolean, hasEquipInfo : boolean) -> {[number] : BackpackUtil.ToolData<boolean ?>},
     SetBackpackEquip : (PlayerManager, isEquip : boolean, toolKey : number) -> (),
+
+    AddVehicle : (PlayerManager, vehicleInfo : VehicleData) -> (),
+
     Destroy : (PlayerManager) -> (),
 
     get : (plr : Player) -> PlayerManager,
@@ -31,14 +42,20 @@ export type PlayerManager = {
 }
 --constants
 local MAX_TOOLS_COUNT = 10
+local MAX_VEHICLES_COUNT = 5
 --remotes
+local ON_INTERACT = "On_Interact"
+local ON_TOOL_INTERACT = "On_Tool_Interact"
+
 local GET_PLAYER_BACKPACK = "GetPlayerBackpack"
 local UPDATE_PLAYER_BACKPACK = "UpdatePlayerBackpack"
 
 local EQUIP_BACKPACK = "EquipBackpack"
 local DELETE_BACKPACK = "DeleteBackpack"
-
 local ADD_BACKPACK = "AddBackpack" 
+
+local GET_PLAYER_VEHICLES = "GetPlayerVehicles"
+local ADD_VEHICLE = "AddVehicle"
 --variables
 local Registry = {}
 --references
@@ -51,6 +68,7 @@ function PlayerManager.new(player : Player)
     local self : PlayerManager = setmetatable({}, PlayerManager) :: any
     self.Player = player
     self.Backpack = {}
+    self.Vehicles = {}
 
     Registry[player] = self
     return self
@@ -98,6 +116,17 @@ function PlayerManager:SetBackpackEquip(isEquip : boolean, toolKey : number)
     return
 end
 
+function PlayerManager:AddVehicle(vehicleInfo : VehicleData)
+    if #self.Vehicles >= MAX_VEHICLES_COUNT then
+        --notif
+        NotificationUtil.Notify(self.Player, "Already has max amount of vehicles to have")
+        return
+    end
+    table.insert(self.Vehicles, vehicleInfo)
+    return
+end
+
+
 function PlayerManager:Destroy()
     Registry[self.Player] = nil
     
@@ -116,7 +145,6 @@ function PlayerManager.get(plr : Player)
 end
 
 function PlayerManager.init(maid : Maid)
-    print("bermuram durja sampaiken")
     local function onPlayerAdded(plr : Player)
         local plrInfo = PlayerManager.new(plr)
         print("plr info madee!") 
@@ -134,6 +162,18 @@ function PlayerManager.init(maid : Maid)
         plrInfo:Destroy()
     end))
 
+    maid:GiveTask(NetworkUtil.onServerEvent(ON_INTERACT, function(plr : Player, inst : Instance)
+        if inst:IsA("Model") then
+            InteractableUtil.Interact(inst, plr)
+        end
+    end))
+
+    maid:GiveTask(NetworkUtil.onServerEvent(ON_TOOL_INTERACT, function(plr : Player, inst : Instance)
+        if inst:IsA("Model") then
+            local plrInfo = PlayerManager.get(plr)
+            InteractableUtil.InteractToolGiver(plrInfo, inst, plr)
+        end
+    end))
 
     NetworkUtil.onServerInvoke(GET_PLAYER_BACKPACK, function(plr : Player)
         local plrInfo = PlayerManager.get(plr)
@@ -213,6 +253,28 @@ function PlayerManager.init(maid : Maid)
 
         NetworkUtil.fireClient(UPDATE_PLAYER_BACKPACK, plr, plrInfo:GetBackpack(true, true))
         return nil
+    end)
+
+    NetworkUtil.onServerInvoke(ADD_VEHICLE, function(plr : Player, vehicleName : string)
+        local plrInfo = PlayerManager.get(plr)
+
+        local vehicleData : VehicleData = ItemUtil.getData(ItemUtil.getItemFromName(vehicleName), true) :: any
+        vehicleData.IsSpawned = false
+
+        plrInfo:AddVehicle(vehicleData)
+        print(plrInfo.Vehicles)
+        return nil
+    end)
+
+    NetworkUtil.onServerInvoke(GET_PLAYER_VEHICLES, function(plr : Player)
+        local plrInfo = PlayerManager.get(plr)
+        local vehicleListName = {}
+
+        for k,v in pairs(plrInfo.Vehicles) do
+            vehicleListName[k] = v.Name
+        end
+
+        return vehicleListName
     end)
 
     NetworkUtil.getRemoteEvent(UPDATE_PLAYER_BACKPACK)

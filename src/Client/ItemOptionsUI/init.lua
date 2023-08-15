@@ -37,7 +37,8 @@ local TERTIARY_COLOR = Color3.fromRGB(25,25,25)
 local function getButton(
     maid : Maid,
     text : string,
-    onClick : Signal
+    onClick : Signal,
+    interactedItem : Instance
 )
     local _fuse = ColdFusion.fuse(maid)
     local _new = _fuse.new
@@ -58,7 +59,7 @@ local function getButton(
         },
         Events = {
             Activated = function()
-                onClick:Fire()
+                onClick:Fire(interactedItem)
             end
         }
     })
@@ -200,7 +201,9 @@ return function(
 
     currentOptInfo : ValueState<OptInfo ?>,
 
-    onItemGet : Signal
+    onItemGet : Signal,
+
+    interactedItem : Instance
 )
     local _fuse = ColdFusion.fuse(maid)
     local _new = _fuse.new
@@ -371,7 +374,9 @@ return function(
             getButton(
                 maid,
                 "Get",
-                onItemGet
+                onItemGet,
+
+                interactedItem
             )
         }
     })

@@ -1,6 +1,7 @@
 --!strict
 --services
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local RunService = game:GetService("RunService")
 local Players = game:GetService("Players")
 --packages
 local Maid = require(ReplicatedStorage:WaitForChild("Packages"):WaitForChild("Maid"))
@@ -15,11 +16,11 @@ local MainUI = require(ReplicatedStorage:WaitForChild("Client"):WaitForChild("Ma
 local NotificationUI = require(ReplicatedStorage:WaitForChild("Client"):WaitForChild("NotificationUI"))
 local ExitButton = require(ReplicatedStorage:WaitForChild("Client"):WaitForChild("ExitButton"))
 
-
+local ItemUtil = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("ItemUtil"))
 local BackpackUtil = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("BackpackUtil"))
 local CustomizationUtil = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("CustomizationUtil"))
 local ItemOptionsUI = require(ReplicatedStorage:WaitForChild("Client"):WaitForChild("ItemOptionsUI"))
-
+local ListUI = require(ReplicatedStorage:WaitForChild("Client"):WaitForChild("ListUI"))
 --types
 type Maid = Maid.Maid
 type Signal = Signal.Signal
@@ -30,6 +31,10 @@ type Fuse = ColdFusion.Fuse
 type State<T> = ColdFusion.State<T>
 type ValueState<T> = ColdFusion.ValueState<T>
 type CanBeState<T> = ColdFusion.State<T>
+
+export type VehicleData = ItemUtil.ItemInfo & {
+    IsSpawned : string
+}
 
 type GuiSys = {
     __index : GuiSys,
@@ -46,7 +51,11 @@ type GuiSys = {
     init : (maid : Maid) -> ()
 }
 --constants
+local MAX_DISTANCE = 18
+
+local LIST_TYPE_ATTRIBUTE = 'ListType'
 --remotes
+local ON_OPTIONS_OPENED = "OnOptionsOpened"
 local ON_ITEM_OPTIONS_OPENED = "OnItemOptionsOpened"
 
 local GET_PLAYER_BACKPACK = "GetPlayerBackpack"
@@ -57,7 +66,10 @@ local ADD_BACKPACK = "AddBackpack"
 local EQUIP_BACKPACK = "EquipBackpack"
 local DELETE_BACKPACK = "DeleteBackpack"
 
+local GET_PLAYER_VEHICLES = "GetPlayerVehicles"
+
 local SPAWN_VEHICLE = "SpawnVehicle"
+local ADD_VEHICLE = "AddVehicle"
 
 local ON_CHARACTER_APPEARANCE_RESET = "OnCharacterAppearanceReset"
 --variables
@@ -162,24 +174,116 @@ function guiSys.new()
         backpack:Set(newbackpackval)
     end))
 
-   local currentOptInfo : ValueState<OptInfo ?> = _Value(nil) :: any   
+    local currentOptInfo : ValueState<OptInfo ?> = _Value(nil) :: any   
     local onItemGet = maid:GiveTask(Signal.new())
 
     local isExitButtonVisible = _Value(true)
+
+    
+    NetworkUtil.onClientInvoke(ON_OPTIONS_OPENED, function(
+        listName : string,
+        inst : Instance
+    )
+        local _maid = Maid.new()
+        local _fuse = ColdFusion.fuse(_maid)
+        local _new = _fuse.new
+        local _import = _fuse.import
+        local _bind = _fuse.bind
+        local _clone = _fuse.clone
+    
+        local _Computed = _fuse.Computed
+        local _Value = _fuse.Value
+        
+        local cam = workspace.CurrentCamera
+
+        local position = _Value(UDim2.new())
+        local isVisible = _Value(true)
+
+        local list 
+        if inst:GetAttribute(LIST_TYPE_ATTRIBUTE) == "Vehicle" then
+            list = NetworkUtil.invokeServer(GET_PLAYER_VEHICLES)
+        end
+
+        local onListButtonClicked = maid:GiveTask(Signal.new())
+
+        local listUI =  ListUI(
+            _maid, 
+            listName, 
+            list,
+            position,
+            isVisible,
+            onListButtonClicked
+        ) :: GuiObject
+
+        ExitButton.new(
+            listUI, 
+            isExitButtonVisible,
+            function()
+                maid.ItemOptionsUI = nil
+                return 
+            end
+        )
+
+        maid.ItemOptionsUI = _maid
+        listUI.Parent = target
+
+        maid:GiveTask(onListButtonClicked:Connect(function(key, val : string)
+            if inst:GetAttribute(LIST_TYPE_ATTRIBUTE) == "Vehicle" then
+                local spawnerZonesPointer =  inst:FindFirstChild("SpawnerZones") :: ObjectValue
+                local spawnerZones = spawnerZonesPointer.Value
+
+                NetworkUtil.invokeServer(
+                    SPAWN_VEHICLE,
+                    key,
+                    val,
+                    spawnerZones
+                )
+            end
+        end))
+
+        _maid:GiveTask(RunService.Stepped:Connect(function()
+            local worldPos 
+            local pos, isOnRange
+            if inst:IsA("Model") then
+                local cf, _ = inst:GetBoundingBox()
+                pos, isOnRange = cam:WorldToScreenPoint(cf.Position)
+                worldPos = cf.Position
+            elseif inst:IsA("BasePart") then
+                pos, isOnRange = cam:WorldToScreenPoint(inst.Position)
+                worldPos = inst.Position
+            end
+            if pos and (isOnRange ~= nil) then
+                position:Set(UDim2.fromOffset(pos.X, pos.Y))
+                isVisible:Set(isOnRange)
+
+                if Player.Character and worldPos and ((worldPos - Player.Character.PrimaryPart.Position).Magnitude >= MAX_DISTANCE) then
+                    print(Player.Character, (pos - Player.Character.PrimaryPart.Position).Magnitude) 
+                    _maid:Destroy()
+                end
+            end
+        end))
+
+        return nil
+    end)
+
     NetworkUtil.onClientInvoke(ON_ITEM_OPTIONS_OPENED, function(
         listName : string,
-        ToolsList : {[number] : OptInfo}
+        ToolsList : {[number] : OptInfo},
+        interactedItem : Instance
     )
+        local _maid = Maid.new()
         currentOptInfo:Set(nil)
         
         local itemOptionsUI: GuiObject = ItemOptionsUI(
-            maid,
+            _maid,
             listName, 
             ToolsList,
 
             currentOptInfo,
 
-            onItemGet
+            onItemGet,
+
+            interactedItem
         ) :: GuiObject
         ExitButton.new(
             itemOptionsUI, 
@@ -190,14 +294,13 @@ function guiSys.new()
             end
         )
 
-        maid.ItemOptionsUI = itemOptionsUI
+        maid.ItemOptionsUI = _maid
         itemOptionsUI.Parent = target
 
         return nil
     end)
-   
-    maid:GiveTask(onItemGet:Connect(function()
-        print("kiatisuk ", currentOptInfo:Get()) 
+
+    maid:GiveTask(onItemGet:Connect(function(inst : Instance)
         local optInfo : ItemOptionsUI.OptInfo ? = currentOptInfo:Get()
         local char = Player.Character or Player.CharacterAdded:Wait()
         
@@ -209,11 +312,18 @@ function guiSys.new()
                 )
             elseif optInfo.Type == "Vehicle" then
                 NetworkUtil.invokeServer(
-                    SPAWN_VEHICLE,
+                    ADD_VEHICLE,
                     optInfo.Name
                 )
+                --local spawnerZonesPointer =  inst:FindFirstChild("SpawnerZones") :: ObjectValue
+                --local spawnerZones = spawnerZonesPointer.Value
+                
+                --NetworkUtil.invokeServer(
+                --    SPAWN_VEHICLE,
+                --    optInfo.Name,
+                --    spawnerZones
+                --)
             end
-            print("equip it")
         end
     end))
 

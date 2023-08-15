@@ -28,6 +28,7 @@ local UPDATE_PLAYER_BACKPACK = "UpdatePlayerBackpack"
 local ON_INTERACT = "On_Interact"
 local ON_TOOL_INTERACT = "On_Tool_Interact"
 
+local ON_OPTIONS_OPENED = "OnOptionsOpened"
 local ON_ITEM_OPTIONS_OPENED = "OnItemOptionsOpened"
 
 --references
@@ -346,7 +347,6 @@ function Interactable.InteractNonSwitch(model : Model, plr : Player)
 
         end
     elseif data.Class == "ItemOptionsUI" then
-        print("1?")
         if RunService:IsServer() then
             local function getItemInfo(
                 name : string,
@@ -362,16 +362,19 @@ function Interactable.InteractNonSwitch(model : Model, plr : Player)
             --require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("BackpackUtil")).getData(model :: Model, false)
             local itemlist = model:FindFirstChild("ItemList")
 
-            assert(itemlist, 'Item list folder not detected!')
-            local listName = itemlist:GetAttribute("ListName")
-            local listTbl = {}
-            for _,v in pairs(itemlist:GetChildren()) do
-                if v:IsA("StringValue") then
-                    table.insert(listTbl, getItemInfo(v.Name, v.Value))
+            if itemlist then
+                local listName = itemlist:GetAttribute("ListName")
+                local listTbl = {}
+                for _,v in pairs(itemlist:GetChildren()) do
+                    if v:IsA("StringValue") then
+                        table.insert(listTbl, getItemInfo(v.Name, v.Value))
+                    end
                 end
+                task.wait()
+                NetworkUtil.invokeClient(ON_ITEM_OPTIONS_OPENED, plr, listName, listTbl, model)
+            else
+                NetworkUtil.invokeClient(ON_OPTIONS_OPENED, plr, model.Name, model)
             end
-            task.wait()
-            NetworkUtil.invokeClient(ON_ITEM_OPTIONS_OPENED, plr, listName, listTbl)
         else
             print("2?")
             NetworkUtil.invokeServer(ON_ITEM_OPTIONS_OPENED, model)
@@ -397,7 +400,13 @@ function Interactable.InteractSwing(model : Model,on : boolean)
 end
 
 function Interactable.init(maid : Maid)
+    NetworkUtil.getRemoteFunction(ON_OPTIONS_OPENED)
     NetworkUtil.getRemoteFunction(ON_ITEM_OPTIONS_OPENED) 
+
+    NetworkUtil.onServerInvoke(ON_OPTIONS_OPENED, function(plr : Player)
+        
+        return nil
+    end)
 
     NetworkUtil.onServerInvoke(ON_ITEM_OPTIONS_OPENED, function(plr : Player, model : Model)
         print("3")

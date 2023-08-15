@@ -6,6 +6,7 @@ local Maid = require(ReplicatedStorage:WaitForChild("Packages"):WaitForChild("Ma
 local ColdFusion = require(ReplicatedStorage:WaitForChild("Packages"):WaitForChild("ColdFusion8"))
 local Signal = require(ReplicatedStorage:WaitForChild("Packages"):WaitForChild("Signal"))
 --modules
+local ItemUtil = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("ItemUtil"))
 local ItemOptionsUI = require(ReplicatedStorage:WaitForChild("Client"):WaitForChild("ItemOptionsUI"))
 --types
 type Signal = Signal.Signal
@@ -17,7 +18,7 @@ local function getOptInfo(name : string, desc : string)
     return {
         Name = name,
         Desc = desc,
-        Type = "Tool"
+        Type = "Tool" :: ItemUtil.ItemType
     }
 end
 --class
@@ -25,6 +26,7 @@ return function(target : CoreGui)
     local maid = Maid.new() 
 
     local _fuse = ColdFusion.fuse(maid)
+    local _new = _fuse.new
 
     local _Value = _fuse.Value
 
@@ -38,7 +40,9 @@ return function(target : CoreGui)
             getOptInfo("Pempek", "A delicious one yay")
         },
         currentOptInfo,
-        onItemGet
+        onItemGet,
+
+        _new("BasePart")({})
     )
     out.Parent = target
 

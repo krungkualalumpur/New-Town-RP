@@ -1,5 +1,6 @@
 --!strict
 --services
+local ServerScriptService = game:GetService("ServerScriptService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local CollectionService = game:GetService("CollectionService")
 local PhysicsService = game:GetService("PhysicsService")
@@ -8,21 +9,29 @@ local RunService = game:GetService("RunService")
 local Maid = require(ReplicatedStorage:WaitForChild("Packages"):WaitForChild("Maid"))
 local NetworkUtil = require(ReplicatedStorage:WaitForChild("Packages"):WaitForChild("NetworkUtil"))
 --modules
+local Zone = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Zone"))
+local ItemUtil = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("ItemUtil"))
+local NotificationUtil = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("NotificationUtil"))
+local PlayerManager = require(ServerScriptService:WaitForChild("Server"):WaitForChild("PlayerManager"))
 --types
 type Maid = Maid.Maid
 --constants
+local VEHICLE_TAG = "Vehicle"
+
 local BOAT_CLASS_KEY = "Boat"
 
 --remotes
 local SPAWN_VEHICLE = "SpawnVehicle"
 --variables
 --references
+local CarSpawns = workspace:WaitForChild("Miscs"):WaitForChild("CarSpawns")
+local SpawnedCarsFolder = workspace:FindFirstChild("Assets"):WaitForChild("Temporaries"):WaitForChild("Vehicles")
 --local functions
 --class
 local Vehicle = {}
 
 function Vehicle.init(maid : Maid)
-    for _,vehicleModel in pairs(CollectionService:GetTagged("Vehicle")) do
+    local function vehicleSetup(vehicleModel)
         local vehicleSeat = vehicleModel:FindFirstChild("VehicleSeat") :: VehicleSeat
         if vehicleModel:IsA("Model") and vehicleSeat and vehicleSeat:IsA("VehicleSeat") and vehicleModel.PrimaryPart then
             local _maid = Maid.new()
@@ -48,6 +57,16 @@ function Vehicle.init(maid : Maid)
             end))
         end
     end
+    
+    --local carSpawnZone = Zone.new(CarSpawns:GetChildren(), maid)
+
+    for _,vehicleModel in pairs(CollectionService:GetTagged(VEHICLE_TAG)) do
+        vehicleSetup(vehicleModel)
+    end
+
+    CollectionService:GetInstanceAddedSignal(VEHICLE_TAG):Connect(function(inst)
+        vehicleSetup(inst)
+    end)
 
     --create border with ship
     local defaultCollisionKey = "Default"
@@ -58,8 +77,39 @@ function Vehicle.init(maid : Maid)
     PhysicsService:CollisionGroupSetCollidable(borderCollisionKey, shipCollisionKey, true)
     PhysicsService:CollisionGroupSetCollidable(defaultCollisionKey, borderCollisionKey, false)
 
-    NetworkUtil.onServerInvoke(SPAWN_VEHICLE, function(plr : Player, vehicleInfo)
-        print(vehicleInfo, " mueng")
+    NetworkUtil.onServerInvoke(SPAWN_VEHICLE, function(plr : Player, key : number, vehicleInfoName : string, partZones : Instance ?)
+        print(vehicleInfoName, " mueng")
+        
+        local emptySpawnZone
+        for _,v in pairs(if partZones then partZones:GetDescendants() else CarSpawns:GetDescendants()) do
+            if v:IsA("BasePart") then
+                local isEmpty = true
+                for _,tP in pairs(v:GetTouchingParts()) do
+                    if tP:IsDescendantOf(SpawnedCarsFolder) then
+                        isEmpty = false
+                        break
+                    end
+                end
+                print(isEmpty)
+                if isEmpty then
+                    emptySpawnZone = v
+                    break
+                end
+            end
+        end
+
+        print(emptySpawnZone)
+        if emptySpawnZone then
+            local vehicleModel = ItemUtil.getItemFromName(vehicleInfoName):Clone()
+            vehicleModel:PivotTo(emptySpawnZone.CFrame)
+            vehicleModel.Parent = SpawnedCarsFolder
+            print(vehicleModel)
+        else
+            NotificationUtil.Notify(plr, "Vehicle plots are full now, ask the owners to remove the vehicle so that you can spawn on the plot!")
+        end
+       -- print(carSpawnZone.ItemIsInside(v, plr.Character.PrimaryPart), " is insoide or nahhh", v)
+        
+
         return nil
     end)
 end
