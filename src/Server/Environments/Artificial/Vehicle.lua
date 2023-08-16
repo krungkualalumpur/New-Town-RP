@@ -77,38 +77,11 @@ function Vehicle.init(maid : Maid)
     PhysicsService:CollisionGroupSetCollidable(borderCollisionKey, shipCollisionKey, true)
     PhysicsService:CollisionGroupSetCollidable(defaultCollisionKey, borderCollisionKey, false)
 
-    NetworkUtil.onServerInvoke(SPAWN_VEHICLE, function(plr : Player, key : number, vehicleInfoName : string, partZones : Instance ?)
-        print(vehicleInfoName, " mueng")
-        
-        local emptySpawnZone
-        for _,v in pairs(if partZones then partZones:GetDescendants() else CarSpawns:GetDescendants()) do
-            if v:IsA("BasePart") then
-                local isEmpty = true
-                for _,tP in pairs(v:GetTouchingParts()) do
-                    if tP:IsDescendantOf(SpawnedCarsFolder) then
-                        isEmpty = false
-                        break
-                    end
-                end
-                print(isEmpty)
-                if isEmpty then
-                    emptySpawnZone = v
-                    break
-                end
-            end
-        end
-
-        print(emptySpawnZone)
-        if emptySpawnZone then
-            local vehicleModel = ItemUtil.getItemFromName(vehicleInfoName):Clone()
-            vehicleModel:PivotTo(emptySpawnZone.CFrame)
-            vehicleModel.Parent = SpawnedCarsFolder
-            print(vehicleModel)
-        else
-            NotificationUtil.Notify(plr, "Vehicle plots are full now, ask the owners to remove the vehicle so that you can spawn on the plot!")
-        end
+    NetworkUtil.onServerInvoke(SPAWN_VEHICLE, function(plr : Player, key : number, vehicleName : string, partZones : Instance ?)
+        print(vehicleName, " mueng")
+        local plrInfo = PlayerManager.get(plr)
        -- print(carSpawnZone.ItemIsInside(v, plr.Character.PrimaryPart), " is insoide or nahhh", v)
-        
+        plrInfo:SpawnVehicle(key, true, vehicleName, partZones)
 
         return nil
     end)

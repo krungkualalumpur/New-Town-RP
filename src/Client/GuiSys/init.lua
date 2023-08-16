@@ -33,7 +33,8 @@ type ValueState<T> = ColdFusion.ValueState<T>
 type CanBeState<T> = ColdFusion.State<T>
 
 export type VehicleData = ItemUtil.ItemInfo & {
-    IsSpawned : string
+    IsSpawned : string,
+    Key : number ?
 }
 
 type GuiSys = {
@@ -203,6 +204,7 @@ function guiSys.new()
         if inst:GetAttribute(LIST_TYPE_ATTRIBUTE) == "Vehicle" then
             list = NetworkUtil.invokeServer(GET_PLAYER_VEHICLES)
         end
+        print(inst,inst:GetAttribute(LIST_TYPE_ATTRIBUTE), list, inst:GetAttribute(LIST_TYPE_ATTRIBUTE) == "Vehicle")
 
         local onListButtonClicked = maid:GiveTask(Signal.new())
 
