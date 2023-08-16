@@ -77,6 +77,17 @@ local ON_CHARACTER_APPEARANCE_RESET = "OnCharacterAppearanceReset"
 local Player = Players.LocalPlayer
 --references
 --local functions
+local function getListButtonInfo(
+    signal : Signal,
+    buttonName : string
+)
+    return 
+        {
+            Signal = signal,
+            ButtonName = buttonName
+        }
+    
+end
 --class
 local currentGuiSys : GuiSys
 
@@ -201,12 +212,38 @@ function guiSys.new()
         local isVisible = _Value(true)
 
         local list 
+        
+        local buttonlistsInfo = {}
+
         if inst:GetAttribute(LIST_TYPE_ATTRIBUTE) == "Vehicle" then
             list = NetworkUtil.invokeServer(GET_PLAYER_VEHICLES)
+            
+            local onVehicleSpawn = maid:GiveTask(Signal.new())
+            local onVehicleDelete = maid:GiveTask(Signal.new())
+
+            table.insert(buttonlistsInfo, getListButtonInfo(onVehicleSpawn, "Spawn"))
+            table.insert(buttonlistsInfo, getListButtonInfo(onVehicleDelete, "Delete"))
+
+            maid:GiveTask(onVehicleSpawn:Connect(function(key, val : string)
+                if inst:GetAttribute(LIST_TYPE_ATTRIBUTE) == "Vehicle" then
+                    local spawnerZonesPointer =  inst:FindFirstChild("SpawnerZones") :: ObjectValue
+                    local spawnerZones = spawnerZonesPointer.Value
+    
+                    NetworkUtil.invokeServer(
+                        SPAWN_VEHICLE,
+                        key,
+                        val,
+                        spawnerZones
+                    )
+                end
+            end))
+
+            maid:GiveTask(onVehicleDelete:Connect(function(key, val)
+                print(key, val, " I DONT LIKE MONDAYS!")
+            end))
         end
         print(inst,inst:GetAttribute(LIST_TYPE_ATTRIBUTE), list, inst:GetAttribute(LIST_TYPE_ATTRIBUTE) == "Vehicle")
 
-        local onListButtonClicked = maid:GiveTask(Signal.new())
 
         local listUI =  ListUI(
             _maid, 
@@ -214,7 +251,7 @@ function guiSys.new()
             list,
             position,
             isVisible,
-            onListButtonClicked
+            buttonlistsInfo
         ) :: GuiObject
 
         ExitButton.new(
@@ -229,19 +266,7 @@ function guiSys.new()
         maid.ItemOptionsUI = _maid
         listUI.Parent = target
 
-        maid:GiveTask(onListButtonClicked:Connect(function(key, val : string)
-            if inst:GetAttribute(LIST_TYPE_ATTRIBUTE) == "Vehicle" then
-                local spawnerZonesPointer =  inst:FindFirstChild("SpawnerZones") :: ObjectValue
-                local spawnerZones = spawnerZonesPointer.Value
-
-                NetworkUtil.invokeServer(
-                    SPAWN_VEHICLE,
-                    key,
-                    val,
-                    spawnerZones
-                )
-            end
-        end))
+       
 
         _maid:GiveTask(RunService.Stepped:Connect(function()
             local worldPos 

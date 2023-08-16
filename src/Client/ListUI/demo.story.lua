@@ -8,10 +8,22 @@ local Signal = require(ReplicatedStorage:WaitForChild("Packages"):WaitForChild("
 --modules
 local ListUI = require(ReplicatedStorage:WaitForChild("Client"):WaitForChild("ListUI"))
 --types
+type Signal = Signal.Signal
 --constants
 --variables
 --references
 --local functions
+local function getButtonInfo(
+    signal : Signal,
+    buttonName : string
+)
+    return 
+        {
+            Signal = signal,
+            ButtonName = buttonName
+        }
+    
+end
 --class
 return function(target : CoreGui)
     local maid = Maid.new()
@@ -40,21 +52,20 @@ return function(target : CoreGui)
 
     local isVisible = _Value(true)
 
-    local onClickSignal = maid:GiveTask(Signal.new())
+    local options = {
+        getButtonInfo(maid:GiveTask(Signal.new()), "Delete"),
+        getButtonInfo(maid:GiveTask(Signal.new()), "Utilize")
+    }
 
     local listUI = ListUI(
         maid,
-        "Wisnu",
+        "Wisnu", 
         list,
         pos,
         isVisible,
-        onClickSignal
+        options
     )
     listUI.Parent = target
-
-    maid:GiveTask(onClickSignal:Connect(function(k, v)
-
-    end))
 
     return function()
         maid:Destroy()
