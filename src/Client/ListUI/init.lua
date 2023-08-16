@@ -146,7 +146,7 @@ end
 return function(
     maid : Maid,
     titleName : string,
-    list : {[number] : string},
+    list : State<{[number] : string}>,
     position : State<UDim2>,
     isVisible : State<boolean>,
     subOptions : {
@@ -207,15 +207,26 @@ return function(
         }
     })
 
-    for k,v in pairs(list) do
-        local button = getListFrame(
-            maid, 
-            v, 
-            k,
-            subOptions
-        )
-        button.Parent = contentFrame
-    end
-    
+    local stateMaid = maid:GiveTask(Maid.new())
+  
+    local val = _Computed(function(listVal)
+        stateMaid:DoCleaning()
+        
+        for k,v in pairs(listVal) do
+            local button = getListFrame(
+                stateMaid, 
+                v, 
+                k,
+                subOptions
+            )
+            button.Parent = contentFrame
+        end
+        return ""
+    end, list)
+ 
+    local stringValue = _new("StringValue")({
+        Value = val
+    })
+
     return out
 end

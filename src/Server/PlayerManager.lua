@@ -324,7 +324,7 @@ end
 function PlayerManager:DeleteVehicle(key : number)
     self:SpawnVehicle(key, false)
 
-    self.Vehicles[key] = nil
+    table.remove(self.Vehicles, key)
     return
 end
 

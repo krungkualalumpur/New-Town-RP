@@ -22,6 +22,7 @@ local BOAT_CLASS_KEY = "Boat"
 
 --remotes
 local SPAWN_VEHICLE = "SpawnVehicle"
+local DELETE_VEHICLE = "DeleteVehicle"
 --variables
 --references
 local CarSpawns = workspace:WaitForChild("Miscs"):WaitForChild("CarSpawns")
@@ -82,7 +83,16 @@ function Vehicle.init(maid : Maid)
         local plrInfo = PlayerManager.get(plr)
        -- print(carSpawnZone.ItemIsInside(v, plr.Character.PrimaryPart), " is insoide or nahhh", v)
         plrInfo:SpawnVehicle(key, true, vehicleName, partZones)
+        print(key)
 
+        return nil
+    end)
+
+    NetworkUtil.onServerInvoke(DELETE_VEHICLE, function(plr : Player, key : number)
+        local plrInfo = PlayerManager.get(plr)
+
+        print(key)
+        plrInfo:DeleteVehicle(key)
         return nil
     end)
 end

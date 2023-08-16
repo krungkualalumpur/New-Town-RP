@@ -48,6 +48,8 @@ return function(target : CoreGui)
         "GG"
     }
 
+    local stateList = _Value(list)
+
     local pos = _Value(UDim2.fromScale(0.5, 0.5))
 
     local isVisible = _Value(true)
@@ -60,7 +62,7 @@ return function(target : CoreGui)
     local listUI = ListUI(
         maid,
         "Wisnu", 
-        list,
+        stateList,
         pos,
         isVisible,
         options

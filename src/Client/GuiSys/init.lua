@@ -71,6 +71,7 @@ local GET_PLAYER_VEHICLES = "GetPlayerVehicles"
 
 local SPAWN_VEHICLE = "SpawnVehicle"
 local ADD_VEHICLE = "AddVehicle"
+local DELETE_VEHICLE = "DeleteVehicle"
 
 local ON_CHARACTER_APPEARANCE_RESET = "OnCharacterAppearanceReset"
 --variables
@@ -211,12 +212,12 @@ function guiSys.new()
         local position = _Value(UDim2.new())
         local isVisible = _Value(true)
 
-        local list 
+        local list = _Value({}) 
         
         local buttonlistsInfo = {}
 
         if inst:GetAttribute(LIST_TYPE_ATTRIBUTE) == "Vehicle" then
-            list = NetworkUtil.invokeServer(GET_PLAYER_VEHICLES)
+            list:Set(NetworkUtil.invokeServer(GET_PLAYER_VEHICLES))
             
             local onVehicleSpawn = maid:GiveTask(Signal.new())
             local onVehicleDelete = maid:GiveTask(Signal.new())
@@ -225,25 +226,26 @@ function guiSys.new()
             table.insert(buttonlistsInfo, getListButtonInfo(onVehicleDelete, "Delete"))
 
             maid:GiveTask(onVehicleSpawn:Connect(function(key, val : string)
-                if inst:GetAttribute(LIST_TYPE_ATTRIBUTE) == "Vehicle" then
-                    local spawnerZonesPointer =  inst:FindFirstChild("SpawnerZones") :: ObjectValue
-                    local spawnerZones = spawnerZonesPointer.Value
-    
-                    NetworkUtil.invokeServer(
-                        SPAWN_VEHICLE,
-                        key,
-                        val,
-                        spawnerZones
-                    )
-                end
+                local spawnerZonesPointer =  inst:FindFirstChild("SpawnerZones") :: ObjectValue
+                local spawnerZones = spawnerZonesPointer.Value
+
+                NetworkUtil.invokeServer(
+                    SPAWN_VEHICLE, 
+                    key,
+                    val,
+                    spawnerZones
+                )
             end))
 
             maid:GiveTask(onVehicleDelete:Connect(function(key, val)
-                print(key, val, " I DONT LIKE MONDAYS!")
+                NetworkUtil.invokeServer(
+                    DELETE_VEHICLE,
+                    key
+                )
+
+                list:Set(NetworkUtil.invokeServer(GET_PLAYER_VEHICLES))
             end))
         end
-        print(inst,inst:GetAttribute(LIST_TYPE_ATTRIBUTE), list, inst:GetAttribute(LIST_TYPE_ATTRIBUTE) == "Vehicle")
-
 
         local listUI =  ListUI(
             _maid, 
@@ -284,8 +286,7 @@ function guiSys.new()
                 isVisible:Set(isOnRange)
 
                 if Player.Character and worldPos and ((worldPos - Player.Character.PrimaryPart.Position).Magnitude >= MAX_DISTANCE) then
-                    print(Player.Character, (pos - Player.Character.PrimaryPart.Position).Magnitude) 
-                    _maid:Destroy()
+                    maid.ItemOptionsUI = nil
                 end
             end
         end))
