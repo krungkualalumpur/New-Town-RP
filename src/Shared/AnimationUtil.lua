@@ -9,7 +9,7 @@
 --local functions
 --class
 local AnimUtil = {}
-function AnimUtil.playAnim(plr : Player, animId : number | string)
+function AnimUtil.playAnim(plr : Player, animId : number | string, onLoop : boolean)
     if type(animId) == "string" then
         animId = string.match(animId, "%d+") or "0"
     end
@@ -23,6 +23,7 @@ function AnimUtil.playAnim(plr : Player, animId : number | string)
     animation.AnimationId = "rbxassetid://" .. tostring(animId)
 
     local animTrack : AnimationTrack = animator:LoadAnimation(animation)
+    animTrack.Looped = onLoop
 
     animTrack:Play()
     

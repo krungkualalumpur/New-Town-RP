@@ -29,6 +29,25 @@ local DELETE_VEHICLE = "DeleteVehicle"
 local CarSpawns = workspace:WaitForChild("Miscs"):WaitForChild("CarSpawns")
 local SpawnedCarsFolder = workspace:FindFirstChild("Assets"):WaitForChild("Temporaries"):WaitForChild("Vehicles")
 --local functions
+local function playSound(soundId : number, target : Instance, isLoop : boolean)
+    local _maid = Maid.new()
+
+    local sound = Instance.new("Sound")
+    sound.Looped = isLoop
+    sound.Parent = target
+    sound.SoundId = "rbxassetid://" .. tostring(soundId)
+    sound:Play()
+
+    _maid:GiveTask(sound.Ended:Connect(function()
+        _maid:Destroy()
+    end))
+    _maid:GiveTask(sound.Destroying:Connect(function()
+        _maid:Destroy()
+    end))
+
+    return sound
+end
+
 local function setupSpawnedCar(vehicleModel : Model)
     local body = vehicleModel:FindFirstChild("Body")
     if vehicleModel.PrimaryPart and body then
@@ -55,6 +74,8 @@ local Vehicle = {}
 function Vehicle.init(maid : Maid)
     local function vehicleSetup(vehicleModel : Instance)
         local vehicleSeat = vehicleModel:FindFirstChild("VehicleSeat") :: VehicleSeat
+        local vehicleSpeed = vehicleModel:GetAttribute("Speed") or 45
+        
         if vehicleModel:IsA("Model") and vehicleSeat and vehicleSeat:IsA("VehicleSeat") and vehicleModel.PrimaryPart then
             setupSpawnedCar(vehicleModel)
             
@@ -70,7 +91,7 @@ function Vehicle.init(maid : Maid)
                     if seat and wheels then
                         for _,v in pairs(wheels:GetDescendants()) do
                             if v:IsA("HingeConstraint") and v.ActuatorType == Enum.ActuatorType.Motor then
-                                v.AngularVelocity = seat.Throttle*convertionKpHtoVelocity(82*(if math.sign(seat.Throttle) == 1 then 0.5 else 0.25))
+                                v.AngularVelocity = seat.Throttle*convertionKpHtoVelocity((vehicleSpeed)*(if math.sign(seat.Throttle) == 1 then 1 else 0.5))
                                 if seat.Throttle ~= 0 then
                                     v.MotorMaxAcceleration = if math.sign(seat.Throttle) == 1 then 10 else 30
                                 else
@@ -79,7 +100,6 @@ function Vehicle.init(maid : Maid)
                             end
                         end
                     end
-
                 end
             end))
 
@@ -97,14 +117,19 @@ function Vehicle.init(maid : Maid)
                                 
                                 if velocity < convertionKpHtoVelocity(20) then
                                     v.TargetAngle = 45*seat.Steer
+                                    v.AngularSpeed = 4
                                 elseif velocity >= convertionKpHtoVelocity(20) and velocity < convertionKpHtoVelocity(40) then
                                     v.TargetAngle = 40*seat.Steer
+                                    v.AngularSpeed = 3
                                 elseif velocity >= convertionKpHtoVelocity(40) and velocity < convertionKpHtoVelocity(60) then
                                     v.TargetAngle = 35*seat.Steer
+                                    v.AngularSpeed = 2
                                 elseif velocity >= convertionKpHtoVelocity(60) and velocity < convertionKpHtoVelocity(80) then
                                     v.TargetAngle = 30*seat.Steer
+                                    v.AngularSpeed = 1
                                 elseif velocity >= convertionKpHtoVelocity(80) then
                                     v.TargetAngle = 20*seat.Steer
+                                    v.AngularSpeed = 1
                                 end
                             end
                         end
@@ -114,13 +139,42 @@ function Vehicle.init(maid : Maid)
             end))
 
             if vehicleModel:GetAttribute("Class") == BOAT_CLASS_KEY then
+                --ship physics check
                 _maid:GiveTask(RunService.Stepped:Connect(function()
                     if math.abs(vehicleModel.PrimaryPart.Orientation.Z) >= 90 then
                         vehicleModel:PivotTo(CFrame.new(vehicleModel.PrimaryPart.Position)*CFrame.Angles(vehicleModel.PrimaryPart.Orientation.X, vehicleModel.PrimaryPart.Orientation.Y, 0))
                     end
-                end))                
+                end))      
+                
+                --create border with ship
+                local defaultCollisionKey = "Default"
+                local shipCollisionKey = "Ship"
+                local borderCollisionKey = "Border2"
+
+                PhysicsService:RegisterCollisionGroup(borderCollisionKey)
+                PhysicsService:CollisionGroupSetCollidable(borderCollisionKey, shipCollisionKey, true)
+                PhysicsService:CollisionGroupSetCollidable(defaultCollisionKey, borderCollisionKey, false)
+
+            elseif vehicleModel:GetAttribute("Class") == CAR_CLASS_KEY then
+                local occupantMaid = _maid:GiveTask(Maid.new())
+
+                _maid:GiveTask(vehicleSeat:GetPropertyChangedSignal("Occupant"):Connect(function()
+                    occupantMaid:DoCleaning()
+                    
+                    if vehicleSeat.Occupant then
+                        playSound(912961304, vehicleModel.PrimaryPart, false)
+                    
+                        task.spawn(function()
+                            task.wait(1)
+                            local sound = occupantMaid:GiveTask(playSound(532147820, vehicleModel.PrimaryPart, true))
+                            occupantMaid:GiveTask(RunService.Stepped:Connect(function()
+                                sound.PlaybackSpeed = 1 + math.sqrt(vehicleModel.PrimaryPart.AssemblyLinearVelocity.Magnitude)/4
+                            end))
+                        end)
+                    end
+                end)) 
             end
-            
+
             _maid:GiveTask(vehicleModel.Destroying:Connect(function()
                 _maid:Destroy()
             end))
@@ -137,14 +191,6 @@ function Vehicle.init(maid : Maid)
         vehicleSetup(inst)
     end)
 
-    --create border with ship
-    local defaultCollisionKey = "Default"
-    local shipCollisionKey = "Ship"
-    local borderCollisionKey = "Border2"
-
-    PhysicsService:RegisterCollisionGroup(borderCollisionKey)
-    PhysicsService:CollisionGroupSetCollidable(borderCollisionKey, shipCollisionKey, true)
-    PhysicsService:CollisionGroupSetCollidable(defaultCollisionKey, borderCollisionKey, false)
 
     NetworkUtil.onServerInvoke(SPAWN_VEHICLE, function(plr : Player, key : number, vehicleName : string, partZones : Instance ?)
         print(vehicleName, " mueng")

@@ -97,7 +97,7 @@ end
 function Interactable.Interact(model : Model, player : Player, plrInfo : any)
     --if model.PrimaryPart then
         if CollectionService:HasTag(model, "Door") or CollectionService:HasTag(model, "Window") then
-            Interactable.InteractSwing(model,true)
+            Interactable.InteractOpening(model,true)
         end 
 
         
@@ -383,16 +383,85 @@ function Interactable.InteractNonSwitch(model : Model, plr : Player)
         
 end
 
-function Interactable.InteractSwing(model : Model,on : boolean)
+function Interactable.InteractOpening(model : Model,on : boolean)
     if RunService:IsServer() then
         local pivot = model:FindFirstChild("Pivot")
         local hingeConstraint = if pivot then pivot:FindFirstChild("HingeConstraint") :: HingeConstraint else nil
 
-        if hingeConstraint then
+        local slides = model:FindFirstChild("Slides")
+
+        if hingeConstraint then --if it's a hinges opening
             hingeConstraint.ServoMaxTorque = math.huge
             hingeConstraint.TargetAngle = 90
             task.wait(3)
             hingeConstraint.TargetAngle = 0
+        elseif slides then --if it's a slides opening
+            local right = slides:FindFirstChild("Right") :: BasePart
+            local left = slides:FindFirstChild("Left") :: BasePart
+
+            if right and left then
+                if right:FindFirstChild("CFrameValue") or left:FindFirstChild("CFrameValue") then
+                    return
+                end
+
+                local rightCfValue = Instance.new("CFrameValue")
+                rightCfValue.Name = "CFrameValue"
+                rightCfValue.Value = right.CFrame
+                rightCfValue.Parent = right
+
+                local leftCfValue = Instance.new("CFrameValue")
+                leftCfValue.Name = "CFrameValue"
+                leftCfValue.Value = left.CFrame
+                leftCfValue.Parent = left
+
+                local leftTween = game:GetService("TweenService"):Create(
+                    left, 
+                    TweenInfo.new(0.1), 
+                    {
+                        CFrame = left.CFrame + left.CFrame.RightVector*left.Size.X
+                    }
+                )
+                local rightTween = game:GetService("TweenService"):Create(
+                    right, 
+                    TweenInfo.new(0.1), 
+                    {
+                        CFrame = right.CFrame - right.CFrame.RightVector*right.Size.X
+                    }
+                )
+
+                leftTween:Play()
+                rightTween:Play()
+
+                task.spawn(function()
+                    task.wait(2)
+                    
+                    local leftCloseTween = game:GetService("TweenService"):Create(
+                        left, 
+                        TweenInfo.new(0.1), 
+                        {
+                            CFrame = leftCfValue.Value
+                        }
+                    )
+                    local rightCloseTween = game:GetService("TweenService"):Create(
+                        right, 
+                        TweenInfo.new(0.1), 
+                        {
+                            CFrame = rightCfValue.Value
+                        }
+                    )
+    
+                    leftCloseTween:Play()
+                    rightCloseTween:Play()
+                    
+                    leftCfValue:Destroy()
+                    rightCfValue:Destroy()
+
+                    leftTween:Destroy()
+                    rightTween:Destroy()
+                    leftCloseTween:Destroy()
+                    rightCloseTween:Destroy()
+                end)
+            end
         end
     elseif RunService:IsClient() then
         NetworkUtil.fireServer(ON_INTERACT, model)

@@ -54,14 +54,13 @@ local ActionLists = {
             if toolData.Class == "Food" then
                 animId = 5569663688
                 soundId = 4511723890
-            elseif toolData.Class == "Drink" then
+            elseif toolData.Class == "Drink" then 
                 animId = 5569673797
                 soundId = 1820372394
             end
-            AnimationUtil.playAnim(player, animId)
+            AnimationUtil.playAnim(player, animId, false)
                 
             --play sound
-            local character = player.Character
             if character then
                 local hrp = character.PrimaryPart
                 playSound(soundId, false, hrp)
@@ -70,9 +69,9 @@ local ActionLists = {
         end
     },
     {
-        ToolClass = "Object",
-        Activated = function( player : Player, toolData : BackpackUtil.ToolData<nil>)
-            
+        ToolClass = "Book",
+        Activated = function(player : Player, toolData : BackpackUtil.ToolData<nil>)
+            AnimationUtil.playAnim(player, 6831327167, false)
         end
     }
 }

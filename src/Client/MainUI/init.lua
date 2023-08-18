@@ -446,10 +446,8 @@ return function(
     end
   
     local strval = _Computed(function(status : UIStatus)
-        print("test1?")
         statusMaid:DoCleaning() 
         if status == "Backpack" then
-            print("Test2?")
             local onBackpackButtonEquipClickSignal = statusMaid:GiveTask(Signal.new())
             local onBackpackButtonDeleteClickSignal = statusMaid:GiveTask(Signal.new())
 
@@ -490,7 +488,7 @@ return function(
             ) :: Frame
             animationUI.Parent = out
             statusMaid:GiveTask(onAnimClickSignal:Connect(function(animInfo : AnimationInfo)
-                AnimationUtil.playAnim(Players.LocalPlayer, animInfo.AnimationId)
+                AnimationUtil.playAnim(Players.LocalPlayer, animInfo.AnimationId, false)
             end))
 
             getExitButton(animationUI)
