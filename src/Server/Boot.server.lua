@@ -17,6 +17,8 @@ local CustomizationUtil = require(ReplicatedStorage:WaitForChild("Shared"):WaitF
 local InteractableUtil = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("InteractableUtil"))
 local ToolActions = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("ToolActions"))
 local NotificationUtil = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("NotificationUtil"))
+
+local TelevisionChannel = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("TelevisionChannel"))
 --types
 --constants
 --references
@@ -35,5 +37,6 @@ InteractableUtil.init(maid)
 ToolActions.init(maid)
 
 NotificationUtil.init(maid)
+TelevisionChannel.init(maid)
 print("Hello world, du bist heissen?! PENAT LAAAA de stronkest")
 

@@ -7,6 +7,7 @@ local RunService = game:GetService("RunService")
 local Players = game:GetService("Players")
 --packages
 local Maid = require(ReplicatedStorage:WaitForChild("Packages"):WaitForChild("Maid"))
+local ColdFusion = require(ReplicatedStorage:WaitForChild("Packages"):WaitForChild("ColdFusion8"))
 local NetworkUtil = require(ReplicatedStorage:WaitForChild("Packages"):WaitForChild("NetworkUtil"))
 --modules
 local ItemUtil = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("ItemUtil"))
@@ -14,6 +15,9 @@ local BackpackUtil = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChi
 local ToolActions = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("ToolActions"))
 
 local Zone = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Zone"))
+
+local TelevisionChannel = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("TelevisionChannel"))
+
 --types
 type Maid = Maid.Maid
 
@@ -244,6 +248,58 @@ function Interactable.InteractSwitch(model : Model)
 
                 playSound(9125620381, false,  lampSwitchPart)
             end
+        elseif data.Class == "Television" then
+            if RunService:IsClient() then
+                NetworkUtil.fireServer(ON_INTERACT, model)
+                return
+            end
+
+            local screenPart = model:FindFirstChild("ScreenPart") :: BasePart
+
+            local TVgui = Instance.new("SurfaceGui") :: SurfaceGui
+            TVgui.Name = "TelevisionGui"
+            TVgui.Face = Enum.NormalId.Right
+            TVgui.Parent = screenPart
+
+            local UIListLayout = Instance.new("UIListLayout")
+            UIListLayout.Parent = TVgui
+
+            local textLabel = Instance.new("TextLabel")
+            textLabel.BackgroundTransparency = 0
+            textLabel.BackgroundColor3 = Color3.fromRGB(255,255,255)
+            textLabel.Size = UDim2.fromScale(1, 1)
+            textLabel.TextSize = 40
+            textLabel.TextYAlignment = Enum.TextYAlignment.Center
+            textLabel.RichText = true
+            textLabel.TextWrapped = true
+            textLabel.Parent = TVgui 
+
+            local _maid = Maid.new()
+            local _fuse =  ColdFusion.fuse(_maid)
+            local _new = _fuse.new
+            local _bind = _fuse.bind
+
+            local _Computed = _fuse.Computed
+
+            local currentTextState = TelevisionChannel.getCurrentTextStateByChannelId(1)
+          
+            textLabel.Text = tostring(TelevisionChannel.getTextByTextState(1, currentTextState.Value))
+            _maid:GiveTask(currentTextState.Changed:Connect(function()
+                local text = TelevisionChannel. getTextByTextState(1, currentTextState.Value)
+                if textLabel.Parent then
+                    local intTextState = currentTextState.Value
+                    for i = 1, #text do
+                        if currentTextState.Value == intTextState then
+                            task.wait()
+                            textLabel.Text = string.sub(text, 1, i)
+                        end
+                    end
+                end
+            end))
+
+            _maid:GiveTask(TVgui.Destroying:Connect(function()
+                _maid:Destroy()
+            end))
         end
 
     else
@@ -295,8 +351,15 @@ function Interactable.InteractSwitch(model : Model)
 
                 playSound(9125620381, false,  lampSwitchPart)
             end
-        end
+        elseif data.Class == "Television" then
+            local screenPart = model:FindFirstChild("ScreenPart") :: BasePart
 
+            local TVgui = screenPart:FindFirstChild("TelevisionGui")
+
+            if TVgui then
+                TVgui:Destroy()
+            end
+        end
     end
 end
 

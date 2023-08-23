@@ -142,44 +142,15 @@ function createInteractByPrompt(
 
     proximityPrompt.Triggered:Connect(function()
         local inst = instancePointer.Value
-        print(inst)
         if (inst) then
-            print(inst, " 2")
             if  (inst:HasTag(interactNameTag)) and inst:IsA("Model") then
-                print(inst, " 3")
                 InteractableUtil.Interact(inst :: Model, Player)                        
             -- NetworkUtil.fireServer(ON_INTERACT, inst)
             end
         end
         return 
     end)
-    InputHandler:Map(
-        interactInputKey, 
-        "Keyboard", 
-        {interactCode},
-        "Press" ,
-        function(inputObject : InputObject) 
-            local inst = instancePointer.Value
-            print(inst)
-            if (inst) then
-                print(inst, " 2")
-                if  (inst:HasTag(interactNameTag)) then
-                    print(inst, " 3")
-                    print(interactCode, inputObject.KeyCode)
-                    if (interactCode == inputObject.KeyCode) then 
-                        print("4")
-                        InteractableUtil.Interact(inst :: Model, Player)                        
-                    end
-                -- NetworkUtil.fireServer(ON_INTERACT, inst)
-                end
-            end
-            return 
-        end, 
-        function() 
-            return 
-        end
-    )
-
+   
     if interactCode.EnumType == Enum.KeyCode then
         for _,v: Model in pairs(CollectionService:GetTagged(interactNameTag)) do
             if v:IsA("Model") and v:IsDescendantOf(workspace) then 
@@ -282,6 +253,12 @@ function interactSys.init(
         Transparency = 1
     })
     proximityPrompt.Parent = trackerPart
+
+    _bind(proximityPrompt)({
+        ObjectText = _Computed(function(inst : Model ?)
+            return if inst then inst.Name else ""
+        end, instState)
+    })
 
     maid:GiveTask(RunService.Stepped:Connect(function()
         local character = Player.Character
