@@ -12,6 +12,7 @@ local Elevator = require(ServerScriptService:WaitForChild("Server"):WaitForChild
 local Seat = require(ServerScriptService:WaitForChild("Server"):WaitForChild("Environments"):WaitForChild("Artificial"):WaitForChild("Seat"))
 local Minigame = require(ServerScriptService:WaitForChild("Server"):WaitForChild("Environments"):WaitForChild("Artificial"):WaitForChild("Minigame"))
 local Vehicle = require(ServerScriptService:WaitForChild("Server"):WaitForChild("Environments"):WaitForChild("Artificial"):WaitForChild("Vehicle"))
+local Speaker = require(ServerScriptService:WaitForChild("Server"):WaitForChild("Environments"):WaitForChild("Artificial"):WaitForChild("Speaker"))
 --types
 type Maid = Maid.Maid
 --constants
@@ -103,6 +104,7 @@ return {
         Seat.init(maid)
         Minigame.init(maid)
         Vehicle.init(maid)
+        Speaker.init(maid)
 
         initNightLight(maid)
     end

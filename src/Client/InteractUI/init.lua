@@ -17,6 +17,8 @@ type CanBeState<T> = ColdFusion.State<T>
 local PADDING_SIZE =  UDim.new(0, 5)
 
 local BACKGROUND_COLOR = Color3.fromRGB(200,200,200)
+local PRIMARY_COLOR = Color3.fromRGB(255,255,255)
+local SECONDARY_COLOR = Color3.fromRGB(50,50,50)
 --variables
 --references
 --local functions
@@ -35,7 +37,8 @@ return function(
     local _Value = _fuse.Value
 
     local out = _new("Frame")({
-        Size = UDim2.fromScale(0.125, 0.075),
+        BackgroundTransparency = 1,
+        Size = UDim2.fromScale(0.125, 0.125),
         Children = {
             _new("UIPadding")({
                 PaddingBottom = PADDING_SIZE,
@@ -44,8 +47,10 @@ return function(
                 PaddingLeft = PADDING_SIZE
             }),
             _new("UIListLayout")({
-                FillDirection = Enum.FillDirection.Horizontal,
-                SortOrder = Enum.SortOrder.LayoutOrder
+                FillDirection = Enum.FillDirection.Vertical,
+                SortOrder = Enum.SortOrder.LayoutOrder,
+                HorizontalAlignment = Enum.HorizontalAlignment.Center,
+                Padding = PADDING_SIZE,
             }),
             _new("UICorner")({}),
 
@@ -54,15 +59,33 @@ return function(
                 Visible = _Computed(function(keyCode : Enum.KeyCode | Enum.UserInputType)
                     return (keyCode.EnumType == Enum.KeyCode)
                 end, interactKeyCode),
-                Size = UDim2.fromScale(0.25, 1),
-                BackgroundColor3 = BACKGROUND_COLOR,
+                Size = UDim2.fromScale(0.45, 0.65),
+                BackgroundColor3 = PRIMARY_COLOR,
                 TextScaled = true,
                 Text =  _Computed(function(keyCode : Enum.KeyCode | Enum.UserInputType)
                     return keyCode.Name
-                end, interactKeyCode)
+                end, interactKeyCode),
+                TextColor3 = SECONDARY_COLOR,
+                TextStrokeTransparency = 0.85,
+                Children = {
+                    _new("UICorner")({}),
+                    _new("UIStroke")({
+                        ApplyStrokeMode = Enum.ApplyStrokeMode.Border,
+                        Color = SECONDARY_COLOR,
+                        Thickness = 2,
+                    }),
+                    _new("UIGradient")({
+                        Rotation = -90,
+                        Color = ColorSequence.new{
+                            ColorSequenceKeypoint.new(0, BACKGROUND_COLOR),
+                            ColorSequenceKeypoint.new(1, PRIMARY_COLOR),
+                        }
+                    })
+                }
             }),
             _new("ImageButton")({
-                LayoutOrder = 1,
+                LayoutOrder = 2,
+                BackgroundTransparency = 1,
                 Visible = _Computed(function(userInputType : Enum.KeyCode | Enum.UserInputType)
                     return (userInputType.EnumType == Enum.UserInputType)
                 end, interactKeyCode),
@@ -75,8 +98,11 @@ return function(
 
             _new("TextLabel")({
                 LayoutOrder = 2,
-                Size = UDim2.fromScale(0.75, 1),
+                BackgroundTransparency = 1,
+                Size = UDim2.fromScale(0.75, 0.3),
                 Text = "Interact",
+                TextColor3 = BACKGROUND_COLOR,
+                TextStrokeTransparency = 0.65
             }),
             _new("ObjectValue")({
                 Name = "InstancePointer"

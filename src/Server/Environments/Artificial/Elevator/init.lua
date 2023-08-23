@@ -3,6 +3,7 @@
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local CollectionService = game:GetService("CollectionService")
 local RunService = game:GetService("RunService")
+local Players = game:GetService("Players")
 
 --packages
 local Maid = require(ReplicatedStorage:WaitForChild("Packages"):WaitForChild("Maid"))
@@ -38,6 +39,7 @@ export type Elevator = {
 --constants
 local FLOOR_TOP_KEY = "FloorTop"
 local FLOOR_BOTTOM_KEY = "FloorBottom"
+local SOUND_NAME = "SFX"
 
 local SELECTED_COLOR = Color3.new(0.764706, 0.933333, 0.007843)
 local DEFAULT_COLOR = Color3.fromRGB(128, 127, 130)
@@ -45,6 +47,22 @@ local DEFAULT_COLOR = Color3.fromRGB(128, 127, 130)
 --references
 --variables
 --local functions
+local function playSound(soundId : number, onLoop : boolean, parent : Instance ? )
+    local sound = Instance.new("Sound")
+    sound.Name = SOUND_NAME
+    sound.RollOffMaxDistance = 25
+    sound.SoundId = "rbxassetid://" .. tostring(soundId)
+    sound.Parent = parent or (if RunService:IsClient() then Players.LocalPlayer else nil)
+    sound.Looped = onLoop
+    if sound.Parent then
+        sound:Play()
+    end
+	task.spawn(function()
+		sound.Ended:Wait()
+		sound:Destroy()
+	end)
+end
+
 function weld(part0 : BasePart, part1 : BasePart)
 	local weldConst = Instance.new("Weld") :: Weld
 	weldConst.Part0 = part0
@@ -144,14 +162,7 @@ local function openCageDoor(elevModel : Model, openTime : number, floorName : st
 					onDoorOpen(v)
 				end)
 				--sound
-				local sound = Instance.new("Sound")
-				sound.SoundId = "rbxassetid://9114154039"
-				sound.Parent = v
-				sound:Play()
-				task.spawn(function()
-					sound.Ended:Wait()
-					sound:Destroy()
-				end)
+				playSound(9114154039, false, v)
 			end
 		end
 
@@ -179,14 +190,7 @@ local function openCageDoor(elevModel : Model, openTime : number, floorName : st
 				end)
 
 				--sound
-				local sound = Instance.new("Sound")
-				sound.SoundId = "rbxassetid://9114154039"
-				sound.Parent = v
-				sound:Play()
-				task.spawn(function()
-					sound.Ended:Wait()
-					sound:Destroy()
-				end)
+				playSound(9114154039, false, v)
 			end
 		end
 		if floorName and elevatorGates then
@@ -733,14 +737,7 @@ function Elevator:UpdateUI()
 	local floordisplay = (if prismaticConstraint.Velocity == 0 then "" elseif self.Status == "Ascending" then '⬆️' else '⬇️') .. self.CurrentFloor
 	
 	if floorNameText.Text ~= floordisplay and math.floor(prismaticConstraint.Velocity) ~= 0 then
-		local sound = Instance.new("Sound")
-		sound.SoundId = "rbxassetid://6148388066"
-		sound.Parent = floorIndicationPart
-		sound:Play()
-		task.spawn(function()
-			sound.Ended:Wait()
-			sound:Destroy()
-		end)
+		playSound(6148388066, false, floorIndicationPart)
 	end
 
 	local floorNameText2 = floorIndicationPart:WaitForChild("SurfaceGui"):WaitForChild("FloorName") :: TextLabel

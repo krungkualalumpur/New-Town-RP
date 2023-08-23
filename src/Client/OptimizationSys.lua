@@ -16,7 +16,6 @@ local ZONE_TAG = "RenderZone"
 local Player = Players.LocalPlayer
 --local functions
 local function getInsideZone(plr : Player, zonePart : Instance)
-    print(plr.Name, " entered in zone ", zonePart, " !")
     local pointer = zonePart:FindFirstChild("Pointer") :: ObjectValue
     local interiorInstance = pointer.Value
     local interiorParentPointer = pointer:FindFirstChild("ParentPointer") :: ObjectValue
@@ -27,7 +26,6 @@ local function getInsideZone(plr : Player, zonePart : Instance)
     return 
 end
 local function getOutsideZone(plr : Player, zonePart : Instance)
-    print(plr.Name, " quittedin zone ", zonePart, " !")
     local pointer = zonePart:FindFirstChild("Pointer") :: ObjectValue
     local interiorInstance = pointer.Value
     if interiorInstance then

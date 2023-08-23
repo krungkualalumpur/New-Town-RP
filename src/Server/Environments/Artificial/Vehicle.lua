@@ -92,8 +92,13 @@ function Vehicle.init(maid : Maid)
                         for _,v in pairs(wheels:GetDescendants()) do
                             if v:IsA("HingeConstraint") and v.ActuatorType == Enum.ActuatorType.Motor then
                                 v.AngularVelocity = seat.Throttle*convertionKpHtoVelocity((vehicleSpeed)*(if math.sign(seat.Throttle) == 1 then 1 else 0.5))
+                                print(vehicleModel.PrimaryPart.CFrame:VectorToObjectSpace(vehicleModel.PrimaryPart.AssemblyLinearVelocity), " heh? ")
+                                local accDir = vehicleModel.PrimaryPart.CFrame:VectorToObjectSpace(vehicleModel.PrimaryPart.AssemblyLinearVelocity).Z
                                 if seat.Throttle ~= 0 then
-                                    v.MotorMaxAcceleration = if math.sign(seat.Throttle) == 1 then 10 else 30
+                                    v.MotorMaxAcceleration = if math.sign(accDir*seat.Throttle) == 1 then 60 else 15
+                                    if math.sign(accDir*seat.Throttle) == 1 then
+                                        v.AngularVelocity = 0
+                                    end
                                 else
                                     v.MotorMaxAcceleration = 1
                                 end
@@ -115,21 +120,24 @@ function Vehicle.init(maid : Maid)
                             if v:IsA("HingeConstraint")  and v.ActuatorType == Enum.ActuatorType.Servo then    
                                 local velocity = vehicleModel.PrimaryPart.AssemblyLinearVelocity.Magnitude
                                 
-                                if velocity < convertionKpHtoVelocity(20) then
-                                    v.TargetAngle = 45*seat.Steer
-                                    v.AngularSpeed = 4
+                                if velocity < convertionKpHtoVelocity(10) then
+                                    v.TargetAngle = 60*seat.Steer
+                                    v.AngularSpeed = 1*3
+                                elseif velocity < convertionKpHtoVelocity(20) then
+                                    v.TargetAngle = 55*seat.Steer
+                                    v.AngularSpeed = 1*4
                                 elseif velocity >= convertionKpHtoVelocity(20) and velocity < convertionKpHtoVelocity(40) then
-                                    v.TargetAngle = 40*seat.Steer
-                                    v.AngularSpeed = 3
+                                    v.TargetAngle = 42*seat.Steer
+                                    v.AngularSpeed = 3*2
                                 elseif velocity >= convertionKpHtoVelocity(40) and velocity < convertionKpHtoVelocity(60) then
-                                    v.TargetAngle = 35*seat.Steer
-                                    v.AngularSpeed = 2
-                                elseif velocity >= convertionKpHtoVelocity(60) and velocity < convertionKpHtoVelocity(80) then
                                     v.TargetAngle = 30*seat.Steer
-                                    v.AngularSpeed = 1
+                                    v.AngularSpeed = 3*2
+                                elseif velocity >= convertionKpHtoVelocity(60) and velocity < convertionKpHtoVelocity(80) then
+                                    v.TargetAngle = 25*seat.Steer
+                                    v.AngularSpeed = 3*2
                                 elseif velocity >= convertionKpHtoVelocity(80) then
-                                    v.TargetAngle = 20*seat.Steer
-                                    v.AngularSpeed = 1
+                                    v.TargetAngle = 10*seat.Steer
+                                    v.AngularSpeed = 3*2
                                 end
                             end
                         end
@@ -140,11 +148,15 @@ function Vehicle.init(maid : Maid)
 
             if vehicleModel:GetAttribute("Class") == BOAT_CLASS_KEY then
                 --ship physics check
-                _maid:GiveTask(RunService.Stepped:Connect(function()
-                    if math.abs(vehicleModel.PrimaryPart.Orientation.Z) >= 90 then
-                        vehicleModel:PivotTo(CFrame.new(vehicleModel.PrimaryPart.Position)*CFrame.Angles(vehicleModel.PrimaryPart.Orientation.X, vehicleModel.PrimaryPart.Orientation.Y, 0))
-                    end
-                end))      
+                local spawnPositionValue = vehicleModel:FindFirstChild("SpawnPosition") :: CFrameValue
+                if spawnPositionValue then
+                    _maid:GiveTask(RunService.Stepped:Connect(function()
+                        if (math.abs(vehicleModel.PrimaryPart.Orientation.Z) >= 90) then
+                            --vehicleModel:PivotTo(CFrame.new(vehicleModel.PrimaryPart.Position)*CFrame.Angles(vehicleModel.PrimaryPart.Orientation.X, vehicleModel.PrimaryPart.Orientation.Y, 0))
+                            vehicleModel:PivotTo(spawnPositionValue.Value)
+                        end
+                    end))   
+                end   
                 
                 --create border with ship
                 local defaultCollisionKey = "Default"
@@ -193,11 +205,10 @@ function Vehicle.init(maid : Maid)
 
 
     NetworkUtil.onServerInvoke(SPAWN_VEHICLE, function(plr : Player, key : number, vehicleName : string, partZones : Instance ?)
-        print(vehicleName, " mueng")
         local plrInfo = PlayerManager.get(plr)
        -- print(carSpawnZone.ItemIsInside(v, plr.Character.PrimaryPart), " is insoide or nahhh", v)
         plrInfo:SpawnVehicle(key, true, vehicleName, partZones)
-        print(key)
+        NotificationUtil.Notify(plr, "You spawned " .. tostring(plrInfo.Vehicles[key].Name))
 
         return nil
     end)

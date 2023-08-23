@@ -420,12 +420,15 @@ function PlayerManager.init(maid : Maid)
                 end 
             end 
         end]]
+        NotificationUtil.Notify(plr, "You equipped " .. plrInfo.Backpack[toolKey].Name)
 
         return nil
     end)
     NetworkUtil.onServerInvoke(DELETE_BACKPACK, function(plr : Player, toolKey : number, toolName : string)
         local plrInfo = PlayerManager.get(plr)
         plrInfo:DeleteBackpack(toolKey)
+
+        NotificationUtil.Notify(plr, "You deleted " .. toolName)
         return nil
     end)
 
@@ -438,6 +441,8 @@ function PlayerManager.init(maid : Maid)
         if toolModel then plrInfo:InsertToBackpack(toolModel) end
 
         NetworkUtil.fireClient(UPDATE_PLAYER_BACKPACK, plr, plrInfo:GetBackpack(true, true))
+
+        NotificationUtil.Notify(plr, "You got " .. toolName .. " added to your backpack")
         return nil
     end)
 
@@ -445,7 +450,8 @@ function PlayerManager.init(maid : Maid)
         local plrInfo = PlayerManager.get(plr)
 
         plrInfo:AddVehicle(vehicleName)
-        print(plrInfo.Vehicles)
+
+        NotificationUtil.Notify(plr, "You got " .. vehicleName)
         return nil
     end)
 

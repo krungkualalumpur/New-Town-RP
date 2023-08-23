@@ -129,19 +129,206 @@ local function createInteract(maid : Maid, interactFrame : Frame, interactNameTa
     end
 end
 
+function createInteractByPrompt(
+    maid : Maid, 
+    proximityPrompt : ProximityPrompt, 
+    interactNameTag : string, 
+    interactInputKey : string, 
+    interactCode : Enum.KeyCode | Enum.UserInputType, 
+    currentInputKeyCodeState : ValueState<Enum.KeyCode | Enum.UserInputType>
+)
+    
+    local instancePointer = proximityPrompt:FindFirstChild("InstancePointer") :: ObjectValue    
+
+    proximityPrompt.Triggered:Connect(function()
+        local inst = instancePointer.Value
+        print(inst)
+        if (inst) then
+            print(inst, " 2")
+            if  (inst:HasTag(interactNameTag)) and inst:IsA("Model") then
+                print(inst, " 3")
+                InteractableUtil.Interact(inst :: Model, Player)                        
+            -- NetworkUtil.fireServer(ON_INTERACT, inst)
+            end
+        end
+        return 
+    end)
+    InputHandler:Map(
+        interactInputKey, 
+        "Keyboard", 
+        {interactCode},
+        "Press" ,
+        function(inputObject : InputObject) 
+            local inst = instancePointer.Value
+            print(inst)
+            if (inst) then
+                print(inst, " 2")
+                if  (inst:HasTag(interactNameTag)) then
+                    print(inst, " 3")
+                    print(interactCode, inputObject.KeyCode)
+                    if (interactCode == inputObject.KeyCode) then 
+                        print("4")
+                        InteractableUtil.Interact(inst :: Model, Player)                        
+                    end
+                -- NetworkUtil.fireServer(ON_INTERACT, inst)
+                end
+            end
+            return 
+        end, 
+        function() 
+            return 
+        end
+    )
+
+    if interactCode.EnumType == Enum.KeyCode then
+        for _,v: Model in pairs(CollectionService:GetTagged(interactNameTag)) do
+            if v:IsA("Model") and v:IsDescendantOf(workspace) then 
+                table.insert(Interactables, v)
+            end
+        end
+        CollectionService:GetInstanceAddedSignal(interactNameTag):Connect(function(inst)
+            if inst:IsDescendantOf(workspace) then
+                table.insert(Interactables, inst)
+            end
+        end)
+
+        CollectionService:GetInstanceRemovedSignal(interactNameTag):Connect(function(inst)
+            local n = table.find(Interactables, inst)
+            if n then
+                table.remove(Interactables, n)
+            end
+        end)
+    elseif interactCode.EnumType == Enum.UserInputType then
+        local _fuse = ColdFusion.fuse(maid)
+        local _new = _fuse.new
+        local _import = _fuse.import
+        local _bind = _fuse.bind
+        local _clone = _fuse.clone
+        
+        local _Computed = _fuse.Computed
+        local _Value = _fuse.Value
+
+        for _,inst in pairs(CollectionService:GetTagged(interactNameTag)) do
+            local _maid = Maid.new()
+
+            _maid:GiveTask(_new("BillboardGui")({
+                AlwaysOnTop = true,
+                MaxDistance = MAXIMUM_INTERACT_DISTANCE*0.5,
+                Size = UDim2.fromScale(0.6, 0.6),
+                Parent = inst,
+                Children = {
+                    _new("ImageLabel")({
+                        BackgroundTransparency = 1,
+                        Size = UDim2.fromScale(1, 1),
+                        Image = "rbxassetid://12804017021"
+                    })
+                }
+            }))
+
+            local clickDetector = Instance.new("ClickDetector")
+            clickDetector.MaxActivationDistance = 18
+            clickDetector.Parent = inst
+            
+            _maid:GiveTask(clickDetector.MouseClick:Connect(function()
+                InteractableUtil.Interact(inst :: Model, Player)                        
+            end))
+
+            _maid:GiveTask(clickDetector.Destroying:Connect(function()
+                _maid:Destroy()
+            end))
+        end
+    end
+end
+
 --class
 local interactSys = {}
 
-function interactSys.init(maid : Maid, interactFrame : Frame, interactKeyCode : ValueState<Enum.KeyCode | Enum.UserInputType>)   
-    local instancePointer = interactFrame:FindFirstChild("InstancePointer") :: ObjectValue
+function interactSys.init(
+    maid : Maid, 
+    proximityPrompt : ProximityPrompt, --interactFrame : Frame, 
+    interactKeyCode : ValueState<Enum.KeyCode | Enum.UserInputType>
+)   
+    local _fuse = ColdFusion.fuse(maid)
+    local _new = _fuse.new
+    local _import = _fuse.import
+    local _bind = _fuse.bind
+    local _clone = _fuse.clone
+
+    local _Computed = _fuse.Computed
+    local _Value = _fuse.Value
+
+    local instState : ColdFusion.ValueState<Model ?> = _Value(nil :: any)
+    local instancePointer = _new("ObjectValue")({
+        Name = "InstancePointer",
+        Value = instState,
+        Parent = proximityPrompt
+    }) -- proximityPrompt:FindFirstChild("InstancePointer") :: ObjectValue
+
+    createInteractByPrompt(maid, proximityPrompt, "Interactable", "Interact", Enum.KeyCode.E, interactKeyCode)
+    createInteractByPrompt(maid, proximityPrompt, "ClickInteractable", "ClickToInteract", Enum.UserInputType.MouseButton1, interactKeyCode)
+    createInteractByPrompt(maid, proximityPrompt, "Tool", "F", Enum.KeyCode.F, interactKeyCode)
+
+   
+    local dynamicPartCf : ValueState<CFrame ?> = _Value(nil :: any)
+
+    local trackerPart = _new("Part")({
+        CFrame = _Computed(function(cf : CFrame ?)
+            return cf or CFrame.new()
+        end, dynamicPartCf),
+        Parent = _Computed(function(cf : CFrame ?)
+            return if cf then workspace else nil
+        end, dynamicPartCf),
+        CanCollide = false,
+        Transparency = 1
+    })
+    proximityPrompt.Parent = trackerPart
+
+    maid:GiveTask(RunService.Stepped:Connect(function()
+        local character = Player.Character
+        local camera = workspace.CurrentCamera
+        if character then
+            local minDist = math.huge
+            local nearestInst 
+            for _,v in pairs(Interactables) do
+                if v:IsA("Model") then
+                    local pos = if v.PrimaryPart then v.PrimaryPart.Position else v:GetBoundingBox().Position
+                    local _, isWithinRange = camera:WorldToScreenPoint(pos)
+                    local dist = (camera.CFrame.Position - pos).Magnitude
+                    if (dist <= MAXIMUM_INTERACT_DISTANCE) and (dist < minDist) and (isWithinRange) then
+                        minDist = dist
+                        nearestInst = v        
+                    end
+                end
+            end
+
+            if nearestInst and not nearestInst:GetAttribute("IsClick") then
+                if nearestInst:IsA("Model") then
+                    local cf, _ = nearestInst:GetBoundingBox()
+                    dynamicPartCf:Set(cf)
+                    instState:Set(nearestInst)
+                end
+                --local pos = if nearestInst.PrimaryPart then nearestInst.PrimaryPart.Position else nearestInst:GetBoundingBox().Position
+                --local v3,isWithinRange = camera:WorldToScreenPoint(pos)
+                --interactFrame.Visible = isWithinRange
+                --interactFrame.Position = UDim2.fromOffset(v3.X - interactFrame.AbsoluteSize.X*0.5, v3.Y - interactFrame.AbsoluteSize.Y*0.5)
+                --instancePointer.Value = nearestInst
+            else
+                dynamicPartCf:Set(nil)
+                instState:Set(nil)
+                --interactFrame.Visible = false
+                --instancePointer.Value = nil
+            end
+        end
+    end))
+    --local instancePointer = interactFrame:FindFirstChild("InstancePointer") :: ObjectValue
 
 
-    createInteract(maid, interactFrame, "Interactable", "Interact", Enum.KeyCode.E, interactKeyCode)
-    createInteract(maid, interactFrame, "ClickInteractable", "ClickToInteract", Enum.UserInputType.MouseButton1, interactKeyCode)
-    createInteract(maid, interactFrame, "Tool", "F", Enum.KeyCode.F, interactKeyCode)
+    -- createInteract(maid, interactFrame, "Interactable", "Interact", Enum.KeyCode.E, interactKeyCode)
+    --createInteract(maid, interactFrame, "ClickInteractable", "ClickToInteract", Enum.UserInputType.MouseButton1, interactKeyCode)
+    --createInteract(maid, interactFrame, "Tool", "F", Enum.KeyCode.F, interactKeyCode)
 
     --loop to find the nearest
-    do
+    --[[do
         maid:GiveTask(RunService.Stepped:Connect(function()
             local character = Player.Character
             local camera = workspace.CurrentCamera
@@ -172,7 +359,7 @@ function interactSys.init(maid : Maid, interactFrame : Frame, interactKeyCode : 
             end
             
         end))
-    end    
+    end    ]]
 
     return 
 end

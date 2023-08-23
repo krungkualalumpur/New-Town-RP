@@ -41,7 +41,6 @@ type GuiSys = {
     __index : GuiSys,
     _Maid : Maid,
     MainUI : GuiObject,
-    InteractUI : GuiObject,
     NotificationUI : GuiObject,
 
     NotificationStatus : ValueState<string ?>,
@@ -167,7 +166,6 @@ function guiSys.new()
         )
     end))
 
-    self.InteractUI = InteractUI(maid, interactKeyCode)
 
     self.NotificationUI = NotificationUI(
         maid,
@@ -175,13 +173,15 @@ function guiSys.new()
     )
 
     self.MainUI.Parent = target
-    self.InteractUI.Parent = target
     self.NotificationUI.Parent = notificationUItarget
     print(self.NotificationUI, self.NotificationUI.Parent, " kok ora ene yo")
 
     currentGuiSys = self
 
-    InteractSys.init(maid, self.InteractUI :: Frame, interactKeyCode)
+    local proxPrompt = _new("ProximityPrompt")({
+        RequiresLineOfSight = false
+    }) :: ProximityPrompt
+    InteractSys.init(maid, proxPrompt, interactKeyCode)
 
     maid:GiveTask(NetworkUtil.onClientEvent(UPDATE_PLAYER_BACKPACK, function(newbackpackval : {BackpackUtil.ToolData<boolean>})
         backpack:Set(newbackpackval)

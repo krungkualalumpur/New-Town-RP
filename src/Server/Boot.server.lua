@@ -7,6 +7,7 @@ local ServerScriptService = game:GetService("ServerScriptService")
 local Maid = require(ReplicatedStorage:WaitForChild("Packages"):WaitForChild("Maid"))
 --modules
 local Environments = require(ServerScriptService:WaitForChild("Server"):WaitForChild("Environments"))
+local EnvironmentSound = require(ServerScriptService:WaitForChild("Server"):WaitForChild("EnvironmentSound"))
 
 local PlayerManager = require(ServerScriptService:WaitForChild("Server"):WaitForChild("PlayerManager"))
 local CharacterManager = require(ServerScriptService:WaitForChild("Server"):WaitForChild("CharacterManager"))
@@ -23,6 +24,7 @@ local maid = Maid.new()
 --variables
 --script
 Environments.init(maid)
+EnvironmentSound.init(maid)
 
 PlayerManager.init(maid)
 CharacterManager.init(maid)

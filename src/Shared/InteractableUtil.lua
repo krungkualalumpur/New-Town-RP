@@ -12,6 +12,8 @@ local NetworkUtil = require(ReplicatedStorage:WaitForChild("Packages"):WaitForCh
 local ItemUtil = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("ItemUtil"))
 local BackpackUtil = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("BackpackUtil"))
 local ToolActions = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("ToolActions"))
+
+local Zone = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Zone"))
 --types
 type Maid = Maid.Maid
 
@@ -37,14 +39,17 @@ local ON_ITEM_OPTIONS_OPENED = "OnItemOptionsOpened"
 local function playSound(soundId : number, onLoop : boolean, parent : Instance ? )
     local sound = Instance.new("Sound")
     sound.Name = SOUND_NAME
+    sound.RollOffMaxDistance = 25
     sound.SoundId = "rbxassetid://" .. tostring(soundId)
     sound.Parent = parent or (if RunService:IsClient() then Players.LocalPlayer else nil)
     sound.Looped = onLoop
     if sound.Parent then
         sound:Play()
     end
-    sound.Ended:Wait()
-    sound:Destroy()
+    task.spawn(function()
+        sound.Ended:Wait()
+        sound:Destroy()
+    end)
 end
 
 local function adjustModel(model : Model, fn : (part : BasePart) -> (), soundId : number ?, onLoop : boolean ?)
@@ -400,39 +405,84 @@ function Interactable.InteractOpening(model : Model,on : boolean)
             local left = slides:FindFirstChild("Left") :: BasePart
 
             if right and left then
-                if right:FindFirstChild("CFrameValue") or left:FindFirstChild("CFrameValue") then
-                    return
+                playSound(9114154039, false, right)
+                if on then
+                    if right:FindFirstChild("CFrameValue") or left:FindFirstChild("CFrameValue") then
+                        return
+                    end
+
+                    local rightCfValue = Instance.new("CFrameValue")
+                    rightCfValue.Name = "CFrameValue"
+                    rightCfValue.Value = right.CFrame
+                    rightCfValue.Parent = right
+
+                    local leftCfValue = Instance.new("CFrameValue")
+                    leftCfValue.Name = "CFrameValue"
+                    leftCfValue.Value = left.CFrame
+                    leftCfValue.Parent = left
+
+                    local leftTween = game:GetService("TweenService"):Create(
+                        left, 
+                        TweenInfo.new(0.1), 
+                        {
+                            CFrame = left.CFrame + left.CFrame.RightVector*left.Size.X
+                        }
+                    )
+                    local rightTween = game:GetService("TweenService"):Create(
+                        right, 
+                        TweenInfo.new(0.1), 
+                        {
+                            CFrame = right.CFrame - right.CFrame.RightVector*right.Size.X
+                        }
+                    )
+
+                    leftTween:Play()
+                    rightTween:Play()
+
+              
+
+                    task.spawn(function()
+                        leftTween.Completed:Wait()
+                        leftTween:Destroy()
+                        rightTween:Destroy()
+                    end)
+                    
+                else
+                    local leftCfValue = left:FindFirstChild("CFrameValue") :: CFrameValue ?
+                    local rightCfValue = right:FindFirstChild("CFrameValue") :: CFrameValue ?
+
+                    if leftCfValue and rightCfValue then 
+                        local leftTween = game:GetService("TweenService"):Create(
+                            left, 
+                            TweenInfo.new(0.1), 
+                            {
+                                CFrame = leftCfValue.Value
+                            }
+                        )
+                        local rightTween = game:GetService("TweenService"):Create(
+                            right, 
+                            TweenInfo.new(0.1), 
+                            {
+                                CFrame = rightCfValue.Value
+                            }
+                        )
+    
+                        leftTween:Play()
+                        rightTween:Play()
+                              
+                        leftCfValue:Destroy()
+                        rightCfValue:Destroy()
+
+                        task.spawn(function()
+                            leftTween.Completed:Wait()
+                            leftTween:Destroy()
+                            rightTween:Destroy()
+                        end)
+
+                    end
                 end
 
-                local rightCfValue = Instance.new("CFrameValue")
-                rightCfValue.Name = "CFrameValue"
-                rightCfValue.Value = right.CFrame
-                rightCfValue.Parent = right
-
-                local leftCfValue = Instance.new("CFrameValue")
-                leftCfValue.Name = "CFrameValue"
-                leftCfValue.Value = left.CFrame
-                leftCfValue.Parent = left
-
-                local leftTween = game:GetService("TweenService"):Create(
-                    left, 
-                    TweenInfo.new(0.1), 
-                    {
-                        CFrame = left.CFrame + left.CFrame.RightVector*left.Size.X
-                    }
-                )
-                local rightTween = game:GetService("TweenService"):Create(
-                    right, 
-                    TweenInfo.new(0.1), 
-                    {
-                        CFrame = right.CFrame - right.CFrame.RightVector*right.Size.X
-                    }
-                )
-
-                leftTween:Play()
-                rightTween:Play()
-
-                task.spawn(function()
+                --[[task.spawn(function()
                     task.wait(2)
                     
                     local leftCloseTween = game:GetService("TweenService"):Create(
@@ -460,7 +510,7 @@ function Interactable.InteractOpening(model : Model,on : boolean)
                     rightTween:Destroy()
                     leftCloseTween:Destroy()
                     rightCloseTween:Destroy()
-                end)
+                end)]]
             end
         end
     elseif RunService:IsClient() then
@@ -469,19 +519,56 @@ function Interactable.InteractOpening(model : Model,on : boolean)
 end
 
 function Interactable.init(maid : Maid)
-    NetworkUtil.getRemoteFunction(ON_OPTIONS_OPENED)
-    NetworkUtil.getRemoteFunction(ON_ITEM_OPTIONS_OPENED) 
+    local slidingDoorsZone = {}
 
+    for _,v in pairs(CollectionService:GetTagged("Door")) do
+        local detectionZone = v:FindFirstChild("Detection")
+        if detectionZone then
+            table.insert(slidingDoorsZone, detectionZone)
+        end
+    end
+
+    local zone = maid:GiveTask(Zone.new(slidingDoorsZone))
+    
+    maid:GiveTask(zone.playerEntered:Connect(function(plr : Player, zonePart : BasePart)
+       -- print(plr.Name, "Entered")
+        local model = zonePart.Parent :: Model
+        Interactable.InteractOpening(model, true)
+        return
+    end))
+    maid:GiveTask(zone.playerExited:Connect(function(plr : Player, zonePart : BasePart)
+       -- print(plr.Name, " Exited")
+        local hasOtherPeople = false
+        
+        local touchedParts = zonePart:GetTouchingParts() 
+        for _,v in pairs(touchedParts) do
+            if v.Parent and v.Parent:FindFirstChild("Humanoid") then
+                hasOtherPeople = true
+                break
+            end
+        end
+
+        if not hasOtherPeople then
+            local model = zonePart.Parent :: Model
+            Interactable.InteractOpening(model, false)
+        end
+        return
+    end))
+        
+ 
     NetworkUtil.onServerInvoke(ON_OPTIONS_OPENED, function(plr : Player)
         
         return nil
     end)
 
     NetworkUtil.onServerInvoke(ON_ITEM_OPTIONS_OPENED, function(plr : Player, model : Model)
-        print("3")
         Interactable.InteractNonSwitch(model, plr)
         return nil
     end)
+
+       
+    NetworkUtil.getRemoteFunction(ON_OPTIONS_OPENED)
+    NetworkUtil.getRemoteFunction(ON_ITEM_OPTIONS_OPENED) 
 end
 
 return Interactable
