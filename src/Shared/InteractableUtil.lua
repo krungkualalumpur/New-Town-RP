@@ -352,6 +352,11 @@ function Interactable.InteractSwitch(model : Model)
                 playSound(9125620381, false,  lampSwitchPart)
             end
         elseif data.Class == "Television" then
+            if RunService:IsClient() then
+                NetworkUtil.fireServer(ON_INTERACT, model)
+                return
+            end
+
             local screenPart = model:FindFirstChild("ScreenPart") :: BasePart
 
             local TVgui = screenPart:FindFirstChild("TelevisionGui")

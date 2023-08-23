@@ -1,0 +1,134 @@
+build:
+  client_boot_script_path: src/Client/Analytics.client.luau
+  midas_package_rbx_path: game/ReplicatedStorage/Packages/Midas
+  server_boot_script_path: src/Server/Analytics.server.luau
+  shared_event_tree_path: src/Shared/MidasEventTree.luau
+  shared_state_tree_path: src/Shared/MidasStateTree.luau
+monetization:
+  gamepasses: {}
+  products: {}
+template:
+  Event:
+    Character:
+      Died: false
+    Chat:
+      Spoke: false
+    Exit:
+      Close: false
+      Disconnect: false
+      Quit: false
+    Interval: 15
+    Join:
+      Enter: false
+      Teleport: false
+    Spending:
+      Purchase:
+        Gamepass: false
+        Product: false
+  State:
+    Badges: {}
+    Character:
+      Altitude: false
+      Deaths: false
+      Health: false
+      Height: false
+      IsDead: false
+      JumpPower: false
+      Mass: false
+      MaxHealth: false
+      Position: false
+      State: false
+      WalkSpeed: false
+    Chat:
+      Count: false
+      LastMessage: false
+    Demographics:
+      AccountAge: false
+      Platform:
+        Accelerometer: false
+        Gamepad: false
+        Gyroscope: false
+        Keyboard: false
+        Mouse: false
+        ScreenRatio: false
+        ScreenSize: false
+        Touch: false
+        VR: false
+      RobloxLanguage: false
+      SystemLanguage: false
+      UserSettings:
+        GamepadCameraSensitivity: false
+        MouseSensitivity: false
+        SavedQualityLevel: false
+    Groups: {}
+    Performance:
+      Client:
+        FPS: false
+        Ping: false
+      Server:
+        EventsPerMinute: false
+        HeartRate: false
+        Instances: false
+        Memory:
+          Animations: false
+          CSG: false
+          CharacterTextures: false
+          Guis: false
+          HttpCache: false
+          Instances: false
+          Internal: false
+          LuaHeap: false
+          MeshPart: false
+          Part: false
+          Particle: false
+          Pathfinding: false
+          PhysicsCollision: false
+          PhysicsParts: false
+          Script: false
+          Signals: false
+          SoundsData: false
+          SoundsStreaming: false
+          SpatialHash: false
+          TerrainGraphics: false
+          TerrainVoxels: false
+          Textures: false
+        MovingParts: false
+        Network:
+          Data:
+            Receive: false
+            Send: false
+          Physics:
+            Receive: false
+            Send: false
+        Ping: false
+        ServerTime: false
+    Population:
+      Friends: false
+      PeakFriends: false
+      SpeakingDistance: false
+      Team: false
+      Total: false
+    Spending:
+      Gamepass: false
+      Product: false
+      Total: false
+tree:
+  Duration: integer
+  Id:
+    Place: string
+    Session: string
+    User: string
+  Index:
+    Event: integer
+    Total: integer
+  IsStudio: boolean
+  Version:
+    Build: integer
+    Major: integer
+    Minor: integer
+    Patch: integer
+version:
+  hotfix: 0
+  major: 1
+  minor: 0
+  patch: 0

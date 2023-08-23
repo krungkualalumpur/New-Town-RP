@@ -281,6 +281,8 @@ function interactSys.init(
             if nearestInst and not nearestInst:GetAttribute("IsClick") then
                 if nearestInst:IsA("Model") then
                     local cf, _ = nearestInst:GetBoundingBox()
+                    if nearestInst.PrimaryPart then cf = nearestInst.PrimaryPart.CFrame end
+                    
                     dynamicPartCf:Set(cf)
                     instState:Set(nearestInst)
                 end

@@ -174,7 +174,6 @@ function guiSys.new()
 
     self.MainUI.Parent = target
     self.NotificationUI.Parent = notificationUItarget
-    print(self.NotificationUI, self.NotificationUI.Parent, " kok ora ene yo")
 
     currentGuiSys = self
 
@@ -192,7 +191,6 @@ function guiSys.new()
 
     local isExitButtonVisible = _Value(true)
 
-    
     NetworkUtil.onClientInvoke(ON_OPTIONS_OPENED, function(
         listName : string,
         inst : Instance
@@ -267,8 +265,6 @@ function guiSys.new()
 
         maid.ItemOptionsUI = _maid
         listUI.Parent = target
-
-       
 
         _maid:GiveTask(RunService.Stepped:Connect(function()
             local worldPos 
