@@ -314,7 +314,7 @@ function guiSys.new()
             interactedItem
         ) :: GuiObject
         ExitButton.new(
-            itemOptionsUI, 
+            itemOptionsUI:WaitForChild("ContentFrame") :: GuiObject, 
             isExitButtonVisible,
             function()
                 maid.ItemOptionsUI = nil
@@ -324,6 +324,13 @@ function guiSys.new()
 
         maid.ItemOptionsUI = _maid
         itemOptionsUI.Parent = target
+
+        --managing player list
+        game:GetService("StarterGui"):SetCoreGuiEnabled(Enum.CoreGuiType.PlayerList, false)
+        maid.OnItemOptionsUIDestroy = itemOptionsUI.Destroying:Connect(function()
+            game:GetService("StarterGui"):SetCoreGuiEnabled(Enum.CoreGuiType.PlayerList, true)
+            maid.OnItemOptionsUIDestroy = nil
+        end)
 
         return nil
     end)

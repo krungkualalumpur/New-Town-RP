@@ -133,6 +133,7 @@ function flyingToDest(bird : Model, v3: Vector3)
     if torso and propulsion then 
         PlaySound("rbxassetid://9113444803", torso, 1.5)
         flapping(bird)
+        propulsion.MaxForce = Vector3.new(9999999,9999999,9999999)
         propulsion.Velocity = Vector3.new(0, 15, 0)
         flapping(bird)
         flapping(bird)
@@ -147,14 +148,19 @@ function flyingToDest(bird : Model, v3: Vector3)
         local tw = game:GetService("TweenService"):Create(propulsion, TweenInfo.new(1), {Velocity = ( v3 - torso.Position).Unit*80})
         tw:Play()
 
-        task.spawn(function()
-            tw.Completed:Wait()
-            tw:Destroy()
-        end)
+        --[[task.spawn(function()
+            
+            
+        end)]]
         --propulsion.Velocity =( v3 - torso.Position).Unit*80
         flapping(bird)
         flapping(bird)
-        repeat task.wait(); count += 1 until ((v3 - torso.Position).Magnitude < 6) or count >= 1000
+
+        tw.Completed:Wait()
+        tw:Destroy()
+
+
+        repeat task.wait(); propulsion.Velocity = (v3 - torso.Position).Unit*80; count += 1 until ((v3 - torso.Position).Magnitude < 6) or count >= 1000
 
         propulsion.Velocity = Vector3.new()
         

@@ -42,7 +42,7 @@ return function(target : CoreGui)
         currentOptInfo,
         onItemGet,
 
-        _new("BasePart")({})
+        _new("Part")({})
     )
     out.Parent = target
 
