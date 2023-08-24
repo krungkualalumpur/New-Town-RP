@@ -10,88 +10,88 @@ monetization:
 template:
   Event:
     Character:
-      Died: false
+      Died: true
     Chat:
-      Spoke: false
+      Spoke: true
     Exit:
-      Close: false
-      Disconnect: false
-      Quit: false
+      Close: true
+      Disconnect: true
+      Quit: true
     Interval: 15
     Join:
-      Enter: false
-      Teleport: false
+      Enter: true
+      Teleport: true
     Spending:
       Purchase:
-        Gamepass: false
-        Product: false
+        Gamepass: true
+        Product: true
   State:
     Badges: {}
     Character:
-      Altitude: false
-      Deaths: false
-      Health: false
-      Height: false
-      IsDead: false
-      JumpPower: false
-      Mass: false
-      MaxHealth: false
-      Position: false
-      State: false
-      WalkSpeed: false
+      Altitude: true
+      Deaths: true
+      Health: true
+      Height: true
+      IsDead: true
+      JumpPower: true
+      Mass: true
+      MaxHealth: true
+      Position: true
+      State: true
+      WalkSpeed: true
     Chat:
-      Count: false
-      LastMessage: false
+      Count: true
+      LastMessage: true
     Demographics:
-      AccountAge: false
+      AccountAge: true
       Platform:
-        Accelerometer: false
-        Gamepad: false
-        Gyroscope: false
-        Keyboard: false
-        Mouse: false
-        ScreenRatio: false
-        ScreenSize: false
-        Touch: false
-        VR: false
-      RobloxLanguage: false
-      SystemLanguage: false
+        Accelerometer: true
+        Gamepad: true
+        Gyroscope: true
+        Keyboard: true
+        Mouse: true
+        ScreenRatio: true
+        ScreenSize: true
+        Touch: true
+        VR: true
+      RobloxLanguage: true
+      SystemLanguage: true
       UserSettings:
-        GamepadCameraSensitivity: false
-        MouseSensitivity: false
-        SavedQualityLevel: false
+        GamepadCameraSensitivity: true
+        MouseSensitivity: true
+        SavedQualityLevel: true
     Groups: {}
     Performance:
       Client:
-        FPS: false
-        Ping: false
+        FPS: true
+        Ping: true
       Server:
-        EventsPerMinute: false
-        HeartRate: false
-        Instances: false
+        EventsPerMinute: true
+        HeartRate: true
+        Instances: true
         Memory:
-          Animations: false
-          CSG: false
+          Animations: true
+          CSG: true
           CharacterTextures: false
           Guis: false
           HttpCache: false
           Instances: false
           Internal: false
-          LuaHeap: false
-          MeshPart: false
-          Part: false
-          Particle: false
+          LuaHeap: true
+          MeshPart: true
+          Part: true
+          Particle: true
           Pathfinding: false
           PhysicsCollision: false
-          PhysicsParts: false
-          Script: false
-          Signals: false
+          PhysicsParts: true
+          Script: true
+          Signals: true
           SoundsData: false
           SoundsStreaming: false
           SpatialHash: false
-          TerrainGraphics: false
-          TerrainVoxels: false
-          Textures: false
+          TerrainGraphics: true
+          TerrainVoxels: true
+          Textures: true
         MovingParts: false
         Network:
           Data:

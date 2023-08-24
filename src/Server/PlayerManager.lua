@@ -1,17 +1,22 @@
 --!strict
 --services
+local RunService = game:GetService("RunService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local ServerScriptService = game:GetService("ServerScriptService")
 local Players = game:GetService("Players")
 local HttpService = game:GetService("HttpService")
+local PhysicsService = game:GetService("PhysicsService")
 --packages
 local Maid = require(ReplicatedStorage:WaitForChild("Packages"):WaitForChild("Maid"))
 local NetworkUtil = require(ReplicatedStorage:WaitForChild("Packages"):WaitForChild("NetworkUtil"))
+local Midas = require(ReplicatedStorage:WaitForChild("Packages"):WaitForChild("Midas"))
 --modules
 local InteractableUtil = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("InteractableUtil"))
 local ItemUtil = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("ItemUtil"))
 local BackpackUtil = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("BackpackUtil"))
 local ToolActions = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("ToolActions"))
 local NotificationUtil = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("NotificationUtil"))
+local MarketplaceManager = require(ServerScriptService:WaitForChild("Server"):WaitForChild("MarketplaceManager"))
 
 --types
 type Maid = Maid.Maid
@@ -26,6 +31,7 @@ export type VehicleData = ItemUtil.ItemInfo & {
 
 export type PlayerManager = {
     __index : PlayerManager,
+    _Maid : Maid,
 
     Player : Player,
     Backpack : {[number] : ToolData<boolean>},
@@ -68,6 +74,8 @@ local ADD_VEHICLE = "AddVehicle"
 local KEY_VALUE_NAME = "KeyValue"
 
 local KEY_VALUE_ATTRIBUTE = "KeyValue"
+
+local VIP_PLR_COLLISION_KEY = "VIPPlayerCollision"
 --variables
 local Registry = {}
 --references
@@ -177,10 +185,12 @@ PlayerManager.__index = PlayerManager
 function PlayerManager.new(player : Player)
     local self : PlayerManager = setmetatable({}, PlayerManager) :: any
     self.Player = player
+    self._Maid = Maid.new()
     self.Backpack = {}
     self.Vehicles = {}
 
     Registry[player] = self
+    MarketplaceManager.newPlayer(self._Maid, player)
     return self
 end
 
@@ -331,6 +341,8 @@ end
 function PlayerManager:Destroy()
     Registry[self.Player] = nil
     
+    self._Maid:Destroy()
+
     local t = self :: any
     
     for k,v in pairs(t) do
@@ -442,7 +454,7 @@ function PlayerManager.init(maid : Maid)
 
         NetworkUtil.fireClient(UPDATE_PLAYER_BACKPACK, plr, plrInfo:GetBackpack(true, true))
 
-        NotificationUtil.Notify(plr, "You got " .. toolName .. " added to your backpack")
+        NotificationUtil.Notify(plr, "You got " .. toolName .. " added to your backpack")        
         return nil
     end)
 
