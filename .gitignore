@@ -4,4 +4,7 @@
 # Roblox Studio lock files
 /*.rbxlx.lock
 /*.rbxl.lock
+
+#scripts lock files
 Packages
+#src/Client/Rain.lua

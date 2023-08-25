@@ -11,6 +11,8 @@ local Maid = require(ReplicatedStorage:WaitForChild("Packages"):WaitForChild("Ma
 type Maid = Maid.Maid
 --constants
 local DEFAULT_COLLISION_GROUP_KEY = "Default"
+local VIP_PLR_COLLISION_KEY = "VIPPlayerCollision"
+
 --references
 --variables
 --local function
@@ -32,6 +34,7 @@ local function initFootBallField(inst : Instance, maid : Maid)
 
     PhysicsService:RegisterCollisionGroup(borderCollisionGroupKey)
     PhysicsService:RegisterCollisionGroup(footballCollisionGroupKey)
+    PhysicsService:RegisterCollisionGroup(VIP_PLR_COLLISION_KEY)
 
     for _,border in pairs(borders:GetChildren()) do
         if border:IsA("BasePart") then
@@ -42,6 +45,7 @@ local function initFootBallField(inst : Instance, maid : Maid)
 
     PhysicsService:CollisionGroupSetCollidable(borderCollisionGroupKey, footballCollisionGroupKey, true)
     PhysicsService:CollisionGroupSetCollidable(borderCollisionGroupKey, DEFAULT_COLLISION_GROUP_KEY, false)
+    PhysicsService:CollisionGroupSetCollidable(borderCollisionGroupKey, VIP_PLR_COLLISION_KEY, false)
 
 
     local function resetfootball()

@@ -30,12 +30,10 @@ local DEV_SECRET_KEY = "8MWPBTO9AOFZUUZUJT4EEDRGWU54D874KN33B51653U68K1SKZ"
 local maid = Maid.new()
 --variables
 --script
+print("Test1oy")
 Environments.init(maid)
+print("Test2oy")
 EnvironmentSound.init(maid)
-
-PlayerManager.init(maid)
-CharacterManager.init(maid)
-MarketplaceManager.init(maid)
 
 BackpackUtil.init(maid)
 CustomizationUtil.init(maid)
@@ -45,6 +43,11 @@ ToolActions.init(maid)
 NotificationUtil.init(maid)
 TelevisionChannel.init(maid)
 MarketplaceUtil.init(maid)
+
+PlayerManager.init(maid)
+CharacterManager.init(maid)
+task.spawn(function() MarketplaceManager.init(maid) end)
+
 
 --Midas.init(TITLE_ID, DEV_SECRET_KEY)
 

@@ -64,7 +64,6 @@ local ActionLists = {
             if character then
                 local hrp = character.PrimaryPart
                 playSound(soundId, false, hrp)
-                print("eating" , foodInst.Name)
             end
         end
     },
@@ -72,6 +71,13 @@ local ActionLists = {
         ToolClass = "Book",
         Activated = function(player : Player, toolData : BackpackUtil.ToolData<nil>)
             AnimationUtil.playAnim(player, 6831327167, false)
+        end
+    },
+
+    {
+        ToolClass = "Miscs",
+        Activated = function()
+            
         end
     }
 }

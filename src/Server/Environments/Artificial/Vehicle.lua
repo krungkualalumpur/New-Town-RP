@@ -162,12 +162,14 @@ function Vehicle.init(maid : Maid)
                 
                 --create border with ship
                 local defaultCollisionKey = "Default"
+                local vipPlayerCollisionKey = "VIPPlayerCollision"
                 local shipCollisionKey = "Ship"
                 local borderCollisionKey = "Border2"
 
                 PhysicsService:RegisterCollisionGroup(borderCollisionKey)
                 PhysicsService:CollisionGroupSetCollidable(borderCollisionKey, shipCollisionKey, true)
                 PhysicsService:CollisionGroupSetCollidable(defaultCollisionKey, borderCollisionKey, false)
+                PhysicsService:CollisionGroupSetCollidable(vipPlayerCollisionKey, borderCollisionKey, false)
 
             elseif vehicleModel:GetAttribute("Class") == CAR_CLASS_KEY then
                 local occupantMaid = _maid:GiveTask(Maid.new())

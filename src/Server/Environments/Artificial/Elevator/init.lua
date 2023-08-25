@@ -243,6 +243,7 @@ function Elevator.new(elevatorModel : Model)
     for _,v in pairs(elevCageModel:GetDescendants()) do
         if v:IsA("BasePart") then
 			weld(v, elevPart)
+			v.Anchored = false
         end
     end
 

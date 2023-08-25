@@ -79,7 +79,6 @@ local KEY_VALUE_NAME = "KeyValue"
 
 local KEY_VALUE_ATTRIBUTE = "KeyValue"
 
-local VIP_PLR_COLLISION_KEY = "VIPPlayerCollision"
 --variables
 local Registry = {}
 --references
@@ -446,8 +445,6 @@ function PlayerManager.init(maid : Maid)
                 end 
             end 
         end]]
-        NotificationUtil.Notify(plr, "You equipped " .. plrInfo.Backpack[toolKey].Name)
-
         MidasEventTree.Gameplay.EquipTool(plr)
 
         return nil
@@ -480,7 +477,7 @@ function PlayerManager.init(maid : Maid)
     end)
 
     NetworkUtil.onServerInvoke(ADD_VEHICLE, function(plr : Player, vehicleName : string)
-        
+        --Marketplaceutil
         
         local plrInfo = PlayerManager.get(plr)
 

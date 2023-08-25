@@ -23,7 +23,6 @@ local VIP_ZONE_TAG = "VIPZone"
 local VIPZone = {}
 
 function VIPZone.init(maid : Maid)
-    PhysicsService:RegisterCollisionGroup(VIP_PLR_COLLISION_KEY)
     PhysicsService:RegisterCollisionGroup(VIP_ZONE_TAG)
 
     PhysicsService:CollisionGroupSetCollidable(VIP_PLR_COLLISION_KEY, VIP_ZONE_TAG, false)

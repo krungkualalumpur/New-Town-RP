@@ -13,7 +13,6 @@ local MarketplaceUtil = require(ReplicatedStorage:WaitForChild("Shared"):WaitFor
 --types
 type Maid = Maid.Maid
 --constants
-local VIP_PLR_COLLISION_KEY = "VIPPlayerCollision"
 --variables
 --references
 --local functions
