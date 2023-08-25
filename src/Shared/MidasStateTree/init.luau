@@ -125,4 +125,8 @@ return {
 			["ScreenRatio"] = constructTracker("Demographics/Platform/ScreenRatio", nil) :: TrackerAccessNode<DemographicsPlatformScreenRatioType>,
 		},
 	},
+	["Gameplay"] = {
+		["BackpackAdded"] = constructTracker("Gameplay/BackpackAdded", 0),
+		["VehiclesAdded"] = constructTracker("Gameplay/VehiclesAdded", 0),
+	},
 }

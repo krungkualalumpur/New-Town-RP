@@ -121,4 +121,12 @@ return {
 			["ScreenRatio"] = constructTrigger("Demographics/Platform/ScreenRatio") :: TriggerNode,
 		},
 	},
+	["Gameplay"] = {
+		["BackpackAdded"] = constructTrigger("Gameplay/BackpackAdded"),
+		["BackpackDeleted"] = constructTrigger("Gameplay/BackpackDeleted"),
+		["EquipTool"] = constructTrigger("Gameplay/EquipTool"),
+		["EquipVehicle"] = constructTrigger("Gameplay/EquipVehicle"),
+		["VehiclesAdded"] = constructTrigger("Gameplay/VehiclesAdded"),
+		["VehiclesDeleted"] = constructTrigger("Gameplay/VehiclesDeleted")
+	},
 }

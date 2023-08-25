@@ -13,6 +13,9 @@ local Zone = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Zone
 local ItemUtil = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("ItemUtil"))
 local NotificationUtil = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("NotificationUtil"))
 local PlayerManager = require(ServerScriptService:WaitForChild("Server"):WaitForChild("PlayerManager"))
+
+local MidasEventTree = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("MidasEventTree"))
+local MidasStateTree = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("MidasStateTree"))
 --types
 type Maid = Maid.Maid
 --constants
@@ -23,7 +26,6 @@ local CAR_CLASS_KEY = "Vehicle"
 
 --remotes
 local SPAWN_VEHICLE = "SpawnVehicle"
-local DELETE_VEHICLE = "DeleteVehicle"
 --variables
 --references
 local CarSpawns = workspace:WaitForChild("Miscs"):WaitForChild("CarSpawns")
@@ -210,16 +212,11 @@ function Vehicle.init(maid : Maid)
         plrInfo:SpawnVehicle(key, true, vehicleName, partZones)
         NotificationUtil.Notify(plr, "You spawned " .. tostring(plrInfo.Vehicles[key].Name))
 
+        MidasEventTree.Gameplay.EquipVehicle(plr)
+
         return nil
     end)
 
-    NetworkUtil.onServerInvoke(DELETE_VEHICLE, function(plr : Player, key : number)
-        local plrInfo = PlayerManager.get(plr)
-
-        print(key)
-        plrInfo:DeleteVehicle(key)
-        return nil
-    end)
 end
 
 return Vehicle

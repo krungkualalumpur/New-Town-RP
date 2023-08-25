@@ -46,5 +46,5 @@ NotificationUtil.init(maid)
 TelevisionChannel.init(maid)
 MarketplaceUtil.init(maid)
 
-Midas.init(TITLE_ID, DEV_SECRET_KEY)
+--Midas.init(TITLE_ID, DEV_SECRET_KEY)
 

@@ -9,7 +9,10 @@ local PhysicsService = game:GetService("PhysicsService")
 --packages
 local Maid = require(ReplicatedStorage:WaitForChild("Packages"):WaitForChild("Maid"))
 local NetworkUtil = require(ReplicatedStorage:WaitForChild("Packages"):WaitForChild("NetworkUtil"))
+
 local Midas = require(ReplicatedStorage:WaitForChild("Packages"):WaitForChild("Midas"))
+local MidasEventTree = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("MidasEventTree"))
+local MidasStateTree = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("MidasStateTree"))
 --modules
 local InteractableUtil = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("InteractableUtil"))
 local ItemUtil = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("ItemUtil"))
@@ -17,7 +20,7 @@ local BackpackUtil = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChi
 local ToolActions = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("ToolActions"))
 local NotificationUtil = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("NotificationUtil"))
 local MarketplaceManager = require(ServerScriptService:WaitForChild("Server"):WaitForChild("MarketplaceManager"))
-
+ 
 --types
 type Maid = Maid.Maid
 
@@ -70,6 +73,7 @@ local ADD_BACKPACK = "AddBackpack"
 
 local GET_PLAYER_VEHICLES = "GetPlayerVehicles"
 local ADD_VEHICLE = "AddVehicle"
+local DELETE_VEHICLE = "DeleteVehicle"
 
 local KEY_VALUE_NAME = "KeyValue"
 
@@ -191,6 +195,15 @@ function PlayerManager.new(player : Player)
 
     Registry[player] = self
     MarketplaceManager.newPlayer(self._Maid, player)
+
+    MidasStateTree.Gameplay.BackpackAdded(player, function()
+        return #self.Backpack
+    end)
+
+    MidasStateTree.Gameplay.VehiclesAdded(player, function()
+        return #self.Vehicles
+    end)
+
     return self
 end
 
@@ -205,7 +218,7 @@ function PlayerManager:InsertToBackpack(tool : Instance)
     local toolData : BackpackUtil.ToolData<boolean> = BackpackUtil.getData(tool, false) :: any
     toolData.IsEquipped = false
     table.insert(self.Backpack, toolData)
-    print(self.Backpack)
+
 end
 
 function PlayerManager:GetBackpack(hasDisplayType : boolean, hasEquipInfo : boolean)
@@ -274,6 +287,7 @@ function PlayerManager:SetBackpackEquip(isEquip : boolean, toolKey : number)
     end
 
     NetworkUtil.fireClient(UPDATE_PLAYER_BACKPACK, self.Player, self:GetBackpack(true, true))
+
 
     return
 end
@@ -434,6 +448,8 @@ function PlayerManager.init(maid : Maid)
         end]]
         NotificationUtil.Notify(plr, "You equipped " .. plrInfo.Backpack[toolKey].Name)
 
+        MidasEventTree.Gameplay.EquipTool(plr)
+
         return nil
     end)
     NetworkUtil.onServerInvoke(DELETE_BACKPACK, function(plr : Player, toolKey : number, toolName : string)
@@ -441,6 +457,8 @@ function PlayerManager.init(maid : Maid)
         plrInfo:DeleteBackpack(toolKey)
 
         NotificationUtil.Notify(plr, "You deleted " .. toolName)
+
+        MidasEventTree.Gameplay.BackpackDeleted(plr)
         return nil
     end)
 
@@ -455,15 +473,32 @@ function PlayerManager.init(maid : Maid)
         NetworkUtil.fireClient(UPDATE_PLAYER_BACKPACK, plr, plrInfo:GetBackpack(true, true))
 
         NotificationUtil.Notify(plr, "You got " .. toolName .. " added to your backpack")        
+
+        MidasEventTree.Gameplay.BackpackAdded(plr)
+        
         return nil
     end)
 
     NetworkUtil.onServerInvoke(ADD_VEHICLE, function(plr : Player, vehicleName : string)
+        
+        
         local plrInfo = PlayerManager.get(plr)
 
         plrInfo:AddVehicle(vehicleName)
 
         NotificationUtil.Notify(plr, "You got " .. vehicleName)
+
+        MidasEventTree.Gameplay.VehiclesAdded(plr)
+        return nil
+    end)
+    
+    NetworkUtil.onServerInvoke(DELETE_VEHICLE, function(plr : Player, key : number)
+        local plrInfo = PlayerManager.get(plr)
+
+        print(key)
+        plrInfo:DeleteVehicle(key)
+
+        MidasEventTree.Gameplay.VehiclesDeleted(plr)
         return nil
     end)
 
