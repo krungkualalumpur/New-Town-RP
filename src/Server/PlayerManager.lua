@@ -6,6 +6,7 @@ local ServerScriptService = game:GetService("ServerScriptService")
 local Players = game:GetService("Players")
 local HttpService = game:GetService("HttpService")
 local PhysicsService = game:GetService("PhysicsService")
+local MarketplaceService = game:GetService("MarketplaceService")
 --packages
 local Maid = require(ReplicatedStorage:WaitForChild("Packages"):WaitForChild("Maid"))
 local NetworkUtil = require(ReplicatedStorage:WaitForChild("Packages"):WaitForChild("NetworkUtil"))
@@ -17,10 +18,11 @@ local MidasStateTree = require(ReplicatedStorage:WaitForChild("Shared"):WaitForC
 local InteractableUtil = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("InteractableUtil"))
 local ItemUtil = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("ItemUtil"))
 local BackpackUtil = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("BackpackUtil"))
-local ToolActions = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("ToolActions"))
+local MarketplaceUtil = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("MarketplaceUtil"))
 local NotificationUtil = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("NotificationUtil"))
+local ToolActions = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("ToolActions"))
+
 local MarketplaceManager = require(ServerScriptService:WaitForChild("Server"):WaitForChild("MarketplaceManager"))
- 
 --types
 type Maid = Maid.Maid
 
@@ -477,8 +479,13 @@ function PlayerManager.init(maid : Maid)
     end)
 
     NetworkUtil.onServerInvoke(ADD_VEHICLE, function(plr : Player, vehicleName : string)
-        --Marketplaceutil
-        
+        local plrIsVIP = MarketplaceService:UserOwnsGamePassAsync(plr.UserId, MarketplaceUtil.getGamePassIdByName("VIP Feature") )
+
+        if not plrIsVIP then 
+            MarketplaceService:PromptGamePassPurchase(plr, MarketplaceUtil.getGamePassIdByName("VIP Feature"))
+            return nil 
+        end
+
         local plrInfo = PlayerManager.get(plr)
 
         plrInfo:AddVehicle(vehicleName)

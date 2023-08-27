@@ -17,9 +17,9 @@ type Maid = Maid.Maid
 --references
 --local functions
 --class
-local GamepassManager = {}
+local MarketplaceManager = {}
 
-function GamepassManager.newPlayer(maid : Maid, plr : Player)
+function MarketplaceManager.newPlayer(maid : Maid, plr : Player)
     local plrIsVIP = MarketplaceService:UserOwnsGamePassAsync(plr.UserId, MarketplaceUtil.getGamePassIdByName("VIP Feature"))
     if plrIsVIP then
         if plr.Character then MarketplaceUtil.getGamePassInfoById(MarketplaceUtil.getGamePassIdByName("VIP Feature")).OnPurchased(plr, MarketplaceUtil.getGamePassIdByName("VIP Feature"), plrIsVIP) end
@@ -29,10 +29,10 @@ function GamepassManager.newPlayer(maid : Maid, plr : Player)
     end
 end
 
-function GamepassManager.init(maid : Maid)
+function MarketplaceManager.init(maid : Maid)
     
     VIPZone.init(maid)
     return
 end
 
-return GamepassManager
+return MarketplaceManager

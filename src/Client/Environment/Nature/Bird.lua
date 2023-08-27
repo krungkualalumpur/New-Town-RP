@@ -77,6 +77,8 @@ function prepareBird(bird : Model)
         stabilizer.Name = "Stabilizer"
         stabilizer.Parent = torso
         propulsion.Archivable = false
+
+        torso.Anchored = true
     end
 end
 
@@ -131,6 +133,7 @@ function flyingToDest(bird : Model, v3: Vector3)
 	local propulsion = if torso then torso:FindFirstChild("Propulsion") :: BodyVelocity  ? else nil
 	--flying up
     if torso and propulsion then 
+        torso.Anchored = false
         PlaySound("rbxassetid://9113444803", torso, 1.5)
         flapping(bird)
         propulsion.MaxForce = Vector3.new(9999999,9999999,9999999)
@@ -168,6 +171,7 @@ function flyingToDest(bird : Model, v3: Vector3)
         flapping(bird)
 
         bird:PivotTo(CFrame.new(v3))
+        torso.Anchored = true
     end
 end
 

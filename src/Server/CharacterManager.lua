@@ -18,38 +18,46 @@ local ON_CHARACTER_APPEARANCE_RESET = "OnCharacterAppearanceReset"
 --variables
 --references
 --local functions
+local function characterAdded(char : Model)
+    local humanoid = char:WaitForChild("Humanoid") :: Humanoid
+    if humanoid then
+        humanoid.WalkSpeed = WALK_SPEED
+    end
+end
+
+local function onPlayerAdded(plr : Player)
+    local char = plr.Character or plr.CharacterAdded:Wait()
+    characterAdded(char)
+    
+    local _maid = Maid.new()
+    _maid:GiveTask(plr.CharacterAdded:Connect(characterAdded))
+
+    _maid:GiveTask(plr.Destroying:Connect(function()
+        _maid:Destroy()
+    end))
+
+    CustomizationUtil.setDesc(plr, "PlayerName", plr.Name)
+    CustomizationUtil.setDesc(plr, "PlayerBio", "")
+
+    --testing char only
+    --[[local testacc
+    for _,v in pairs(CustomizationList) do
+        if v.Class == "Accessory" then
+            testacc = v
+        end
+    end
+    
+    CustomizationUtil.Customize(plr, testacc.TemplateId)]]
+end
+
 --class
 local CharacterManager = {}
 
 function CharacterManager.init(maid : Maid)
-    local function onPlayerAdded(plr : Player)
-        local _maid = Maid.new()
-        _maid:GiveTask(plr.CharacterAdded:Connect(function(char : Model)
-            local humanoid = char:WaitForChild("Humanoid") :: Humanoid
-            if humanoid then
-                humanoid.WalkSpeed = WALK_SPEED
-            end
-        end))
- 
-        _maid:GiveTask(plr.Destroying:Connect(function()
-            _maid:Destroy()
-        end))
-
-        CustomizationUtil.setDesc(plr, "PlayerName", plr.Name)
-        CustomizationUtil.setDesc(plr, "PlayerBio", "")
-
-        --testing char only
-        --[[local testacc
-        for _,v in pairs(CustomizationList) do
-            if v.Class == "Accessory" then
-                testacc = v
-            end
-        end
-        
-        CustomizationUtil.Customize(plr, testacc.TemplateId)]]
-    end
+   
 
     for _, plr : Player in pairs(Players:GetPlayers()) do
+        print("Setup char oi!")
         onPlayerAdded(plr)
     end
 
