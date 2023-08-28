@@ -23,6 +23,7 @@ local function playSound(soundId : number, onLoop : boolean, parent : Instance ?
     sound.Name = SOUND_NAME
     sound.SoundId = "rbxassetid://" .. tostring(soundId)
     sound.Parent = parent or (if RunService:IsClient() then Players.LocalPlayer else nil)
+    sound.RollOffMaxDistance = 35
     sound.Looped = onLoop
     if sound.Parent then
         sound:Play()
@@ -68,7 +69,7 @@ local ActionLists = {
         end
     },
     {
-        ToolClass = "Book",
+        ToolClass = "Reading",
         Activated = function(player : Player, toolData : BackpackUtil.ToolData<nil>)
             AnimationUtil.playAnim(player, 6831327167, false)
         end
@@ -78,6 +79,36 @@ local ActionLists = {
         ToolClass = "Miscs",
         Activated = function()
             
+        end
+    },
+
+    {
+        ToolClass = "Gun",
+        Activated = function(player : Player, toolData : BackpackUtil.ToolData<nil>)
+            local character = player.Character or player.CharacterAdded:Wait()
+            local gunTool : Tool
+
+            for _,v in pairs(character:GetChildren()) do
+                if v:IsA("Tool") and v.Name == toolData.Name then
+                    gunTool = v
+                    break
+                end
+            end
+
+            local gunModel = gunTool:FindFirstChild("Gun")
+            local flare = if gunModel then gunModel:FindFirstChild("Flare") else nil
+
+            if flare then
+                local muzzleFlash = flare:FindFirstChild("MuzzleFlash") :: BillboardGui ?
+                if muzzleFlash then
+                    muzzleFlash.Enabled = true
+                    task.wait(0.1)
+                    muzzleFlash.Enabled = false
+                end
+                playSound(143286342, false, flare)
+            end
+
+            print("Duar bruh ", toolData)
         end
     }
 }

@@ -44,13 +44,13 @@ export type PlayerManager = {
 
     new : (player : Player) -> PlayerManager,
     
-    InsertToBackpack : (PlayerManager, tool : Instance) -> (),
+    InsertToBackpack : (PlayerManager, tool : Instance) -> boolean,
     DeleteBackpack : (PlayerManager, toolKey : number) -> (),
 
     GetBackpack : (PlayerManager, hasDisplayType : boolean, hasEquipInfo : boolean) -> {[number] : BackpackUtil.ToolData<boolean ?>},
     SetBackpackEquip : (PlayerManager, isEquip : boolean, toolKey : number) -> (),
 
-    AddVehicle : (PlayerManager, vehicleName : string) -> (),
+    AddVehicle : (PlayerManager, vehicleName : string) -> boolean,
     SpawnVehicle : (PlayerManager, key : number, isEquip : boolean, vehicleName : string ?, vehicleZones : Instance ?) -> (),
     DeleteVehicle : (PlayerManager, key : number) -> (),
 
@@ -213,13 +213,13 @@ function PlayerManager:InsertToBackpack(tool : Instance)
         --notif
         NotificationUtil.Notify(self.Player, "Already has max amount of tools to have")
         print("Already has max amount of tools to have")
-        return
+        return false
     end
     
     local toolData : BackpackUtil.ToolData<boolean> = BackpackUtil.getData(tool, false) :: any
     toolData.IsEquipped = false
     table.insert(self.Backpack, toolData)
-
+    return true
 end
 
 function PlayerManager:GetBackpack(hasDisplayType : boolean, hasEquipInfo : boolean)
@@ -308,14 +308,14 @@ function PlayerManager:AddVehicle(vehicleName : string)
     if #self.Vehicles >= MAX_VEHICLES_COUNT then
         --notif
         NotificationUtil.Notify(self.Player, "Already has max amount of vehicles to have")
-        return
+        return false
     end
     
     local vehicleClass = ItemUtil.getData(ItemUtil.getItemFromName(vehicleName), false).Class
     local vehicleData : VehicleData = newVehicleData("Vehicle", vehicleClass, false, vehicleName, self.Player.UserId) -- ItemUtil.getData(ItemUtil.getItemFromName(vehicleName), true) :: any
 
     table.insert(self.Vehicles, vehicleData)
-    return
+    return true
 end
 
 function PlayerManager:SpawnVehicle(key : number, isSpawned : boolean, vehicleName : string ?, vehicleZones : Instance ?)
@@ -467,11 +467,14 @@ function PlayerManager.init(maid : Maid)
         
         local toolModel = BackpackUtil.getToolFromName(toolName)
 
-        if toolModel then plrInfo:InsertToBackpack(toolModel) end
+        if toolModel then 
+            local success = plrInfo:InsertToBackpack(toolModel) 
+            if success then
+                NotificationUtil.Notify(plr, toolName .. " is added to your backpack")        
+            end
+        end
 
         NetworkUtil.fireClient(UPDATE_PLAYER_BACKPACK, plr, plrInfo:GetBackpack(true, true))
-
-        NotificationUtil.Notify(plr, "You got " .. toolName .. " added to your backpack")        
 
         MidasEventTree.Gameplay.BackpackAdded(plr)
         
@@ -488,10 +491,11 @@ function PlayerManager.init(maid : Maid)
 
         local plrInfo = PlayerManager.get(plr)
 
-        plrInfo:AddVehicle(vehicleName)
+        local success = plrInfo:AddVehicle(vehicleName)
 
-        NotificationUtil.Notify(plr, "You got " .. vehicleName)
-
+        if success then
+            NotificationUtil.Notify(plr, "You got " .. vehicleName)
+        end
         MidasEventTree.Gameplay.VehiclesAdded(plr)
         return nil
     end)

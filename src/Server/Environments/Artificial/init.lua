@@ -45,6 +45,8 @@ local function initNightLight(maid : Maid)
                 child.Enabled = on
             elseif child:IsA("BasePart") then 
                 detectIsLight(child)            
+            elseif child:IsA("Beam") then
+                child.Enabled = on
             end
         end
 

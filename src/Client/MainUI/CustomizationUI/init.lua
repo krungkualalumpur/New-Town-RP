@@ -436,42 +436,6 @@ return function(
         }
     })
 
-    for _, custom in pairs(Customizations) do
-        local isVisible = _Computed(function(page : CustomizationPage ?)
-            return if custom.Class == page then true else false 
-        end, customizationPage)
-        
-        local isEquipped
-
-        if custom.Class == "Accessory" then
-            isEquipped = _Value(false)
-        end
-
-        local button = getAccessoryButton(
-            maid,  
-            custom.TemplateId,
-            custom.Name,
-            isVisible,
-            onCostumeButtonClick,
-            isEquipped
-        )
-        button.Parent = charCosContent
-
-        if game:GetService("RunService"):IsRunning() then
-            local player = game:GetService("Players").LocalPlayer
-            local character = player.Character or player.CharacterAdded:Wait()
-
-            if isEquipped then
-                for _,v in pairs(character:GetChildren()) do
-                    if v:IsA("Accessory") and (CustomizationUtil.getAccessoryId(v) == custom.TemplateId)  then
-                        isEquipped:Set(true)
-                        break
-                    end
-                end
-            end
-        end
-    end
-
 
     local contentFrame = _new("Frame")({
         Name = "ContentFrame",
@@ -533,7 +497,42 @@ return function(
         }
     })
 
-   
-    
+    --customization items
+    for _, custom in pairs(Customizations) do
+        local isVisible = _Computed(function(page : CustomizationPage ?)
+            return if custom.Class == page then true else false 
+        end, customizationPage)
+        
+        local isEquipped
+
+        if custom.Class == "Accessory" then
+            isEquipped = _Value(false)
+        end
+
+        local button = getAccessoryButton(
+            maid,  
+            custom.TemplateId,
+            custom.Name,
+            isVisible,
+            onCostumeButtonClick,
+            isEquipped
+        )
+        button.Parent = charCosContent
+
+        if game:GetService("RunService"):IsRunning() then
+            local player = game:GetService("Players").LocalPlayer
+            local character = player.Character or player.CharacterAdded:Wait()
+
+            if isEquipped then
+                for _,v in pairs(character:GetChildren()) do
+                    if v:IsA("Accessory") and (CustomizationUtil.getAccessoryId(v) == custom.TemplateId)  then
+                        isEquipped:Set(true)
+                        break
+                    end
+                end
+            end
+        end
+    end
+
     return out
 end

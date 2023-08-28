@@ -159,7 +159,7 @@ return function(
 
     local computedTextStatus = _Computed(function(text : string ?)
         if text then
-            getSound(5153734236, out.Parent)
+            getSound(6647898215, out.Parent)
             local _maid = Maid.new()
             local notifFrame = getNotificationFrame(
                 _maid,   

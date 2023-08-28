@@ -45,8 +45,6 @@ local SECONDARY_COLOR = Color3.fromRGB(42, 42, 42)
 local PADDING_SIZE = UDim.new(0,10)
 --remotes
 local GET_PLAYER_BACKPACK = "GetPlayerBackpack"
-
-local A
 --variables
 --references
 --local functions

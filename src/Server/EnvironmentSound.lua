@@ -11,6 +11,7 @@ local Zone = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Zone
 --types
 type Maid = Maid.Maid
 --constants
+local SOUND_VOLUME_ATTRIBUTE = "Volume"
 --variables
 --references
 --local functions
@@ -18,6 +19,24 @@ type Maid = Maid.Maid
 local EnvironmentSound = {}
 
 function EnvironmentSound.init(maid : Maid)
+    
+    --setting all sound volume te 0
+    for _,sound in pairs(SoundService:GetChildren()) do
+        --setting up sounds
+        if sound:IsA("Folder") or sound:IsA("Model") then
+            for _,v in pairs(sound:GetChildren()) do
+                if v:IsA("Sound") then
+                    v:SetAttribute(SOUND_VOLUME_ATTRIBUTE, v.Volume)
+                    v.Volume = 0
+                end
+            end
+        elseif sound:IsA("Sound") then
+            sound:SetAttribute(SOUND_VOLUME_ATTRIBUTE, sound.Volume)
+            sound.Volume = 0
+        end
+    end
+    
+    
     for _,sound in pairs(SoundService:GetChildren()) do
         if sound:IsA("Folder") or sound:IsA("Model") then
             local songs = {}
@@ -49,7 +68,6 @@ function EnvironmentSound.init(maid : Maid)
 
             task.spawn(playQueue)
         elseif sound:IsA("Sound") then
-            print(sound, ' eeh??')
             sound.Looped = true
             sound:Play()
         end

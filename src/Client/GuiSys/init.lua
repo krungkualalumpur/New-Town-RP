@@ -14,6 +14,7 @@ local ColdFusion = require(ReplicatedStorage:WaitForChild("Packages"):WaitForChi
 local InteractSys = require(ReplicatedStorage:WaitForChild("Client"):WaitForChild("GuiSys"):WaitForChild("InteractSys"))
 local InteractUI = require(ReplicatedStorage:WaitForChild("Client"):WaitForChild("InteractUI"))
 local MainUI = require(ReplicatedStorage:WaitForChild("Client"):WaitForChild("MainUI"))
+local SideOptions = require(ReplicatedStorage:WaitForChild("Client"):WaitForChild("MainUI"):WaitForChild("SideOptions"))
 local NotificationUI = require(ReplicatedStorage:WaitForChild("Client"):WaitForChild("NotificationUI"))
 local ExitButton = require(ReplicatedStorage:WaitForChild("Client"):WaitForChild("ExitButton"))
 
@@ -175,6 +176,41 @@ function guiSys.new()
         self.NotificationStatus
     )
 
+
+    do
+        local charMaid = maid:GiveTask(Maid.new()) 
+
+        local onSprintClick = maid:GiveTask(Signal.new())
+        local sprintState = _Value(false)
+        local function onCharAdded(char : Model)
+            charMaid:DoCleaning()
+            charMaid:GiveTask(char:GetAttributeChangedSignal("IsSprinting"):Connect(function()
+                if char:GetAttribute("IsSprinting") == true then
+                    sprintState:Set(true)
+                else
+                    sprintState:Set(false)
+                end
+            end))
+        end
+        local sideOptionsUI = SideOptions(
+            maid, 
+            onSprintClick,
+
+            sprintState
+        )
+        sideOptionsUI.Parent = target
+        
+        onCharAdded(Player.Character or Player.CharacterAdded:Wait())
+
+        maid:GiveTask(onSprintClick:Connect(function()
+            local char = Player.Character
+            if char then
+                char:SetAttribute("IsSprinting", not char:GetAttribute("IsSprinting"))
+            end
+        end))
+
+        maid:GiveTask(Player.CharacterAdded:Connect(onCharAdded))
+    end
     self.MainUI.Parent = target
     self.NotificationUI.Parent = notificationUItarget
 
@@ -366,6 +402,7 @@ function guiSys.new()
                 --)
             end
         end
+        currentOptInfo:Set(nil)
     end))
 
     maid:GiveTask(onCharacterReset:Connect(function()

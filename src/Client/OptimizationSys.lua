@@ -2,6 +2,7 @@
 --services
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local CollectionService = game:GetService("CollectionService")
+local RunService = game:GetService("RunService")
 local Players = game:GetService("Players")
 --packages
 local Maid = require(ReplicatedStorage:WaitForChild("Packages"):WaitForChild("Maid"))
@@ -10,7 +11,10 @@ local Zone = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Zone
 --types
 type Maid = Maid.Maid
 --constants
+local LOAD_OF_DISTANCE = 60
+
 local ZONE_TAG = "RenderZone"
+local LOD_TAG = "LODItem"
 --variables
 --references
 local Player = Players.LocalPlayer
@@ -45,6 +49,8 @@ function optimizationSys.init(maid : Maid)
             cf, size = interior:GetBoundingBox()
         elseif interior:IsA("BasePart") then
             cf, size = interior.CFrame, interior.Size
+        else
+            warn(interior.Name, " is not a model nor a basepart for interior!")
         end
         local zonePart = Instance.new("Part")
         zonePart.CanCollide = false
@@ -106,6 +112,44 @@ function optimizationSys.init(maid : Maid)
     maid:GiveTask(Player.CharacterAdded:Connect(function(char)
         table.clear(filter)
         table.insert(filter, char)
+    end))
+
+    --load of distance
+    local lodItems = {} 
+    
+    for _,LODinst in pairs(CollectionService:GetTagged(LOD_TAG)) do
+        local objectValue = Instance.new("ObjectValue")
+        objectValue.Name = "Pointer"
+        objectValue.Value = LODinst.Parent  
+        objectValue.Parent = LODinst
+        table.insert(lodItems, LODinst)
+    end
+    
+    maid:GiveTask(RunService.Stepped:Connect(function()
+        local camera = workspace.CurrentCamera :: Camera
+
+        for _,LODinst in pairs(lodItems) do
+            local pointer = LODinst:FindFirstChild("Pointer") :: ObjectValue
+            local cf, size
+            if LODinst:IsA("Model") then
+                cf, size = LODinst:GetBoundingBox()
+            elseif LODinst:IsA("BasePart") then
+                cf, size = LODinst.CFrame, LODinst.Size
+            else
+                warn(LODinst.Name, " is not a model nor a basepart for LOD!")
+            end
+            if cf and size and camera then
+                local currentDist = (cf.Position - camera.CFrame.Position).Magnitude - (math.max(size.X, size.Y, size.Z)*0.5)
+                currentDist = math.clamp(currentDist, 0, math.huge)
+
+                if currentDist >= LOAD_OF_DISTANCE then
+                    LODinst.Parent = nil
+                else
+                    LODinst.Parent = pointer.Value
+                end
+
+            end
+        end
     end))
 end
 

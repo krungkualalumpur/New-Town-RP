@@ -37,13 +37,14 @@ local ON_TOOL_INTERACT = "On_Tool_Interact"
 local ON_OPTIONS_OPENED = "OnOptionsOpened"
 local ON_ITEM_OPTIONS_OPENED = "OnItemOptionsOpened"
 
+local ON_NOTIFICATION = "OnNotification"
 --references
 --variables
 --local functions
 local function playSound(soundId : number, onLoop : boolean, parent : Instance ? )
     local sound = Instance.new("Sound")
     sound.Name = SOUND_NAME
-    sound.RollOffMaxDistance = 25
+    sound.RollOffMaxDistance = 30
     sound.SoundId = "rbxassetid://" .. tostring(soundId)
     sound.Parent = parent or (if RunService:IsClient() then Players.LocalPlayer else nil)
     sound.Looped = onLoop
@@ -147,7 +148,10 @@ function Interactable.InteractToolGiver(plrInfo : any,  model : Model, player : 
             local newTool = BackpackUtil.getToolFromName(model.Name)
             -----
             if newTool then
-                plrInfo:InsertToBackpack(newTool)
+                local success = plrInfo:InsertToBackpack(newTool)
+                if success then
+                    NetworkUtil.fireClient(ON_NOTIFICATION, player, model.Name .. " added to your backpack!")
+                end
             end
             print(plrInfo.Backpack)
             ----- 
@@ -158,7 +162,10 @@ function Interactable.InteractToolGiver(plrInfo : any,  model : Model, player : 
                    -- createTool(newModel).Parent = player:WaitForChild("Backpack")
                      ----- 
                     assert(newTool) 
-                    plrInfo:InsertToBackpack(newTool)
+                    local success = plrInfo:InsertToBackpack(newTool)
+                    if success then
+                        NetworkUtil.fireClient(ON_NOTIFICATION, player, v.Name .. " added to your backpack!")
+                    end
                     print(plrInfo.Backpack)
                     ----- 
                 end
@@ -463,11 +470,15 @@ function Interactable.InteractOpening(model : Model,on : boolean)
 
         local slides = model:FindFirstChild("Slides")
 
-        if hingeConstraint then --if it's a hinges opening
-            hingeConstraint.ServoMaxTorque = math.huge
-            hingeConstraint.TargetAngle = 90
-            task.wait(3)
-            hingeConstraint.TargetAngle = 0
+        if hingeConstraint  then --if it's a hinges opening
+            if hingeConstraint.TargetAngle == 0 then
+                hingeConstraint.ServoMaxTorque = math.huge
+                hingeConstraint.TargetAngle = 90
+                playSound(833871080, false, pivot)
+                task.wait(5)
+                playSound(7038967181, false, pivot)
+                hingeConstraint.TargetAngle = 0
+            end
         elseif slides then --if it's a slides opening
             local right = slides:FindFirstChild("Right") :: BasePart
             local left = slides:FindFirstChild("Left") :: BasePart

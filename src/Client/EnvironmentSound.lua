@@ -57,8 +57,7 @@ function environmentSound.init(maid : Maid)
     local _Value = _fuse.Value
     local _Computed = _fuse.Computed
 
-   
-    for _,sound in pairs(SoundService:GetChildren()) do
+   --[[ for _,sound in pairs(SoundService:GetChildren()) do
         --setting up sounds
         if sound:IsA("Folder") or sound:IsA("Model") then
             for _,v in pairs(sound:GetChildren()) do
@@ -72,7 +71,7 @@ function environmentSound.init(maid : Maid)
         
          --clear up all sounds
         adjustSound(sound, false)
-    end
+    end]]
 
     local cam = workspace.CurrentCamera
 
