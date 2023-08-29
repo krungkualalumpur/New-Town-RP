@@ -194,7 +194,7 @@ function PlayerManager.new(player : Player, maid : Maid ?)
 
     DatastoreManager.load(player, self)
 
-    --testing only
+    --saving
     local intTick = tick()
     self._Maid:GiveTask(RunService.Stepped:Connect(function()
         if (tick() - intTick) >= SAVE_DATA_INTERVAL then
@@ -203,6 +203,7 @@ function PlayerManager.new(player : Player, maid : Maid ?)
 
         end
     end))
+        --testing only
     --task.spawn(function()
      --   while wait(1) do
      --       print(self:GetData())
@@ -336,7 +337,7 @@ function PlayerManager:SpawnVehicle(key : number, isSpawned : boolean, vehicleNa
         local vehicleModel =  getVehicleModelByKey(self.Player, self.Vehicles[k].Key)
         if vehicleModel then
             applyVehicleData(vehicleModel, v)
-            print(vehicleModel, v)
+            print(vehicleModel, v) 
         end
     end
     
@@ -344,6 +345,10 @@ function PlayerManager:SpawnVehicle(key : number, isSpawned : boolean, vehicleNa
     if isSpawned == true then
         local vehicleModel = createVehicleModel(vehicleInfo, spawnPart.CFrame)
         applyVehicleData(vehicleModel, vehicleInfo)
+        
+        self._Maid.CurrentSpawnedVehicle = vehicleModel
+    else
+        self._Maid.CurrentSpawnedVehicle = nil
     end
 
     return 
