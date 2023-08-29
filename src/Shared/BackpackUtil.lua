@@ -74,6 +74,13 @@ end
 --class
 local BackpackUtil = {}
 
+function BackpackUtil.newData(name : string, class : string)
+    return {
+        Name = name,
+        Class = class
+    }
+end
+
 function BackpackUtil.getData(toolModel : Instance, classAsDisplayType : boolean) : ToolData<nil>
     return {
         Name = toolModel.Name,

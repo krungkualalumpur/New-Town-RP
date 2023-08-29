@@ -242,8 +242,8 @@ local function initializeSoundSystem(instances)
 			elseif (humanoid.FloorMaterial == Enum.Material.Grass) or (humanoid.FloorMaterial == Enum.Material.LeafyGrass) or (humanoid.FloorMaterial == Enum.Material.Mud) then
 				sounds.Running.SoundId = "rbxassetid://344520856"
 				(sounds.Running :: any).Pitch = 1.2
-			elseif (humanoid.FloorMaterial == Enum.Material.Sand) or (humanoid.FloorMaterial == Enum.Material.Ground) then
-				sounds.Running.SoundId = "rbxassetid://4317441347"
+			elseif (humanoid.FloorMaterial == Enum.Material.Sand) or (humanoid.FloorMaterial == Enum.Material.Ground) or (humanoid.FloorMaterial == Enum.Material.Sandstone) then
+				sounds.Running.SoundId = "rbxassetid://4317441347"				
 			elseif (humanoid.FloorMaterial == Enum.Material.Concrete) or (humanoid.FloorMaterial == Enum.Material.Asphalt) or (humanoid.FloorMaterial == Enum.Material.Cobblestone) or (humanoid.FloorMaterial == Enum.Material.Pebble) or (humanoid.FloorMaterial == Enum.Material.Pavement) then
 				sounds.Running.SoundId = "rbxassetid://6362185620"
 			elseif (humanoid.FloorMaterial == Enum.Material.Wood) or (humanoid.FloorMaterial == Enum.Material.WoodPlanks) then

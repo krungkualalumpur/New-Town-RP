@@ -64,7 +64,7 @@ function CharacterManager.init(maid : Maid)
     maid:GiveTask(Players.PlayerAdded:Connect(onPlayerAdded))
 
 
-    maid:GiveTask(NetworkUtil.onServerEvent(ON_CHARACTER_APPEARANCE_RESET, function(plr : Player)
+    maid:GiveTask(NetworkUtil.onServerEvent(ON_CHARACTER_APPEARANCE_RESET, function(plr : Player, isClear : boolean)
         local character = plr.Character or plr.CharacterAdded:Wait()
 
         local humanoid = character:WaitForChild("Humanoid") :: Humanoid
@@ -75,6 +75,18 @@ function CharacterManager.init(maid : Maid)
             humanoid:ApplyDescription(Instance.new("HumanoidDescription"))
             humanoid:RemoveAccessories()
             humanoid:ApplyDescription(hum_desc)
+
+            if isClear then
+                for _,v in pairs(character:GetChildren()) do
+                    if v:IsA("Accessory") then
+                        v:Destroy()
+                    elseif v:IsA("Shirt") then
+                        v.ShirtTemplate = ""
+                    elseif v:IsA("Pants") then
+                        v.PantsTemplate = ""
+                    end
+                end
+            end
         end
     end))
 end

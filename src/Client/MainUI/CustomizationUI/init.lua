@@ -456,17 +456,27 @@ return function(
         Size = UDim2.fromScale(0.42, 1),
         Children = {
             _new("UIListLayout")({
-                VerticalAlignment = Enum.VerticalAlignment.Center
+                VerticalAlignment = Enum.VerticalAlignment.Center,
+                Padding = PADDING_SIZE
             }),
             _bind(getButton(maid, "<b>\t Reset Outfit \t</b>", function()
-                onCharacterResetClick:Fire()
+                onCharacterResetClick:Fire(false)
             end, 1))({
                 BackgroundColor3 = RESET_COLOR,
                 AutomaticSize = Enum.AutomaticSize.X,
                 Size = UDim2.fromScale(0, 0.05),
                 TextColor3 = PRIMARY_COLOR
+            }),
+
+          _bind(getButton(maid, "<b>\t Clear Outfit \t</b>", function()
+                print("Juriii!")    
+                onCharacterResetClick:Fire(true)
+            end, 2))({
+                BackgroundColor3 = SELECT_COLOR,
+                AutomaticSize = Enum.AutomaticSize.X,
+                Size = UDim2.fromScale(0, 0.05),
+                TextColor3 = PRIMARY_COLOR
             })
-          
 
         }
     })

@@ -22,7 +22,7 @@ local function getImageButton(
     maid : Maid,
     ImageId : ColdFusion.State<number>,
     activatedFn : () -> (),
-    buttonName : string,
+    buttonName : ColdFusion.State<string>,
     order : number
 )
     local _fuse = ColdFusion.fuse(maid)
@@ -88,7 +88,7 @@ return function(
     local _Computed = _fuse.Computed
 
     local out = _new("Frame")({
-        Position = UDim2.fromScale(0, 0.85),
+       -- Position = UDim2.fromScale(0, 0.85),
         Size = UDim2.fromScale(1, 0.08),
         BackgroundTransparency = 1,
         Children = {
@@ -106,7 +106,9 @@ return function(
                 return if isSprinting then 9525535512 else 9525534183 
             end, sprintState), function()
                     onSprintClick:Fire()
-            end, "Sprint", 1)   
+            end, _Computed(function(isSprinting : boolean)
+                return if isSprinting then "Running" else "Walking" 
+            end, sprintState), 1)   
             --[[_new("ImageButton")({
                 BackgroundTransparency = 0.5,
                 AutoButtonColor = 1,

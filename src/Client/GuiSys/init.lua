@@ -405,8 +405,8 @@ function guiSys.new()
         currentOptInfo:Set(nil)
     end))
 
-    maid:GiveTask(onCharacterReset:Connect(function()
-        NetworkUtil.fireServer(ON_CHARACTER_APPEARANCE_RESET)
+    maid:GiveTask(onCharacterReset:Connect(function(isClear : boolean)
+        NetworkUtil.fireServer(ON_CHARACTER_APPEARANCE_RESET, isClear)
     end))
 
     --setting default backpack to untrue it 

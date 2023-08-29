@@ -25,7 +25,7 @@ local ON_CUSTOMIZE_CHAR = "OnCustomizeCharacter"
 --class
 local CustomizationUtil = {}
 
-function CustomizationUtil.getAccessoryId(accessory : Accessory)
+function CustomizationUtil.getAccessoryId(accessory : Accessory) : number
     return accessory:GetAttribute("CustomeId")
 end
 
@@ -33,6 +33,38 @@ function CustomizationUtil.getAssetImageFromId(id : number, width : number ?, he
     local Width = width or 48
     local Height = height or 48
     return "https://www.roblox.com/Thumbs/Asset.ashx?width=".. tostring(Width).."&height=".. tostring(Height) .."&assetId=".. tostring(id)
+end
+
+function CustomizationUtil.getFaceTextureFromChar(character : Model)
+    local head = character:FindFirstChild("Head") :: BasePart or nil
+    local face = if head then head:FindFirstChild("face") :: Decal else nil
+    if face then 
+        return face.Texture
+    end
+    error("Unable to find face on the character")
+end
+
+function CustomizationUtil.setCustomeFromTemplateId(plr  : Player, customeType : "Shirt" | "Pants" | "Face", customId : number)
+    local char = plr.Character or plr.CharacterAdded:Wait()
+    local shirt = char:WaitForChild("Shirt", 5) :: Shirt or Instance.new("Shirt")
+    local pants = char:WaitForChild("Pants", 5) :: Pants or Instance.new("Pants")
+
+    shirt.Parent = char
+    pants.Parent = char
+
+    local head = char:WaitForChild("Head", 5) :: BasePart or nil
+    local face = if head then (head:WaitForChild("face", 5) or Instance.new("Decal")) :: Decal else nil
+    if face then face.Parent = head end
+
+    if customeType == "Shirt" then
+        shirt.ShirtTemplate = "http://www.roblox.com/asset/?id=" .. tostring(customId)
+    elseif customeType == "Pants" then
+        pants.PantsTemplate = "http://www.roblox.com/asset/?id=" .. tostring(customId)
+    elseif customeType == "Face" then
+        if face then
+            face.Texture = "http://www.roblox.com/asset/?id=" .. tostring(customId)
+        end
+    end
 end
 
 function CustomizationUtil.Customize(plr : Player, customizationId : number)
@@ -44,29 +76,36 @@ function CustomizationUtil.Customize(plr : Player, customizationId : number)
         local assetInstance = asset:GetChildren()[1]
         assert(asset, "Unable to load the asset")
 
-        if assetInstance:IsA("Decal") then
-            --it's a face
-            local head = character:FindFirstChild("Head") :: BasePart or nil
-            local face = if head then head:FindFirstChild("face") :: Decal else nil
-            if face then 
-                face.Texture = assetInstance.Texture
+        if assetInstance then
+            if assetInstance:IsA("Decal") then
+                --it's a face
+                --[[local head = character:FindFirstChild("Head") :: BasePart or nil
+                local face = if head then head:FindFirstChild("face") :: Decal else nil
+                if face then 
+                    face.Texture = assetInstance.Texture
+                end]]
+                CustomizationUtil.setCustomeFromTemplateId(plr, "Face", tonumber(string.match(assetInstance.Texture, "%d+")) or 0)
+            elseif assetInstance:IsA("Accessory") then
+                local existingAccessory = character:FindFirstChild(assetInstance.Name)
+                if not existingAccessory then
+                    humanoid:AddAccessory(assetInstance)
+                    assetInstance:SetAttribute("CustomeId", customizationId)
+                else
+                    existingAccessory:Destroy()
+                end
+            elseif assetInstance:IsA("Shirt") then
+                --[[local shirt = character:FindFirstChild("Shirt") :: Shirt or Instance.new("Shirt")
+                shirt.Parent = character
+                shirt.ShirtTemplate = assetInstance.ShirtTemplate]]
+                CustomizationUtil.setCustomeFromTemplateId(plr, "Shirt", tonumber(string.match(assetInstance.ShirtTemplate, "%d+")) or 0)
+            elseif assetInstance:IsA("Pants") then
+                --[[local pants = character:FindFirstChild("Pants") :: Pants or Instance.new("Pants")
+                pants.Parent = character
+                pants.PantsTemplate = assetInstance.PantsTemplate]]
+                CustomizationUtil.setCustomeFromTemplateId(plr, "Pants", tonumber(string.match(assetInstance.PantsTemplate, "%d+")) or 0)
             end
-        elseif assetInstance:IsA("Accessory") then
-            local existingAccessory = character:FindFirstChild(assetInstance.Name)
-            if not existingAccessory then
-                humanoid:AddAccessory(assetInstance)
-                assetInstance:SetAttribute("CustomeId", customizationId)
-            else
-                existingAccessory:Destroy()
-            end
-        elseif assetInstance:IsA("Shirt") then
-            local shirt = character:FindFirstChild("Shirt") :: Shirt or Instance.new("Shirt")
-            shirt.Parent = character
-            shirt.ShirtTemplate = assetInstance.ShirtTemplate
-        elseif assetInstance:IsA("Pants") then
-            local pants = character:FindFirstChild("Pants") :: Pants or Instance.new("Pants")
-            pants.Parent = character
-            pants.PantsTemplate = assetInstance.PantsTemplate
+        else
+            warn("Unable to find asset from id: " .. tostring(customizationId)) 
         end
         asset:Destroy()  
     else

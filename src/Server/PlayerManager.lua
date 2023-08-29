@@ -10,6 +10,7 @@ local MarketplaceService = game:GetService("MarketplaceService")
 --packages
 local Maid = require(ReplicatedStorage:WaitForChild("Packages"):WaitForChild("Maid"))
 local NetworkUtil = require(ReplicatedStorage:WaitForChild("Packages"):WaitForChild("NetworkUtil"))
+local Signal = require(ReplicatedStorage:WaitForChild("Packages"):WaitForChild("Signal"))
 
 local Midas = require(ReplicatedStorage:WaitForChild("Packages"):WaitForChild("Midas"))
 local MidasEventTree = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("MidasEventTree"))
@@ -19,49 +20,27 @@ local InteractableUtil = require(ReplicatedStorage:WaitForChild("Shared"):WaitFo
 local ItemUtil = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("ItemUtil"))
 local BackpackUtil = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("BackpackUtil"))
 local MarketplaceUtil = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("MarketplaceUtil"))
+local CustomizationUtil = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("CustomizationUtil"))
 local NotificationUtil = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("NotificationUtil"))
 local ToolActions = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("ToolActions"))
 
+local DatastoreManager = require(ServerScriptService:WaitForChild("Server"):WaitForChild("DatastoreManager"))
 local MarketplaceManager = require(ServerScriptService:WaitForChild("Server"):WaitForChild("MarketplaceManager"))
+local ManagerTypes = require(ServerScriptService:WaitForChild("Server"):WaitForChild("ManagerTypes"))
 --types
 type Maid = Maid.Maid
+type Signal = Signal.Signal
 
 type ToolData<isEquipped> = BackpackUtil.ToolData<isEquipped>
 
-export type VehicleData = ItemUtil.ItemInfo & {
-    Key : string,
-    IsSpawned : boolean,
-    OwnerId : number
-}
+export type VehicleData = ManagerTypes.VehicleData
 
-export type PlayerManager = {
-    __index : PlayerManager,
-    _Maid : Maid,
-
-    Player : Player,
-    Backpack : {[number] : ToolData<boolean>},
-    Vehicles : {[number] : VehicleData},
-
-    new : (player : Player) -> PlayerManager,
-    
-    InsertToBackpack : (PlayerManager, tool : Instance) -> boolean,
-    DeleteBackpack : (PlayerManager, toolKey : number) -> (),
-
-    GetBackpack : (PlayerManager, hasDisplayType : boolean, hasEquipInfo : boolean) -> {[number] : BackpackUtil.ToolData<boolean ?>},
-    SetBackpackEquip : (PlayerManager, isEquip : boolean, toolKey : number) -> (),
-
-    AddVehicle : (PlayerManager, vehicleName : string) -> boolean,
-    SpawnVehicle : (PlayerManager, key : number, isEquip : boolean, vehicleName : string ?, vehicleZones : Instance ?) -> (),
-    DeleteVehicle : (PlayerManager, key : number) -> (),
-
-    Destroy : (PlayerManager) -> (),
-
-    get : (plr : Player) -> PlayerManager,
-    init : (maid : Maid) -> ()
-}
+export type PlayerManager = ManagerTypes.PlayerManager
 --constants
 local MAX_TOOLS_COUNT = 10
 local MAX_VEHICLES_COUNT = 5
+
+local SAVE_DATA_INTERVAL = 5
 --remotes
 local ON_INTERACT = "On_Interact"
 local ON_TOOL_INTERACT = "On_Tool_Interact"
@@ -187,12 +166,16 @@ end
 local PlayerManager : PlayerManager = {} :: any
 PlayerManager.__index = PlayerManager
 
-function PlayerManager.new(player : Player)
+function PlayerManager.new(player : Player, maid : Maid ?)
     local self : PlayerManager = setmetatable({}, PlayerManager) :: any
     self.Player = player
-    self._Maid = Maid.new()
+    self._Maid = maid or Maid.new()
     self.Backpack = {}
     self.Vehicles = {}
+
+    self.isLoaded = false
+
+    self.onLoadingComplete = self._Maid:GiveTask(Signal.new())
 
     Registry[player] = self
     MarketplaceManager.newPlayer(self._Maid, player)
@@ -205,6 +188,26 @@ function PlayerManager.new(player : Player)
         return #self.Vehicles
     end)
 
+    self._Maid:GiveTask(self.onLoadingComplete:Connect(function()
+        self.isLoaded = true
+    end)) 
+
+    DatastoreManager.load(player, self)
+
+    --testing only
+    local intTick = tick()
+    self._Maid:GiveTask(RunService.Stepped:Connect(function()
+        if (tick() - intTick) >= SAVE_DATA_INTERVAL then
+            intTick = tick()
+            DatastoreManager.save(player, self)
+
+        end
+    end))
+    --task.spawn(function()
+     --   while wait(1) do
+     --       print(self:GetData())
+     --   end
+    --end)
     return self
 end
 
@@ -353,6 +356,81 @@ function PlayerManager:DeleteVehicle(key : number)
     return
 end
 
+function PlayerManager:GetData()
+    local plrData : ManagerTypes.PlayerData = {} :: any
+    plrData.Backpack = {};
+    plrData.Character = {
+        Accessories = {};
+        Shirt = 0;
+        Pants = 0;
+        Face =  0;
+
+        hasDefaultAccessories = false
+    };
+    plrData.Vehicles = {};
+
+    for _,v in pairs(self.Backpack) do
+        table.insert(plrData.Backpack, v.Name)
+    end
+
+    local char = self.Player.Character or self.Player.CharacterAdded:Wait()
+    for _,v in pairs(char:GetChildren()) do
+        if v:IsA("Accessory") then    
+            local accId = CustomizationUtil.getAccessoryId(v)
+            if accId then table.insert(plrData.Character.Accessories, accId) else plrData.Character.hasDefaultAccessories = true end
+        elseif v:IsA("Shirt") then
+            plrData.Character.Shirt = tonumber(string.match(v.ShirtTemplate, "%d+")) or 0
+        elseif v:IsA("Pants") then
+            plrData.Character.Pants = tonumber(string.match(v.PantsTemplate, "%d+")) or 0
+        end
+
+        local face = CustomizationUtil.getFaceTextureFromChar(char)
+        plrData.Character.Face = tonumber(string.match(face, "%d+")) or 0
+    end
+
+    for _,v in pairs(self.Vehicles) do
+        table.insert(plrData.Vehicles, v.Name)
+    end
+
+    return plrData
+end
+
+function PlayerManager:SetData(plrData : ManagerTypes.PlayerData)
+    table.clear(self.Backpack)
+    for _,v in pairs(plrData.Backpack) do
+        local tool = BackpackUtil.getToolFromName(v)
+        if tool then
+            self:InsertToBackpack(tool)
+        end
+    end
+
+    table.clear(self.Vehicles)
+    for _,v in pairs(plrData.Vehicles) do
+        self:AddVehicle(v)
+    end
+
+    local char = self.Player.Character or self.Player.CharacterAdded:Wait()
+    if not plrData.Character.hasDefaultAccessories then
+        for _,v in pairs(char:GetChildren()) do
+            if v:IsA("Accessory") then    
+                v:Destroy()
+            end
+        end
+    end
+
+    for _,v in pairs(plrData.Character.Accessories) do
+        CustomizationUtil.Customize(self.Player, v)
+    end
+    CustomizationUtil.setCustomeFromTemplateId(self.Player, "Face", plrData.Character.Face)
+    CustomizationUtil.setCustomeFromTemplateId(self.Player, "Shirt", plrData.Character.Shirt)
+    CustomizationUtil.setCustomeFromTemplateId(self.Player, "Pants", plrData.Character.Pants)
+
+    if not self.isLoaded then
+        self.onLoadingComplete:Fire() 
+    end
+    return true
+end
+
 function PlayerManager:Destroy()
     Registry[self.Player] = nil
     
@@ -373,9 +451,34 @@ function PlayerManager.get(plr : Player)
 end
 
 function PlayerManager.init(maid : Maid)
+    local function onCharAdded(char : Model)
+        local charMaid = Maid.new()
+        local humanoid = char:WaitForChild("Humanoid") :: Humanoid
+        charMaid:GiveTask(humanoid.Died:Connect(function()
+            charMaid:Destroy()
+
+            local player = Players:GetPlayerFromCharacter(char)
+            if player then
+                local plrInfo = PlayerManager.get(player)
+                local plrData = plrInfo:GetData()
+
+                player.CharacterAdded:Wait()
+                
+                plrInfo:SetData(plrData)
+            end
+        end))
+    end
+    
     local function onPlayerAdded(plr : Player)
-        local plrInfo = PlayerManager.new(plr)
+        local _maid = Maid.new()
+
+        local plrInfo = PlayerManager.new(plr, _maid)
         print("plr info madee!") 
+        
+        local char = plr.Character or plr.CharacterAdded:Wait()
+        onCharAdded(char)
+
+        _maid:GiveTask(plr.CharacterAdded:Connect(onCharAdded))
     end
 
 
@@ -387,6 +490,9 @@ function PlayerManager.init(maid : Maid)
 
     maid:GiveTask(Players.PlayerRemoving:Connect(function(plr : Player)
         local plrInfo = PlayerManager.get(plr)
+
+        DatastoreManager.save(plr, plrInfo)
+
         plrInfo:Destroy()
     end))
 

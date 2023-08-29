@@ -20,6 +20,18 @@ export type ItemInfo = {
 --class
 local ItemUtil = {}
 
+function ItemUtil.newData(
+    name : string,
+    class : string,
+    type : string
+)
+    return {
+        Name = name,
+        Class = class,
+        Type = type
+    }
+end
+
 function ItemUtil.getData(model : Instance, classAsDisplayType : boolean) : ItemInfo 
     local itemType : ItemInfo = ItemUtil.getItemTypeByName(model.Name) :: any
     if CollectionService:GetTagged("Tool") then
@@ -49,6 +61,12 @@ function ItemUtil.getItemFromName(name : string)
     
     
     return getByTag("Tool") or getByTag("Vehicle")
+end
+
+function ItemUtil.getClassFromName(name : string, classAsDisplayType : boolean) : string
+    local item = ItemUtil.getItemFromName(name)
+    local data = ItemUtil.getData(item, classAsDisplayType)
+    return data.Class
 end
 
 function ItemUtil.getItemTypeByName(name : string) : ItemType ?
