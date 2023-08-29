@@ -153,7 +153,6 @@ function Interactable.InteractToolGiver(plrInfo : any,  model : Model, player : 
                     NetworkUtil.fireClient(ON_NOTIFICATION, player, model.Name .. " added to your backpack!")
                 end
             end
-            print(plrInfo.Backpack)
             ----- 
         else
             for _,v in pairs(model:GetChildren()) do
@@ -166,7 +165,6 @@ function Interactable.InteractToolGiver(plrInfo : any,  model : Model, player : 
                     if success then
                         NetworkUtil.fireClient(ON_NOTIFICATION, player, v.Name .. " added to your backpack!")
                     end
-                    print(plrInfo.Backpack)
                     ----- 
                 end
             end
@@ -378,7 +376,6 @@ end
 function Interactable.InteractNonSwitch(model : Model, plr : Player)
     local data = Interactable.getData(model)
     
-    print("aaaw!", model)
     if data.Class == "CharacterCustomization" then
         if RunService:IsClient() then             
             NetworkUtil.fireServer(ON_INTERACT, model)
@@ -398,11 +395,8 @@ function Interactable.InteractNonSwitch(model : Model, plr : Player)
                 foundInst = newInst 
             end
             if foundInst:IsA("Shirt") then
-                print("aphe2", id, foundInst)
                 foundInst.ShirtTemplate = "rbxassetid://" .. tostring(id)
-                print(foundInst.ShirtTemplate)
             elseif foundInst:IsA("Pants") then
-                print("aphe3", id, foundInst)
                 foundInst.PantsTemplate = "rbxassetid://" .. tostring(id)
             end
             foundInst.Parent = character
@@ -472,10 +466,20 @@ function Interactable.InteractOpening(model : Model,on : boolean)
 
         if hingeConstraint  then --if it's a hinges opening
             if hingeConstraint.TargetAngle == 0 then
+                for _,v in pairs(model:GetDescendants()) do
+                    if v:IsA("BasePart") then
+                        v.CanCollide = false
+                    end
+                end
                 hingeConstraint.ServoMaxTorque = math.huge
                 hingeConstraint.TargetAngle = 90
                 playSound(833871080, false, pivot)
                 task.wait(5)
+                for _,v in pairs(model:GetDescendants()) do
+                    if v:IsA("BasePart") then
+                        v.CanCollide = true
+                    end
+                end
                 playSound(7038967181, false, pivot)
                 hingeConstraint.TargetAngle = 0
             end

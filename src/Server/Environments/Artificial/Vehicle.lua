@@ -97,7 +97,7 @@ function Vehicle.init(maid : Maid)
                                 print(vehicleModel.PrimaryPart.CFrame:VectorToObjectSpace(vehicleModel.PrimaryPart.AssemblyLinearVelocity), " heh? ")
                                 local accDir = vehicleModel.PrimaryPart.CFrame:VectorToObjectSpace(vehicleModel.PrimaryPart.AssemblyLinearVelocity).Z
                                 if seat.Throttle ~= 0 then
-                                    v.MotorMaxAcceleration = if math.sign(accDir*seat.Throttle) == 1 then 60 else 15
+                                    v.MotorMaxAcceleration = if math.sign(accDir*seat.Throttle) == 1 then 60 else 25
                                     if math.sign(accDir*seat.Throttle) == 1 then
                                         v.AngularVelocity = 0
                                     end

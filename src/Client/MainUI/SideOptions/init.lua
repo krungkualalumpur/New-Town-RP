@@ -87,6 +87,18 @@ return function(
     local _Value = _fuse.Value
     local _Computed = _fuse.Computed
 
+    local sprintButton 
+
+    if game:GetService("UserInputService").KeyboardEnabled then
+        sprintButton = getImageButton(maid, _Computed(function(isSprinting : boolean)
+            return if isSprinting then 9525535512 else 9525534183 
+        end, sprintState), function()
+                onSprintClick:Fire()
+        end, _Computed(function(isSprinting : boolean)
+            return if isSprinting then "Running" else "Walking" 
+        end, sprintState), 1)  
+    end
+
     local out = _new("Frame")({
        -- Position = UDim2.fromScale(0, 0.85),
         Size = UDim2.fromScale(1, 0.08),
@@ -102,13 +114,8 @@ return function(
                 Padding = PADDING_SIZE,
                 HorizontalAlignment = Enum.HorizontalAlignment.Center
             }),
-            getImageButton(maid, _Computed(function(isSprinting : boolean)
-                return if isSprinting then 9525535512 else 9525534183 
-            end, sprintState), function()
-                    onSprintClick:Fire()
-            end, _Computed(function(isSprinting : boolean)
-                return if isSprinting then "Running" else "Walking" 
-            end, sprintState), 1)   
+             
+            sprintButton
             --[[_new("ImageButton")({
                 BackgroundTransparency = 0.5,
                 AutoButtonColor = 1,

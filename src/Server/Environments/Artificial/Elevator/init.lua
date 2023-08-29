@@ -64,12 +64,19 @@ local function playSound(soundId : number, onLoop : boolean, parent : Instance ?
 end
 
 function weld(part0 : BasePart, part1 : BasePart)
-	local weldConst = Instance.new("Weld") :: Weld
+	--[[local weldConst = Instance.new("Weld") :: Weld
 	weldConst.Part0 = part0
 	weldConst.Part1 = part1
 	weldConst.C0 =  part0.CFrame:Inverse()
 	weldConst.C1 = part1.CFrame:Inverse()
+	weldConst.Parent = part0]]
+
+	local weldConst = Instance.new("WeldConstraint")
+	weldConst.Name = "Weld"
+	weldConst.Part0 = part0
+	weldConst.Part1 = part1
 	weldConst.Parent = part0
+
 	return weldConst
 end
 

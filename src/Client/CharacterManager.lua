@@ -59,13 +59,13 @@ local function camSprinting(on : boolean)
     end
 end
 
-local function sprint()   
+--local function sprintSetup()   
     --local _maid = maid:GiveTask(Maid.new())
 
-    InputHandler:Map("Sprint", "Keyboard", {Enum.KeyCode.LeftShift}, "Hold"
-    ,function()
-        local character: Model = Player.Character or Player.CharacterAdded:Wait()
-        character:SetAttribute("IsSprinting", not character:GetAttribute("IsSprinting"))
+    --InputHandler:Map("Sprint", "Keyboard", {Enum.KeyCode.LeftShift}, "Hold"
+    --,function()
+     --   local character: Model = Player.Character or Player.CharacterAdded:Wait()
+     --   character:SetAttribute("IsSprinting", not character:GetAttribute("IsSprinting"))
         --[[local currentCamera = workspace.CurrentCamera
 
         local character = Player.Character or Player.CharacterAdded:Wait()
@@ -77,11 +77,11 @@ local function sprint()
         _maid:GiveTask(humanoid:GetPropertyChangedSignal("MoveDirection"):Connect(function()
             camSprinting()
         end))]]
-    end
+   -- end
 
-    ,function()
-        local character: Model = Player.Character or Player.CharacterAdded:Wait()
-        character:SetAttribute("IsSprinting", not character:GetAttribute("IsSprinting"))
+    --,function()
+    --    local character: Model = Player.Character or Player.CharacterAdded:Wait()
+    --    character:SetAttribute("IsSprinting", not character:GetAttribute("IsSprinting"))
         --[[local currentCamera = workspace.CurrentCamera
 
         local character = Player.Character or Player.CharacterAdded:Wait()
@@ -98,9 +98,10 @@ local function sprint()
         tween:Play()
 
         _maid:DoCleaning()]]
-    end)
-    return
-end
+   -- end)
+
+   -- return
+--end
 
 local function onCharacterAdded(char : Model)
     local _maid = Maid.new()
@@ -128,7 +129,24 @@ local function onCharacterAdded(char : Model)
         end
     end))
 
-    sprint()
+    InputHandler:Map("Sprint", "Keyboard", {Enum.KeyCode.LeftShift}, "Hold"
+    ,function()
+        local character: Model = Player.Character or Player.CharacterAdded:Wait()
+        character:SetAttribute("IsSprinting", not character:GetAttribute("IsSprinting"))
+    end
+
+    ,function()
+        local character: Model = Player.Character or Player.CharacterAdded:Wait()
+        character:SetAttribute("IsSprinting", not character:GetAttribute("IsSprinting"))
+    end)
+
+
+    --sprint setup 2
+    if game:GetService("UserInputService").KeyboardEnabled then
+        char:SetAttribute("IsSprinting", false)
+    else
+        char:SetAttribute("IsSprinting", true)
+    end
 end
 
 --class

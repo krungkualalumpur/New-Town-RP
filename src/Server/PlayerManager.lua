@@ -40,7 +40,7 @@ export type PlayerManager = ManagerTypes.PlayerManager
 local MAX_TOOLS_COUNT = 10
 local MAX_VEHICLES_COUNT = 5
 
-local SAVE_DATA_INTERVAL = 5
+local SAVE_DATA_INTERVAL = 60
 --remotes
 local ON_INTERACT = "On_Interact"
 local ON_TOOL_INTERACT = "On_Tool_Interact"
@@ -337,7 +337,6 @@ function PlayerManager:SpawnVehicle(key : number, isSpawned : boolean, vehicleNa
         local vehicleModel =  getVehicleModelByKey(self.Player, self.Vehicles[k].Key)
         if vehicleModel then
             applyVehicleData(vehicleModel, v)
-            print(vehicleModel, v) 
         end
     end
     
