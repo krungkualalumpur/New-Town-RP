@@ -22,6 +22,7 @@ local function characterAdded(char : Model)
     local humanoid = char:WaitForChild("Humanoid") :: Humanoid
     if humanoid then
         humanoid.WalkSpeed = WALK_SPEED
+        humanoid.DisplayDistanceType = Enum.HumanoidDisplayDistanceType.None
     end
 end
 
@@ -54,10 +55,7 @@ end
 local CharacterManager = {}
 
 function CharacterManager.init(maid : Maid)
-   
-
     for _, plr : Player in pairs(Players:GetPlayers()) do
-        print("Setup char oi!")
         onPlayerAdded(plr)
     end
 

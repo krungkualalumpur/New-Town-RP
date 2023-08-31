@@ -207,11 +207,13 @@ function Interactable.InteractSwitch(model : Model)
 
     if data.IsSwitch then
         if data.Class == "Blind" then
-            adjustModel(model, function(part : BasePart)
-                switchTransparency(part, true)
-            end, 3657933537)
+            local curtainFabric = model:FindFirstChild("CurtainFabric") :: Model?
+            if curtainFabric then 
+                adjustModel(curtainFabric, function(part : BasePart)
+                    switchTransparency(part, true)
+                end, 3657933537)
+            end
         elseif data.Class == "Water" then
-            print("Wala2")
             adjustModel(model, function(part : BasePart)
                 if part:GetAttribute(IsWaterAttributeKey) ~= nil then
                     part.Transparency = 0.5
@@ -310,9 +312,12 @@ function Interactable.InteractSwitch(model : Model)
     else
 
         if data.Class == "Blind" then
-            adjustModel(model, function(part : BasePart)
-                switchTransparency(part, false)
-            end, 3657935906)
+            local curtainFabric = model:FindFirstChild("CurtainFabric") :: Model?
+            if curtainFabric then 
+                adjustModel(curtainFabric, function(part : BasePart)
+                    switchTransparency(part, false)
+                end, 3657935906)
+            end
         elseif data.Class == "Water" then
             print("Wala1")
             adjustModel(model, function(part : BasePart)
