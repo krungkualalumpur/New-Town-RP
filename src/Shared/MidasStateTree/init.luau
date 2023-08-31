@@ -129,4 +129,7 @@ return {
 		["BackpackAdded"] = constructTracker("Gameplay/BackpackAdded", 0),
 		["VehiclesAdded"] = constructTracker("Gameplay/VehiclesAdded", 0),
 	},
+	["Others"] = {
+		["ABValue"] = constructTracker("Others/ABValue", nil)
+	}
 }

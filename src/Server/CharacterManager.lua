@@ -18,11 +18,49 @@ local ON_CHARACTER_APPEARANCE_RESET = "OnCharacterAppearanceReset"
 --variables
 --references
 --local functions
+local function paralyzeCharacter(char : Model)
+    for _,v in pairs(char:GetDescendants()) do
+        if v:IsA("Motor6D") then
+            local a0, a1 = Instance.new("Attachment"), Instance.new("Attachment")
+            a0.CFrame = v.C0
+            a1.CFrame = v.C1
+            a0.Parent = v.Part0
+            a1.Parent = v.Part1
+
+            local ballSocketConstraint = Instance.new("BallSocketConstraint")
+            ballSocketConstraint.Attachment0 = a0
+            ballSocketConstraint.Attachment1 = a1
+            ballSocketConstraint.Parent = v.Parent
+
+            v:Destroy()
+        end
+    end
+
+    if char.PrimaryPart then
+        char.PrimaryPart.CanCollide = false
+    end
+
+    local head = char:FindFirstChild("Head") :: BasePart
+    if head then
+        head.CanCollide = true
+    end
+
+    return
+end
+
 local function characterAdded(char : Model)
+    local charMaid = Maid.new()
+    
     local humanoid = char:WaitForChild("Humanoid") :: Humanoid
     if humanoid then
         humanoid.WalkSpeed = WALK_SPEED
         humanoid.DisplayDistanceType = Enum.HumanoidDisplayDistanceType.None
+        humanoid.BreakJointsOnDeath = false
+
+        charMaid:GiveTask(humanoid.Died:Connect(function()
+            charMaid:Destroy()
+            paralyzeCharacter(char)
+        end))
     end
 end
 

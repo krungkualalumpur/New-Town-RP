@@ -36,6 +36,8 @@ type ToolData<isEquipped> = BackpackUtil.ToolData<isEquipped>
 export type VehicleData = ManagerTypes.VehicleData
 
 export type PlayerManager = ManagerTypes.PlayerManager
+
+export type ABType = ManagerTypes.ABType
 --constants
 local MAX_TOOLS_COUNT = 10
 local MAX_VEHICLES_COUNT = 5
@@ -63,6 +65,7 @@ local KEY_VALUE_ATTRIBUTE = "KeyValue"
 --variables
 local Registry = {}
 --references
+local CharacterSpawnLocations = workspace:WaitForChild("SpawnLocations") 
 local SpawnedVehiclesParent = workspace:WaitForChild("Assets"):WaitForChild("Temporaries"):WaitForChild("Vehicles")
 --local functions
 local function newVehicleData(
@@ -162,6 +165,11 @@ local function getVehicleSpawnPlot(partZones : Instance)
     return emptySpawnZone
 end
 
+local function getRandomAB() : ABType
+    local rand = math.random(0, 1)
+    return if rand == 0 then "A" else "B" 
+end
+
 --class
 local PlayerManager : PlayerManager = {} :: any
 PlayerManager.__index = PlayerManager
@@ -177,16 +185,10 @@ function PlayerManager.new(player : Player, maid : Maid ?)
 
     self.onLoadingComplete = self._Maid:GiveTask(Signal.new())
 
+    self.ABValue = getRandomAB()
+
     Registry[player] = self
     MarketplaceManager.newPlayer(self._Maid, player)
-
-    MidasStateTree.Gameplay.BackpackAdded(player, function()
-        return #self.Backpack
-    end)
-
-    MidasStateTree.Gameplay.VehiclesAdded(player, function()
-        return #self.Vehicles
-    end)
 
     self._Maid:GiveTask(self.onLoadingComplete:Connect(function()
         self.isLoaded = true
@@ -203,6 +205,20 @@ function PlayerManager.new(player : Player, maid : Maid ?)
 
         end
     end))
+
+    --analytics
+    
+    MidasStateTree.Gameplay.BackpackAdded(player, function()
+        return #self.Backpack
+    end)
+
+    MidasStateTree.Gameplay.VehiclesAdded(player, function()
+        return #self.Vehicles
+    end)
+
+    MidasStateTree.Others.ABValue(player, function()
+        return string.byte(self.ABValue)
+    end)
         --testing only
     --task.spawn(function()
      --   while wait(1) do
@@ -458,10 +474,11 @@ function PlayerManager.init(maid : Maid)
     local function onCharAdded(char : Model)
         local charMaid = Maid.new()
         local humanoid = char:WaitForChild("Humanoid") :: Humanoid
+        local player = Players:GetPlayerFromCharacter(char)
+        
         charMaid:GiveTask(humanoid.Died:Connect(function()
             charMaid:Destroy()
-
-            local player = Players:GetPlayerFromCharacter(char)
+            
             if player then
                 local plrInfo = PlayerManager.get(player)
                 local plrData = plrInfo:GetData()
@@ -471,7 +488,19 @@ function PlayerManager.init(maid : Maid)
                 plrInfo:SetData(plrData)
             end
         end))
-    end
+
+        --spawn area
+        local plrInfo = PlayerManager.get(player)
+        local spawnPart
+        if plrInfo.ABValue == "A" then
+            spawnPart = CharacterSpawnLocations:WaitForChild("Spawn1") :: BasePart
+        elseif plrInfo.ABValue == "B" then
+            spawnPart = CharacterSpawnLocations:WaitForChild("Spawn2") :: BasePart
+        end
+        if spawnPart then
+            char:PivotTo(spawnPart.CFrame + Vector3.new(0,5,0))
+        end
+    end 
     
     local function onPlayerAdded(plr : Player)
         local _maid = Maid.new()

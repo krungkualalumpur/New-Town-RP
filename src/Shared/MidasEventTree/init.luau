@@ -129,4 +129,7 @@ return {
 		["VehiclesAdded"] = constructTrigger("Gameplay/VehiclesAdded"),
 		["VehiclesDeleted"] = constructTrigger("Gameplay/VehiclesDeleted")
 	},
+	["Others"] = {
+		["ABValue"] = constructTrigger("Others/ABValue")
+	}
 }

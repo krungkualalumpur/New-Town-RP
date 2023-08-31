@@ -11,6 +11,9 @@ local BackpackUtil = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChi
 type Signal = Signal.Signal
 type Maid = Maid.Maid
 type ToolData<isEquipped> = BackpackUtil.ToolData<isEquipped>
+
+export type ABType = "A" | "B"
+
 export type VehicleData = ItemUtil.ItemInfo & {
     Key : string,
     IsSpawned : boolean,
@@ -39,6 +42,8 @@ export type PlayerManager = {
     isLoaded : boolean,
 
     onLoadingComplete : Signal,
+
+    ABValue : ABType,
 
     new : (player : Player, maid : Maid ?) -> PlayerManager,
     
