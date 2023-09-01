@@ -127,7 +127,8 @@ return {
 		["EquipTool"] = constructTrigger("Gameplay/EquipTool"),
 		["EquipVehicle"] = constructTrigger("Gameplay/EquipVehicle"),
 		["VehiclesAdded"] = constructTrigger("Gameplay/VehiclesAdded"),
-		["VehiclesDeleted"] = constructTrigger("Gameplay/VehiclesDeleted")
+		["VehiclesDeleted"] = constructTrigger("Gameplay/VehiclesDeleted"),
+		["CustomizeAvatar"] = constructTrigger("Gameplay/CustomizeAvatar")
 	},
 	["Others"] = {
 		["ABValue"] = constructTrigger("Others/ABValue")

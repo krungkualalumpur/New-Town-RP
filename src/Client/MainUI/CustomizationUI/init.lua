@@ -9,6 +9,7 @@ local Signal = require(ReplicatedStorage:WaitForChild("Packages"):WaitForChild("
 --modules
 local CustomizationUtil = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("CustomizationUtil"))
 local CustomizationList = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("CustomizationUtil"):WaitForChild("CustomizationList"))
+
 --types
 type Maid = Maid.Maid
 type AnimationInfo = {
@@ -200,6 +201,7 @@ return function(
 
     onNameCustomeButtonClick : Signal,
     onCharacterResetClick : Signal
+  --  AvatarTypeState : ValueState<AvatarType ?>
 )
     print(onCostumeButtonClick)
     local _fuse = ColdFusion.fuse(maid)
@@ -434,8 +436,7 @@ return function(
             }),
             charCosContent
         }
-    })
-
+    }) 
 
     local contentFrame = _new("Frame")({
         Name = "ContentFrame",
@@ -456,6 +457,7 @@ return function(
         Size = UDim2.fromScale(0.42, 1),
         Children = {
             _new("UIListLayout")({
+                SortOrder = Enum.SortOrder.LayoutOrder,
                 VerticalAlignment = Enum.VerticalAlignment.Center,
                 Padding = PADDING_SIZE
             }),
@@ -469,18 +471,99 @@ return function(
             }),
 
           _bind(getButton(maid, "<b>\t Clear Outfit \t</b>", function()
-                print("Juriii!")    
                 onCharacterResetClick:Fire(true)
             end, 2))({
                 BackgroundColor3 = SELECT_COLOR,
                 AutomaticSize = Enum.AutomaticSize.X,
                 Size = UDim2.fromScale(0, 0.05),
                 TextColor3 = PRIMARY_COLOR
-            })
+            }),
+
+            --[[_new("Frame")({
+                LayoutOrder = 3,
+                AutomaticSize = Enum.AutomaticSize.X,
+                BackgroundTransparency = 1,
+                Size = UDim2.fromScale(0, 0.1),
+                Children = {
+                    _new("UIListLayout")({
+                        SortOrder = Enum.SortOrder.LayoutOrder,
+                        VerticalAlignment = Enum.VerticalAlignment.Center,
+                        FillDirection = Enum.FillDirection.Horizontal,
+                        Padding = PADDING_SIZE
+                    }),
+                    _new("TextLabel")({
+                        LayoutOrder = 0,
+                        Text = "Avatar Type",
+                        TextColor3 = PRIMARY_COLOR,
+                        TextStrokeTransparency = 0.5,
+                        TextWrapped = true,
+                        TextSize = 16,
+                        BackgroundTransparency = 1,
+                        AutomaticSize = Enum.AutomaticSize.Y,
+                        Size = UDim2.fromScale(0.2, 1)
+                    }),
+                    _bind(getSelectButton(
+                        maid, 
+                        "\t R6 \t", 
+                        _Computed(function(avatarType : AvatarType ?) 
+                            return if avatarType == "R6" then 
+                                    true 
+                            else false
+                        end, AvatarTypeState),
+                        function()
+                            AvatarTypeState:Set(if AvatarTypeState:Get() ~= "R6" then "R6" else nil)
+                        end, 
+                        1
+                    ))({
+                        BackgroundColor3 = PRIMARY_COLOR,
+                        Size = UDim2.fromScale(0.18, 0.5),
+                        TextColor3 = TEXT_COLOR,
+                        TextSize = 15
+                    }),
+ 
+                    _bind(getSelectButton(
+                        maid, 
+                        "\t R15 \t", 
+                        _Computed(function(avatarType : AvatarType ?) 
+                            return if avatarType == "R15" then 
+                                    true
+                            else false
+                        end, AvatarTypeState),
+                        function()
+                            AvatarTypeState:Set(if AvatarTypeState:Get() ~= "R15" then "R15" else nil)
+                        end, 
+                        2
+                    ))({
+                        BackgroundColor3 = PRIMARY_COLOR,
+                        Size = UDim2.fromScale(0.18, 0.5),
+                        TextColor3 = TEXT_COLOR,
+                        TextSize = 15
+                    }),
+                    
+                    _bind(getSelectButton(
+                        maid, 
+                        "\t RThro \t", 
+                        _Computed(function(avatarType : AvatarType ?) 
+                            return if avatarType == "RThro" then 
+                                    true
+                            else false
+                        end, AvatarTypeState),
+                        function()
+                            AvatarTypeState:Set(if AvatarTypeState:Get() ~= "RThro" then "RThro" else nil)
+                        end, 
+                        3
+                    ))({
+                        BackgroundColor3 = PRIMARY_COLOR,
+                        Size = UDim2.fromScale(0.18, 0.5),
+                        TextColor3 = TEXT_COLOR,
+                        TextSize = 15
+                    }),
+                }
+            })]]
 
         }
     })
-
+ 
     local out = _new("Frame")({
         BackgroundTransparency = 1,
         Size = UDim2.fromScale(1, 1),

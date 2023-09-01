@@ -35,6 +35,8 @@ return function(target : CoreGui)
 
     local onCharReset = maid:GiveTask(Signal.new())
 
+    local AvatarTypeState = maid:GiveTask(_Value(nil :: any))
+
     local frame = CustomizationUI(
         maid,
 
@@ -45,6 +47,7 @@ return function(target : CoreGui)
 
         onCharReset
     )
+    
     frame.Parent = target
 
     maid:GiveTask(onCustomeClick:Connect(function(accessoryName : string, accessoryId : number, enabled : ValueState<boolean>?)

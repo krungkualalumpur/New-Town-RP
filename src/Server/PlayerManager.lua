@@ -216,6 +216,26 @@ function PlayerManager.new(player : Player, maid : Maid ?)
         return #self.Vehicles
     end)
 
+    MidasStateTree.Gameplay.CustomizeAvatar(player, function()
+        local count = 0
+        local data = self:GetData()
+
+        if data.Character.Face then 
+            count += 1
+        end
+        if data.Character.Pants then
+            count += 1
+        end
+        if data.Character.Shirt then
+            count += 1
+        end
+        for _,v in pairs(data.Character.Accessories) do
+            count += 1
+        end
+        
+        return count
+    end) 
+
     MidasStateTree.Others.ABValue(player, function()
         return string.byte(self.ABValue)
     end)
@@ -411,6 +431,8 @@ function PlayerManager:GetData()
     for _,v in pairs(self.Vehicles) do
         table.insert(plrData.Vehicles, v.Name)
     end
+
+   -- plrData.Character.AvatarType = CustomizationUtil.getCharacterInfo(char).AvatarType :: any
 
     return plrData
 end

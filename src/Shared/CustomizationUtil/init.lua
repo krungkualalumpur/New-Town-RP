@@ -10,9 +10,15 @@ local Maid = require(ReplicatedStorage:WaitForChild("Packages"):WaitForChild("Ma
 local NetworkUtil = require(ReplicatedStorage:WaitForChild("Packages"):WaitForChild("NetworkUtil"))
 --modules
 local CustomizationList = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("CustomizationUtil"):WaitForChild("CustomizationList"))
+
+local MidasEventTree = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("MidasEventTree"))
+local MidasStateTree = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("MidasStateTree"))
 --types
 type Maid = Maid.Maid
 export type DescType = "PlayerName" | "PlayerBio"
+export type CharacterInfo = {
+    AvatarType : "R6" | "R15" | "RThro"
+}
 --constants
 --remotes
 local ON_CUSTOMIZE_AVATAR_NAME = "OnCustomizeAvatarName"
@@ -186,10 +192,14 @@ function CustomizationUtil.init(maid : Maid)
     if RunService:IsServer() then
         NetworkUtil.onServerInvoke(ON_CUSTOMIZE_CHAR, function(plr : Player, customisationId : number)
             CustomizationUtil.Customize(plr, customisationId) 
+
+            MidasEventTree.Gameplay.CustomizeAvatar(plr)
             return nil
         end)
         NetworkUtil.onServerInvoke(ON_CUSTOMIZE_AVATAR_NAME, function(plr : Player, descType : DescType, descName : string)
             CustomizationUtil.setDesc(plr, descType, descName)
+ 
+            MidasEventTree.Gameplay.CustomizeAvatar(plr)
             return nil
         end)
     end

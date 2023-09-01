@@ -22,6 +22,9 @@ local CustomizationList = require(ReplicatedStorage:WaitForChild("Shared"):WaitF
 
 local ToolActions = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("ToolActions"))
 
+local MidasEventTree = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("MidasEventTree"))
+local MidasStateTree = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("MidasStateTree"))
+
 --types
 type Maid = Maid.Maid
 type Signal = Signal.Signal
@@ -430,6 +433,17 @@ return function(
         }
     }) :: Frame
 
+    local avatarTypeState = _Value(nil :: any)
+    
+    local avatarTypeVal = _Computed(function(avatarType : AvatarType ?)
+        print("Mantoel ", avatarType)
+        return ""
+    end, avatarTypeState)
+
+    _new("StringValue")({
+        Value = avatarTypeVal
+    })
+
     local isExitButtonVisible = _Value(true)
     local function getExitButton(ui : GuiObject)
         local exitButton = ExitButton.new(
@@ -492,8 +506,6 @@ return function(
             getExitButton(animationUI)
         elseif status == "Customization" then
             local onCustomeButtonClick = statusMaid:GiveTask(Signal.new())
-
-            print(onCustomeButtonClick)
 
             local CustomizationUI = CustomizationUI(
                 statusMaid,

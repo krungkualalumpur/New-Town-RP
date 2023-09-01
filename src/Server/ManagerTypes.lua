@@ -28,6 +28,7 @@ export type PlayerData = {
         Shirt : number,
         Pants : number,
         Face : number,
+
         hasDefaultAccessories : boolean
     }
 }
