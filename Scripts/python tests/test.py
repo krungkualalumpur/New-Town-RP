@@ -10,6 +10,7 @@ FACES_URL = "https://catalog.roblox.com/v1/search/items/details?Category=" + str
 SHIRTS_URL = "https://catalog.roblox.com/v1/search/items/details?Category=" + str(CategoryList.Clothing) + "&Subcategory=" + str(SubcategoryList.Shirts) + "&Limit=30"
 PANTS_URL = "https://catalog.roblox.com/v1/search/items/details?Category=" + str(CategoryList.Clothing) + "&Subcategory=" + str(SubcategoryList.Pants) + "&Limit=30"
 ACCESSORIES_URL = "https://catalog.roblox.com/v1/search/items/details?Category=" + str(CategoryList.Accessories) + "&Subcategory=" + str(SubcategoryList.Accessories) + "&Limit=30"
+BUNDLES_URL = "https://catalog.roblox.com/v1/search/items/details?Category=" + str(CategoryList.Bundles) + "&Limit=30"
 
 #functions
 def getRawContent(url : str, cursor : str = None):
@@ -37,7 +38,7 @@ def getContent(url, cursor : str = None):
     return accsInfoDict
 
 def write(className : str, luaFile, cursor : str = None, count : int = None):
-    url = ACCESSORIES_URL if className == "Accessory" else FACES_URL if className == "Face" else SHIRTS_URL if className == "Shirt" else PANTS_URL if className == "Pants" else None
+    url = ACCESSORIES_URL if className == "Accessory" else FACES_URL if className == "Face" else SHIRTS_URL if className == "Shirt" else PANTS_URL if className == "Pants" else BUNDLES_URL if className == "Bundle" else None
     
     if url == None:
         return None
@@ -72,7 +73,7 @@ with open("Scripts/GeneratedFilesTest/luaTest.lua", "w", encoding='utf-8') as sc
     scriptTest.write('--services \n')
     scriptTest.write('--packages \n')
     scriptTest.write('--modules \n')
-    scriptTest.write('--types \nexport type CustomizationClass = "Accessory" | "Face" | "Shirt" | "Pants"\n')
+    scriptTest.write('--types \nexport type CustomizationClass = "Accessory" | "Face" | "Shirt" | "Pants" | "Bundle"\n')
     scriptTest.write('\nexport type Customization = { \n\tClass : CustomizationClass,\n\tName : string,\n\tTemplateId : number\n}\n')  
     scriptTest.write('--constants \n')
     scriptTest.write('--variables \n')
@@ -83,6 +84,7 @@ with open("Scripts/GeneratedFilesTest/luaTest.lua", "w", encoding='utf-8') as sc
     write("Face", scriptTest)
     write("Shirt", scriptTest)
     write("Pants", scriptTest)
+    write("Bundle", scriptTest)
 
     scriptTest.write('\n}')
 

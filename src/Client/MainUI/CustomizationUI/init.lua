@@ -26,6 +26,8 @@ type ValueState<T> = ColdFusion.ValueState<T>
 type State<T> = ColdFusion.State<T>
 
 --constants
+local CHARACTER_BUNDLE_ID_ATTRIBUTE_KEY = "BundleId"
+
 local BACKGROUND_COLOR = Color3.fromRGB(190,190,190)
 local PRIMARY_COLOR = Color3.fromRGB(255,255,255)
 local SECONDARY_COLOR = Color3.fromRGB(25,25,25)
@@ -97,7 +99,7 @@ local function getSelectButton(maid : Maid, text : string, isSelected : State<bo
     _bind(out)({
         AutoButtonColor = false,
         BackgroundColor3 = PRIMARY_COLOR,
-        Size = UDim2.new(0.2, 0,0.4,0),
+        Size = UDim2.new(0.15, 0,0.5,0),
         Children = {
             _new("Frame")({
                 BackgroundColor3 = SELECT_COLOR,
@@ -117,11 +119,11 @@ end
 
 local function getAccessoryButton(
     maid : Maid, 
-    AccessoryId : number,
-    AccessoryName : string,
+    customizationData : CustomizationList.Customization,
     isVisible : State<boolean>,
     onButtonClick : Signal,
-    isEquipped : ValueState<boolean>?
+    isEquipped : ValueState<boolean>?,
+    selectedBundle : ValueState<CustomizationList.Customization ?>
 )
     local _fuse = ColdFusion.fuse(maid)
     local _new = _fuse.new
@@ -154,13 +156,13 @@ local function getAccessoryButton(
                 TextColor3 = PRIMARY_COLOR,
                 TextStrokeTransparency = 0.5,
                 TextScaled = true,
-                Text = AccessoryName
+                Text = customizationData.Name
             }),
             _new("ImageLabel")({
                 LayoutOrder = 2,
                 BackgroundTransparency = 1,
                 Size = UDim2.fromScale(1, 0.75),
-                Image = CustomizationUtil.getAssetImageFromId(AccessoryId),
+                Image = CustomizationUtil.getAssetImageFromId(customizationData.TemplateId, customizationData.Class == "Bundle"),
 
                 Children = {
                     _new("UIAspectRatioConstraint")({}),
@@ -182,7 +184,7 @@ local function getAccessoryButton(
         },
         Events = {
             Activated = function()
-                onButtonClick:Fire(AccessoryName, AccessoryId, isEquipped)
+                onButtonClick:Fire(customizationData, isEquipped, selectedBundle)
                 --[[if game:GetService("RunService"):IsRunning() then
                     CustomizationUtil.Customize(game.Players.LocalPlayer, AccessoryId)
                 end]]
@@ -203,7 +205,7 @@ return function(
     onCharacterResetClick : Signal
   --  AvatarTypeState : ValueState<AvatarType ?>
 )
-    print(onCostumeButtonClick)
+    
     local _fuse = ColdFusion.fuse(maid)
     local _new = _fuse.new
     local _import = _fuse.import
@@ -280,7 +282,6 @@ return function(
             }),
             RPNameTextBox,
             getButton(maid, "Apply", function()
-                print("apply rp name!")
                 onNameCustomeButtonClick:Fire("PlayerName" :: CustomizationUtil.DescType, RPNameTextBox.Text)
             end, 3),
 
@@ -303,13 +304,11 @@ return function(
             }),
             bioTextBox,
             getButton(maid, "Apply", function()
-                print("apply bio!")
                 onNameCustomeButtonClick:Fire("PlayerBio" :: CustomizationUtil.DescType, bioTextBox.Text)
             end, 7)
         }
     })
     
-
     local charCosContent =  _new("ScrollingFrame")({
         Name = "Contents",
         BackgroundTransparency = 1,
@@ -399,7 +398,17 @@ return function(
                             customizationPage:Set("Accessory")
                         end, 
                         4 
-                    ),
+                    ), getSelectButton(
+                        maid, 
+                        "Bundles", 
+                        _Computed(function(customPage : CustomizationPage ?) 
+                            return if customPage == "Bundle" then true else false 
+                        end, customizationPage),
+                        function()
+                            customizationPage:Set("Bundle")
+                        end, 
+                        5 
+                    )
                     --[[_new("TextButton")({
                         BackgroundColor3 = BACKGROUND_COLOR,
                         Size = UDim2.fromScale(0.2, 1),
@@ -563,7 +572,7 @@ return function(
 
         }
     })
- 
+
     local out = _new("Frame")({
         BackgroundTransparency = 1,
         Size = UDim2.fromScale(1, 1),
@@ -591,6 +600,7 @@ return function(
     })
 
     --customization items
+    local selectedBundle : ValueState<CustomizationList.Customization?>  = _Value(nil :: any)
     for _, custom in pairs(Customizations) do
         local isVisible = _Computed(function(page : CustomizationPage ?)
             return if custom.Class == page then true else false 
@@ -598,17 +608,17 @@ return function(
         
         local isEquipped
 
-        if custom.Class == "Accessory" then
+        if (custom.Class == "Accessory") or (custom.Class == "Bundle") then
             isEquipped = _Value(false)
         end
 
         local button = getAccessoryButton(
             maid,  
-            custom.TemplateId,
-            custom.Name,
+            custom,
             isVisible,
             onCostumeButtonClick,
-            isEquipped
+            isEquipped,
+            selectedBundle
         )
         button.Parent = charCosContent
 
@@ -618,13 +628,39 @@ return function(
 
             if isEquipped then
                 for _,v in pairs(character:GetChildren()) do
-                    if v:IsA("Accessory") and (CustomizationUtil.getAccessoryId(v) == custom.TemplateId)  then
+                    if (v:IsA("Accessory") and (CustomizationUtil.getAccessoryId(v) == custom.TemplateId))  then
                         isEquipped:Set(true)
                         break
                     end
                 end
+
+                if custom.Class == "Bundle" then
+                    print(CustomizationUtil.getBundleIdFromCharacter(character), custom.TemplateId)
+                    if tonumber(CustomizationUtil.getBundleIdFromCharacter(character)) == tonumber(custom.TemplateId) then
+                        isEquipped:Set(true)
+                        selectedBundle:Set(custom)
+                    end
+
+                    local strVal = _Computed(function(bundle : CustomizationList.Customization ?)
+                        if bundle and (bundle.TemplateId == custom.TemplateId) then
+                            isEquipped:Set(true)
+                        else
+                            isEquipped:Set(false)
+                        end
+                        return ""
+                    end, selectedBundle)
+
+                    _new("StringValue")({
+                        Value = strVal
+                    })
+
+                end
             end
+
+          
         end
+
+       
     end
 
     return out

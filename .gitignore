@@ -8,4 +8,5 @@
 #scripts lock files
 Packages
 #src/Client/Rain.lua
-Analytics/file.json
+Analytics
+Scripts/GeneratedFilesTest

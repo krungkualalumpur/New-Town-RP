@@ -166,7 +166,6 @@ return function(
                 text
             )
             notifFrame.Parent = out
-           print(notifFrame, " test")
         end
         return true
     end, textStatus)

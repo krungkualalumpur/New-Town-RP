@@ -433,17 +433,6 @@ return function(
         }
     }) :: Frame
 
-    local avatarTypeState = _Value(nil :: any)
-    
-    local avatarTypeVal = _Computed(function(avatarType : AvatarType ?)
-        print("Mantoel ", avatarType)
-        return ""
-    end, avatarTypeState)
-
-    _new("StringValue")({
-        Value = avatarTypeVal
-    })
-
     local isExitButtonVisible = _Value(true)
     local function getExitButton(ui : GuiObject)
         local exitButton = ExitButton.new(
@@ -517,25 +506,31 @@ return function(
             ) :: Frame
             CustomizationUI.Parent = out
 
-            statusMaid:GiveTask(onCustomeButtonClick:Connect(function(costumeName : string, costumeId : number, isEquipped : ValueState<boolean>?)
+            statusMaid:GiveTask(onCustomeButtonClick:Connect(function(custom : CustomizationList.Customization, isEquipped : ValueState<boolean>?, selectedBundle : ValueState<CustomizationList.Customization ?>)
                 if game:GetService("RunService"):IsRunning() then
-                    CustomizationUtil.Customize(game.Players.LocalPlayer, costumeId)
+                    CustomizationUtil.Customize(game.Players.LocalPlayer, custom.TemplateId)
                 end
                 if isEquipped  and game:GetService("RunService"):IsRunning() then 
-                    print("Custome clicked ", costumeName, costumeId) 
+                    print("Custome clicked ", custom.Name, custom.TemplateId) 
 
                     local player = Players.LocalPlayer
                     local character = player.Character or player.CharacterAdded:Wait()
                     
-                    local currentAccessory 
+                    local equipped 
                     for _,v in pairs(character:GetChildren()) do
-                        if v:IsA("Accessory") and (CustomizationUtil.getAccessoryId(v) == costumeId) then
-                            currentAccessory = v
+                        if v:IsA("Accessory") and (CustomizationUtil.getAccessoryId(v) == custom.TemplateId) then
+                            equipped = v
                             break
                         end
                     end
+
+                    local bundleId = CustomizationUtil.getBundleIdFromCharacter(character)
+                    if bundleId == custom.TemplateId then
+                        equipped = true
+                        selectedBundle:Set(custom)
+                    end
                    -- local currentAccessory = character:FindFirstChild(customeModelName)
-                    isEquipped:Set(if currentAccessory then true else false)
+                    isEquipped:Set(if equipped then true else false)
                 elseif isEquipped and not game:GetService("RunService"):IsRunning() then
                     isEquipped:Set(not isEquipped:Get())
                 end

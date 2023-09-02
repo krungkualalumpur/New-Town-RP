@@ -58,6 +58,9 @@ local GET_PLAYER_VEHICLES = "GetPlayerVehicles"
 local ADD_VEHICLE = "AddVehicle"
 local DELETE_VEHICLE = "DeleteVehicle"
 
+local ON_CUSTOMIZE_AVATAR_NAME = "OnCustomizeAvatarName"
+local ON_CUSTOMIZE_CHAR = "OnCustomizeCharacter"
+
 local KEY_VALUE_NAME = "KeyValue"
 
 local KEY_VALUE_ATTRIBUTE = "KeyValue"
@@ -232,6 +235,9 @@ function PlayerManager.new(player : Player, maid : Maid ?)
         for _,v in pairs(data.Character.Accessories) do
             count += 1
         end
+        if data.Character.Bundle ~= 0 then
+            count += 1
+        end
         
         return count
     end) 
@@ -404,6 +410,7 @@ function PlayerManager:GetData()
         Shirt = 0;
         Pants = 0;
         Face =  0;
+        Bundle = 0;
 
         hasDefaultAccessories = false
     };
@@ -428,10 +435,13 @@ function PlayerManager:GetData()
         plrData.Character.Face = tonumber(string.match(face, "%d+")) or 0
     end
 
+    local bundleId = CustomizationUtil.getBundleIdFromCharacter(char)
+    plrData.Character.Bundle = bundleId
+    
+
     for _,v in pairs(self.Vehicles) do
         table.insert(plrData.Vehicles, v.Name)
     end
-
    -- plrData.Character.AvatarType = CustomizationUtil.getCharacterInfo(char).AvatarType :: any
 
     return plrData
@@ -466,6 +476,9 @@ function PlayerManager:SetData(plrData : ManagerTypes.PlayerData)
     CustomizationUtil.setCustomeFromTemplateId(self.Player, "Face", plrData.Character.Face)
     CustomizationUtil.setCustomeFromTemplateId(self.Player, "Shirt", plrData.Character.Shirt)
     CustomizationUtil.setCustomeFromTemplateId(self.Player, "Pants", plrData.Character.Pants)
+
+     --set bundle
+    CustomizationUtil.Customize(self.Player, plrData.Character.Bundle)
 
     if not self.isLoaded then
         self.onLoadingComplete:Fire() 
@@ -681,6 +694,35 @@ function PlayerManager.init(maid : Maid)
 
         return vehicleListName
     end)
+
+
+    NetworkUtil.onServerInvoke(ON_CUSTOMIZE_CHAR, function(plr : Player, customisationId : number)
+        local customizationData = CustomizationUtil.getCustomizationDataById(customisationId)
+
+        if customizationData.Class == "Bundle" then
+            local plrIsVIP = MarketplaceService:UserOwnsGamePassAsync(plr.UserId, MarketplaceUtil.getGamePassIdByName("VIP Feature"))
+
+            if not plrIsVIP then
+                MarketplaceService:PromptGamePassPurchase(plr, MarketplaceUtil.getGamePassIdByName("VIP Feature"))
+                return nil
+            end
+
+            print(plr.Name, plrIsVIP, " vip test")
+        end
+
+        if customizationData then
+            CustomizationUtil.Customize(plr, customisationId) 
+            MidasEventTree.Gameplay.CustomizeAvatar(plr)
+        end
+        return nil
+    end)
+    NetworkUtil.onServerInvoke(ON_CUSTOMIZE_AVATAR_NAME, function(plr : Player, descType : CustomizationUtil.DescType, descName : string)
+        CustomizationUtil.setDesc(plr, descType, descName)
+
+        MidasEventTree.Gameplay.CustomizeAvatar(plr)
+        return nil
+    end)
+    
 
     NetworkUtil.getRemoteEvent(UPDATE_PLAYER_BACKPACK)
 end

@@ -2,6 +2,7 @@
 --services
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local InsertService = game:GetService("InsertService")
+local AssetService = game:GetService("AssetService")
 local RunService = game:GetService("RunService")
 local TextService = game:GetService("TextService")
 local Players = game:GetService("Players")
@@ -11,8 +12,6 @@ local NetworkUtil = require(ReplicatedStorage:WaitForChild("Packages"):WaitForCh
 --modules
 local CustomizationList = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("CustomizationUtil"):WaitForChild("CustomizationList"))
 
-local MidasEventTree = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("MidasEventTree"))
-local MidasStateTree = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("MidasStateTree"))
 --types
 type Maid = Maid.Maid
 export type DescType = "PlayerName" | "PlayerBio"
@@ -21,24 +20,160 @@ export type CharacterInfo = {
 }
 --constants
 --remotes
+local CHARACTER_BUNDLE_ID_ATTRIBUTE_KEY = "BundleId"
+
 local ON_CUSTOMIZE_AVATAR_NAME = "OnCustomizeAvatarName"
 local ON_CUSTOMIZE_CHAR = "OnCustomizeCharacter"
-
-
 --variables
 --references
+local partHeadTemplate = ReplicatedStorage:WaitForChild("Assets"):WaitForChild("Others"):WaitForChild("PartHeadTemplate")
 --local functions
+local function importBundle(id) : Model ?
+	local folder = Instance.new('Model')
+	folder.Name = tostring(id)
+
+	--[[local packageInfo = marketplaceService:GetProductInfo(id)
+	folder.Name = packageInfo.Name or tostring(id)
+	local assetIds = assetService:GetAssetIdsForPackage(id)]]
+	local assetIds = {}
+	local bundleDetails 
+
+    local function getBundleDetail()
+        local s, e = pcall(function()
+            bundleDetails =	AssetService:GetBundleDetailsAsync(id)
+        end)
+        if not s and e then
+            warn("Error loading bundle: " .. e)
+        end
+    end
+
+    getBundleDetail()
+
+	if not bundleDetails then
+        local count = 0
+        repeat count += 1; getBundleDetail() until (count >= 15) or (bundleDetails) ~= nil
+        if not bundleDetails then
+            return nil
+        end
+	end
+	
+	if bundleDetails then
+		if bundleDetails.Items then
+			folder.Name = tostring(id) ..' - ' .. (bundleDetails.Name or '')
+			for _,itemData in pairs(bundleDetails.Items) do
+				if itemData.Type == "Asset" and itemData.Id then
+					table.insert(assetIds, itemData.Id)
+				end
+			end
+		end
+	end
+
+	for _, assetId in pairs(assetIds) do
+		local assetModel = InsertService:LoadAsset(assetId)
+		if assetModel:IsA('Model') then
+			local name = tostring(assetId)
+			--[[local success2, err = pcall(function()
+				local assetInfo = MarketplaceService:GetProductInfo(assetId)
+				if assetInfo then
+
+					local typeId = assetInfo.AssetTypeId
+					if typeId then
+						--name = assetTypeDictionary[typeId] or name
+					end
+				end
+			end)]]
+			assetModel.Name = name
+		end
+		assetModel.Parent = folder
+	end
+	return folder
+end
+
+local function applyBundle(character : Model, bundleFolder : Model)
+	local humanoid = character:FindFirstChild("Humanoid") :: Humanoid ?
+	assert(humanoid)
+	humanoid:RemoveAccessories() 
+	humanoid:SetStateEnabled(Enum.HumanoidStateType.Dead, false)
+	
+	local rigTypeName = humanoid.RigType.Name .. if humanoid.RigType == Enum.HumanoidRigType.R15 then 'Fixed' else ""
+
+	for _,asset : any in pairs(bundleFolder:GetChildren()) do
+		for _,child in pairs(asset:GetChildren()) do
+			if child:IsA("Folder") and child.Name == rigTypeName then
+				for _, bodyPart in pairs(child:GetChildren()) do
+					local old = character:FindFirstChild(bodyPart.Name)
+					if old then
+						old:Destroy()
+					end
+					bodyPart.Parent = character
+					humanoid:BuildRigFromAttachments()
+				end
+			elseif child:IsA("Accessory") or child:IsA("CharacterAppearance") or child:IsA("Tool") then
+				child.Parent = character
+			elseif child:IsA("Decal") and (child.Name == 'face' or child.Name == 'Face') then
+				local head = character:FindFirstChild('Head')
+				if head then
+					for _,headChild in pairs(head:GetChildren()) do
+						if headChild and (headChild.Name == 'face' or headChild.Name == 'Face') then
+							headChild:Destroy()
+						end
+					end
+					child.Parent = head
+				end
+			elseif child:IsA('SpecialMesh') then
+				local head = character:FindFirstChild('Head')
+				if head then
+					if head:IsA('MeshPart') then
+						-- Replace meshPart with a head part
+						local newHead = partHeadTemplate:clone()
+						newHead.Name = 'Head'
+						newHead.Color = head.Color
+						for _,v in pairs(head:GetChildren()) do
+							if v:IsA('Decal') then
+								v.Parent = newHead
+							end
+						end
+
+						head:Destroy()
+						newHead.Parent = character
+						humanoid:BuildRigFromAttachments()
+						head = newHead
+					end
+					for _,headChild in pairs(head:GetChildren()) do
+						if headChild and headChild:IsA('SpecialMesh') then
+							headChild:Destroy()
+						end
+					end
+					child.Parent = head
+				end
+			--else
+				--print('Not sure what to do with this class:', child.ClassName)
+			end
+			--todo: handle animations
+		end
+	end
+
+	humanoid:BuildRigFromAttachments()
+	humanoid:SetStateEnabled(Enum.HumanoidStateType.Dead, true)
+end
 --class
 local CustomizationUtil = {}
+
+function CustomizationUtil.getBundleIdFromCharacter(char : Model) : number
+    return char:GetAttribute(CHARACTER_BUNDLE_ID_ATTRIBUTE_KEY) or 0 
+end
 
 function CustomizationUtil.getAccessoryId(accessory : Accessory) : number
     return accessory:GetAttribute("CustomeId")
 end
 
-function CustomizationUtil.getAssetImageFromId(id : number, width : number ?, height : number ?)
-    local Width = width or 48
-    local Height = height or 48
-    return "https://www.roblox.com/Thumbs/Asset.ashx?width=".. tostring(Width).."&height=".. tostring(Height) .."&assetId=".. tostring(id)
+function CustomizationUtil.getAssetImageFromId(id : number, isBundle : boolean, width : number ?, height : number ?)
+    local Width = width or 150
+    local Height = height or 150
+    return if not isBundle then
+        "https://www.roblox.com/Thumbs/Asset.ashx?width=".. tostring(Width).."&height=".. tostring(Height) .."&assetId=".. tostring(id)
+    else
+        "rbxthumb://type=BundleThumbnail&id=" .. id .. "&w=" .. tostring(Width) .."&h=" .. tostring(Height)
 end
 
 function CustomizationUtil.getFaceTextureFromChar(character : Model)
@@ -78,42 +213,54 @@ function CustomizationUtil.Customize(plr : Player, customizationId : number)
         local character = plr.Character or plr.CharacterAdded:Wait()
         local humanoid = character:WaitForChild("Humanoid") :: Humanoid
 
-        local asset = InsertService:LoadAsset(customizationId)
-        local assetInstance = asset:GetChildren()[1]
-        assert(asset, "Unable to load the asset")
+        local asset
+        local s, e = pcall(function() asset = InsertService:LoadAsset(customizationId) end)
 
-        if assetInstance then
-            if assetInstance:IsA("Decal") then
-                --it's a face
-                --[[local head = character:FindFirstChild("Head") :: BasePart or nil
-                local face = if head then head:FindFirstChild("face") :: Decal else nil
-                if face then 
-                    face.Texture = assetInstance.Texture
-                end]]
-                CustomizationUtil.setCustomeFromTemplateId(plr, "Face", tonumber(string.match(assetInstance.Texture, "%d+")) or 0)
-            elseif assetInstance:IsA("Accessory") then
-                local existingAccessory = character:FindFirstChild(assetInstance.Name)
-                if not existingAccessory then
-                    humanoid:AddAccessory(assetInstance)
-                    assetInstance:SetAttribute("CustomeId", customizationId)
-                else
-                    existingAccessory:Destroy()
+        if asset then
+            local assetInstance = asset:GetChildren()[1]
+            assert(asset, "Unable to load the asset")
+
+            if assetInstance then
+                if assetInstance:IsA("Decal") then
+                    --it's a face
+                    --[[local head = character:FindFirstChild("Head") :: BasePart or nil
+                    local face = if head then head:FindFirstChild("face") :: Decal else nil
+                    if face then 
+                        face.Texture = assetInstance.Texture
+                    end]]
+                    CustomizationUtil.setCustomeFromTemplateId(plr, "Face", tonumber(string.match(assetInstance.Texture, "%d+")) or 0)
+                elseif assetInstance:IsA("Accessory") then
+                    local existingAccessory = character:FindFirstChild(assetInstance.Name)
+                    if not existingAccessory then
+                        humanoid:AddAccessory(assetInstance)
+                        assetInstance:SetAttribute("CustomeId", customizationId)
+                    else
+                        existingAccessory:Destroy()
+                    end
+                elseif assetInstance:IsA("Shirt") then
+                    --[[local shirt = character:FindFirstChild("Shirt") :: Shirt or Instance.new("Shirt")
+                    shirt.Parent = character
+                    shirt.ShirtTemplate = assetInstance.ShirtTemplate]]
+                    CustomizationUtil.setCustomeFromTemplateId(plr, "Shirt", tonumber(string.match(assetInstance.ShirtTemplate, "%d+")) or 0)
+                elseif assetInstance:IsA("Pants") then
+                    --[[local pants = character:FindFirstChild("Pants") :: Pants or Instance.new("Pants")
+                    pants.Parent = character
+                    pants.PantsTemplate = assetInstance.PantsTemplate]]
+                    CustomizationUtil.setCustomeFromTemplateId(plr, "Pants", tonumber(string.match(assetInstance.PantsTemplate, "%d+")) or 0)
                 end
-            elseif assetInstance:IsA("Shirt") then
-                --[[local shirt = character:FindFirstChild("Shirt") :: Shirt or Instance.new("Shirt")
-                shirt.Parent = character
-                shirt.ShirtTemplate = assetInstance.ShirtTemplate]]
-                CustomizationUtil.setCustomeFromTemplateId(plr, "Shirt", tonumber(string.match(assetInstance.ShirtTemplate, "%d+")) or 0)
-            elseif assetInstance:IsA("Pants") then
-                --[[local pants = character:FindFirstChild("Pants") :: Pants or Instance.new("Pants")
-                pants.Parent = character
-                pants.PantsTemplate = assetInstance.PantsTemplate]]
-                CustomizationUtil.setCustomeFromTemplateId(plr, "Pants", tonumber(string.match(assetInstance.PantsTemplate, "%d+")) or 0)
+            else
+                warn("Unable to find asset from id: " .. tostring(customizationId)) 
             end
+            asset:Destroy()  
         else
-            warn("Unable to find asset from id: " .. tostring(customizationId)) 
+            local bundle = importBundle(customizationId)
+            if bundle then
+                applyBundle(character, bundle)
+                character:SetAttribute(CHARACTER_BUNDLE_ID_ATTRIBUTE_KEY, customizationId)
+            else
+                character:SetAttribute(CHARACTER_BUNDLE_ID_ATTRIBUTE_KEY, nil)
+            end
         end
-        asset:Destroy()  
     else
         NetworkUtil.invokeServer(ON_CUSTOMIZE_CHAR, customizationId)
     end 
@@ -188,20 +335,11 @@ function CustomizationUtil.setDesc(plr : Player, descType : DescType, descName :
     end
 end
 
-function CustomizationUtil.init(maid : Maid)
-    if RunService:IsServer() then
-        NetworkUtil.onServerInvoke(ON_CUSTOMIZE_CHAR, function(plr : Player, customisationId : number)
-            CustomizationUtil.Customize(plr, customisationId) 
-
-            MidasEventTree.Gameplay.CustomizeAvatar(plr)
-            return nil
-        end)
-        NetworkUtil.onServerInvoke(ON_CUSTOMIZE_AVATAR_NAME, function(plr : Player, descType : DescType, descName : string)
-            CustomizationUtil.setDesc(plr, descType, descName)
- 
-            MidasEventTree.Gameplay.CustomizeAvatar(plr)
-            return nil
-        end)
+function CustomizationUtil.getCustomizationDataById(id : number)
+    for _,v in pairs(CustomizationList) do
+        if v.TemplateId == id then
+            return v
+        end
     end
 end
 

@@ -7,3 +7,4 @@ Gear = 5
 Accessories = 11
 AvatarAnimations = 12
 CommunityCreations = 13
+Bundles = 17

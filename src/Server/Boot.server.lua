@@ -36,7 +36,6 @@ print("Test2oy")
 EnvironmentSound.init(maid)
 
 BackpackUtil.init(maid)
-CustomizationUtil.init(maid)
 InteractableUtil.init(maid)
 ToolActions.init(maid)
 
