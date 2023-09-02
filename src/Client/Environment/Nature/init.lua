@@ -8,7 +8,7 @@ local Maid = require(ReplicatedStorage:WaitForChild("Packages"):WaitForChild("Ma
 local NetworkUtil = require(ReplicatedStorage:WaitForChild("Packages"):WaitForChild("NetworkUtil"))
 --modules
 local Bird = require(ReplicatedStorage:WaitForChild("Client"):WaitForChild("Environment"):WaitForChild("Nature"):WaitForChild("Bird"))
-
+local Cricket = require(ReplicatedStorage:WaitForChild("Client"):WaitForChild("Environment"):WaitForChild("Nature"):WaitForChild("Cricket"))
 --types
 type Maid = Maid.Maid
 --constants
@@ -20,5 +20,6 @@ type Maid = Maid.Maid
 return {
     init = function(maid : Maid)
         Bird.init(maid)
+        Cricket.init(maid)
     end
 }

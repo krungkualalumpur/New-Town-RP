@@ -232,11 +232,14 @@ local function initializeSoundSystem(instances)
 	end)
 
 	local character = rootPart.Parent :: Model
-	local leftFoot = character:WaitForChild("LeftFoot") :: BasePart
+	--local leftFoot = character:WaitForChild("LeftFoot") :: BasePart
 
-	local touchedConn =	leftFoot.Touched:Connect(function(hit)
-		if (hit.Transparency < 1) and (hit.CanCollide == true) then
-		 	(sounds.Running :: any).Pitch = SOUND_DATA.Running.Pitch
+	--local intTick = tick()
+	local loopConn = RunService.Stepped:Connect(function()
+		--if tick() - intTick >= 1 then
+			--intTick = tick();
+
+			(sounds.Running :: any).Pitch = SOUND_DATA.Running.Pitch
 			if (humanoid.FloorMaterial == Enum.Material.Metal) or (humanoid.FloorMaterial == Enum.Material.CorrodedMetal) or (humanoid.FloorMaterial == Enum.Material.DiamondPlate) then
 				sounds.Running.SoundId = "rbxassetid://3477114901"
 			elseif (humanoid.FloorMaterial == Enum.Material.Grass) or (humanoid.FloorMaterial == Enum.Material.LeafyGrass) or (humanoid.FloorMaterial == Enum.Material.Mud) then
@@ -255,13 +258,13 @@ local function initializeSoundSystem(instances)
 			else
 				sounds.Running.SoundId = SOUND_DATA.Running.SoundId
 			end 
-		end
+		--end
 	end)
 
 	local function terminate()
 		stateChangedConn:Disconnect()
 		steppedConn:Disconnect()
-		touchedConn:Disconnect()
+		loopConn:Disconnect()
 
 		-- Unparent all sounds and empty sounds table
 		-- This is needed in order to support the case where initializeSoundSystem might be called more than once for the same player,
