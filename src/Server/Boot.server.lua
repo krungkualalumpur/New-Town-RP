@@ -30,14 +30,11 @@ local DEV_SECRET_KEY = "8MWPBTO9AOFZUUZUJT4EEDRGWU54D874KN33B51653U68K1SKZ"
 local maid = Maid.new()
 --variables
 --script
-print("Test1oy")
 Environments.init(maid)
-print("Test2oy")
 EnvironmentSound.init(maid)
 
 BackpackUtil.init(maid)
 InteractableUtil.init(maid)
-ToolActions.init(maid)
 
 NotificationUtil.init(maid)
 TelevisionChannel.init(maid)

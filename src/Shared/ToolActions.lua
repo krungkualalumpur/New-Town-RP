@@ -35,7 +35,7 @@ end
 local ActionLists = {
     {
         ToolClass = "Consumption",
-        Activated = function(player : Player, toolData : BackpackUtil.ToolData<nil>)            
+        Activated = function(player : Player, toolData : BackpackUtil.ToolData<nil>, plrInfo : any)            
             local character = player.Character or player.CharacterAdded:Wait()
             local foodInst : Instance
 
@@ -70,7 +70,7 @@ local ActionLists = {
     },
     {
         ToolClass = "Reading",
-        Activated = function(player : Player, toolData : BackpackUtil.ToolData<nil>)
+        Activated = function(player : Player, toolData : BackpackUtil.ToolData<nil>, plrInfo : any)
             AnimationUtil.playAnim(player, 6831327167, false)
         end
     },
@@ -83,32 +83,76 @@ local ActionLists = {
     },
 
     {
-        ToolClass = "Gun",
-        Activated = function(player : Player, toolData : BackpackUtil.ToolData<nil>)
+        ToolClass = "Weapon",
+        Activated = function(player : Player, toolData : BackpackUtil.ToolData<nil>, plrInfo : any)
             local character = player.Character or player.CharacterAdded:Wait()
-            local gunTool : Tool
+            local weaponTool : Tool
 
             for _,v in pairs(character:GetChildren()) do
                 if v:IsA("Tool") and v.Name == toolData.Name then
-                    gunTool = v
+                    weaponTool = v
                     break
                 end
             end
 
-            local gunModel = gunTool:FindFirstChild("Gun")
-            local flare = if gunModel then gunModel:FindFirstChild("Flare") else nil
+            if weaponTool:FindFirstChild("Gun") then            
+                local gunModel = weaponTool:FindFirstChild("Gun")
+                local flare = if gunModel then gunModel:FindFirstChild("Flare") else nil
 
-            if flare then
-                local muzzleFlash = flare:FindFirstChild("MuzzleFlash") :: BillboardGui ?
-                if muzzleFlash then
-                    muzzleFlash.Enabled = true
-                    task.wait(0.1)
-                    muzzleFlash.Enabled = false
+                if flare then
+                    local muzzleFlash = flare:FindFirstChild("MuzzleFlash") :: BillboardGui ?
+                    if muzzleFlash then
+                        muzzleFlash.Enabled = true
+                        task.wait(0.1)
+                        muzzleFlash.Enabled = false
+                    end
+                    playSound(143286342, false, flare)
                 end
-                playSound(143286342, false, flare)
-            end
+            elseif weaponTool:FindFirstChild("Dynamite") then
+                local dynamiteModel = weaponTool:FindFirstChild("Dynamite")
+                if dynamiteModel then
+                    local clonedDynamite = dynamiteModel:Clone() :: Model
+                    clonedDynamite.Parent = workspace
 
-            print("Duar bruh ", toolData)
+                    task.spawn(function()
+                        for k,v in pairs(plrInfo.Backpack) do
+                            if v.IsEquipped then
+                                plrInfo:DeleteBackpack(k)
+                                break
+                            end
+                        end
+
+                        task.wait(5)
+                        if clonedDynamite.PrimaryPart then clonedDynamite.PrimaryPart.Transparency = 1 end
+
+                        local cf, _ = clonedDynamite:GetBoundingBox()
+                        local exp = Instance.new("Explosion") :: Explosion
+                        exp.BlastRadius = 15
+                        exp.BlastPressure = 0
+                        exp.Position = (if clonedDynamite.PrimaryPart then clonedDynamite.PrimaryPart.Position else cf.Position)
+                        
+                        local explosionConn = exp.Hit:Connect(function(part : BasePart, dist : number)
+                            part:SetAttribute("IsExplosionHit", true)
+                            task.wait(1)
+                            part:SetAttribute("IsExplosionHit", nil)
+                        end)
+
+                        exp.Parent = workspace
+
+                        local sound = Instance.new("Sound") :: Sound
+                        sound.RollOffMaxDistance = 45
+                        sound.SoundId = "rbxassetid://5801257793" 
+                        sound.Parent = clonedDynamite.PrimaryPart 
+                        sound:Play()
+                        sound.Ended:Wait()
+                        clonedDynamite:Destroy()
+
+                        explosionConn:Disconnect()
+
+                    end)
+                end
+                weaponTool:Destroy()
+            end
         end
     }
 }
@@ -117,10 +161,10 @@ local ActionLists = {
 --class
 local ToolActions = {}
 
-function ToolActions.onToolActivated(toolClass : string, player : Player, toolData : BackpackUtil.ToolData<nil>)
+function ToolActions.onToolActivated(toolClass : string, player : Player, toolData : BackpackUtil.ToolData<nil>, plrInfo : any)
     if RunService:IsServer() then
         local actionInfo = ToolActions.getActionInfo(toolClass)
-        actionInfo.Activated( player, toolData)
+        actionInfo.Activated(player, toolData, plrInfo)
     else
         NetworkUtil.fireServer(ON_TOOL_ACTIVATED, toolClass, player, toolData)
     end
@@ -137,13 +181,13 @@ function ToolActions.getActionInfo(toolClass : string)
     error("Tool info not found!")
 end
 
-function ToolActions.init(maid) 
-    if RunService:IsServer() then
-        NetworkUtil.onServerEvent(ON_TOOL_ACTIVATED, function(plr : Player, toolClass : string, foodInst : Instance, toolData : BackpackUtil.ToolData<nil>)
-            print(toolClass, " eeh")
-            ToolActions.onToolActivated(toolClass, plr, toolData)
-        end)
-    end
-end
+--function ToolActions.init(maid) 
+   -- if RunService:IsServer() then
+     --   NetworkUtil.onServerEvent(ON_TOOL_ACTIVATED, function(plr : Player, toolClass : string, foodInst : Instance, toolData : BackpackUtil.ToolData<nil>)
+     --       print(toolClass, " eeh")
+     --       ToolActions.onToolActivated(toolClass, plr, toolData)
+     --   end)
+    --end
+--end
 
 return ToolActions

@@ -41,7 +41,7 @@ function Cricket.init(maid : Maid)
                         sound.SoundId = "rbxassetid://7274926294"
                         sound.Looped = true
                         sound.Volume = 0
-                        sound.RollOffMaxDistance = 55
+                        sound.RollOffMaxDistance = 50
                         sound.Parent = part       
                         sound:Play()       
                         

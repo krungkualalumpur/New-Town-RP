@@ -46,6 +46,7 @@ local SAVE_DATA_INTERVAL = 60
 --remotes
 local ON_INTERACT = "On_Interact"
 local ON_TOOL_INTERACT = "On_Tool_Interact"
+local ON_TOOL_ACTIVATED = "OnToolActivated"
 
 local GET_PLAYER_BACKPACK = "GetPlayerBackpack"
 local UPDATE_PLAYER_BACKPACK = "UpdatePlayerBackpack"
@@ -532,7 +533,7 @@ function PlayerManager.init(maid : Maid)
         elseif plrInfo.ABValue == "B" then
             spawnPart = CharacterSpawnLocations:WaitForChild("Spawn2") :: BasePart
         end
-        if spawnPart then
+        if spawnPart and not RunService:IsStudio() then
             char:PivotTo(spawnPart.CFrame + Vector3.new(0,5,0))
         end
     end 
@@ -723,8 +724,13 @@ function PlayerManager.init(maid : Maid)
         return nil
     end)
     
+    NetworkUtil.onServerEvent(ON_TOOL_ACTIVATED, function(plr : Player, toolClass : string, foodInst : Instance, toolData : BackpackUtil.ToolData<nil>)
+        local plrInfo = PlayerManager.get(plr)
+        ToolActions.onToolActivated(toolClass, plr, toolData, plrInfo)
+    end)
 
     NetworkUtil.getRemoteEvent(UPDATE_PLAYER_BACKPACK)
+    NetworkUtil.getRemoteFunction(GET_PLAYER_BACKPACK)
 end
 
 return PlayerManager

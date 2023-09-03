@@ -127,6 +127,10 @@ tree:
     Major: integer
     Minor: integer
     Patch: integer
+  Gameplay:
+    EquipTool : integer
+  Others:
+    ABValue : integer
 version:
   hotfix: 0
   major: 1

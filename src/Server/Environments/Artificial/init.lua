@@ -13,6 +13,7 @@ local Seat = require(ServerScriptService:WaitForChild("Server"):WaitForChild("En
 local Minigame = require(ServerScriptService:WaitForChild("Server"):WaitForChild("Environments"):WaitForChild("Artificial"):WaitForChild("Minigame"))
 local Vehicle = require(ServerScriptService:WaitForChild("Server"):WaitForChild("Environments"):WaitForChild("Artificial"):WaitForChild("Vehicle"))
 local Speaker = require(ServerScriptService:WaitForChild("Server"):WaitForChild("Environments"):WaitForChild("Artificial"):WaitForChild("Speaker"))
+local Objects = require(ServerScriptService:WaitForChild("Server"):WaitForChild("Environments"):WaitForChild("Artificial"):WaitForChild("Objects"))
 --types
 type Maid = Maid.Maid
 --constants
@@ -102,6 +103,8 @@ end
 --class
 return {
     init = function(maid)
+        print("oi??!!1")
+        Objects.init(maid)
         Elevator.init(maid)
         Seat.init(maid)
         Minigame.init(maid)

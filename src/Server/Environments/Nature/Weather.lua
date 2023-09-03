@@ -185,6 +185,7 @@ function Weather.init(maid : Maid)
     end)
 
     NetworkUtil.getRemoteEvent(CLIENT_WEATHER_UPDATE)
+    NetworkUtil.getRemoteFunction(GET_WEATHER)
 end
 
 return Weather
