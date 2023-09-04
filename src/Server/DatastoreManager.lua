@@ -29,7 +29,7 @@ local gameData1 = DataStoreService:GetDataStore("GameData1")
 local DatastoreManager = {}
 function DatastoreManager.save(player: Player, plrInfo : ManagerTypes.PlayerManager)
 	assert(plrInfo, "Incomplete argument!")
-	--print("save attempt", player, plrSys)
+	--print("save attempt", player)
 	if not plrInfo.isLoaded then warn("Plot has not loaded yet!"); return end
 	if
 		not RunService:IsStudio()
@@ -41,7 +41,6 @@ function DatastoreManager.save(player: Player, plrInfo : ManagerTypes.PlayerMana
 			LastTimeStamp = DateTime.now().UnixTimestamp,
 			GameVersion = CURRENT_GAME_VERSION
 		}
-
 		local JSONdata = HttpService:JSONEncode(data)
 		local s, e = pcall(function()
 			gameData1:SetAsync("k" .. player.UserId, JSONdata)

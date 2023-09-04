@@ -212,6 +212,13 @@ function PlayerManager.new(player : Player, maid : Maid ?)
         end
     end))
 
+    --hacky way to store character info
+    self._Maid.CharacterModel = player.Character
+
+    self._Maid:GiveTask(self.Player.CharacterAdded:Connect(function(char : Model)
+        self._Maid.CharacterModel = char
+    end))
+
     --analytics
     
     MidasStateTree.Gameplay.BackpackAdded(player, function()
@@ -434,23 +441,26 @@ function PlayerManager:GetData()
         table.insert(plrData.Backpack, v.Name)
     end
 
-    local char = self.Player.Character or self.Player.CharacterAdded:Wait()
-    for _,v in pairs(char:GetChildren()) do
-        if v:IsA("Accessory") then    
-            local accId = CustomizationUtil.getAccessoryId(v)
-            if accId then table.insert(plrData.Character.Accessories, accId) else plrData.Character.hasDefaultAccessories = true end
-        elseif v:IsA("Shirt") then
-            plrData.Character.Shirt = tonumber(string.match(v.ShirtTemplate, "%d+")) or 0
-        elseif v:IsA("Pants") then
-            plrData.Character.Pants = tonumber(string.match(v.PantsTemplate, "%d+")) or 0
+    local char = self._Maid.CharacterModel :: Model ?
+
+    if char then
+        for _,v in pairs(char:GetChildren()) do
+            if v:IsA("Accessory") then    
+                local accId = CustomizationUtil.getAccessoryId(v)
+                if accId then table.insert(plrData.Character.Accessories, accId) else plrData.Character.hasDefaultAccessories = true end
+            elseif v:IsA("Shirt") then
+                plrData.Character.Shirt = tonumber(string.match(v.ShirtTemplate, "%d+")) or 0
+            elseif v:IsA("Pants") then
+                plrData.Character.Pants = tonumber(string.match(v.PantsTemplate, "%d+")) or 0
+            end
+
+            local face = CustomizationUtil.getFaceTextureFromChar(char)
+            plrData.Character.Face = tonumber(string.match(face, "%d+")) or 0
         end
 
-        local face = CustomizationUtil.getFaceTextureFromChar(char)
-        plrData.Character.Face = tonumber(string.match(face, "%d+")) or 0
+        local bundleId = CustomizationUtil.getBundleIdFromCharacter(char)
+        plrData.Character.Bundle = bundleId
     end
-
-    local bundleId = CustomizationUtil.getBundleIdFromCharacter(char)
-    plrData.Character.Bundle = bundleId
     
 
     for _,v in pairs(self.Vehicles) do
@@ -566,9 +576,14 @@ function PlayerManager.init(maid : Maid)
     local function onPlayerRemove(plr : Player)
         local plrInfo = PlayerManager.get(plr)
 
-        DatastoreManager.save(plr, plrInfo)
+        print("eh wut?! 1", plrInfo, not plr:GetAttribute('IsSaving'))
+        if plrInfo and not plr:GetAttribute("IsSaving") then
+            print("eh wut?! 2")
+            plr:SetAttribute("IsSaving", true) 
+            DatastoreManager.save(plr, plrInfo)
 
-        plrInfo:Destroy()
+            plrInfo:Destroy()
+        end
     end
 
     for _, plr : Player in pairs(Players:GetPlayers()) do
