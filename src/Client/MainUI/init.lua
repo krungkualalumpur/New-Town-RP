@@ -497,6 +497,16 @@ return function(
                     getAnimInfo("Dance2", 6487678676),
                     getAnimInfo("Get Out", 6487639560),
                     getAnimInfo("Happy", 6487656144),
+                    getAnimInfo("Laugh", 6487643897),
+                    getAnimInfo("No", 6487627276),
+                    getAnimInfo("Point", 507770453),
+                    getAnimInfo("Sad", 6487647687),
+                    getAnimInfo("Shy", 6487659854),
+                    getAnimInfo("Standing", 6485373010),
+                    getAnimInfo("Wave", 507770239),
+                    getAnimInfo("Yawning", 6487651939),
+                    getAnimInfo("Yes", 6487622514),
+
                 },
                 onAnimClickSignal
             ) :: Frame

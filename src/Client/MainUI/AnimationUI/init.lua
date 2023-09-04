@@ -44,7 +44,7 @@ local function getAnimationButton(maid : Maid, animationInfo : AnimationInfo, on
     local out = _new("ImageButton")({
         BackgroundColor3 = SECONDARY_COLOR,
         BackgroundTransparency = 0.5,
-        Size = UDim2.new(1, 0,0.08,0),
+        Size = UDim2.new(1, 0,0,40),
         AutoButtonColor = true,
         Children = {
             _new("UIStroke")({
@@ -113,7 +113,7 @@ return function(
             _new("TextLabel")({
                 LayoutOrder = 0,
                 BackgroundTransparency = 1,
-                Size = UDim2.fromScale(1, 0.06),
+                Size = UDim2.new(1, 0, 0, 30),
                 RichText = true,
                 TextScaled = true,
                 TextStrokeTransparency = 0.5,

@@ -325,6 +325,14 @@ function PlayerManager:SetBackpackEquip(isEquip : boolean, toolKey : number)
                     end
                 end))
                 
+                --set collision
+                for _,v in pairs(equippedTool:GetDescendants()) do
+                    if v:IsA("BasePart") and character.PrimaryPart then
+                        v.CollisionGroup = character.PrimaryPart.CollisionGroup
+                    end
+                end
+
+                --and then set the parent
                 equippedTool.Parent = character
                
                 _maid:GiveTask(equippedTool.Destroying:Connect(function()
