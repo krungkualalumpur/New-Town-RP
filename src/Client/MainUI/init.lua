@@ -326,7 +326,6 @@ return function(
                 "X" ,
                 function()
                     for k,v in pairs(backpack:Get()) do
-                        print(v)
                         if v.IsEquipped == true then
                             backpackOnEquip:Fire(k)
                             break

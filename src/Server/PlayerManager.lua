@@ -313,7 +313,6 @@ function PlayerManager:SetBackpackEquip(isEquip : boolean, toolKey : number)
 
         local tool = BackpackUtil.getToolFromName(toolData.Name)
         if tool then
-            print(toolData.Name, tool.Name, toolData.IsEquipped)
             if toolData.IsEquipped then
                 local equippedTool = BackpackUtil.createTool(tool) :: Tool
                 local _maid = Maid.new()
@@ -337,7 +336,6 @@ function PlayerManager:SetBackpackEquip(isEquip : boolean, toolKey : number)
                
                 _maid:GiveTask(equippedTool.Destroying:Connect(function()
                     _maid:Destroy()
-                    print("tool destroyed breh")
                 end))
             end 
         end 
@@ -565,6 +563,13 @@ function PlayerManager.init(maid : Maid)
         _maid:GiveTask(plr.CharacterAdded:Connect(onCharAdded))
     end
 
+    local function onPlayerRemove(plr : Player)
+        local plrInfo = PlayerManager.get(plr)
+
+        DatastoreManager.save(plr, plrInfo)
+
+        plrInfo:Destroy()
+    end
 
     for _, plr : Player in pairs(Players:GetPlayers()) do
         onPlayerAdded(plr)
@@ -573,12 +578,13 @@ function PlayerManager.init(maid : Maid)
     maid:GiveTask(Players.PlayerAdded:Connect(onPlayerAdded))
 
     maid:GiveTask(Players.PlayerRemoving:Connect(function(plr : Player)
-        local plrInfo = PlayerManager.get(plr)
-
-        DatastoreManager.save(plr, plrInfo)
-
-        plrInfo:Destroy()
+        onPlayerRemove(plr)
     end))
+    game:BindToClose(function()
+		for _, plr in pairs(game:GetService("Players"):GetPlayers()) do
+			onPlayerRemove(plr)
+		end
+	end)
 
     maid:GiveTask(NetworkUtil.onServerEvent(ON_INTERACT, function(plr : Player, inst : Instance)
         if inst:IsA("Model") then
