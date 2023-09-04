@@ -66,6 +66,8 @@ local KEY_VALUE_NAME = "KeyValue"
 
 local KEY_VALUE_ATTRIBUTE = "KeyValue"
 
+local ON_CAMERA_SHAKE = "OnCameraShake"
+
 --variables
 local Registry = {}
 --references
@@ -313,17 +315,22 @@ function PlayerManager:SetBackpackEquip(isEquip : boolean, toolKey : number)
         if tool then
             print(toolData.Name, tool.Name, toolData.IsEquipped)
             if toolData.IsEquipped then
-                local equippedTool = BackpackUtil.createTool(tool)
+                local equippedTool = BackpackUtil.createTool(tool) :: Tool
+                local _maid = Maid.new()
                     --func for the tool upon it being activated
-                --maid:GiveTask(equippedTool.Activated:Connect(function()
-                --    local character = plr.Character or plr.CharacterAdded:Wait()
-                --    if character then    
-                --        ToolActions.onToolActivated(toolData.Class, plr, BackpackUtil.getData(tool, true))
-                --    end
-                --end))
+                _maid:GiveTask(equippedTool.Activated:Connect(function()
+                    local character = plr.Character or plr.CharacterAdded:Wait()
+                    if character then    
+                        ToolActions.onToolActivated(toolData.Class, plr, BackpackUtil.getData(tool, true))
+                    end
+                end))
                 
                 equippedTool.Parent = character
                
+                _maid:GiveTask(equippedTool.Destroying:Connect(function()
+                    _maid:Destroy()
+                    print("tool destroyed breh")
+                end))
             end 
         end 
     else
@@ -731,6 +738,7 @@ function PlayerManager.init(maid : Maid)
 
     NetworkUtil.getRemoteEvent(UPDATE_PLAYER_BACKPACK)
     NetworkUtil.getRemoteFunction(GET_PLAYER_BACKPACK)
+    NetworkUtil.getRemoteEvent(ON_CAMERA_SHAKE)
 end
 
 return PlayerManager

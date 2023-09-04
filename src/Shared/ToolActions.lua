@@ -15,16 +15,18 @@ type Maid = Maid.Maid
 local SOUND_NAME = "SFX"
 --remotes
 local ON_TOOL_ACTIVATED = "OnToolActivated"
+local ON_CAMERA_SHAKE = "OnCameraShake"
 --variables
 local raycastParams = RaycastParams.new()
 raycastParams.FilterType = Enum.RaycastFilterType.Include
 raycastParams.FilterDescendantsInstances = workspace:WaitForChild("Assets"):GetChildren()
 --references
 --local functions
-local function playSound(soundId : number, onLoop : boolean, parent : Instance ? )
+local function playSound(soundId : number, onLoop : boolean, parent : Instance ?, volume : number?)
     local sound = Instance.new("Sound")
     sound.Name = SOUND_NAME
     sound.SoundId = "rbxassetid://" .. tostring(soundId)
+    if volume then sound.Volume = volume end
     sound.Parent = parent or (if RunService:IsClient() then Players.LocalPlayer else nil)
     sound.RollOffMaxDistance = 35
     sound.Looped = onLoop
@@ -101,31 +103,42 @@ local ActionLists = {
             if weaponTool:FindFirstChild("Gun") then            
                 local gunModel = weaponTool:FindFirstChild("Gun")
                 local flare = if gunModel then gunModel:FindFirstChild("Flare") else nil
-
+                print(flare)
                 if flare then
                     local muzzleFlash = flare:FindFirstChild("MuzzleFlash") :: BillboardGui ?
+                    --print(muzzleFlash)
                     if muzzleFlash then
                         muzzleFlash.Enabled = true
 
                         local gunMesh = gunModel:FindFirstChild("GunMesh") :: MeshPart ?
+                      --  print(gunMesh)
                         if gunMesh then
                             local rayCast = workspace:Raycast(gunMesh.Position, -gunMesh.CFrame.LookVector*50, raycastParams)
+                          --  print(rayCast)
                             if rayCast then
-                                print(rayCast.Instance.Name)
-                                local part = Instance.new("Part")
-                                part.Anchored = true
-                                part.Position = rayCast.Position
-                                part.Transparency = 1
-                                part.Parent = workspace
-                             
-                                local smoke = Instance.new("Smoke")
-                                smoke.RiseVelocity = 0.5
-                                smoke.Size = 0.1
-                                smoke.Opacity = 1 
-                                smoke.Color = rayCast.Instance.Color
-                                smoke.Parent = part
-                                
                                 task.spawn(function()
+                                    task.wait((rayCast.Distance/3.571)/120 + 0.1)
+                                    local part = Instance.new("Part")
+                                    part.Anchored = true
+                                    part.Position = rayCast.Position
+                                    part.Transparency = 1
+                                    part.Parent = workspace
+                                
+                                    local smoke = Instance.new("Smoke")
+                                    smoke.RiseVelocity = 0.5
+                                    smoke.Size = 0.1
+                                    smoke.Opacity = 0.75
+                                    smoke.Color = rayCast.Instance.Color
+                                    smoke.Parent = part
+
+                                    local rand = math.random(1,3)
+                                    local sound = Instance.new("Sound") 
+                                    sound.Volume = 0.1
+                                    sound.SoundId = if rand == 1 then "rbxassetid://4427236368" elseif rand ==2 then "rbxassetid://4427231299" else "rbxassetid://4427234167"
+                                    sound.RollOffMaxDistance = 50
+                                    sound.Parent = part
+                                    sound:Play()
+
                                     task.wait(0.5)
                                     smoke.Enabled = false
                                     task.wait(6)
@@ -133,10 +146,17 @@ local ActionLists = {
                                 end)
                             end
                         end
+
+                        local humanoid = character:FindFirstChild("Humanoid")
+                        if humanoid then
+                            -- print(humanoid, " test1")
+                            NetworkUtil.fireClient(ON_CAMERA_SHAKE, player)
+                        end
+
                         task.wait(0.1)
                         muzzleFlash.Enabled = false
                     end
-                    playSound(143286342, false, flare)
+                    playSound(143286342, false, flare, 0.1)
                 end
             elseif weaponTool:FindFirstChild("Dynamite") then
                 local dynamiteModel = weaponTool:FindFirstChild("Dynamite")
@@ -203,7 +223,6 @@ end
 
 function ToolActions.getActionInfo(toolClass : string)
     for _,v in pairs(ActionLists) do
-        print(v.ToolClass, toolClass)
         if v.ToolClass == toolClass then
             return v 
         end

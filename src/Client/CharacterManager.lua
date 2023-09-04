@@ -5,6 +5,7 @@ local Players = game:GetService("Players")
 local TweenService = game:GetService("TweenService")
 --packages
 local Maid = require(ReplicatedStorage:WaitForChild("Packages"):WaitForChild("Maid"))
+local NetworkUtil = require(ReplicatedStorage:WaitForChild("Packages"):WaitForChild("NetworkUtil"))
 --modules
 local InputHandler = require(ReplicatedStorage:WaitForChild("Client"):WaitForChild("InputHandler"))
 --types
@@ -12,6 +13,9 @@ type Maid = Maid.Maid
 --constants
 local WALK_SPEED = 6
 local FIELD_OF_VIEW = 70
+local CAM_SHAKE_TIME = 0.16
+--remotes
+local ON_CAMERA_SHAKE = "OnCameraShake"
 --variables
 --references
 local Player = Players.LocalPlayer
@@ -153,11 +157,31 @@ end
 local CharacterManager = {}
 
 function CharacterManager.init(maid: Maid)
+    local camera = workspace.CurrentCamera
     local char = Player.Character or Player.CharacterAdded:Wait()
     onCharacterAdded(char)
     
-
     maid:GiveTask(Player.CharacterAdded:Connect(onCharacterAdded))
+
+    NetworkUtil.onClientEvent(ON_CAMERA_SHAKE, function()
+        print("cOK Bender hain") 
+        local char = Player.Character or Player.CharacterAdded:Wait()
+        local humanoid = char:WaitForChild("Humanoid") :: Humanoid
+        if humanoid then
+            local function getRandHeight() 
+                return math.random(1,10)/75
+            end
+            
+            local tween = TweenService:Create(humanoid, TweenInfo.new(CAM_SHAKE_TIME), {CameraOffset = Vector3.new( getRandHeight(), getRandHeight(), getRandHeight())})
+            tween:Play()
+            tween:Destroy()
+            task.wait(CAM_SHAKE_TIME) 
+            local tween2 = TweenService:Create(humanoid, TweenInfo.new(CAM_SHAKE_TIME), {CameraOffset = Vector3.new(0,0,0)})
+            tween2:Play()
+            tween2:Destroy()
+            task.wait()
+        end
+    end)
 end
 
 return CharacterManager

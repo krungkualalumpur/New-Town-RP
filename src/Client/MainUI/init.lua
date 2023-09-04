@@ -22,9 +22,6 @@ local CustomizationList = require(ReplicatedStorage:WaitForChild("Shared"):WaitF
 
 local ToolActions = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("ToolActions"))
 
-local MidasEventTree = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("MidasEventTree"))
-local MidasStateTree = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("MidasStateTree"))
-
 --types
 type Maid = Maid.Maid
 type Signal = Signal.Signal
@@ -285,7 +282,7 @@ return function(
                 }
             }),
           
-            getButton(
+            _bind(getButton(
                 maid,
                 "INTERACT" ,
                 function()
@@ -301,7 +298,23 @@ return function(
                     end  
                 end,
                 3
-            ),
+            ))({
+                Children = {
+                    _new("UIListLayout")({
+                        VerticalAlignment = Enum.VerticalAlignment.Bottom,
+                        HorizontalAlignment = Enum.HorizontalAlignment.Right
+                    }),
+                    _new("TextLabel")({
+                        BackgroundColor3 = SECONDARY_COLOR,
+                        BackgroundTransparency = 0.5,
+                        AutomaticSize = Enum.AutomaticSize.XY,
+                        TextSize = 14,
+                        Text = "L Click",
+                        TextColor3 = PRIMARY_COLOR
+                    }),
+
+                }
+            }),
             _bind(getButton(
                 maid,
                 "X" ,

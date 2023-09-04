@@ -24,7 +24,8 @@ local function getItemInfo(
 )
     return {
         Class = class,
-        Name = name
+        Name = name,
+        IsEquipped = true
     }
 end
 --class
