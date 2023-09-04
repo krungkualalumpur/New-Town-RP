@@ -16,6 +16,9 @@ local SOUND_NAME = "SFX"
 --remotes
 local ON_TOOL_ACTIVATED = "OnToolActivated"
 --variables
+local raycastParams = RaycastParams.new()
+raycastParams.FilterType = Enum.RaycastFilterType.Include
+raycastParams.FilterDescendantsInstances = workspace:WaitForChild("Assets"):GetChildren()
 --references
 --local functions
 local function playSound(soundId : number, onLoop : boolean, parent : Instance ? )
@@ -103,6 +106,33 @@ local ActionLists = {
                     local muzzleFlash = flare:FindFirstChild("MuzzleFlash") :: BillboardGui ?
                     if muzzleFlash then
                         muzzleFlash.Enabled = true
+
+                        local gunMesh = gunModel:FindFirstChild("GunMesh") :: MeshPart ?
+                        if gunMesh then
+                            local rayCast = workspace:Raycast(gunMesh.Position, -gunMesh.CFrame.LookVector*50, raycastParams)
+                            if rayCast then
+                                print(rayCast.Instance.Name)
+                                local part = Instance.new("Part")
+                                part.Anchored = true
+                                part.Position = rayCast.Position
+                                part.Transparency = 1
+                                part.Parent = workspace
+                             
+                                local smoke = Instance.new("Smoke")
+                                smoke.RiseVelocity = 0.5
+                                smoke.Size = 0.1
+                                smoke.Opacity = 1 
+                                smoke.Color = rayCast.Instance.Color
+                                smoke.Parent = part
+                                
+                                task.spawn(function()
+                                    task.wait(0.5)
+                                    smoke.Enabled = false
+                                    task.wait(6)
+                                    part:Destroy()
+                                end)
+                            end
+                        end
                         task.wait(0.1)
                         muzzleFlash.Enabled = false
                     end
