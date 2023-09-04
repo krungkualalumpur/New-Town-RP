@@ -2,6 +2,7 @@
 --services
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Players = game:GetService("Players")
+local UserInputService = game:GetService("UserInputService") :: UserInputService
 --packages
 local Maid = require(ReplicatedStorage:WaitForChild("Packages"):WaitForChild("Maid"))
 local NetworkUtil = require(ReplicatedStorage:WaitForChild("Packages"):WaitForChild("NetworkUtil"))
@@ -224,6 +225,11 @@ return function(
     local _Computed = _fuse.Computed
     local _Value = _fuse.Value
 
+    local TouchEnabled      = UserInputService.TouchEnabled
+    local KeyboardEnabled   = UserInputService.KeyboardEnabled
+    local MouseEnabled      = UserInputService.MouseEnabled
+    local GamepadEnabled    = UserInputService.GamepadEnabled
+
     local viewportMaid = maid:GiveTask(Maid.new())
     local statusMaid = maid:GiveTask(Maid.new())
  
@@ -309,7 +315,7 @@ return function(
                         BackgroundTransparency = 0.5,
                         AutomaticSize = Enum.AutomaticSize.XY,
                         TextSize = 14,
-                        Text = "L Click",
+                        Text = if KeyboardEnabled then "L Click" elseif TouchEnabled then "Touch" elseif GamepadEnabled then "A" else nil,
                         TextColor3 = PRIMARY_COLOR
                     }),
 
