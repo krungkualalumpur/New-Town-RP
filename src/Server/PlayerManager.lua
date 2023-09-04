@@ -576,9 +576,7 @@ function PlayerManager.init(maid : Maid)
     local function onPlayerRemove(plr : Player)
         local plrInfo = PlayerManager.get(plr)
 
-        print("eh wut?! 1", plrInfo, not plr:GetAttribute('IsSaving'))
         if plrInfo and not plr:GetAttribute("IsSaving") then
-            print("eh wut?! 2")
             plr:SetAttribute("IsSaving", true) 
             DatastoreManager.save(plr, plrInfo)
 
