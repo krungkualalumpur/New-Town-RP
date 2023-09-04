@@ -480,13 +480,16 @@ function Interactable.InteractOpening(model : Model,on : boolean)
                 hingeConstraint.TargetAngle = 90
                 playSound(833871080, false, pivot)
                 task.wait(5)
+               
+                playSound(7038967181, false, pivot)
+                hingeConstraint.TargetAngle = 0
+
+                task.wait(0.5)
                 for _,v in pairs(model:GetDescendants()) do
                     if v:IsA("BasePart") then
                         v.CanCollide = true
                     end
                 end
-                playSound(7038967181, false, pivot)
-                hingeConstraint.TargetAngle = 0
             end
         elseif slides then --if it's a slides opening
             local right = slides:FindFirstChild("Right") :: BasePart

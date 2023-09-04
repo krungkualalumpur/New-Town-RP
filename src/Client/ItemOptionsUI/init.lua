@@ -186,7 +186,6 @@ local function getOptButton(
         Events = {
             Activated = function()
                 onSelected:Fire(optInfo)
-                print("Test uey!")
             end
         }
     })

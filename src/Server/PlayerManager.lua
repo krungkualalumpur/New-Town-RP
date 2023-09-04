@@ -549,7 +549,7 @@ function PlayerManager.init(maid : Maid)
         local _maid = Maid.new()
 
         local plrInfo = PlayerManager.new(plr, _maid)
-        print("plr info madee!") 
+        print("Successfully loaded player") 
         
         local char = plr.Character or plr.CharacterAdded:Wait()
         onCharAdded(char)

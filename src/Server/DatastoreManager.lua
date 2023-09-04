@@ -21,6 +21,7 @@ type PlayerSaveData = {
 	PlayerData : ManagerTypes.PlayerData
 }
 --constants
+local DATA_ATTEMPT_COUNT = 10
 local CURRENT_GAME_VERSION = "v1.0"
 --variables
 local gameData1 = DataStoreService:GetDataStore("GameData1")
@@ -65,10 +66,18 @@ function DatastoreManager.get(player: Player)
 		return gameData1:GetAsync("k" .. player.UserId)
 	end)
 	if not s and data then
-		warn("Game datasave error: ", data)
-		return nil
+		local count = 0
+		repeat 
+			warn("Game datasave error: ", data, " attempting to reload...")
+			count += 1; 
+			s, data = pcall(function()
+				return gameData1:GetAsync("k" .. player.UserId)
+			end)
+			task.wait(0.25); 
+		until (s or (count > DATA_ATTEMPT_COUNT))
+		return (if s then data else nil)
 	end
-	return data
+	return data 
 end
 
 function DatastoreManager.load(player: Player, plrInfo: ManagerTypes.PlayerManager)

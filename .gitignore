@@ -10,3 +10,4 @@ Packages
 #src/Client/Rain.lua
 Analytics
 Scripts/GeneratedFilesTest
+Analytics/output/kpi/users.json

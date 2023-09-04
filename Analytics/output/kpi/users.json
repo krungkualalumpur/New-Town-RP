@@ -1,39 +1,26 @@
 [
     {
-        "user_id":"-1",
-        "timestamp":"2023-08-26 07:20:52.757000+0000",
-        "index":1,
-        "session_count":3,
-        "net_revenue":0,
-        "net_duration":417694.139,
-        "is_retained_on_d0":false,
-        "is_retained_on_d1":false,
-        "is_retained_on_d7":null,
-        "is_retained_on_d14":null,
-        "is_retained_on_d28":null
-    },
-    {
-        "user_id":"-2",
-        "timestamp":"2023-08-26 07:20:54.156000+0000",
-        "index":2,
-        "session_count":3,
-        "net_revenue":0,
-        "net_duration":417694.257,
-        "is_retained_on_d0":false,
-        "is_retained_on_d1":false,
-        "is_retained_on_d7":null,
-        "is_retained_on_d14":null,
-        "is_retained_on_d28":null
-    },
-    {
         "user_id":"885551957",
         "timestamp":"2023-08-29 13:45:26.792000+0000",
-        "index":3,
+        "index":1,
         "session_count":1,
         "net_revenue":0,
         "net_duration":1005.027,
         "is_retained_on_d0":false,
         "is_retained_on_d1":false,
+        "is_retained_on_d7":null,
+        "is_retained_on_d14":null,
+        "is_retained_on_d28":null
+    },
+    {
+        "user_id":"75672459",
+        "timestamp":"2023-09-03 18:01:34.597000+0000",
+        "index":2,
+        "session_count":65,
+        "net_revenue":0,
+        "net_duration":23145.008,
+        "is_retained_on_d0":null,
+        "is_retained_on_d1":null,
         "is_retained_on_d7":null,
         "is_retained_on_d14":null,
         "is_retained_on_d28":null

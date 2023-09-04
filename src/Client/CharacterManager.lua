@@ -164,7 +164,6 @@ function CharacterManager.init(maid: Maid)
     maid:GiveTask(Player.CharacterAdded:Connect(onCharacterAdded))
 
     NetworkUtil.onClientEvent(ON_CAMERA_SHAKE, function()
-        print("cOK Bender hain") 
         local char = Player.Character or Player.CharacterAdded:Wait()
         local humanoid = char:WaitForChild("Humanoid") :: Humanoid
         if humanoid then
