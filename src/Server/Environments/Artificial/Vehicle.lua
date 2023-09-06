@@ -214,7 +214,7 @@ function Vehicle.init(maid : Maid)
         plrInfo:SpawnVehicle(key, true, vehicleName, partZones)
         NotificationUtil.Notify(plr, "You spawned " .. tostring(plrInfo.Vehicles[key].Name))
 
-        MidasEventTree.Gameplay.EquipVehicle(plr)
+        MidasEventTree.Gameplay.EquipVehicle.Value(plr)
 
         return nil
     end)

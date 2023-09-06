@@ -103,15 +103,15 @@ template:
         Ping: false
         ServerTime: false
     Population:
-      Friends: false
-      PeakFriends: false
-      SpeakingDistance: false
-      Team: false
-      Total: false
+      Friends: true
+      PeakFriends: true
+      SpeakingDistance: true
+      Team: true
+      Total: true
     Spending:
-      Gamepass: false
-      Product: false
-      Total: false
+      Gamepass: true
+      Product: true
+      Total: true
 tree:
   Duration: integer
   Id:
@@ -128,7 +128,20 @@ tree:
     Minor: integer
     Patch: integer
   Gameplay:
-    EquipTool : integer
+    EquipTool : 
+      Value : integer
+    BackpackAdded : 
+      Value : integer
+    BackpackDeleted :
+      Value : integer
+    EquipVehicle :
+      Value : integer
+    VehiclesAdded : 
+      Value : integer
+    VehiclesDeleted :
+      Value : integer
+    CustomizeAvatar : 
+      Value : integer
   Others:
     ABValue : integer
 version:

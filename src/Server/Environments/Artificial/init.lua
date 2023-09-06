@@ -103,7 +103,6 @@ end
 --class
 return {
     init = function(maid)
-        print("oi??!!1")
         Objects.init(maid)
         Elevator.init(maid)
         Seat.init(maid)

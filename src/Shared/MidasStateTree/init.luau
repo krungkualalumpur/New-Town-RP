@@ -47,6 +47,32 @@ return {
 		["Minor"] = constructTracker("Version/Minor", 0) :: TrackerAccessNode<number>,
 		["Patch"] = constructTracker("Version/Patch", 0) :: TrackerAccessNode<number>,
 	},
+	["Gameplay"] = {
+		["EquipTool"] = {
+			["Value"] = constructTracker("Gameplay/EquipTool/Value", 0) :: TrackerAccessNode<number>,
+		},
+		["BackpackAdded"] = {
+			["Value"] = constructTracker("Gameplay/BackpackAdded/Value", 0) :: TrackerAccessNode<number>,
+		},
+		["BackpackDeleted"] = {
+			["Value"] = constructTracker("Gameplay/BackpackDeleted/Value", 0) :: TrackerAccessNode<number>,
+		},
+		["EquipVehicle"] = {
+			["Value"] = constructTracker("Gameplay/EquipVehicle/Value", 0) :: TrackerAccessNode<number>,
+		},
+		["VehiclesAdded"] = {
+			["Value"] = constructTracker("Gameplay/VehiclesAdded/Value", 0) :: TrackerAccessNode<number>,
+		},
+		["VehiclesDeleted"] = {
+			["Value"] = constructTracker("Gameplay/VehiclesDeleted/Value", 0) :: TrackerAccessNode<number>,
+		},
+		["CustomizeAvatar"] = {
+			["Value"] = constructTracker("Gameplay/CustomizeAvatar/Value", 0) :: TrackerAccessNode<number>,
+		},
+	},
+	["Others"] = {
+		["ABValue"] = constructTracker("Others/ABValue", 0) :: TrackerAccessNode<number>,
+	},
 	["Chat"] = {
 		["LastMessage"] = constructTracker("Chat/LastMessage", nil) :: TrackerAccessNode<string>,
 		["Count"] = constructTracker("Chat/Count", 0) :: TrackerAccessNode<number>,
@@ -66,6 +92,13 @@ return {
 			["X"] = constructTracker("Character/Position/X", 2) :: TrackerAccessNode<number>,
 			["Y"] = constructTracker("Character/Position/Y", 2) :: TrackerAccessNode<number>,
 		},
+	},
+	["Population"] = {
+		["Total"] = constructTracker("Population/Total", 0) :: TrackerAccessNode<number>,
+		["Team"] = constructTracker("Population/Team", 0) :: TrackerAccessNode<number>,
+		["PeakFriends"] = constructTracker("Population/PeakFriends", 0) :: TrackerAccessNode<number>,
+		["Friends"] = constructTracker("Population/Friends", 0) :: TrackerAccessNode<number>,
+		["SpeakingDistance"] = constructTracker("Population/SpeakingDistance", 0) :: TrackerAccessNode<number>,
 	},
 	["Performance"] = {
 		["Client"] = {
@@ -125,12 +158,4 @@ return {
 			["ScreenRatio"] = constructTracker("Demographics/Platform/ScreenRatio", nil) :: TrackerAccessNode<DemographicsPlatformScreenRatioType>,
 		},
 	},
-	["Gameplay"] = {
-		["BackpackAdded"] = constructTracker("Gameplay/BackpackAdded", 0),
-		["VehiclesAdded"] = constructTracker("Gameplay/VehiclesAdded", 0),
-		["CustomizeAvatar"] = constructTracker("Gameplay/CustomizeAvatar", 0),
-	},
-	["Others"] = {
-		["ABValue"] = constructTracker("Others/ABValue", nil)
-	}
 }

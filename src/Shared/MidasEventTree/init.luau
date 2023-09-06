@@ -43,6 +43,32 @@ return {
 		["Minor"] = constructTrigger("Version/Minor") :: TriggerNode,
 		["Patch"] = constructTrigger("Version/Patch") :: TriggerNode,
 	},
+	["Gameplay"] = {
+		["EquipTool"] = {
+			["Value"] = constructTrigger("Gameplay/EquipTool/Value") :: TriggerNode,
+		},
+		["BackpackAdded"] = {
+			["Value"] = constructTrigger("Gameplay/BackpackAdded/Value") :: TriggerNode,
+		},
+		["BackpackDeleted"] = {
+			["Value"] = constructTrigger("Gameplay/BackpackDeleted/Value") :: TriggerNode,
+		},
+		["EquipVehicle"] = {
+			["Value"] = constructTrigger("Gameplay/EquipVehicle/Value") :: TriggerNode,
+		},
+		["VehiclesAdded"] = {
+			["Value"] = constructTrigger("Gameplay/VehiclesAdded/Value") :: TriggerNode,
+		},
+		["VehiclesDeleted"] = {
+			["Value"] = constructTrigger("Gameplay/VehiclesDeleted/Value") :: TriggerNode,
+		},
+		["CustomizeAvatar"] = {
+			["Value"] = constructTrigger("Gameplay/CustomizeAvatar/Value") :: TriggerNode,
+		},
+	},
+	["Others"] = {
+		["ABValue"] = constructTrigger("Others/ABValue") :: TriggerNode,
+	},
 	["Chat"] = {
 		["LastMessage"] = constructTrigger("Chat/LastMessage") :: TriggerNode,
 		["Count"] = constructTrigger("Chat/Count") :: TriggerNode,
@@ -62,6 +88,13 @@ return {
 			["X"] = constructTrigger("Character/Position/X") :: TriggerNode,
 			["Y"] = constructTrigger("Character/Position/Y") :: TriggerNode,
 		},
+	},
+	["Population"] = {
+		["Total"] = constructTrigger("Population/Total") :: TriggerNode,
+		["Team"] = constructTrigger("Population/Team") :: TriggerNode,
+		["PeakFriends"] = constructTrigger("Population/PeakFriends") :: TriggerNode,
+		["Friends"] = constructTrigger("Population/Friends") :: TriggerNode,
+		["SpeakingDistance"] = constructTrigger("Population/SpeakingDistance") :: TriggerNode,
 	},
 	["Performance"] = {
 		["Client"] = {
@@ -121,16 +154,4 @@ return {
 			["ScreenRatio"] = constructTrigger("Demographics/Platform/ScreenRatio") :: TriggerNode,
 		},
 	},
-	["Gameplay"] = {
-		["BackpackAdded"] = constructTrigger("Gameplay/BackpackAdded"),
-		["BackpackDeleted"] = constructTrigger("Gameplay/BackpackDeleted"),
-		["EquipTool"] = constructTrigger("Gameplay/EquipTool"),
-		["EquipVehicle"] = constructTrigger("Gameplay/EquipVehicle"),
-		["VehiclesAdded"] = constructTrigger("Gameplay/VehiclesAdded"),
-		["VehiclesDeleted"] = constructTrigger("Gameplay/VehiclesDeleted"),
-		["CustomizeAvatar"] = constructTrigger("Gameplay/CustomizeAvatar")
-	},
-	["Others"] = {
-		["ABValue"] = constructTrigger("Others/ABValue")
-	}
 }

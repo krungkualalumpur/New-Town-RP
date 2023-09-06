@@ -221,15 +221,15 @@ function PlayerManager.new(player : Player, maid : Maid ?)
 
     --analytics
     
-    MidasStateTree.Gameplay.BackpackAdded(player, function()
+    MidasStateTree.Gameplay.BackpackAdded.Value(player, function()
         return #self.Backpack
     end)
 
-    MidasStateTree.Gameplay.VehiclesAdded(player, function()
+    MidasStateTree.Gameplay.VehiclesAdded.Value(player, function()
         return #self.Vehicles
     end)
 
-    MidasStateTree.Gameplay.CustomizeAvatar(player, function()
+    MidasStateTree.Gameplay.CustomizeAvatar.Value(player, function()
         local count = 0
         local data = self:GetData()
 
@@ -253,7 +253,7 @@ function PlayerManager.new(player : Player, maid : Maid ?)
     end) 
 
     MidasStateTree.Others.ABValue(player, function()
-        return string.byte(self.ABValue)
+        return string.byte("B")
     end)
         --testing only
     --task.spawn(function()
@@ -550,12 +550,8 @@ function PlayerManager.init(maid : Maid)
 
         --spawn area
         local plrInfo = PlayerManager.get(player)
-        local spawnPart
-        if plrInfo.ABValue == "A" then
-            spawnPart = CharacterSpawnLocations:WaitForChild("Spawn1") :: BasePart
-        elseif plrInfo.ABValue == "B" then
-            spawnPart = CharacterSpawnLocations:WaitForChild("Spawn2") :: BasePart
-        end
+        local spawnPart = CharacterSpawnLocations:WaitForChild("Spawn2") :: BasePart
+        
         if spawnPart and not RunService:IsStudio() then
             char:PivotTo(spawnPart.CFrame + Vector3.new(0,5,0))
         end
@@ -579,7 +575,7 @@ function PlayerManager.init(maid : Maid)
         if plrInfo and not plr:GetAttribute("IsSaving") then
             plr:SetAttribute("IsSaving", true) 
             DatastoreManager.save(plr, plrInfo)
-
+ 
             plrInfo:Destroy()
         end
     end
@@ -656,7 +652,7 @@ function PlayerManager.init(maid : Maid)
                 end 
             end 
         end]]
-        MidasEventTree.Gameplay.EquipTool(plr)
+        MidasEventTree.Gameplay.EquipTool.Value(plr)
 
         return nil
     end)
@@ -666,7 +662,7 @@ function PlayerManager.init(maid : Maid)
 
         NotificationUtil.Notify(plr, "You deleted " .. toolName)
 
-        MidasEventTree.Gameplay.BackpackDeleted(plr)
+        MidasEventTree.Gameplay.BackpackDeleted.Value(plr)
         return nil
     end)
 
@@ -685,7 +681,7 @@ function PlayerManager.init(maid : Maid)
 
         NetworkUtil.fireClient(UPDATE_PLAYER_BACKPACK, plr, plrInfo:GetBackpack(true, true))
 
-        MidasEventTree.Gameplay.BackpackAdded(plr)
+        MidasEventTree.Gameplay.BackpackAdded.Value(plr)
         
         return nil
     end)
@@ -705,7 +701,7 @@ function PlayerManager.init(maid : Maid)
         if success then
             NotificationUtil.Notify(plr, "You got " .. vehicleName)
         end
-        MidasEventTree.Gameplay.VehiclesAdded(plr)
+        MidasEventTree.Gameplay.VehiclesAdded.Value(plr)
         return nil
     end)
     
@@ -715,7 +711,7 @@ function PlayerManager.init(maid : Maid)
         print(key)
         plrInfo:DeleteVehicle(key)
 
-        MidasEventTree.Gameplay.VehiclesDeleted(plr)
+        MidasEventTree.Gameplay.VehiclesDeleted.Value(plr) 
         return nil
     end)
 
@@ -747,14 +743,14 @@ function PlayerManager.init(maid : Maid)
 
         if customizationData then
             CustomizationUtil.Customize(plr, customisationId) 
-            MidasEventTree.Gameplay.CustomizeAvatar(plr)
+            MidasEventTree.Gameplay.CustomizeAvatar.Value(plr)
         end
         return nil
     end)
     NetworkUtil.onServerInvoke(ON_CUSTOMIZE_AVATAR_NAME, function(plr : Player, descType : CustomizationUtil.DescType, descName : string)
         CustomizationUtil.setDesc(plr, descType, descName)
 
-        MidasEventTree.Gameplay.CustomizeAvatar(plr)
+        MidasEventTree.Gameplay.CustomizeAvatar.Value(plr)
         return nil
     end)
     

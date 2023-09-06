@@ -319,7 +319,6 @@ function Interactable.InteractSwitch(model : Model)
                 end, 3657935906)
             end
         elseif data.Class == "Water" then
-            print("Wala1")
             adjustModel(model, function(part : BasePart)
                 if part:GetAttribute(IsWaterAttributeKey) ~= nil then
                     part.Transparency = 1
