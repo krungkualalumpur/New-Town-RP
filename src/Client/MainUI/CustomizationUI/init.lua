@@ -635,7 +635,6 @@ return function(
                 end
 
                 if custom.Class == "Bundle" then
-                    print(CustomizationUtil.getBundleIdFromCharacter(character), custom.TemplateId)
                     if tonumber(CustomizationUtil.getBundleIdFromCharacter(character)) == tonumber(custom.TemplateId) then
                         isEquipped:Set(true)
                         selectedBundle:Set(custom)

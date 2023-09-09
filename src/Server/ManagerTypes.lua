@@ -31,7 +31,8 @@ export type PlayerData = {
         Bundle : number,
 
         hasDefaultAccessories : boolean
-    }
+    },
+    ChatCount : number
 }
 
 export type PlayerManager = {
@@ -41,6 +42,8 @@ export type PlayerManager = {
     Player : Player,
     Backpack : {[number] : ToolData<boolean>},
     Vehicles : {[number] : VehicleData},
+    ChatCount : number,
+    
     isLoaded : boolean,
 
     onLoadingComplete : Signal,
@@ -58,6 +61,8 @@ export type PlayerManager = {
     AddVehicle : (PlayerManager, vehicleName : string) -> boolean,
     SpawnVehicle : (PlayerManager, key : number, isEquip : boolean, vehicleName : string ?, vehicleZones : Instance ?) -> (),
     DeleteVehicle : (PlayerManager, key : number) -> (),
+
+    SetChatCount : (PlayerManager, count : number) -> (),
 
     Destroy : (PlayerManager) -> (),
 

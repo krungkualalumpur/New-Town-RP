@@ -43,6 +43,8 @@ local MAX_TOOLS_COUNT = 10
 local MAX_VEHICLES_COUNT = 5
 
 local SAVE_DATA_INTERVAL = 60
+
+local CHAT_COUNT_VALUE_NAME = "Chat Count"
 --remotes
 local ON_INTERACT = "On_Interact"
 local ON_TOOL_INTERACT = "On_Tool_Interact"
@@ -186,6 +188,7 @@ function PlayerManager.new(player : Player, maid : Maid ?)
     self._Maid = maid or Maid.new()
     self.Backpack = {}
     self.Vehicles = {}
+    self.ChatCount = 0
 
     self.isLoaded = false
 
@@ -219,8 +222,22 @@ function PlayerManager.new(player : Player, maid : Maid ?)
         self._Maid.CharacterModel = char
     end))
 
+    --setting leaderstats
+    local leaderstats = Instance.new"Folder"
+    leaderstats.Name = "leaderstats"
+    leaderstats.Parent = self.Player
+
+    local chatCountVal = Instance.new"IntValue"
+    chatCountVal.Name = CHAT_COUNT_VALUE_NAME
+    chatCountVal.Value = self.ChatCount
+    chatCountVal.Parent = leaderstats
+
+    self._Maid:GiveTask(self.Player.Chatted:Connect(function(str : string)
+        print(self.Player.Name, " chatted! string: ", str)
+        self:SetChatCount(self.ChatCount + 1)
+    end))
+
     --analytics
-    
     MidasStateTree.Gameplay.BackpackAdded.Value(player, function()
         return #self.Backpack
     end)
@@ -423,6 +440,14 @@ function PlayerManager:DeleteVehicle(key : number)
     return
 end
 
+function PlayerManager:SetChatCount(count : number)
+    self.ChatCount = count
+
+    local leaderstats = self.Player:WaitForChild("leaderstats")
+    local chatCountVal = leaderstats:WaitForChild(CHAT_COUNT_VALUE_NAME)
+    chatCountVal.Value = count
+end
+
 function PlayerManager:GetData()
     local plrData : ManagerTypes.PlayerData = {} :: any
     plrData.Backpack = {};
@@ -436,6 +461,7 @@ function PlayerManager:GetData()
         hasDefaultAccessories = false
     };
     plrData.Vehicles = {};
+    plrData.ChatCount = self.ChatCount
 
     for _,v in pairs(self.Backpack) do
         table.insert(plrData.Backpack, v.Name)
@@ -497,12 +523,15 @@ function PlayerManager:SetData(plrData : ManagerTypes.PlayerData)
     for _,v in pairs(plrData.Character.Accessories) do
         CustomizationUtil.Customize(self.Player, v)
     end
-    CustomizationUtil.setCustomeFromTemplateId(self.Player, "Face", plrData.Character.Face)
-    CustomizationUtil.setCustomeFromTemplateId(self.Player, "Shirt", plrData.Character.Shirt)
-    CustomizationUtil.setCustomeFromTemplateId(self.Player, "Pants", plrData.Character.Pants)
+    CustomizationUtil.setCustomeFromTemplateId(self.Player, "Face", plrData.Character.Face or 0)
+    CustomizationUtil.setCustomeFromTemplateId(self.Player, "Shirt", plrData.Character.Shirt or 0)
+    CustomizationUtil.setCustomeFromTemplateId(self.Player, "Pants", plrData.Character.Pants or 0)
 
      --set bundle
-    CustomizationUtil.Customize(self.Player, plrData.Character.Bundle)
+    CustomizationUtil.Customize(self.Player, plrData.Character.Bundle or 0)
+
+    --set chat count
+    self.ChatCount = plrData.ChatCount or 0
 
     if not self.isLoaded then
         self.onLoadingComplete:Fire() 

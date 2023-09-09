@@ -480,7 +480,7 @@ function Interactable.InteractOpening(model : Model,on : boolean)
                 hingeConstraint.ServoMaxTorque = math.huge
                 hingeConstraint.TargetAngle = 90
                 playSound(833871080, false, pivot)
-                task.wait(0.75)
+                task.wait(5)
                
                 playSound(7038967181, false, pivot)
                 hingeConstraint.TargetAngle = 0
