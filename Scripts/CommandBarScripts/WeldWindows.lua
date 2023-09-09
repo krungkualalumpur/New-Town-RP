@@ -58,7 +58,7 @@ end
                         end
                     end
 
-                    v.Anchored = false
+                    v.Anchored = true
                 end
             end
         end

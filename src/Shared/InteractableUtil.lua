@@ -469,24 +469,27 @@ function Interactable.InteractOpening(model : Model,on : boolean)
         local slides = model:FindFirstChild("Slides")
 
         if hingeConstraint  then --if it's a hinges opening
-            if hingeConstraint.TargetAngle == 0 then
-                for _,v in pairs(model:GetDescendants()) do
+            local doorModel = model:FindFirstChild("Model")
+            if (hingeConstraint.TargetAngle == 0) and doorModel then
+                for _,v in pairs(doorModel:GetDescendants()) do
                     if v:IsA("BasePart") then
                         v.CanCollide = false
+                        v.Anchored = false
                     end
                 end
                 hingeConstraint.ServoMaxTorque = math.huge
                 hingeConstraint.TargetAngle = 90
                 playSound(833871080, false, pivot)
-                task.wait(5)
+                task.wait(0.75)
                
                 playSound(7038967181, false, pivot)
                 hingeConstraint.TargetAngle = 0
 
-                task.wait(0.5)
-                for _,v in pairs(model:GetDescendants()) do
+                task.wait(0.75)
+                for _,v in pairs(doorModel:GetDescendants()) do
                     if v:IsA("BasePart") then
                         v.CanCollide = true
+                        v.Anchored = true
                     end
                 end
             end
