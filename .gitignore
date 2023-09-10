@@ -11,3 +11,5 @@ Packages
 Analytics
 Scripts/GeneratedFilesTest
 Analytics/output/kpi/users.json
+Analytics/output/kpi/sessions.json
+Analytics/output/events.json
