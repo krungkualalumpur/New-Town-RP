@@ -194,7 +194,7 @@ function PlayerManager.new(player : Player, maid : Maid ?)
 
     self.onLoadingComplete = self._Maid:GiveTask(Signal.new())
 
-    self.ABValue = getRandomAB()
+    self.ABValue = "B"
 
     Registry[player] = self
     MarketplaceManager.newPlayer(self._Maid, player)

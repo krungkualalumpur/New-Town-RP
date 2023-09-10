@@ -16,6 +16,7 @@ local InteractUI = require(ReplicatedStorage:WaitForChild("Client"):WaitForChild
 local MainUI = require(ReplicatedStorage:WaitForChild("Client"):WaitForChild("MainUI"))
 local SideOptions = require(ReplicatedStorage:WaitForChild("Client"):WaitForChild("MainUI"):WaitForChild("SideOptions"))
 local NotificationUI = require(ReplicatedStorage:WaitForChild("Client"):WaitForChild("NotificationUI"))
+local MapUI = require(ReplicatedStorage:WaitForChild("Client"):WaitForChild("MapUI"))
 local ExitButton = require(ReplicatedStorage:WaitForChild("Client"):WaitForChild("ExitButton"))
 
 local ItemUtil = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("ItemUtil"))
@@ -46,6 +47,7 @@ type GuiSys = {
     _Maid : Maid,
     MainUI : GuiObject,
     NotificationUI : GuiObject,
+    MapUI : MapUI.MapHUD,
 
     NotificationStatus : ValueState<string ?>,
 
@@ -211,8 +213,34 @@ function guiSys.new()
 
         maid:GiveTask(Player.CharacterAdded:Connect(onCharAdded))
     end
+
+
+    --map ui
+    local plrCf = _Value(CFrame.new())
+    local mapUI = MapUI.new(maid, plrCf, _Value(true))
+    mapUI.Instance.Parent = target
+
+    local charMaid = maid:GiveTask(Maid.new())
+
+    local function cfSetup(char : Model)
+        print("Misqueen ", char)
+        charMaid:DoCleaning()
+
+        charMaid:GiveTask(RunService.Stepped:Connect(function()
+            if char.PrimaryPart then
+                plrCf:Set(char.PrimaryPart.CFrame)
+            end
+        end))
+    end
+
+    cfSetup(Player.Character or Player.CharacterAdded:Wait())
+    maid:GiveTask(Player.CharacterAdded:Connect(function(char : Model)
+        cfSetup(char)
+    end))
+ 
     self.MainUI.Parent = target
     self.NotificationUI.Parent = notificationUItarget
+    self.MapUI = mapUI
 
     currentGuiSys = self
 
