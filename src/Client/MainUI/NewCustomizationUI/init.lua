@@ -4,6 +4,8 @@ local BadgeService = game:GetService("BadgeService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local AvatarEditorService = game:GetService("AvatarEditorService")
 local RunService = game:GetService("RunService")
+local Players = game:GetService("Players")
+local UserInputService = game:GetService("UserInputService")
 --packages
 local Maid = require(ReplicatedStorage:WaitForChild("Packages"):WaitForChild("Maid"))
 local ColdFusion = require(ReplicatedStorage:WaitForChild("Packages"):WaitForChild("ColdFusion8"))
@@ -68,7 +70,10 @@ local BACKGROUND_COLOR = Color3.fromRGB(120,120,120)
 local PRIMARY_COLOR = Color3.fromRGB(255,255,255)
 local SECONDARY_COLOR =  Color3.fromRGB(175,175,175)
 local TEXT_COLOR = Color3.fromRGB(255,255,255)
+local SELECT_COLOR = Color3.fromRGB(105, 255, 102)
+
 local TEST_COLOR = Color3.fromRGB(255,0,0)
+
 --variables
 --references
 --local functions
@@ -77,7 +82,7 @@ local function getButton(
     order : number,
     text : string ?,
     fn : (() -> ()) ?
-)
+) : TextButton
     local _fuse = ColdFusion.fuse(maid)
     local _new = _fuse.new
     local _import = _fuse.import
@@ -91,6 +96,13 @@ local function getButton(
         LayoutOrder = order,
         Text = text,
         TextColor3 = PRIMARY_COLOR,
+        Children = {
+            _new("UIListLayout")({
+                VerticalAlignment = Enum.VerticalAlignment.Bottom,
+                HorizontalAlignment = Enum.HorizontalAlignment.Center
+            }),
+            _new("UICorner")({})
+        },
         Events = {
             Activated = function()
                 if fn then
@@ -98,7 +110,7 @@ local function getButton(
                 end
             end
         }
-    })
+    }) :: TextButton
     return out
 end
 
@@ -361,7 +373,6 @@ return function(
     getCatalogPages : (categoryName : string, subCategory : string) -> CatalogPages
 )
     --test 1
-    
     local _fuse = ColdFusion.fuse(maid)
     local _new = _fuse.new
     local _import = _fuse.import
@@ -371,8 +382,12 @@ return function(
     local _Computed = _fuse.Computed
     local _Value = _fuse.Value
 
-    local CurrentCategory : ValueState<Category?> = _Value(nil) :: any
 
+    local char = if RunService:IsRunning() then Players:CreateHumanoidModelFromUserId(Players.LocalPlayer.UserId) else game.ServerStorage.aryoseno11:Clone()
+    char:PivotTo(CFrame.new())
+
+    local CurrentCategory : ValueState<Category?> = _Value(nil) :: any
+ 
     local mainMenuPage =  _new("Frame")({
         Size = UDim2.fromScale(0.68, 1),
         BackgroundTransparency = 1,
@@ -549,7 +564,8 @@ return function(
             _new("ScrollingFrame")({
                 Name = "SubCategory",
                 AutomaticCanvasSize = Enum.AutomaticSize.X,
-                ScrollBarThickness = 5,
+                ScrollBarThickness = 4,
+                ScrollBarImageTransparency = 0.6,
                 CanvasSize = UDim2.fromScale(0, 0),
                 BackgroundTransparency = 1,
                 LayoutOrder = 3,
@@ -628,6 +644,55 @@ return function(
         }
     }) :: Frame
 
+    local degreeX = 0
+    local degreeY = 0
+
+    local cf = _Value(CFrame.lookAt(Vector3.new(math.cos(math.rad(degreeX))*6,math.sin(math.rad(degreeY))*6,math.sin(math.rad(degreeX))*6), Vector3.new()))
+    local camera = _new("Camera")({
+        CFrame = cf
+    })
+    local spinningConn
+
+    local avatarViewportFrame = _new("ViewportFrame")({
+        LayoutOrder = 1,
+        CurrentCamera = camera,
+        Size = UDim2.fromScale(1, 0.77),
+        BackgroundColor3 = BACKGROUND_COLOR,
+        Children = {
+            _new("WorldModel")({
+                Children = {
+                    char
+                }
+            }),
+            _new("ImageButton")({
+                BackgroundTransparency = 1,
+                Size = UDim2.fromScale(1, 1),
+                Events = {
+                    MouseButton1Down = function()
+                        local mouse : Mouse ? = if RunService:IsRunning() then Players.LocalPlayer:GetMouse() else nil
+                        local intX, intY 
+                        if mouse then intX = mouse.X; intY = mouse.Y end
+
+                        spinningConn = RunService.RenderStepped:Connect(function()
+                            
+                            if mouse then
+                                local x,y = mouse.X - intX, mouse.Y - intY -- UserInputService:GetMouseDelta().X, UserInputService:GetMouseDelta().Y
+                                print(x, y)
+                                degreeX += x
+                                degreeY += y
+                                cf:Set( CFrame.lookAt(Vector3.new(math.cos(math.rad(degreeX))*6,math.sin(math.rad(degreeY))*6,math.sin(math.rad(degreeX))*6), Vector3.new())) 
+                                intX = mouse.X; intY = mouse.Y
+                            end 
+                        end)
+                    end,
+                    MouseButton1Up = function()
+                        spinningConn:Disconnect()
+                    end
+                }
+            })
+        }
+    })
+
     local out = _new("Frame")({
         Size = UDim2.fromScale(1, 1),
         BackgroundTransparency = 1,
@@ -659,11 +724,7 @@ return function(
                         Padding = PADDING_SIZE,
                         SortOrder = Enum.SortOrder.LayoutOrder
                     }),
-                    _new("ViewportFrame")({
-                        LayoutOrder = 1,
-                        Size = UDim2.fromScale(1, 0.77),
-                        BackgroundColor3 = BACKGROUND_COLOR
-                    }),
+                    avatarViewportFrame,
                     _new("ScrollingFrame")({
                         LayoutOrder = 2,
                         ScrollBarThickness = 2,
@@ -769,31 +830,68 @@ return function(
         end
 
         local loadingFooter =  getLoadingFrame(maid, 2, categoryPageFooter)
+        
+        local selectFrameParent : ValueState<Instance ?> = _Value(nil) :: any
+        local  selectFrame = _new("Frame")({
+            Name = "SelectFrame",
+            BackgroundColor3 = SELECT_COLOR,
+            Size = _Computed(function(instance)
+                return if instance then UDim2.fromScale(0.8, 0.2) else UDim2.fromScale(0, 0.2)
+            end, selectFrameParent):Tween(0.1),
+            Children = {
+                _new("UICorner")({})
+            },
+            Parent = selectFrameParent
+        }) :: Frame
 
         local strVal = _new("StringValue")({
+            Name = _Computed(function(parent : Instance ?) 
+                if parent then
+                    selectFrame.Size = UDim2.fromScale(0, 0.2)
+                    local t= game:GetService("TweenService"):Create(selectFrame, TweenInfo.new(0.1), {
+                        Size = UDim2.fromScale(0.8, 0.2)
+                    })
+                    t:Play()
+                else
+
+                end
+                return ""
+            end, selectFrameParent),
             Value = _Computed(function(category : Category ?)
-                pageMaid:DoCleaning()
+                selectFrameParent:Set()
 
                 if category then
+                    pageMaid:DoCleaning() 
+                    local selectedSubCategory = category.SubCategories[1]
+                    
+                    local subCategoryListFrame = getSubCategoryListFrame(categoryPage)
+
                     categoryPage.Visible = true
                     mainMenuPage.Visible = false
 
                     loadingFooter.Visible = true
 
-                    updateContent(category.CategoryName, category.SubCategories[1])
-                    local subCategoryListFrame = getSubCategoryListFrame(categoryPage)
+                    updateContent(category.CategoryName, selectedSubCategory)
                 
                     for i, v in pairs(category.SubCategories) do
-                        pageMaid:GiveTask( _bind(getButton(maid, i, v, function()
+                        local listButton 
+                        listButton =  pageMaid:GiveTask( _bind(getButton(maid, i, v, function()
+                            loadingFooter.Visible = true
+                            --selectFrame.Size = UDim2.new(1, 0, 0.2, 0) 
+                            selectFrameParent:Set(listButton)
+                           
                             updateContent(category.CategoryName, v)
+                            loadingFooter.Visible = false
                         end))({
                             Size = UDim2.fromScale(0.25, 1),
                             Parent = subCategoryListFrame
-                        }))
+                        })) :: TextButton
+                        if v == currentSubCategory then
+                            selectFrameParent:Set(listButton)
+                        end
                     end 
 
-                    loadingFooter.Visible = false
-                   
+                    loadingFooter.Visible = false 
                 else
                     categoryPage.Visible = false
                     mainMenuPage.Visible = true
