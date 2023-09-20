@@ -21,6 +21,15 @@ local CustomizationUI = require(ReplicatedStorage:WaitForChild("Client"):WaitFor
 return function(target : CoreGui)
     local maid = Maid.new()
 
+    local _fuse = ColdFusion.fuse(maid)
+    local _new = _fuse.new
+    local _import = _fuse.import
+    local _bind = _fuse.bind
+    local _clone = _fuse.clone
+
+    local _Computed = _fuse.Computed
+    local _Value = _fuse.Value
+    
     local onAccessoryTry = maid:GiveTask(Signal.new())
     local onAccessoryDelete = maid:GiveTask(Signal.new())
 
@@ -36,12 +45,17 @@ return function(target : CoreGui)
         --if not s and e then warn(e) end 
         --print(result:GetCurrentPage())
    -- end)
+   local onRPNameChange = maid:GiveTask(Signal.new())
+   local onDescChange = maid:GiveTask(Signal.new())
 
     local customizationUI = CustomizationUI(
         maid,
 
         onAccessoryTry,
         onAccessoryDelete,
+
+        onRPNameChange,
+        onDescChange,
 
         function(param)
             local list = {"All"}
@@ -51,7 +65,8 @@ return function(target : CoreGui)
                 --local cat = CatalogSearchParams.new()
                 --cat.AssetTypes = {Enum.AssetType.DynamicHead}
                 table.insert(list, "Classic")
-                table.insert(list, "New")
+                table.insert(list, "3D")
+                table.insert(list, "Dynamic")
             elseif param:lower() == "clothing" then
                 table.insert(list, "Shirts")
                 table.insert(list, "Pants")
@@ -67,14 +82,22 @@ return function(target : CoreGui)
                 table.insert(list, "Back")
                 table.insert(list, "Waist")
             elseif param:lower() == "Hair" then
-            elseif param:lower() == "Animation Packs" then               
+            elseif param:lower() == "packs" then 
+                table.insert(list, "Animation Packs")
+                table.insert(list, "Emotes")
+                table.insert(list, "Bundles")
             end
             return list
         end,
 
-        function(category : string, subCategory : string)
+        function(
+            category : string, 
+            subCategory : string,
+            keyWord : string
+        )
+            keyWord = " " .. keyWord
+
             local params = CatalogSearchParams.new()
-            print(subCategory)
             category = category:lower()
             subCategory = subCategory:lower()
 
@@ -84,9 +107,12 @@ return function(target : CoreGui)
                 params.AssetTypes = {Enum.AvatarAssetType.Face, Enum.AvatarAssetType.FaceAccessory}
                 if subCategory == "classic" then
                     params.AssetTypes = {Enum.AvatarAssetType.Face}
-                elseif subCategory == "new" then
+                elseif subCategory == "3d" then
                     params.SearchKeyword = "3D face";
-                    params.AssetTypes = {Enum.AvatarAssetType.FaceAccessory}
+                    params.AssetTypes = {Enum.AvatarAssetType.FaceAccessory} 
+                elseif subCategory == "dynamic" then
+                    params.AssetTypes = {} 
+                    params.BundleTypes = {Enum.BundleType.DynamicHead}
                 end
             elseif category == "clothing" then
                 params.AssetTypes = {
@@ -123,7 +149,10 @@ return function(target : CoreGui)
                         Enum.AvatarAssetType.JacketAccessory,
                     }
                 elseif subCategory == "shoes" then
-                    params.SearchKeyword = "Shoes" 
+                    params.BundleTypes = {
+                        Enum.BundleType.Shoes,
+                    }
+                    params.AssetTypes = {}
                 end
             elseif category == "accessories" then
                 params.AssetTypes = {
@@ -169,24 +198,56 @@ return function(target : CoreGui)
                 params.AssetTypes = {
                     Enum.AvatarAssetType.HairAccessory,
                 }
-            elseif category == "animation packs" then
-                local assetTypes = {
-                    Enum.AvatarAssetType.RunAnimation
-                }
+            elseif category == "packs" then
+                local assetTypes = {}
 
                 for _,v : Enum.AvatarAssetType in pairs(Enum.AvatarAssetType:GetEnumItems()) do
                     if string.find(v.Name:lower(), "animation") then
                         table.insert(assetTypes, v)
                     end
                 end
-
+                
                 params.AssetTypes = assetTypes
+                params.BundleTypes = {Enum.BundleType.Animations, Enum.BundleType.BodyParts}
+
+                if subCategory == "animation packs" then
+                    params.AssetTypes = {}
+                    params.BundleTypes = {Enum.BundleType.Animations}
+                elseif subCategory == "emotes" then
+                    params.AssetTypes = assetTypes
+                    params.BundleTypes = {}
+                elseif subCategory == "bundles" then
+                    params.AssetTypes = {}
+                    params.BundleTypes = {Enum.BundleType.BodyParts}
+                end
             end
-            local catalogPages = AvatarEditorService:SearchCatalog(params)
+
+            params.SearchKeyword = params.SearchKeyword .. keyWord
+
+            local catalogPages 
+            local function getCatalogPages()
+                local s, e = pcall(function() 
+                    catalogPages = AvatarEditorService:SearchCatalog(params) 
+                end)
+                return s,e
+            end
+            local s, e =  getCatalogPages()
+            if not s and type(e) == "string" then
+                warn("Error: " .. e)
+            end
+
             return catalogPages
-        end
+        end,
+        _Value(true)
     )
     customizationUI.Parent = target
+
+    maid:GiveTask(onRPNameChange:Connect(function(inputted : string)
+        print("On RP Change :", inputted)
+    end))
+    maid:GiveTask(onDescChange:Connect(function(inputted : string)
+        print("On Desc change :", inputted)
+    end))
 
     return function()
         maid:Destroy()
