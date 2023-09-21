@@ -96,6 +96,19 @@ local TEST_COLOR = Color3.fromRGB(255,0,0)
 --variables
 --references
 --local functions
+local function getSignal(maid : Maid, fn : (... any) -> ())
+    local out = maid:GiveTask(Signal.new())
+
+    maid:GiveTask(out:Connect(function(...)
+        fn(...)
+    end))
+
+    return out 
+end
+
+local function getCharacter()
+    return if RunService:IsRunning() then Players:CreateHumanoidModelFromUserId(Players.LocalPlayer.UserId) else game.ServerStorage.aryoseno11:Clone()
+end
 
 local function getHumanoidDescriptionAccessory(
     assetId : number,
@@ -117,7 +130,7 @@ end
 local function getButton( 
     maid : Maid,
     order : number,
-    text : string ?,
+    text : CanBeState<string> ?,
     fn : (() -> ()) ?,
     color : Color3 ?
 ) : TextButton
@@ -328,8 +341,19 @@ local function getCategoryButton(
     order : number,
     categoryName : string,
     fn : () -> (),
-    isVisible : ValueState<boolean>,
-    getCatalogPages : (categoryName : string, subCategory : string, keyWord : string) -> CatalogPages,
+    isVisible : State<boolean>,
+    getCatalogPages : (
+        categoryName : string, 
+        subCategory : string, 
+        keyWord : string,
+
+        catalogSortType : Enum.CatalogSortType ?, 
+        catalogSortAggregation : Enum.CatalogSortAggregation ?, 
+        creatorType : Enum.CreatorType ?,
+
+        minPrice : number ?,
+        maxPrice : number ?
+    ) -> CatalogPages,
     accessoryDisplayCount : number?
 )
     local color = Color3.fromRGB(math.random(100,255),math.random(100,255),math.random(100,255))
@@ -359,7 +383,7 @@ local function getCategoryButton(
     })
     local catalogDisplays : ValueState<{[number] : CatalogInfo}> = _Value({}) :: any
     local previewFrame = out:FindFirstChild("PreviewFrame")
-
+    local catalogPages
         --print("wth1?")
     task.spawn(function()
 
@@ -367,8 +391,8 @@ local function getCategoryButton(
             Value = _Computed(function(visible : boolean)
                 if visible then
                     --currentCatalogPage:Get()
-                        local catalogPages = getCatalogPages(categoryName, "All", "")
-                        print(_maid, " you there?")
+                        catalogPages = catalogPages or getCatalogPages(categoryName, "All", "")
+
                         if catalogPages then
                             local currentCatalogPage = catalogPages:GetCurrentPage()
                     
@@ -605,10 +629,11 @@ local function getListOptions(
     lists : {
         [number] : {
             Name : string, 
-            Signal : Signal
+            Signal : Signal,
+            Content : any
         }
     },
-    defautList : string?
+    defautList : State<string>
 )
     local _fuse = ColdFusion.fuse(maid)
     local _new = _fuse.new
@@ -651,12 +676,12 @@ local function getListOptions(
     })
     for k,v in pairs(lists) do
         local button = _bind(getButton(maid, k, v.Name, function()
-            v.Signal:Fire()
+            v.Signal:Fire(v.Content)
         end))({
             TextTransparency = _Computed(function(expanded : boolean)
                 return if expanded then 0 else 1
             end, isExpanded):Tween(),
-            Size = UDim2.fromScale(1, 0.6)
+            Size = UDim2.fromScale(1, 0.3)
         })
         button.Parent = content
     end
@@ -669,6 +694,7 @@ local function getListOptions(
             isExpanded:Set(not isExpanded:Get())
         end
     ))({
+        BackgroundColor3 = TERTIARY_COLOR,
         Size = UDim2.fromScale(1, 1),
         Children = {
             _new("Frame")({
@@ -733,7 +759,18 @@ return function(
     onDescChange : Signal,
 
     getSubCategoryList : (categoryName : string) -> {[number] : string},
-    getCatalogPages : (categoryName : string, subCategory : string, keyWord : string) -> CatalogPages,
+    getCatalogPages : (
+        categoryName : string, 
+        subCategory : string, 
+        keyWord : string,
+
+        catalogSortType : Enum.CatalogSortType ?, 
+        catalogSortAggregation : Enum.CatalogSortAggregation ?, 
+        creatorType : Enum.CreatorType ?,
+
+        minPrice : number ?,
+        maxPrice : number ?
+    ) -> CatalogPages,
 
     isVisible : ValueState<boolean>
 )
@@ -750,8 +787,19 @@ return function(
 
     local onSearch = maid:GiveTask(Signal.new())
 
-    local char : ValueState<Model> = _Value(if RunService:IsRunning() then Players:CreateHumanoidModelFromUserId(Players.LocalPlayer.UserId) else game.ServerStorage.aryoseno11:Clone()) :: any
+    local char : ValueState<Model> = _Value(getCharacter()) :: any
 
+    local settingsState : {[any] : any} = {
+        [Enum.CatalogSortType] = Enum.CatalogSortType.Relevance :: Enum.CatalogSortType,
+        [Enum.CatalogSortAggregation] = Enum.CatalogSortAggregation.AllTime :: Enum.CatalogSortAggregation,
+        MinPrice = nil :: number ?,
+        MaxPrice = nil :: number ?,
+        Creator = nil :: string ?,
+        [Enum.CreatorType] = nil :: Enum.CreatorType ?,
+        OffSaleItems = true,
+        PersonalizedResults = true
+    }
+   
     local CurrentCategory : ValueState<Category?> = _Value(nil) :: any
  
     local onSettingsVisible = _Value(false) 
@@ -1166,7 +1214,7 @@ return function(
     local out = _new("Frame")({
         Visible = _Computed(function(visible : boolean)
             if visible then
-                local charModel : Model = if RunService:IsRunning() then Players:CreateHumanoidModelFromUserId(Players.LocalPlayer.UserId) else game.ServerStorage.aryoseno11:Clone()
+                local charModel : Model = getCharacter()
                 charModel:PivotTo(CFrame.new())
 
                 char:Set(charModel) 
@@ -1230,94 +1278,137 @@ return function(
         local catalogPageMaid = pageMaid:GiveTask(Maid.new())
 
         local currentSelectedButton : ValueState<GuiButton ?> = _Value(nil) :: any
+        
+        local currentCreatorType : ValueState<Enum.CreatorType ?> = _Value(nil) :: any
+        local currentCatalogSortAggregation : ValueState<Enum.CatalogSortAggregation> = _Value(Enum.CatalogSortAggregation.AllTime) :: any
+        local currentCatalogSortType : ValueState<Enum.CatalogSortType> = _Value(Enum.CatalogSortType.Relevance) :: any    
+        local currentCreatorName : ValueState<string ?> = _Value(nil) :: any
+        local currentMinPrice : ValueState<number?> = _Value(nil) :: any
+        local currentMaxPrice : ValueState<number?> = _Value(nil) :: any
 
-        local function loopThroughCatalogPage(catalogPage : CatalogPages)
-            for k,v in pairs(catalogPage:GetCurrentPage()) do
-                local buttonMaid = Maid.new()
+        local function loopThroughCatalogPage(
+            catalogPage : CatalogPages,
+            creatorType : Enum.CreatorType ?,
+            creatorName : string ?
+        )
+            for k,v : CatalogInfo in pairs(catalogPage:GetCurrentPage()) do
+                if ((creatorType == nil) or (v.CreatorType == creatorType.Name)) and ((creatorName == nil) or (v.CreatorName:lower():find(creatorName:lower()))) then
+                    local buttonMaid = Maid.new()
 
-                local _fuse = ColdFusion.fuse(buttonMaid)
-                local _new = _fuse.new
+                    local _fuse = ColdFusion.fuse(buttonMaid)
+                    local _new = _fuse.new
 
-                local _Value = _fuse.Value
-                local _Computed = _fuse.Computed
+                    local _Value = _fuse.Value 
+                    local _Computed = _fuse.Computed
 
-                local selectedButton = _Value(false)
+                    local selectedButton = _Value(false)
 
-                local catalogButton = catalogPageMaid:GiveTask(getCatalogButton(buttonMaid, k,  v, {
-                    [1] = {
-                        Name = "Try",
-                        Signal = onCatalogTry
-                    }
-                }, selectedButton))
-                catalogButton.Parent = categoryContent
-                
-                buttonMaid:GiveTask(catalogButton.Activated:Connect(function()
-                    if currentSelectedButton:Get() ~= catalogButton then
-                        currentSelectedButton:Set(catalogButton)
-                    else
-                        currentSelectedButton:Set(nil)
-                    end
-                end))
-
-                _new("StringValue")({
-                    Value = _Computed(function(button : GuiButton ?)
-                        if button == catalogButton then
-                            selectedButton:Set(true)
+                    local catalogButton = catalogPageMaid:GiveTask(getCatalogButton(buttonMaid, k,  v, {
+                        [1] = {
+                            Name = "Try",
+                            Signal = onCatalogTry
+                        }
+                    }, selectedButton))
+                    catalogButton.Parent = categoryContent
+                    
+                    buttonMaid:GiveTask(catalogButton.Activated:Connect(function()
+                        if currentSelectedButton:Get() ~= catalogButton then
+                            currentSelectedButton:Set(catalogButton)
                         else
-                            selectedButton:Set(false)
+                            currentSelectedButton:Set(nil)
                         end
-                        return ""
-                    end, currentSelectedButton)
-                })
+                    end))
 
-                buttonMaid:GiveTask(catalogButton.Destroying:Connect(function()
-                    buttonMaid:Destroy()
-                    return
-                end))
+                    _new("StringValue")({
+                        Value = _Computed(function(button : GuiButton ?)
+                            if button == catalogButton then
+                                selectedButton:Set(true)
+                            else
+                                selectedButton:Set(false)
+                            end
+                            return ""
+                        end, currentSelectedButton)
+                    })
+
+                    buttonMaid:GiveTask(catalogButton.Destroying:Connect(function()
+                        buttonMaid:Destroy()
+                        return
+                    end))
+                end
             end
         end
 
-        local function updateContent(category : string, subCategory : string ?, keyWord : string)
+        local function updateContent(
+            category : string, 
+            subCategory : string ?, 
+            keyWord : string,
+
+            catalogSortType : Enum.CatalogSortType ?, 
+            catalogSortAggregation : Enum.CatalogSortAggregation ?, 
+            creatorType : Enum.CreatorType ?,
+            creatorName : string ?,
+
+            minPrice : number ?, 
+            maxPrice : number ?
+        )
             catalogPageMaid:DoCleaning()
 
-            currentCatalogPage = getCatalogPages(category, subCategory or "All", keyWord)
+            currentCatalogPage = getCatalogPages(category, subCategory or "All", keyWord,  catalogSortType, catalogSortAggregation, creatorType, minPrice, maxPrice)
             currentSubCategory = subCategory
 
             if currentCatalogPage then
-                loopThroughCatalogPage(currentCatalogPage)
+                loopThroughCatalogPage(currentCatalogPage, creatorType, creatorName)
             end
         end
 
         local loadingFooter =  getLoadingFrame(maid, 3, categoryPageFooter)
         
         local selectFrameParent : ValueState<TextButton ?> = _Value(nil) :: any
-        local  selectFrame = _new("Frame")({
-            Name = "SelectFrame",
-            LayoutOrder = 2,
-            BackgroundColor3 = SELECT_COLOR,
-            Size = _Computed(function(instance)
-                return if instance then UDim2.fromScale(0.8, 0.2) else UDim2.fromScale(0, 0.2)
-            end, selectFrameParent):Tween(0.1),
-            Children = {
-                _new("UICorner")({})
-            },
-            Parent = selectFrameParent
-        }) :: Frame
+        local function getSelectFrame()
+            local  out = _new("Frame")({
+                Name = "SelectFrame",
+                LayoutOrder = 2,
+                BackgroundColor3 = SELECT_COLOR,
+                Size = _Computed(function(instance)
+                    return if instance then UDim2.fromScale(0.8, 0.2) else UDim2.fromScale(0, 0.2)
+                end, selectFrameParent):Tween(0.1),
+                Children = {
+                    _new("UICorner")({})
+                },
+            }) :: Frame
+            return out
+        end        
+
+        pageMaid.SelectFrame = getSelectFrame()
 
         local strVal = _new("StringValue")({
-            Name = _Computed(function(parent : TextButton ?) 
+            Name = _Computed(function(parent : TextButton ?) -- FX
+                
                 if parent then
+                    local selectFrame = getSelectFrame()
+                    pageMaid.SelectFrame = selectFrame
+                    
                     selectFrame.Size = UDim2.fromScale(0, 0.2)
                     local t= game:GetService("TweenService"):Create(selectFrame, TweenInfo.new(0.1), {
                         Size = UDim2.fromScale(0.8, 0.2)
                     })
+                    selectFrame.Parent = parent
                     t:Play()
                 else
 
                 end
                 return ""
             end, selectFrameParent),
-            Value = _Computed(function(category : Category ?)
+            Value = _Computed(function(
+                category : Category ?, 
+                catalogSortType : Enum.CatalogSortType, 
+                catalogSortAggregation : Enum.CatalogSortAggregation, 
+                creatorType : Enum.CreatorType ?,
+                creatorName : string ?,
+                minPrice : number ?,
+                maxPrice : number ?
+            )
+                
                 selectFrameParent:Set()
 
                 if category then
@@ -1331,7 +1422,7 @@ return function(
 
                     loadingFooter.Visible = true
 
-                    updateContent(category.CategoryName, selectedSubCategory, "")
+                    updateContent(category.CategoryName, selectedSubCategory, "", catalogSortType, catalogSortAggregation, creatorType, creatorName, minPrice, maxPrice)
                 
                     for i, v in pairs(category.SubCategories) do
                         local listButton 
@@ -1340,7 +1431,7 @@ return function(
                             --selectFrame.Size = UDim2.new(1, 0, 0.2, 0) 
                             selectFrameParent:Set(listButton)
                            
-                            updateContent(category.CategoryName, v, "")
+                            updateContent(category.CategoryName, v, "", catalogSortType, catalogSortAggregation, creatorType, creatorName, minPrice, maxPrice)
                             loadingFooter.Visible = false
                         end))({
                             Size = UDim2.fromScale(0.25, 1),
@@ -1360,12 +1451,13 @@ return function(
 
                     loadingFooter.Visible = false 
                 else
+
                     categoryPage.Visible = false
                     mainMenuPage.Visible = true
                 end
 
                 return ""
-            end, CurrentCategory)
+            end, CurrentCategory, currentCatalogSortType, currentCatalogSortAggregation, currentCreatorType, currentCreatorName, currentMinPrice, currentMaxPrice)
         })
 
         maid:GiveTask(categoryContent:GetPropertyChangedSignal("CanvasPosition"):Connect(function()
@@ -1394,10 +1486,302 @@ return function(
                 loadingFooter.Visible = true
                 local subCategoryFrame = selectFrameParent:Get()
                 local subCategory = if subCategoryFrame then subCategoryFrame.Text else currentCat.SubCategories[1]
-                updateContent(currentCat.CategoryName, subCategory, keyWord)
+                updateContent(currentCat.CategoryName, subCategory, keyWord, currentCatalogSortType:Get(), currentCatalogSortAggregation:Get(), currentCreatorType:Get(), currentCreatorName:Get(), currentMinPrice:Get(), currentMaxPrice:Get())
                 loadingFooter.Visible = false
             end
         end))
+
+        
+        local function getFilterOptions(
+            maid : Maid,
+            filterType : Enum, --Enum.CreatorType | Enum.CatalogSortAggregation | Enum.CatalogSortType
+            order : number,
+            onButtonSelected : Signal,
+            currentOption : State<EnumItem ?>
+        )
+            
+            local function spacifyStr(str : string)
+                return str:gsub("%u", " %1"):gsub("%d+", " %1")
+            end
+
+            local _fuse = ColdFusion.fuse(maid)
+            local _new = _fuse.new
+
+            local _Value = _fuse.Value
+            
+            local lists = {}
+        
+            if filterType == Enum.CreatorType then
+                table.insert(lists, {
+                    Name = spacifyStr("All"),
+                    Signal = onButtonSelected,
+                    Content = nil :: any,
+                })
+            end
+
+            for _,v : EnumItem in pairs(filterType:GetEnumItems()) do
+                table.insert(lists, {
+                    Name = spacifyStr(v.Name),
+                    Signal = onButtonSelected,
+                    Content = v,
+                })
+            end 
+        
+            local out =  _bind(getListOptions(
+                maid,
+                order,
+                lists,
+                _Computed(function(opt : EnumItem ?)
+                    local text = if opt then (spacifyStr(opt.Name)) else "All"
+                    return  text
+                end, currentOption)
+            ))({
+                Size = UDim2.fromScale(0.65, 1)
+            })
+
+            return out
+        end
+
+        local onCatalogSortTypeSelected = getSignal(maid, function(passedContent)
+            currentCatalogSortType:Set(passedContent)
+        end)
+        local onCatalogSortAggregationSelected = getSignal(maid, function(passedContent)
+            currentCatalogSortAggregation:Set(passedContent)
+        end)
+        local onCreatorTypeSelected = getSignal(maid, function(passedContent)
+            currentCreatorType:Set(passedContent)
+        end)
+
+
+        local settingsFrame = _new("Frame")({
+            AnchorPoint = Vector2.new(0.5,0.5),
+            BackgroundColor3 = BACKGROUND_COLOR,
+            Visible = onSettingsVisible,
+            Size = UDim2.fromScale(0.5, 0.5),
+            Position = UDim2.fromScale(0.5, 0.5),
+            ZIndex = 10,
+            Children = {
+                _new("UICorner")({}),
+                _new("UIStroke")({
+                    Thickness = 2,
+                    Color = PRIMARY_COLOR
+                }),
+                _new("UIListLayout")({
+                    Padding = PADDING_SIZE,
+                    SortOrder = Enum.SortOrder.LayoutOrder
+                }),
+                _new("TextLabel")({
+                    Name = "Title",
+                    LayoutOrder = 1,
+                    BackgroundTransparency = 1,
+                    Size = UDim2.fromScale(1, 0.2),
+                    RichText = true,
+                    Text = "<b>SETTINGS</b>",
+                    TextSize = TEXT_SIZE*1.5,
+                    TextColor3 = PRIMARY_COLOR,
+                    TextStrokeTransparency = 0.5,
+                    --[[Children = {
+                        _new("UIListLayout")({
+                            Padding = PADDING_SIZE,
+                        }),
+                        _new("TextLabel")({
+                            BackgroundTransparency = 1,
+                            Text = "Settings",
+                            BackgroundColor3 = TEST_COLOR,
+                            Size = UDim2.fromScale(1, 0.2),
+                            
+                        })
+                    }]]
+                }),
+                _new("Frame")({
+                    Name = "Contents",
+                    LayoutOrder = 2,
+                    BackgroundTransparency = 1,
+                    Size = UDim2.fromScale(1, 0.8),
+                    Children = {
+                        _new("UIListLayout")({
+                            Padding = PADDING_SIZE,
+                            SortOrder = Enum.SortOrder.LayoutOrder
+                        }),
+                    
+                        _new("UIPadding")({
+                            PaddingTop = PADDING_SIZE,
+                            PaddingBottom = PADDING_SIZE,
+                            PaddingLeft = PADDING_SIZE,
+                            PaddingRight = PADDING_SIZE
+                        }),
+                        _new("Frame")({
+                            Name = "Setting1",
+                            LayoutOrder = 1,
+                            ZIndex = 2,
+                            BackgroundTransparency = 1,
+                            Size = UDim2.fromScale(1, 0.2),
+                            Children = {
+                                _new("UIListLayout")({
+                                    FillDirection = Enum.FillDirection.Horizontal,
+                                    Padding = PADDING_SIZE,
+                                    SortOrder = Enum.SortOrder.LayoutOrder
+                                }),
+                                _new("TextLabel")({
+                                    LayoutOrder = 1,
+                                    BackgroundTransparency = 1,
+                                    AutomaticSize = Enum.AutomaticSize.X,
+                                    Size = UDim2.fromScale(0, 1),
+                                    RichText = true,
+                                    Text = "<b>Sort by</b>",
+                                    TextColor3 = PRIMARY_COLOR
+                                }),
+
+                                _bind(getFilterOptions(
+                                    maid,
+                                    Enum.CatalogSortType,
+                                    2,
+                                    onCatalogSortTypeSelected,
+                                    currentCatalogSortType ::  any
+                                ))({
+                                    Size = UDim2.fromScale(0.5, 1)
+                                }),
+                                _bind(getFilterOptions(
+                                    maid,
+                                    Enum.CatalogSortAggregation,
+                                    3,
+                                    onCatalogSortAggregationSelected,
+                                    currentCatalogSortAggregation  ::  any
+                                ))({
+                                    Size = UDim2.fromScale(0.3, 1)
+                                })
+                                --[[_bind(getListOptions(
+                                    maid,
+                                    2,
+                                    {
+                                        {
+                                            Name = "Filter1", 
+                                            Signal = maid:GiveTask(Signal.new())
+                                        },
+                                        {
+                                            Name = "Filter2", 
+                                            Signal = maid:GiveTask(Signal.new())
+                                        },
+                                    }
+                                ))({
+                                    Size = UDim2.fromScale(0.65, 1)
+                                })]]
+
+                            }
+                        }),
+                        _new("Frame")({
+                            LayoutOrder = 2,
+                            BackgroundTransparency = 1,
+                            Size = UDim2.fromScale(1, 0.2),
+                            Children = {
+                                _new("UIListLayout")({
+                                    FillDirection = Enum.FillDirection.Horizontal,
+                                    Padding = PADDING_SIZE,
+                                    SortOrder = Enum.SortOrder.LayoutOrder
+                                }),
+                                _new("TextLabel")({
+                                    LayoutOrder = 1,
+                                    BackgroundTransparency = 1,
+                                    AutomaticSize = Enum.AutomaticSize.X,
+                                    Size = UDim2.fromScale(0, 1),
+                                    RichText = true,
+                                    Text = "<b>Price</b>",
+                                    TextColor3 = PRIMARY_COLOR
+                                }),
+                                _bind(getTextBox(maid, 2, "Min Price", function(input : string)
+                                    currentMinPrice:Set(tonumber(input))
+                                end, ""))({
+                                    Size = UDim2.fromScale(0.4, 1)
+                                }),
+                                _new("TextLabel")({
+                                    LayoutOrder = 3,
+                                    BackgroundTransparency = 1,
+                                    AutomaticSize = Enum.AutomaticSize.X,
+                                    Size = UDim2.fromScale(0, 1),
+                                    RichText = true,
+                                    Text = " to ",
+                                    TextColor3 = PRIMARY_COLOR
+                                }),
+                                _bind(getTextBox(maid, 4, "Max Price", function(input : string)
+                                    currentMaxPrice:Set(tonumber(input))
+                                end, ""))({
+                                    Size = UDim2.fromScale(0.4, 1)
+                                }),
+                            }
+                        }),
+                        _new("Frame")({
+                            LayoutOrder = 3,
+                            BackgroundTransparency = 1,
+                            Size = UDim2.fromScale(1, 0.2),
+                            Children = {
+                                _new("UIListLayout")({
+                                    FillDirection = Enum.FillDirection.Horizontal,
+                                    Padding = PADDING_SIZE,
+                                    SortOrder = Enum.SortOrder.LayoutOrder
+                                }),
+                                _new("TextLabel")({
+                                    LayoutOrder = 1,
+                                    BackgroundTransparency = 1,
+                                    AutomaticSize = Enum.AutomaticSize.X,
+                                    Size = UDim2.fromScale(0, 1),
+                                    RichText = true,
+                                    Text = "<b>Creator</b>",
+                                    TextColor3 = PRIMARY_COLOR
+                                }),
+                                _bind(getTextBox(
+                                    maid, 
+                                    1, 
+                                    "Creator Name...", 
+                                        function(input : string)
+                                            currentCreatorName:Set(input)
+                                        return
+                                    end
+                                ))({
+                                    Size = UDim2.fromScale(0.45, 1)
+                                }),
+                                _bind(getFilterOptions(
+                                    maid,
+                                    Enum.CreatorType,
+                                    2,
+                                    onCreatorTypeSelected,
+                                    currentCreatorType ::  any
+                                ))({
+                                    Size = UDim2.fromScale(0.3, 1)
+                                }),
+                            }
+                        })
+                    }
+                })
+            },
+            Parent = _Computed(function()
+                return out.Parent
+            end, onSettingsVisible)
+        }) :: Frame
+
+
+        local exitButton =  maid:GiveTask(ExitButton.new(
+            settingsFrame, 
+            onSettingsVisible,
+            function()
+                onSettingsVisible:Set(false)
+                return 
+            end
+        ))
+
+        _new("StringValue")({
+            Value = _Computed(function(isVisible : boolean)
+                exitButton.Instance.Parent = settingsFrame            
+                return ""
+            end, onSettingsVisible)
+        })
+
+        --settings
+        _new("StringValue")({
+            Value = _Computed(function(catalogSortType : Enum.CatalogSortType)
+                
+                return ""
+            end, currentCatalogSortType)
+        })
     end
 
     --fxs
@@ -1408,11 +1792,12 @@ return function(
   
 
     do
+        local charMaid = maid:GiveTask(Maid.new())
         local currentSelectedButton : ValueState<GuiButton ?> = _Value(nil) :: any
 
         local str = _new("StringValue")({
-            Value = _Computed(function()             
-                local charModel = char:Get()
+            Value = _Computed(function(charModel : Model)             
+                charMaid:DoCleaning()
                 local humanoid = if charModel then charModel:FindFirstChild("Humanoid") :: Humanoid else nil
                 local humanoidDesc = if humanoid then humanoid:FindFirstChild("HumanoidDescription") :: HumanoidDescription else nil
                 local humanoidRigType = if humanoid then humanoid.RigType else nil
@@ -1459,7 +1844,7 @@ return function(
                     for k,humanoidDescription in pairs(accessories) do
                         local catalogInfo = convertAccessoryToSimplifiedCatalogInfo(humanoidDescription)
                         
-                        local buttonMaid = Maid.new()
+                        local buttonMaid = charMaid:GiveTask(Maid.new())
 
                         local __fuse = ColdFusion.fuse(buttonMaid)
                         local __new = __fuse.new
@@ -1506,125 +1891,10 @@ return function(
                     
                 end
                 return ""
-            end),
+            end, char),
         })
     end
 
-    
-    local settingsFrame = _new("Frame")({
-        AnchorPoint = Vector2.new(0.5,0.5),
-        BackgroundColor3 = BACKGROUND_COLOR,
-        Visible = onSettingsVisible,
-        Size = UDim2.fromScale(0.5, 0.5),
-        Position = UDim2.fromScale(0.5, 0.5),
-        ZIndex = 10,
-        Children = {
-            _new("UICorner")({}),
-            _new("UIStroke")({
-                Thickness = 2,
-                Color = PRIMARY_COLOR
-            }),
-            _new("UIListLayout")({
-                Padding = PADDING_SIZE,
-                SortOrder = Enum.SortOrder.LayoutOrder
-            }),
-            _new("TextLabel")({
-                Name = "Title",
-                LayoutOrder = 1,
-                BackgroundTransparency = 1,
-                Size = UDim2.fromScale(1, 0.2),
-                Text = "Settings",
-                TextColor3 = PRIMARY_COLOR,
-                TextStrokeTransparency = 0.5,
-                --[[Children = {
-                    _new("UIListLayout")({
-                        Padding = PADDING_SIZE,
-                    }),
-                    _new("TextLabel")({
-                        BackgroundTransparency = 1,
-                        Text = "Settings",
-                        BackgroundColor3 = TEST_COLOR,
-                        Size = UDim2.fromScale(1, 0.2),
-                        
-                    })
-                }]]
-            }),
-            _new("Frame")({
-                Name = "Contents",
-                LayoutOrder = 2,
-                Size = UDim2.fromScale(1, 0.8),
-                Children = {
-                    _new("UIListLayout")({
-                        Padding = PADDING_SIZE,
-                        SortOrder = Enum.SortOrder.LayoutOrder
-                    }),
-                   
-                    _new("UIPadding")({
-                        PaddingTop = PADDING_SIZE,
-                        PaddingBottom = PADDING_SIZE,
-                        PaddingLeft = PADDING_SIZE,
-                        PaddingRight = PADDING_SIZE
-                    }),
-                    _new("Frame")({
-                        Name = "Setting1",
-                        BackgroundTransparency = 1,
-                        Size = UDim2.fromScale(1, 0.2),
-                        Children = {
-                            _new("UIListLayout")({
-                                FillDirection = Enum.FillDirection.Horizontal,
-                                Padding = PADDING_SIZE,
-                                SortOrder = Enum.SortOrder.LayoutOrder
-                            }),
-                            _new("TextLabel")({
-                                LayoutOrder = 1,
-                                BackgroundTransparency = 1,
-                                AutomaticSize = Enum.AutomaticSize.X,
-                                Size = UDim2.fromScale(0, 1),
-                                Text = " Jenis Jenis ",
-                            }),
-
-                            _bind(getListOptions(
-                                maid,
-                                2,
-                                {
-                                    {
-                                        Name = "Filter1", 
-                                        Signal = maid:GiveTask(Signal.new())
-                                    },
-                                    {
-                                        Name = "Filter2", 
-                                        Signal = maid:GiveTask(Signal.new())
-                                    },
-                                }
-                            ))({
-                                Size = UDim2.fromScale(0.65, 1)
-                            })
-
-                        }
-                    })
-                }
-            })
-        },
-        Parent = _Computed(function()
-            return out.Parent
-        end, onSettingsVisible)
-    }) :: Frame
-
-    local exitButton =  maid:GiveTask(ExitButton.new(
-        settingsFrame, 
-        onSettingsVisible,
-        function()
-            onSettingsVisible:Set(false)
-            return 
-        end
-    ))
-
-    _new("StringValue")({
-        Value = _Computed(function(isVisible : boolean)
-            exitButton.Instance.Parent = settingsFrame            
-            return ""
-        end, onSettingsVisible)
-    })
     --[[for i = 1, 10 do
         local button = getAccessoryButton(maid, i, {
             [1] = {

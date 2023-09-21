@@ -93,11 +93,25 @@ return function(target : CoreGui)
         function(
             category : string, 
             subCategory : string,
-            keyWord : string
+            keyWord : string,
+
+            catalogSortType : Enum.CatalogSortType ?, 
+            catalogSortAggregation : Enum.CatalogSortAggregation ?, 
+            creatorType : Enum.CreatorType ?,
+
+            minPrice : number ?,
+            maxPrice : number ?
         )
             keyWord = " " .. keyWord
 
             local params = CatalogSearchParams.new()
+            params.SortType = catalogSortType or params.SortType
+            params.SortAggregation = catalogSortAggregation or params.SortAggregation
+            params.IncludeOffSale = false
+            params.MinPrice = minPrice or params.MinPrice
+            params.MaxPrice = maxPrice or params.MaxPrice
+
+            print(params.SortAggregation, catalogSortAggregation)
             category = category:lower()
             subCategory = subCategory:lower()
 
