@@ -127,6 +127,60 @@ local function convertAccessoryToSimplifiedCatalogInfo(infoFromHumanoidDesc : In
     }
 end
 
+local function getViewportFrame(
+    maid : Maid,
+    order : number,
+    relativePos : CanBeState<Vector3>,
+    contentInstance : CanBeState<Model>,
+    fn : (() -> ()) ?
+)
+    local _fuse = ColdFusion.fuse(maid)
+    local _new = _fuse.new
+    local _import = _fuse.import
+    local _bind = _fuse.bind
+    local _clone = _fuse.clone
+
+    local _Computed = _fuse.Computed
+
+    local importedCf : State<Vector3> = _import(relativePos, Vector3.new(5,0,0))
+
+    local camera = _new("Camera")({
+        CFrame = _Computed(function (localv3 : Vector3)
+            
+            return CFrame.lookAt(localv3, Vector3.new())
+        end, importedCf)
+    })
+
+    local out = _new("ViewportFrame")({
+        LayoutOrder = order,
+        CurrentCamera = camera,
+        Size = UDim2.fromScale(1, 1),
+        BackgroundColor3 = BACKGROUND_COLOR,
+        Children = {
+            camera,
+            _new("WorldModel")({
+                Children = {
+                    _import(contentInstance, nil) 
+                }
+            }),
+        }
+    })
+
+    if fn then
+        _new("ImageButton")({
+            BackgroundTransparency = 1,
+            Events = {
+                Activated = function()
+                    fn()
+                end
+            },
+            Parent = out
+        })
+    end
+
+    return out
+end
+
 local function getButton( 
     maid : Maid,
     order : number,
@@ -178,7 +232,8 @@ local function getCatalogButton(
             Signal : Signal
         }
     },
-    isSelected : ValueState<boolean>
+    isSelected : ValueState<boolean>,
+    char : State<Model> ?
 )
     local _fuse = ColdFusion.fuse(maid)
     local _new = _fuse.new
@@ -186,14 +241,106 @@ local function getCatalogButton(
     local _bind = _fuse.bind
     local _clone = _fuse.clone
 
+    local _Value = _fuse.Value
     local _Computed = _fuse.Computed
 
+    local isHovered = _Value(false)
 
+    local function weldAttachments(attach1, attach2)
+        local weld = Instance.new("Weld")
+        weld.Part0 = attach1.Parent
+        weld.Part1 = attach2.Parent
+        weld.C0 = attach1.CFrame
+        weld.C1 = attach2.CFrame
+        weld.Parent = attach1.Parent
+        return weld
+    end
+     
+    local function buildWeld(weldName, parent, part0, part1, c0, c1)
+        local weld = Instance.new("Weld")
+        weld.Name = weldName
+        weld.Part0 = part0
+        weld.Part1 = part1
+        weld.C0 = c0
+        weld.C1 = c1
+        weld.Parent = parent
+        return weld
+    end
+     
+    local function findFirstMatchingAttachment(model, name)
+        for _, child in pairs(model:GetChildren()) do
+            if child:IsA("Attachment") and child.Name == name then
+                return child
+            elseif not child:IsA("Accoutrement") and not child:IsA("Tool") then -- Don't look in hats or tools in the character
+                local foundAttachment = findFirstMatchingAttachment(child, name)
+                if foundAttachment then
+                    return foundAttachment
+                end
+            end
+        end
+    end
+     
+    local function addAccoutrement(character : Model, accoutrement : Accessory)  
+        accoutrement.Parent = character
+        local handle = accoutrement:FindFirstChild("Handle")
+        if handle then
+            local accoutrementAttachment = handle:FindFirstChildOfClass("Attachment")
+            if accoutrementAttachment then
+                local characterAttachment = findFirstMatchingAttachment(character, accoutrementAttachment.Name)
+                if characterAttachment then
+                    weldAttachments(characterAttachment, accoutrementAttachment)
+                end
+            else
+                local head = character:FindFirstChild("Head")
+                if head then
+                    local attachmentCFrame = CFrame.new(0, 0.5, 0)
+                    local hatCFrame = accoutrement.AttachmentPoint
+                    buildWeld("HeadWeld", head, head, handle, attachmentCFrame, hatCFrame)
+                end
+            end
+        end
+    end
+    
     local content = _new("ImageLabel")({
         BackgroundColor3 = SECONDARY_COLOR,
         Image = CustomizationUtil.getAssetImageFromId(catalogInfo.Id, catalogInfo.ItemType == Enum.AvatarItemType.Bundle.Name),
         Size = UDim2.new(1, 0,0.8,0), 
         LayoutOrder = 2,
+        Children = {
+            _new("UICorner")({}),
+        }
+    })
+
+
+    local secondFrame
+    local previewChar 
+
+    if char then
+        previewChar = char:Get():Clone()
+
+
+        secondFrame = getViewportFrame(
+            maid, 
+            1, 
+            Vector3.new(0,0, -5), 
+            previewChar
+        )
+    else
+        secondFrame = _new("Frame")({
+            BackgroundTransparency = 1,
+            Size = UDim2.fromScale(1, 1)
+        })
+    end
+
+    local avatarTransp = _Computed(function(hovered : boolean)
+        return if hovered then 0 else 1
+    end, isHovered):Tween()
+ 
+    local options = _bind(secondFrame)({
+        BackgroundColor3 = SECONDARY_COLOR,
+        Transparency = avatarTransp,
+        Size = UDim2.fromScale(1, 1),
+        Parent = content,
         Children = {
             _new("UICorner")({}),
             _new("UIPadding")({
@@ -211,6 +358,12 @@ local function getCatalogButton(
             }),
         } 
     })
+
+    if options:IsA("ViewportFrame") then
+        _bind(secondFrame)({
+            ImageTransparency = avatarTransp 
+        })
+    end
 
     for k,v in pairs(buttons) do
         local button = _bind(getButton(maid, k, nil, function()
@@ -232,9 +385,10 @@ local function getCatalogButton(
                 _new("UICorner")({}),
             }
         })
-        button.Parent = content    
+        button.Parent = options    
     end 
 
+    
     local out = _new("TextButton")({
         LayoutOrder = order,
         BackgroundTransparency = 1,
@@ -243,7 +397,6 @@ local function getCatalogButton(
             _new("UIListLayout")({
                 SortOrder = Enum.SortOrder.LayoutOrder,
             }),
-            content,
             _new("TextLabel")({
                 LayoutOrder = 1,
                 BackgroundTransparency = 1,
@@ -253,9 +406,45 @@ local function getCatalogButton(
                 Text = "<b>" .. (catalogInfo.Name or "") .. "</b>",
                 TextColor3 = TEXT_COLOR,
                 TextStrokeTransparency = 0.5
-            })
+            }),
+            content
+        },
+        Events = {
+            MouseEnter = function()
+                if char then
+                    isHovered:Set(true)
+
+                    
+                end
+            end,
+            MouseLeave = function()
+                if char then
+                    isHovered:Set(false)
+                end
+            end
         }
     }) :: TextButton
+
+    if previewChar then
+        local humanoid = previewChar:FindFirstChild("Humanoid") :: Humanoid ?
+        if humanoid then
+            task.spawn(function()
+                local asset
+                local s, e = pcall(function() asset = game:GetService("InsertService"):LoadAsset(catalogInfo.Id) end)
+        
+                print(s, e) 
+                
+                if s and not e then
+                    local catalogModel = asset:GetChildren()[1] :: Accessory ?
+                    if catalogModel and catalogModel:IsA("Accessory") then
+                        
+                        addAccoutrement(previewChar :: Model, catalogModel)
+                        -- print(catalogModel:FindFirstChild("AccessoryWeld").C0, catalogModel:FindFirstChild("AccessoryWeld").C1)
+                    end 
+                end
+            end)
+        end
+    end
 
     return out
 end
@@ -429,7 +618,6 @@ local function getCategoryButton(
 
         _new("StringValue")({
             Value = _Computed(function(catalogs : {[number] : CatalogInfo})
-                print(previewFrame, " juri!")
                 catalogMaid:DoCleaning()
 
                 for k,catalogInfo in pairs(catalogs) do
@@ -988,7 +1176,7 @@ return function(
                 CanvasSize = UDim2.fromScale(0, 0),
                 BackgroundTransparency = 1,
                 LayoutOrder = 3,
-                Size = UDim2.fromScale(0.45, 1),
+                Size = UDim2.fromScale(0.45, 1), 
                 Children = {
                     _new("UIListLayout")({
                         FillDirection = Enum.FillDirection.Horizontal,
@@ -1086,10 +1274,9 @@ return function(
     local degreeX = -90
     local degreeY = 0
 
-    local cf = _Value(CFrame.lookAt(Vector3.new(math.cos(math.rad(degreeX))*6,math.sin(math.rad(degreeY))*6,math.sin(math.rad(degreeX))*6), Vector3.new()))
-    local camera = _new("Camera")({
-        CFrame = cf
-    })
+    --cam change
+    local charViewPos = _Value(Vector3.new(math.cos(math.rad(degreeX))*6,math.sin(math.rad(degreeY))*6,math.sin(math.rad(degreeX))*6))
+    
     local spinningConn
 
     local roleplayName = _new("Frame")({
@@ -1123,7 +1310,45 @@ return function(
         }
     })
 
-    local avatarViewportFrame = _new("ViewportFrame")({
+    local avatarViewportFrame = _bind(getViewportFrame(
+        maid, 
+        2, 
+        charViewPos, 
+        char
+    ))({
+        BackgroundTransparency = 1,
+        Size = UDim2.fromScale(1, 0.45),
+        Children = {
+            _new("ImageButton")({
+                BackgroundTransparency = 1,
+                Size = UDim2.fromScale(1, 1),
+                Events = {
+                    MouseButton1Down = function()
+                        local mouse : Mouse ? = if RunService:IsRunning() then Players.LocalPlayer:GetMouse() else nil
+                        local intX, intY 
+                        if mouse then intX = mouse.X; intY = mouse.Y end
+        
+                        spinningConn = RunService.RenderStepped:Connect(function()
+                            
+                            if mouse then
+                                local x,y = mouse.X - intX, mouse.Y - intY -- UserInputService:GetMouseDelta().X, UserInputService:GetMouseDelta().Y
+                                degreeX += x
+                                degreeY += y
+                                charViewPos:Set(Vector3.new(math.cos(math.rad(degreeX))*6,math.sin(math.rad(degreeY))*6,math.sin(math.rad(degreeX))*6)) 
+                                intX = mouse.X; intY = mouse.Y
+                            end 
+                        end)
+                    end,
+                    MouseButton1Up = function()
+                        spinningConn:Disconnect()
+                    end
+                }
+            })
+        },
+       
+    })
+    
+    --[[_new("ViewportFrame")({
         LayoutOrder = 2,
         CurrentCamera = camera,
         Size = UDim2.fromScale(1, 0.45),
@@ -1161,7 +1386,7 @@ return function(
                 }
             })
         }
-    })
+    })]]
 
     local avatarOptions = _new("Frame")({
         LayoutOrder = 4,
@@ -1308,7 +1533,7 @@ return function(
                             Name = "Try",
                             Signal = onCatalogTry
                         }
-                    }, selectedButton))
+                    }, selectedButton, char))
                     catalogButton.Parent = categoryContent
                     
                     buttonMaid:GiveTask(catalogButton.Activated:Connect(function()
@@ -1868,7 +2093,7 @@ return function(
                         buttonMaid:GiveTask(button.Activated:Connect(function()
                             if currentSelectedButton:Get() ~= button then
                                 currentSelectedButton:Set(button)
-                            else
+                            else 
                                 currentSelectedButton:Set(nil)
                             end
                         end))
