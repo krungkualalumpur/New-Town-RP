@@ -30,8 +30,8 @@ return function(target : CoreGui)
     local _Computed = _fuse.Computed
     local _Value = _fuse.Value
     
-    local onAccessoryTry = maid:GiveTask(Signal.new())
-    local onAccessoryDelete = maid:GiveTask(Signal.new())
+    local onCatalogTry = maid:GiveTask(Signal.new())
+    local onCatalogDelete = maid:GiveTask(Signal.new())
 
     --task.spawn(function()
         --print(AvatarEditorService:GetItemDetails(16630147, Enum.AvatarItemType.Asset))
@@ -51,8 +51,8 @@ return function(target : CoreGui)
     local customizationUI = CustomizationUI(
         maid,
 
-        onAccessoryTry,
-        onAccessoryDelete,
+        onCatalogTry,
+        onCatalogDelete,
 
         onRPNameChange,
         onDescChange,
@@ -255,6 +255,15 @@ return function(target : CoreGui)
         _Value(true)
     )
     customizationUI.Parent = target
+
+    maid:GiveTask(onCatalogTry:Connect(function(catalogInfo : CustomizationUI.SimplifiedCatalogInfo)
+        print(catalogInfo.Id, " test try?")
+        
+    end))
+
+    maid:GiveTask(onCatalogDelete:Connect(function(catalogInfo : CustomizationUI.SimplifiedCatalogInfo)
+        print("motorik ", catalogInfo.Id)
+    end))
 
     maid:GiveTask(onRPNameChange:Connect(function(inputted : string)
         print("On RP Change :", inputted)

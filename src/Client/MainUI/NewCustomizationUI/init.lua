@@ -13,10 +13,11 @@ local Signal = require(ReplicatedStorage:WaitForChild("Packages"):WaitForChild("
 --modules
 local CustomizationUtil = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("CustomizationUtil"))
 local ExitButton = require(ReplicatedStorage:WaitForChild("Client"):WaitForChild("ExitButton"))
+local NumberUtil = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("NumberUtil"))
 
 --types
 type Category = {SubCategories : {[number] : string}, CategoryName : string}
-type CatalogInfo = {
+export type CatalogInfo = {
     ["Id"] : number,
     ["ItemType"] : string,
     ["AssetType"] : string,
@@ -54,7 +55,7 @@ type CatalogInfo = {
     ["FavoriteCount"] : number
 }
 
-type SimplifiedCatalogInfo = {
+export type SimplifiedCatalogInfo = {
     ["Id"] : number,
     ["ItemType"] : string,
     ["Name"] : string ?,
@@ -246,6 +247,7 @@ local function getCatalogButton(
 
     local isHovered = _Value(false)
 
+
     local function weldAttachments(attach1, attach2)
         local weld = Instance.new("Weld")
         weld.Part0 = attach1.Parent
@@ -314,15 +316,17 @@ local function getCatalogButton(
 
     local secondFrame
     local previewChar 
+    local charPreviewPos = _Value(Vector3.new(0,0, -5))
 
     if char then
+
         previewChar = char:Get():Clone()
 
 
         secondFrame = getViewportFrame(
             maid, 
             1, 
-            Vector3.new(0,0, -5), 
+            charPreviewPos, 
             previewChar
         )
     else
@@ -367,7 +371,7 @@ local function getCatalogButton(
 
     for k,v in pairs(buttons) do
         local button = _bind(getButton(maid, k, nil, function()
-
+            v.Signal:Fire(catalogInfo)
         end))({
             BackgroundTransparency = _Computed(function(selected : boolean)
                 return if selected then 0 else 1
@@ -421,6 +425,11 @@ local function getCatalogButton(
                 if char then
                     isHovered:Set(false)
                 end
+            end,
+            MouseButton1Click = function()
+                if char then
+                    isHovered:Set(false)
+                end
             end
         }
     }) :: TextButton
@@ -432,15 +441,71 @@ local function getCatalogButton(
                 local asset
                 local s, e = pcall(function() asset = game:GetService("InsertService"):LoadAsset(catalogInfo.Id) end)
         
-                print(s, e) 
-                
+                local marketInfo  
+                local s2, e2 = pcall(function()
+                    marketInfo = game:GetService("MarketplaceService"):GetProductInfo(catalogInfo.Id, if catalogInfo.ItemType == "Asset" then Enum.InfoType.Asset elseif catalogInfo.ItemType == "Bundle" then Enum.InfoType.Bundle else nil)
+                end) 
+               
+                local catalogModel
+                print(marketInfo, " asset type id: ", Enum.AvatarAssetType.Face.Value, catalogModel, " why u no fire1")
                 if s and not e then
-                    local catalogModel = asset:GetChildren()[1] :: Accessory ?
-                    if catalogModel and catalogModel:IsA("Accessory") then
-                        
-                        addAccoutrement(previewChar :: Model, catalogModel)
-                        -- print(catalogModel:FindFirstChild("AccessoryWeld").C0, catalogModel:FindFirstChild("AccessoryWeld").C1)
+                    catalogModel = asset:GetChildren()[1] :: Accessory ?
+                    if catalogModel then
+                        if catalogModel:IsA("Accessory") then
+                            
+                            addAccoutrement(previewChar :: Model, catalogModel)
+                        elseif  catalogModel:IsA("Shirt") then
+                            local shirt = previewChar:FindFirstChild("Shirt") :: Shirt or Instance.new("Shirt")
+                            shirt.ShirtTemplate = catalogModel.ShirtTemplate
+                            shirt.Parent = previewChar
+                        elseif catalogModel:IsA("Pants") then
+                            local pants = previewChar:FindFirstChild("Pants") :: Pants or Instance.new("Pants")
+                            pants.PantsTemplate = catalogModel.PantsTemplate
+                            pants.Parent = previewChar
+                        elseif catalogModel:IsA("Decal")  then
+                            local head = previewChar:WaitForChild("Head", 5) :: BasePart or nil
+                            local face = if head then (head:WaitForChild("face", 5) or Instance.new("Decal")) :: Decal else nil
+                            if face then 
+                                previewChar:PivotTo(CFrame.new(0, -1.5, -2.5))
+                                face.Parent = head 
+                                face.Texture = catalogModel.Texture
+                                print(face.Texture)
+                            end
+                        end
+                        -- print(catalogModel:FindFirstChild("AccessoryWeld").C0, catalogModel:FindFirstChild("AccessoryWeld").C1)   
                     end 
+                end
+
+                if marketInfo then
+                    print(marketInfo, humanoid.Parent)
+                    if marketInfo.BundleType == Enum.BundleType.Animations.Name and marketInfo.Items then
+                        for _,item : {Id : number, Name : string, Type : string} in pairs(marketInfo.Items) do
+                            if item.Id then
+                                if item.Name:lower():find("idle") then
+                                    local animator = humanoid:FindFirstChild("Animator") :: Animator
+                                    local anim = _new("Animation")({
+                                        AnimationId = "rbxassetid://" .. tostring(item.Id)
+                                    }) :: Animation
+                                    animator:LoadAnimation(anim)
+                                end
+                            end
+                        end 
+                    elseif marketInfo.BundleType == Enum.BundleType.BodyParts.Name and marketInfo.Items then
+                        print(humanoid.Parent)
+                        CustomizationUtil.ApplyBundleFromId(previewChar, catalogInfo.Id)
+                    end
+                    if marketInfo.AssetTypeId then
+                        for _,enum : EnumItem in pairs(Enum.AvatarAssetType:GetEnumItems()) do
+                            if enum.Name:lower():find("animation") and (enum.Value == marketInfo.AssetTypeId) then
+                                local animator = humanoid:FindFirstChild("Animator") :: Animator
+                                local anim = _new("Animation")({
+                                    AnimationId = "rbxassetid://" .. tostring(catalogInfo.Id)
+                                }) :: Animation
+                                animator:LoadAnimation(anim)
+                            end
+                        end
+                    end
+                   -- catalogInfo.
                 end
             end)
         end
@@ -977,6 +1042,9 @@ return function(
 
     local char : ValueState<Model> = _Value(getCharacter()) :: any
 
+    local currentPage : ValueState<GuiObject ?> = _Value(nil) :: any
+    local currentCatalogInfo : ValueState<CatalogInfo?> = _Value(nil) :: any
+
     local settingsState : {[any] : any} = {
         [Enum.CatalogSortType] = Enum.CatalogSortType.Relevance :: Enum.CatalogSortType,
         [Enum.CatalogSortAggregation] = Enum.CatalogSortAggregation.AllTime :: Enum.CatalogSortAggregation,
@@ -992,11 +1060,12 @@ return function(
  
     local onSettingsVisible = _Value(false) 
 
-
+    
     local mainMenuPage =  _new("Frame")({
         Size = UDim2.fromScale(0.68, 1),
         BackgroundTransparency = 1,
         BackgroundColor3 = BACKGROUND_COLOR,
+        
         Children = {
             _new("UIListLayout")({
                 FillDirection = Enum.FillDirection.Horizontal
@@ -1120,6 +1189,11 @@ return function(
             }),
         }
     }) :: Frame
+    _bind(mainMenuPage)({
+        Visible = _Computed(function(page : GuiObject ?)
+            return page == mainMenuPage
+        end, currentPage)
+    })
 
     local categoryPageHeader = _new("Frame")({
         Name = "Header",
@@ -1136,6 +1210,7 @@ return function(
             _bind(getButton(maid, 1, "<", function()
                 CurrentCategory:Set(nil)
             end))({
+                Name = "Back",
                 Size = UDim2.fromScale(0.1, 1),
                 TextScaled = true 
             }),
@@ -1270,6 +1345,539 @@ return function(
             categoryPageFooter,
         }
     }) :: Frame
+    _bind(categoryPage)({
+        Visible = _Computed(function(page : GuiObject ?)
+            return page == categoryPage
+        end, currentPage)
+    })
+
+    local recommendedContent = _new("ScrollingFrame")({
+        LayoutOrder = 2,
+        BackgroundColor3 = BACKGROUND_COLOR,
+        Size = UDim2.fromScale(1, 0.9),
+        Name = "Content",
+        Children = {
+            _new("UIListLayout")({
+                FillDirection = Enum.FillDirection.Horizontal,
+                SortOrder = Enum.SortOrder.LayoutOrder
+            }),
+        }
+        
+    })
+    local catalogInfoPage =  _new("ScrollingFrame")({
+        BackgroundTransparency = 1,
+        CanvasSize = UDim2.new(),
+        AutomaticCanvasSize = Enum.AutomaticSize.Y,
+        Size = UDim2.fromScale(0.6, 1),
+        Children = {
+            _new("UIPadding")({
+                PaddingTop = PADDING_SIZE,
+                PaddingBottom = PADDING_SIZE,
+                PaddingLeft = PADDING_SIZE,
+                PaddingRight = PADDING_SIZE
+            }),
+
+            _new("UIListLayout")({
+                Padding = PADDING_SIZE, 
+                FillDirection = Enum.FillDirection.Vertical,
+                SortOrder = Enum.SortOrder.LayoutOrder
+            }),
+
+            _new("UISizeConstraint")({
+                MaxSize = Vector2.new(860,860)
+            }),
+
+            _new("Frame")({
+                Name = "Header",
+                LayoutOrder = 0,
+                BackgroundTransparency = 1,
+                Size = UDim2.new(1,0,0,50),
+                Children = {
+                    _new("UIListLayout")({
+                        Padding = PADDING_SIZE, 
+                        FillDirection = Enum.FillDirection.Horizontal,
+                        SortOrder = Enum.SortOrder.LayoutOrder
+                    }),
+                    _bind(getButton(maid, 1, "<", function()
+                        currentPage:Set(categoryPage)
+                    end))({
+                        Name = "Back",
+                        Size = UDim2.fromScale(0.1, 1),
+                        TextScaled = true 
+                    }),
+                }
+            }),
+
+            _new("Frame")({
+                Name = "CatalogInfo",
+                LayoutOrder = 1,
+                BackgroundTransparency = 0,
+                BackgroundColor3 = BACKGROUND_COLOR,
+                Size = UDim2.new(1, 0, 0, 950),
+                Children = {
+                    _new("UIPadding")({
+                        PaddingTop = PADDING_SIZE,
+                        PaddingBottom = PADDING_SIZE,
+                        PaddingLeft = PADDING_SIZE,
+                        PaddingRight = PADDING_SIZE
+                    }),
+                    _new("UIAspectRatioConstraint")({
+                        AspectRatio = 1.5
+                    }),
+
+                    _new("UIListLayout")({
+                        Padding = PADDING_SIZE, 
+                        FillDirection = Enum.FillDirection.Horizontal,
+                        SortOrder = Enum.SortOrder.LayoutOrder
+                    }),
+
+                    _new("Frame")({
+                        BackgroundTransparency = 1,
+                        Size = UDim2.fromScale(0.45, 1),
+                        
+                        Children = {
+                            _new("UIListLayout")({
+                                Padding = UDim.new(PADDING_SIZE_SCALE.Scale*0.1, PADDING_SIZE_SCALE.Offset*0.1), 
+                                FillDirection = Enum.FillDirection.Vertical,
+                                SortOrder = Enum.SortOrder.LayoutOrder
+                            }),
+                            _new("ImageLabel")({
+                                Name = "SelectedAvatar",
+                                LayoutOrder = 1,
+                                BackgroundColor3 = PRIMARY_COLOR,
+                                Size = UDim2.fromScale(1, 0.7),
+                                Image = _Computed(function(catalogInfo : CatalogInfo ?)
+                                    return if catalogInfo then CustomizationUtil.getAssetImageFromId(catalogInfo.Id, catalogInfo.ItemType == Enum.AvatarItemType.Bundle.Name) else ""
+                                end, currentCatalogInfo),
+                                Children = {
+                                    _new("UICorner")({})
+                                }
+                            }),
+                            _new("Frame")({
+                                Name = "FavoriteFrame",
+                                BackgroundTransparency = 1,
+                                Size = UDim2.fromScale(1, 0.08),
+                                LayoutOrder = 2,
+                                Children = {
+                                    _new("UIListLayout")({
+                                        Padding = UDim.new(PADDING_SIZE_SCALE.Scale*0.1, PADDING_SIZE_SCALE.Offset*0.1), 
+                                        FillDirection = Enum.FillDirection.Horizontal,
+                                        SortOrder = Enum.SortOrder.LayoutOrder
+                                    }), 
+                                    _bind(getImageButton(
+                                        maid, 
+                                        1,
+                                        "rbxassetid://5078542682",
+                                        nil,
+                                        function()
+                                            local catalogInfo = currentCatalogInfo:Get()
+                                            if catalogInfo then
+                                                AvatarEditorService:PromptSetFavorite(catalogInfo.Id, catalogInfo.ItemType, not AvatarEditorService:GetFavorite(catalogInfo.Id, catalogInfo.ItemType))
+                                            end
+                                            return
+                                        end
+                                    ))({
+                                        BackgroundTransparency = 1,
+                                        AutoButtonColor = false,
+                                        Size = UDim2.fromScale(0.4, 1),
+                                        Children = {
+                                            _new("UIAspectRatioConstraint")({
+                                                AspectRatio = 1
+                                            })
+                                        }
+                                    }),
+                                    _new("TextLabel")({
+                                        Name = "FavCount",
+                                        LayoutOrder = 2,
+                                        BackgroundTransparency = 1,
+                                        AutomaticSize = Enum.AutomaticSize.X,
+                                        Size = UDim2.fromScale(0, 1),
+                                        Text = _Computed(function(catalogInfo : CatalogInfo ?)
+                                            return if catalogInfo then NumberUtil.NotateDecimals(catalogInfo.FavoriteCount, false) else ""
+                                        end, currentCatalogInfo),
+                                        TextColor3 = TEXT_COLOR,
+                                        TextScaled = true,
+                                        TextWrapped = true,
+                                        Children = {
+                                            _new("UITextSizeConstraint")({
+                                                MinTextSize = TEXT_SIZE*0.5,
+                                                MaxTextSize = TEXT_SIZE*1.5
+                                            })
+                                        }
+                                    })
+                                }
+                            })
+                        }
+                        --Image = CustomizationUtil.getAssetImageFromId(curren, catalogInfo.ItemType == Enum.AvatarItemType.Bundle.Name),
+                    }),
+
+                   --[[ _new("ImageLabel")({
+                        Name = "SelectedAvatar",
+                        BackgroundColor3 = PRIMARY_COLOR,
+                        Size = UDim2.fromScale(0.45, 0.7),
+                        Image = _Computed(function(catalogInfo : CatalogInfo ?)
+                            return if catalogInfo then CustomizationUtil.getAssetImageFromId(catalogInfo.Id, catalogInfo.ItemType == Enum.AvatarItemType.Bundle.Name) else ""
+                        end, currentCatalogInfo),
+                        Children = {
+                            _new("ImageButton")({
+
+                            })
+                        }
+                        --Image = CustomizationUtil.getAssetImageFromId(curren, catalogInfo.ItemType == Enum.AvatarItemType.Bundle.Name),
+                    }),]]
+                    _new("Frame")({
+                        Name = "BioDesc",
+                        BackgroundTransparency = 1,
+                        Size = UDim2.fromScale(0.45, 1),
+                        Children = {
+                            _new("UIListLayout")({
+                                Padding = UDim.new(PADDING_SIZE_SCALE.Scale*0.1, PADDING_SIZE_SCALE.Offset*0.1), 
+                                FillDirection = Enum.FillDirection.Vertical,
+                                SortOrder = Enum.SortOrder.LayoutOrder
+                            }),
+                            _new("TextLabel")({
+                                Name = "CatalogName",
+                                LayoutOrder = 1,
+                                BackgroundTransparency = 1,
+                                Size = UDim2.fromScale(1, 0.1),
+                                Font = Enum.Font.GothamBold,
+                                Text = _Computed(function(catalogInfo : CatalogInfo ?)
+                                    return if catalogInfo then catalogInfo.Name else ""
+                                end, currentCatalogInfo),
+                                TextColor3 = TEXT_COLOR,
+                                TextScaled = true,
+                                TextWrapped = true,
+                                TextXAlignment = Enum.TextXAlignment.Left,
+                                Children = {
+                                    _new("UITextSizeConstraint")({
+                                        MinTextSize = TEXT_SIZE,
+                                        MaxTextSize = TEXT_SIZE*3
+                                    })
+                                }
+                            }),
+                            _new("TextLabel")({
+                                Name = "CreatorName",
+                                LayoutOrder = 2,
+                                BackgroundTransparency = 1,
+                                Size = UDim2.fromScale(1, 0.08),
+                                Font = Enum.Font.Gotham,
+                                RichText = true,
+                                Text = _Computed(function(catalogInfo : CatalogInfo ?)
+                                    return if catalogInfo then ("by <b>" .. catalogInfo.CreatorName .. "</b>") else ""
+                                end, currentCatalogInfo),
+                                TextColor3 = TEXT_COLOR,
+                                TextWrapped = true,
+                                TextScaled = true,
+                                TextXAlignment = Enum.TextXAlignment.Left,
+                                Children = {
+                                    _new("UITextSizeConstraint")({
+                                        MinTextSize = TEXT_SIZE*0.5,
+                                        MaxTextSize = TEXT_SIZE*1.5
+                                    })
+                                }
+                            }),
+                            _new("Frame")({
+                                Name = "PriceList",
+                                LayoutOrder = 3,
+                                BackgroundTransparency = 1,
+                                Size = UDim2.fromScale(1, 0.14),
+                                Children = {
+                                    _new("UIListLayout")({
+                                        FillDirection = Enum.FillDirection.Horizontal,
+                                        Padding = PADDING_SIZE_SCALE,
+                                        SortOrder = Enum.SortOrder.LayoutOrder,
+                                        VerticalAlignment = Enum.VerticalAlignment.Center
+                                    }),
+                                    _new("TextLabel")({
+                                        Name = "PriceTitle",
+                                        LayoutOrder = 1,
+                                        BackgroundTransparency = 1,
+                                        Size = UDim2.fromScale(0.3, 1),
+                                        Font = Enum.Font.Gotham,
+                                        Text = "Price",
+                                        TextScaled = true,
+                                        TextWrapped = true,
+                                        TextColor3 = TEXT_COLOR,
+                                        TextXAlignment = Enum.TextXAlignment.Left,
+                                        Children = {
+                                            _new("UITextSizeConstraint")({
+                                                MinTextSize = TEXT_SIZE*0.5,
+                                                MaxTextSize = TEXT_SIZE*1.5
+                                            })
+                                        }
+                                    }),
+                                    _new("Frame")({
+                                        Name = "PriceLabel",
+                                        LayoutOrder = 2,
+                                        BackgroundTransparency = 1,
+                                        Size = UDim2.fromScale(0.5, 1),
+                                        Children = {
+                                            _new("UIListLayout")({
+                                                FillDirection = Enum.FillDirection.Horizontal,
+                                                SortOrder = Enum.SortOrder.LayoutOrder,
+                                                VerticalAlignment = Enum.VerticalAlignment.Center,
+                                                Padding = PADDING_SIZE
+                                            }),
+                                            _new("ImageLabel")({
+                                                Name = "PriceIcon",
+                                                LayoutOrder = 1,
+                                                BackgroundTransparency = 1,
+                                                Size = UDim2.fromScale(0.5, 0.5),
+                                                Image = "rbxassetid://11713337390",
+                                                Children = {
+                                                    _new("UIAspectRatioConstraint")({
+                                                        AspectRatio = 1
+                                                    })
+                                                }
+                                            }),
+                                            _new("TextLabel")({
+                                                Name = "PriceLabel",
+                                                LayoutOrder = 2,
+                                                BackgroundTransparency = 1,
+                                                Size = UDim2.fromScale(0.25, 1),
+                                                Font = Enum.Font.Gotham,
+                                                Text = _Computed(function(catalogInfo : CatalogInfo ?)
+                                                    return if catalogInfo then tostring(catalogInfo.Price)else "N/A"
+                                                end, currentCatalogInfo),  
+                                                TextColor3 = TEXT_COLOR,
+                                                TextWrapped = true,
+                                                TextScaled = true,
+                                                TextXAlignment = Enum.TextXAlignment.Left,
+                                                Children = {
+                                                    _new("UITextSizeConstraint")({
+                                                        MinTextSize = TEXT_SIZE*0.5,
+                                                        MaxTextSize = TEXT_SIZE*1.5
+                                                    })
+                                                }
+                                            })
+                                        }
+                                    }),
+                                    
+                                }
+                            }),
+                            _new("Frame")({
+                                Name = "BuyButton",
+                                LayoutOrder = 4,
+                                BackgroundTransparency = 1,
+                                Size = UDim2.fromScale(1, 0.14),
+                                Children = {
+                                    _new("UIListLayout")({
+                                        FillDirection = Enum.FillDirection.Horizontal, 
+                                        Padding = PADDING_SIZE_SCALE,
+                                        SortOrder = Enum.SortOrder.LayoutOrder,
+                                        VerticalAlignment = Enum.VerticalAlignment.Center
+                                    }),
+                                    _new("Frame")({
+                                        Name = "Buffer",
+                                        LayoutOrder = 1,
+                                        BackgroundTransparency = 1,
+                                        Size = UDim2.fromScale(0.3, 1),
+                                    }),
+                                    _bind(getButton(
+                                        maid, 
+                                        2,
+                                        "Buy",
+                                        function()
+                                            --buy action
+                                        end
+                                    ))({
+                                        BackgroundColor3 = SELECT_COLOR,
+                                        Size = UDim2.fromScale(0.5, 1),
+                                        Font = Enum.Font.GothamBlack,
+                                        TextScaled = true,
+                                        Children = {
+                                            _new("UICorner")({}), 
+                                            _new("UITextSizeConstraint")({
+                                                MinTextSize = TEXT_SIZE*0.5,
+                                                MaxTextSize = TEXT_SIZE*1.5
+                                            })
+                                        }
+                                    })
+                                    
+                                }
+                            }),
+
+                            _new("Frame")({
+                                Name = "TypeInfo",
+                                LayoutOrder = 5,
+                                BackgroundTransparency = 1,
+                                Size = UDim2.fromScale(1, 0.14),
+                                Children = {
+                                    _new("UIListLayout")({
+                                        FillDirection = Enum.FillDirection.Horizontal,
+                                        Padding = PADDING_SIZE_SCALE,
+                                        SortOrder = Enum.SortOrder.LayoutOrder,
+                                        VerticalAlignment = Enum.VerticalAlignment.Center
+                                    }),
+                                    _new("TextLabel")({
+                                        Name = "TypeTitle",
+                                        LayoutOrder = 1,
+                                        BackgroundTransparency = 1,
+                                        Size = UDim2.fromScale(0.3, 1),
+                                        Font = Enum.Font.Gotham,
+                                        Text = "Type",
+                                        TextWrapped = true,
+                                        TextScaled = true,
+                                        TextColor3 = TEXT_COLOR,
+                                        TextXAlignment = Enum.TextXAlignment.Left,
+                                        Children = {
+                                            _new("UITextSizeConstraint")({
+                                                MinTextSize = TEXT_SIZE*0.5,
+                                                MaxTextSize = TEXT_SIZE*1.5
+                                            })
+                                        }
+                                    }),
+                                    _new("Frame")({
+                                        Name = "TypeLabel",
+                                        LayoutOrder = 2,
+                                        BackgroundTransparency = 1,
+                                        Size = UDim2.fromScale(0.6, 1),
+                                        Children = {
+                                            _new("UIListLayout")({
+                                                FillDirection = Enum.FillDirection.Horizontal,
+                                                Padding = PADDING_SIZE_SCALE,
+                                                SortOrder = Enum.SortOrder.LayoutOrder,
+                                                VerticalAlignment = Enum.VerticalAlignment.Center
+                                            }),
+                                            _new("TextLabel")({
+                                                Name = "TypeLabel",
+                                                LayoutOrder = 2,
+                                                BackgroundTransparency = 1,
+                                                Size = UDim2.fromScale(0.25, 1),
+                                                Font = Enum.Font.Gotham,
+                                                Text = _Computed(function(catalogInfo : CatalogInfo ?)
+                                                    return if catalogInfo then tostring(catalogInfo.AssetType) else "N/A"
+                                                end, currentCatalogInfo),  
+                                                TextSize = TEXT_SIZE,
+                                                TextColor3 = TEXT_COLOR,
+                                                TextWrapped = true,
+                                                TextScaled = true,
+                                                TextXAlignment = Enum.TextXAlignment.Left,
+                                                Children = {
+                                                    _new("UITextSizeConstraint")({
+                                                        MinTextSize = TEXT_SIZE*0.5,
+                                                        MaxTextSize = TEXT_SIZE*1.5
+                                                    })
+                                                }
+                                            })
+                                        }
+                                    }),
+                                    
+                                }
+                                
+                            }),
+
+                            _new("Frame")({
+                                Name = "Description",
+                                LayoutOrder = 6,
+                                BackgroundTransparency = 1,
+                                Size = UDim2.fromScale(1, 0.25),
+                                Children = {
+                                    _new("UIListLayout")({
+                                        FillDirection = Enum.FillDirection.Horizontal,
+                                        Padding = PADDING_SIZE_SCALE,
+                                        SortOrder = Enum.SortOrder.LayoutOrder,
+                                        VerticalAlignment = Enum.VerticalAlignment.Center
+                                    }),
+                                    _new("TextLabel")({
+                                        Name = "Buffer",
+                                        LayoutOrder = 1,
+                                        BackgroundTransparency = 1,
+                                        Size = UDim2.fromScale(0.3, 1),
+                                        Font = Enum.Font.Gotham,
+                                        Text = "Desc",
+                                        TextScaled = true,
+                                        TextColor3 = TEXT_COLOR,
+                                        TextWrapped = true,
+                                        TextXAlignment = Enum.TextXAlignment.Left,
+                                        Children = {
+                                            _new("UITextSizeConstraint")({
+                                                MinTextSize = TEXT_SIZE*0.5,
+                                                MaxTextSize = TEXT_SIZE*1.5
+                                            })
+                                        }
+                                    }),
+                                    _new("TextLabel")({
+                                        Name = "DescLabel",
+                                        LayoutOrder = 2,
+                                        BackgroundTransparency = 1,
+                                        Size = UDim2.fromScale(0.5, 1),
+                                        Font = Enum.Font.Gotham,
+                                        Text = _Computed(function(catalogInfo : CatalogInfo ?)
+                                            return if catalogInfo then tostring(catalogInfo.Description) else "N/A"
+                                        end, currentCatalogInfo),  
+                                        TextColor3 = TEXT_COLOR,
+                                        TextScaled = true,
+                                        TextWrapped = true, 
+                                        TextXAlignment = Enum.TextXAlignment.Left,
+                                        Children = {
+                                            _new("UITextSizeConstraint")({
+                                                MinTextSize = TEXT_SIZE*0.5,
+                                                MaxTextSize = TEXT_SIZE*1.5
+                                            })
+                                        }
+                                    })
+                                }
+                            })
+                            
+                        }
+                    })
+                }
+            }),
+
+            _new("Frame")({
+                Name = "RecommendedCatalogs",
+                LayoutOrder = 2,
+                BackgroundColor3 = BACKGROUND_COLOR,
+                Size = UDim2.new(1, 0, 0, 1000),
+                Children = {
+                    _new("UIAspectRatioConstraint")({
+                        AspectRatio = 3
+                    }),
+                    _new("UIListLayout")({
+                        FillDirection = Enum.FillDirection.Vertical,
+                        Padding = PADDING_SIZE_SCALE,
+                        SortOrder = Enum.SortOrder.LayoutOrder,
+                    }),
+                    _new("TextLabel")({
+                        Name = "Title",
+                        LayoutOrder = 1,
+                        BackgroundTransparency = 1,
+                        Size = UDim2.new(1,0,0.1,0),
+                        Font = Enum.Font.GothamBlack,
+                        Text = "Recommended",
+                        TextColor3 = TEXT_COLOR,
+                        TextScaled = true,
+                        TextWrapped = _Computed(function() -- updates avatar info
+                            --TO BE CONTINUED BREH
+                            return true
+                        end),
+                        Children = {
+                            _new("UITextSizeConstraint")({
+                                MinTextSize = TEXT_SIZE*0.5,
+                                MaxTextSize = TEXT_SIZE*1.5
+                            })
+                        }
+                    }),
+                    recommendedContent
+                }
+            })
+        }
+    }) :: Frame
+    _bind(catalogInfoPage)({ 
+        Visible = _Computed(function(page : GuiObject ?)
+            local isCatalogInfoPage = (page == catalogInfoPage)
+            if isCatalogInfoPage then
+                local s,e = pcall(function() AvatarEditorService:PromptAllowInventoryReadAccess() end)
+                if not s and e then
+                    warn(e)
+                end
+
+            end
+
+            return isCatalogInfoPage
+        end, currentPage)
+    })
 
     local degreeX = -90
     local degreeY = 0
@@ -1484,10 +2092,11 @@ return function(
                 }
             }),
             mainMenuPage,
-            categoryPage
+            categoryPage,
+            catalogInfoPage
         }
     })
-
+    --currentPage:Set(mainMenuPage)
         --sub-categories
     local function getSubCategoryListFrame(categPage : Instance)
         local header = categPage:FindFirstChild("Header")
@@ -1511,6 +2120,8 @@ return function(
         local currentMinPrice : ValueState<number?> = _Value(nil) :: any
         local currentMaxPrice : ValueState<number?> = _Value(nil) :: any
 
+        local onMoreInfoClick = maid:GiveTask(Signal.new())
+
         local function loopThroughCatalogPage(
             catalogPage : CatalogPages,
             creatorType : Enum.CreatorType ?,
@@ -1532,8 +2143,12 @@ return function(
                         [1] = {
                             Name = "Try",
                             Signal = onCatalogTry
+                        },
+                        [2] = {
+                            Name = "More Info",
+                            Signal = onMoreInfoClick
                         }
-                    }, selectedButton, char))
+                    }, selectedButton, if (v.BundleType ~= Enum.BundleType.Animations.Name and (v.AssetType ~= Enum.AssetType.Animation.Name and v.AssetType ~= Enum.AssetType.EmoteAnimation.Name))then char else nil))
                     catalogButton.Parent = categoryContent
                     
                     buttonMaid:GiveTask(catalogButton.Activated:Connect(function()
@@ -1642,8 +2257,9 @@ return function(
                     
                     local subCategoryListFrame = getSubCategoryListFrame(categoryPage)
 
-                    categoryPage.Visible = true
-                    mainMenuPage.Visible = false
+                    --categoryPage.Visible = true
+                    --mainMenuPage.Visible = false
+                    currentPage:Set(categoryPage)
 
                     loadingFooter.Visible = true
 
@@ -1677,8 +2293,9 @@ return function(
                     loadingFooter.Visible = false 
                 else
 
-                    categoryPage.Visible = false
-                    mainMenuPage.Visible = true
+                    --categoryPage.Visible = false
+                    --mainMenuPage.Visible = true
+                    currentPage:Set(mainMenuPage)
                 end
 
                 return ""
@@ -1714,6 +2331,11 @@ return function(
                 updateContent(currentCat.CategoryName, subCategory, keyWord, currentCatalogSortType:Get(), currentCatalogSortAggregation:Get(), currentCreatorType:Get(), currentCreatorName:Get(), currentMinPrice:Get(), currentMaxPrice:Get())
                 loadingFooter.Visible = false
             end
+        end))
+
+        maid:GiveTask(onMoreInfoClick:Connect(function(catalogInfo : CatalogInfo)
+            currentCatalogInfo:Set(catalogInfo)
+            currentPage:Set(catalogInfoPage)
         end))
 
         
@@ -2082,7 +2704,7 @@ return function(
                             buttonMaid, k, catalogInfo,{
                                 [1] = {
                                     Name = "Delete",
-                                    Signal = onCatalogTry, 
+                                    Signal = onCatalogDelete, 
                                 },
                                 
                             },
@@ -2194,5 +2816,6 @@ return function(
             print(typeof(humanoidDesc:GetAccessories(false)[1]))
         end
     end]]
+
     return out
 end

@@ -208,6 +208,11 @@ function CustomizationUtil.setCustomeFromTemplateId(plr  : Player, customeType :
     end
 end
 
+function CustomizationUtil.ApplyBundleFromId(character : Model, id : number)
+    local bundleFolder = importBundle(id)
+    if bundleFolder then  applyBundle(character, bundleFolder) end
+end
+
 function CustomizationUtil.Customize(plr : Player, customizationId : number)
     if RunService:IsServer() then
         local character = plr.Character or plr.CharacterAdded:Wait()
