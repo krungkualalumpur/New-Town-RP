@@ -59,7 +59,8 @@ export type SimplifiedCatalogInfo = {
     ["Id"] : number,
     ["ItemType"] : string,
     ["Name"] : string ?,
-    ["Price"] : number ?
+    ["Price"] : number ?,
+    ["CreatorName"] : string ?
 }
 
 type InfoFromHumanoidDesc = {
@@ -96,7 +97,11 @@ local TEST_COLOR = Color3.fromRGB(255,0,0)
 
 --variables
 --references
---local functions
+--local functions   
+local function spacifyStr(str : string)
+    return str:gsub("%u", " %1"):gsub("%d+", " %1")
+end
+
 local function getSignal(maid : Maid, fn : (... any) -> ())
     local out = maid:GiveTask(Signal.new())
 
@@ -109,6 +114,17 @@ end
 
 local function getCharacter()
     return if RunService:IsRunning() then Players:CreateHumanoidModelFromUserId(Players.LocalPlayer.UserId) else game.ServerStorage.aryoseno11:Clone()
+end
+
+local function getEnumItemFromName(enum : Enum, enumItemName : string) 
+    local enumItem 
+    for _, item : EnumItem in pairs(enum:GetEnumItems()) do
+        if item.Name == enumItemName then
+            enumItem = item
+            break
+        end
+    end
+    return enumItem
 end
 
 local function getHumanoidDescriptionAccessory(
@@ -306,10 +322,13 @@ local function getCatalogButton(
     local content = _new("ImageLabel")({
         BackgroundColor3 = SECONDARY_COLOR,
         Image = CustomizationUtil.getAssetImageFromId(catalogInfo.Id, catalogInfo.ItemType == Enum.AvatarItemType.Bundle.Name),
-        Size = UDim2.new(1, 0,0.8,0), 
-        LayoutOrder = 2,
+        Size = UDim2.new(1, 0,0.7,0), 
+        LayoutOrder = 1,
         Children = {
             _new("UICorner")({}),
+            _new("UIAspectRatioConstraint")({
+                AspectRatio = 1
+            })
         }
     })
 
@@ -379,6 +398,7 @@ local function getCatalogButton(
             Size = _Computed(function(selected : boolean)
                 return if selected then UDim2.fromScale(1, 0.3) else UDim2.fromScale(0, 0.3)
             end, isSelected):Tween(0.1),
+            Font = Enum.Font.Gotham,
             Text = v.Name,
             TextTransparency = _Computed(function(selected : boolean)
                 return if selected then 0 else 1
@@ -400,18 +420,88 @@ local function getCatalogButton(
         Children = {
             _new("UIListLayout")({
                 SortOrder = Enum.SortOrder.LayoutOrder,
+                HorizontalAlignment = Enum.HorizontalAlignment.Center,
+                VerticalAlignment = Enum.VerticalAlignment.Center
             }),
+          
+            content,
             _new("TextLabel")({
-                LayoutOrder = 1,
+                Name = "ItemName",
+                LayoutOrder = 2,
                 BackgroundTransparency = 1,
                 Size = UDim2.fromScale(1, 0.15),
+                Font = Enum.Font.Gotham,
+                Text = "<b>" .. (catalogInfo.Name or "") .. "</b>",
                 RichText = true,
                 TextScaled = true,
-                Text = "<b>" .. (catalogInfo.Name or "") .. "</b>",
                 TextColor3 = TEXT_COLOR,
+                TextXAlignment = Enum.TextXAlignment.Left,
                 TextStrokeTransparency = 0.5
             }),
-            content
+            _new("TextLabel")({
+                Name = "CreatorName",
+                LayoutOrder = 3,
+                BackgroundTransparency = 1,
+                Size = UDim2.fromScale(1, 0.08),
+                Font = Enum.Font.Gotham,
+                RichText = true,
+                Text =  if catalogInfo.CreatorName then "by <b>" .. catalogInfo.CreatorName .. "</b>" else "",
+                TextColor3 = TEXT_COLOR,
+                TextWrapped = true,
+                TextScaled = true,
+                TextXAlignment = Enum.TextXAlignment.Left,
+                Children = {
+                    _new("UITextSizeConstraint")({
+                        MinTextSize = TEXT_SIZE*0.5,
+                        MaxTextSize = TEXT_SIZE*1.5
+                    })
+                }
+            }),
+            _new("Frame")({
+                Name = "PriceLabel",
+                LayoutOrder = 4,
+                BackgroundTransparency = 1,
+                Size = UDim2.fromScale(1, 0.08),
+                Children = {
+                    _new("UIListLayout")({
+                        FillDirection = Enum.FillDirection.Horizontal,
+                        SortOrder = Enum.SortOrder.LayoutOrder,
+                        HorizontalAlignment = Enum.HorizontalAlignment.Left,
+                        Padding = PADDING_SIZE
+                    }),
+                    _new("ImageLabel")({
+                        Name = "PriceIcon",
+                        Visible = (catalogInfo.Price ~= nil) and (catalogInfo.Price > 0),
+                        LayoutOrder = 1,
+                        BackgroundTransparency = 1,
+                        Size = UDim2.fromScale(0.1, 1),
+                        Image = "rbxassetid://11713337390",
+                        Children = {
+                            _new("UIAspectRatioConstraint")({
+                                AspectRatio = 1
+                            })
+                        }
+                    }),
+                    _new("TextLabel")({
+                        Name = "PriceLabel",
+                        LayoutOrder = 2,
+                        BackgroundTransparency = 1,
+                        Size = UDim2.fromScale(0.25, 1),
+                        Font = Enum.Font.Gotham,
+                        Text = if (catalogInfo.Price ~= nil) and (catalogInfo.Price > 0) then NumberUtil.NotateDecimals(catalogInfo.Price, false) elseif (catalogInfo.Price ~= nil) and (catalogInfo.Price == 0) then "Free" else "",  
+                        TextColor3 = TEXT_COLOR,
+                        TextWrapped = true,
+                        TextScaled = true,
+                        TextXAlignment = Enum.TextXAlignment.Left,
+                        Children = {
+                            _new("UITextSizeConstraint")({
+                                MinTextSize = TEXT_SIZE*0.5,
+                                MaxTextSize = TEXT_SIZE*1.5
+                            })
+                        }
+                    })
+                }
+            })
         },
         Events = {
             MouseEnter = function()
@@ -1353,17 +1443,28 @@ return function(
 
     local recommendedContent = _new("ScrollingFrame")({
         LayoutOrder = 2,
-        BackgroundColor3 = BACKGROUND_COLOR,
-        Size = UDim2.fromScale(1, 0.9),
+        BackgroundTransparency = 1,
+        CanvasSize = UDim2.fromScale(0, 0),
+        AutomaticCanvasSize = Enum.AutomaticSize.XY,
+        Size = UDim2.fromScale(1, 0.8), 
         Name = "Content",
         Children = {
             _new("UIListLayout")({
                 FillDirection = Enum.FillDirection.Horizontal,
-                SortOrder = Enum.SortOrder.LayoutOrder
+                SortOrder = Enum.SortOrder.LayoutOrder,
+                Padding = PADDING_SIZE,
+                VerticalAlignment = Enum.VerticalAlignment.Center
             }),
         }
         
     })
+
+    local catalogInfoMaid = maid:GiveTask(Maid.new())
+
+    local currentCatalogInfoRecommendedSelectedButton : ValueState<GuiButton ?> = _Value(nil) :: any
+    
+    local onRecommendedMoreInfoClick = maid:GiveTask(Signal.new())
+
     local catalogInfoPage =  _new("ScrollingFrame")({
         BackgroundTransparency = 1,
         CanvasSize = UDim2.new(),
@@ -1577,8 +1678,14 @@ return function(
                                 }
                             }),
                             _new("Frame")({
-                                Name = "PriceList",
+                                Name = "FX",
                                 LayoutOrder = 3,
+                                Size = UDim2.new(1, 0, 0, 1),
+                                
+                            }),
+                            _new("Frame")({
+                                Name = "PriceList",
+                                LayoutOrder = 4,
                                 BackgroundTransparency = 1,
                                 Size = UDim2.fromScale(1, 0.14),
                                 Children = {
@@ -1622,6 +1729,9 @@ return function(
                                                 Name = "PriceIcon",
                                                 LayoutOrder = 1,
                                                 BackgroundTransparency = 1,
+                                                Visible = _Computed(function(catalogInfo : CatalogInfo ?)
+                                                    return if catalogInfo then (if (catalogInfo.Price ~= nil) and (catalogInfo.Price > 0) then true elseif (catalogInfo.Price ~= nil) and (catalogInfo.Price == 0) then false else false) else false
+                                                end, currentCatalogInfo),
                                                 Size = UDim2.fromScale(0.5, 0.5),
                                                 Image = "rbxassetid://11713337390",
                                                 Children = {
@@ -1637,7 +1747,9 @@ return function(
                                                 Size = UDim2.fromScale(0.25, 1),
                                                 Font = Enum.Font.Gotham,
                                                 Text = _Computed(function(catalogInfo : CatalogInfo ?)
-                                                    return if catalogInfo then tostring(catalogInfo.Price)else "N/A"
+                                                      
+
+                                                    return if catalogInfo then (if (catalogInfo.Price ~= nil) and (catalogInfo.Price > 0) then NumberUtil.NotateDecimals(catalogInfo.Price, false) elseif (catalogInfo.Price ~= nil) and (catalogInfo.Price == 0) then "Free" else "") else ""
                                                 end, currentCatalogInfo),  
                                                 TextColor3 = TEXT_COLOR,
                                                 TextWrapped = true,
@@ -1657,7 +1769,7 @@ return function(
                             }),
                             _new("Frame")({
                                 Name = "BuyButton",
-                                LayoutOrder = 4,
+                                LayoutOrder = 5,
                                 BackgroundTransparency = 1,
                                 Size = UDim2.fromScale(1, 0.14),
                                 Children = {
@@ -1699,7 +1811,7 @@ return function(
 
                             _new("Frame")({
                                 Name = "TypeInfo",
-                                LayoutOrder = 5,
+                                LayoutOrder = 6,
                                 BackgroundTransparency = 1,
                                 Size = UDim2.fromScale(1, 0.14),
                                 Children = {
@@ -1743,10 +1855,10 @@ return function(
                                                 Name = "TypeLabel",
                                                 LayoutOrder = 2,
                                                 BackgroundTransparency = 1,
-                                                Size = UDim2.fromScale(0.25, 1),
+                                                Size = UDim2.fromScale(1, 1),
                                                 Font = Enum.Font.Gotham,
                                                 Text = _Computed(function(catalogInfo : CatalogInfo ?)
-                                                    return if catalogInfo then tostring(catalogInfo.AssetType) else "N/A"
+                                                    return if catalogInfo then spacifyStr(catalogInfo.AssetType) else "N/A"
                                                 end, currentCatalogInfo),  
                                                 TextSize = TEXT_SIZE,
                                                 TextColor3 = TEXT_COLOR,
@@ -1769,7 +1881,7 @@ return function(
 
                             _new("Frame")({
                                 Name = "Description",
-                                LayoutOrder = 6,
+                                LayoutOrder = 7,
                                 BackgroundTransparency = 1,
                                 Size = UDim2.fromScale(1, 0.25),
                                 Children = {
@@ -1831,6 +1943,12 @@ return function(
                 BackgroundColor3 = BACKGROUND_COLOR,
                 Size = UDim2.new(1, 0, 0, 1000),
                 Children = {
+                    _new("UIPadding")({
+                        PaddingTop = PADDING_SIZE,
+                        PaddingBottom = PADDING_SIZE,
+                        PaddingLeft = PADDING_SIZE,
+                        PaddingRight = PADDING_SIZE
+                    }),
                     _new("UIAspectRatioConstraint")({
                         AspectRatio = 3
                     }),
@@ -1844,14 +1962,70 @@ return function(
                         LayoutOrder = 1,
                         BackgroundTransparency = 1,
                         Size = UDim2.new(1,0,0.1,0),
-                        Font = Enum.Font.GothamBlack,
+                        Font = Enum.Font.GothamBold,
                         Text = "Recommended",
                         TextColor3 = TEXT_COLOR,
                         TextScaled = true,
-                        TextWrapped = _Computed(function() -- updates avatar info
+                        TextWrapped = _Computed(function(catalogInfo : CatalogInfo ?) -- updates avatar info
                             --TO BE CONTINUED BREH
+                            catalogInfoMaid:DoCleaning()
+
+                            local assetType  
+                            if catalogInfo then assetType = getEnumItemFromName(Enum.AvatarAssetType, catalogInfo.AssetType) end
+                           
+
+                            local recommendeds = if assetType and catalogInfo then AvatarEditorService:GetRecommendedAssets(assetType, catalogInfo.Id) else {}
+                            print(recommendeds)
+
+                            if catalogInfo then
+                                for k,v in pairs(recommendeds) do
+                                    local isSelected = _Value(false)
+
+                                    local simpfdCatalogInfo : SimplifiedCatalogInfo = {
+                                    } :: any
+                                    simpfdCatalogInfo.Id = v.Item.AssetId
+                                    simpfdCatalogInfo.Name = v.Item.Name
+                                    simpfdCatalogInfo.ItemType = catalogInfo.ItemType
+                                    simpfdCatalogInfo.CreatorName = v.Creator.Name
+                                    simpfdCatalogInfo.Price = v.Product.PriceInRobux
+
+                                    local button = catalogInfoMaid:GiveTask(getCatalogButton(
+                                        maid, k, simpfdCatalogInfo, {
+                                            [1] = {
+                                                Name = "Try",
+                                                Signal = onCatalogTry
+                                            },
+                                            [2] = {
+                                                Name = "More Info",
+                                                Signal = onRecommendedMoreInfoClick,
+                                            }
+                                        }, isSelected
+                                    ))
+                                    button.Parent = recommendedContent
+                                    catalogInfoMaid:GiveTask(button.Activated:Connect(function()
+                                        if currentCatalogInfoRecommendedSelectedButton:Get() ~= button then
+                                            currentCatalogInfoRecommendedSelectedButton:Set(button)
+                                        else 
+                                            currentCatalogInfoRecommendedSelectedButton:Set(nil)
+                                        end
+                                    end))
+                                    
+                                    _new("StringValue")({
+                                        Value = _Computed(function(catalogInfoRecommendedSelectedButton : GuiButton ?)
+                                            if button == catalogInfoRecommendedSelectedButton then
+                                                isSelected:Set(true)
+                                            else
+                                                isSelected:Set(false)
+                                            end
+                                            return ""
+                                        end, currentCatalogInfoRecommendedSelectedButton)
+                                    })
+                                end
+                            end
                             return true
-                        end),
+                        end, currentCatalogInfo),
+                        TextXAlignment = Enum.TextXAlignment.Left,
+                        TextYAlignment = Enum.TextYAlignment.Center,
                         Children = {
                             _new("UITextSizeConstraint")({
                                 MinTextSize = TEXT_SIZE*0.5,
@@ -1864,6 +2038,13 @@ return function(
             })
         }
     }) :: Frame
+
+    maid:GiveTask(onRecommendedMoreInfoClick:Connect(function(simpfdCatalogInfo : SimplifiedCatalogInfo)
+        local catalogInfo : CatalogInfo = AvatarEditorService:GetItemDetails(simpfdCatalogInfo.Id, getEnumItemFromName(Enum.AvatarItemType, simpfdCatalogInfo.ItemType))
+        currentCatalogInfo:Set(catalogInfo)
+        currentPage:Set(catalogInfoPage)
+    end))
+
     _bind(catalogInfoPage)({ 
         Visible = _Computed(function(page : GuiObject ?)
             local isCatalogInfoPage = (page == catalogInfoPage)
@@ -1872,7 +2053,7 @@ return function(
                 if not s and e then
                     warn(e)
                 end
-
+                
             end
 
             return isCatalogInfoPage
@@ -1901,9 +2082,10 @@ return function(
                 BackgroundTransparency = 1,
                 Size = UDim2.fromScale(1, 0.5),
                 RichText = true,
+                Font = Enum.Font.GothamBold,
                 Text = "<b>" .. (if RunService:IsRunning() then Players.LocalPlayer.Name else "Player Name") .. "</b>",
+                TextColor3 = TEXT_COLOR,
                 TextStrokeColor3 = PRIMARY_COLOR,
-                TextStrokeTransparency = 0.5,
                 TextWrapped = true,
                 TextScaled = true
             }),
@@ -1911,7 +2093,9 @@ return function(
                 LayoutOrder = 2,
                 BackgroundTransparency = 1,
                 Size = UDim2.fromScale(1, 0.5),
+                Font = Enum.Font.Gotham,
                 Text = if RunService:IsRunning() then Players.LocalPlayer.Name else "Player Name",
+                TextColor3 = TEXT_COLOR,
                 TextSize = 15, 
                 TextWrapped = true,
             }),
@@ -2346,10 +2530,7 @@ return function(
             onButtonSelected : Signal,
             currentOption : State<EnumItem ?>
         )
-            
-            local function spacifyStr(str : string)
-                return str:gsub("%u", " %1"):gsub("%d+", " %1")
-            end
+         
 
             local _fuse = ColdFusion.fuse(maid)
             local _new = _fuse.new
