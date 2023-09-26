@@ -284,11 +284,12 @@ function CustomizationUtil.AddAvatarToCatalogInfosArray(currentPage : {[number] 
                     local s2, e2 = pcall(function()
                         marketInfo = game:GetService("MarketplaceService"):GetProductInfo(catalogInfo.Id, if catalogInfo.ItemType == "Asset" then Enum.InfoType.Asset elseif catalogInfo.ItemType == "Bundle" then Enum.InfoType.Bundle else nil)
                     end) 
-                   
+                   print(s, e, " kara kara?")
                     local catalogModel
                     if s and not e then
                         catalogModel = asset:GetChildren()[1] :: Accessory ?
                         if catalogModel then
+                            previewChar:PivotTo(CFrame.new())
                             if catalogModel:IsA("Accessory") then
                                 addAccoutrement(previewChar :: Model, catalogModel)
                             elseif  catalogModel:IsA("Shirt") then

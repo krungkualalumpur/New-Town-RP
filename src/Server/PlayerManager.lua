@@ -444,7 +444,7 @@ function PlayerManager:SetChatCount(count : number)
     self.ChatCount = count
 
     local leaderstats = self.Player:WaitForChild("leaderstats")
-    local chatCountVal = leaderstats:WaitForChild(CHAT_COUNT_VALUE_NAME)
+    local chatCountVal = leaderstats:WaitForChild(CHAT_COUNT_VALUE_NAME) :: IntValue
     chatCountVal.Value = count
 end
 
