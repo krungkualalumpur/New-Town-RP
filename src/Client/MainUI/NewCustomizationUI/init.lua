@@ -52,7 +52,8 @@ export type CatalogInfo = {
     ["PriceStatus"]: string,
     ["UnitsAvailableForConsumption"] : number,
     ["PurchaseCount"] : number,
-    ["FavoriteCount"] : number
+    ["FavoriteCount"] : number,
+    ["ModelPreview"] : Model ?
 }
 
 export type SimplifiedCatalogInfo = {
@@ -60,7 +61,8 @@ export type SimplifiedCatalogInfo = {
     ["ItemType"] : string,
     ["Name"] : string ?,
     ["Price"] : number ?,
-    ["CreatorName"] : string ?
+    ["CreatorName"] : string ?,
+    ["ModelPreview"] : Model ?
 }
 
 type InfoFromHumanoidDesc = {
@@ -144,6 +146,71 @@ local function convertAccessoryToSimplifiedCatalogInfo(infoFromHumanoidDesc : In
     }
 end
 
+local function addAvatarToCatalogInfosArray(currentPage : {[number] : CatalogInfo})
+    local function weldAttachments(attach1, attach2)
+        local weld = Instance.new("Weld")
+        weld.Part0 = attach1.Parent
+        weld.Part1 = attach2.Parent
+        weld.C0 = attach1.CFrame
+        weld.C1 = attach2.CFrame
+        weld.Parent = attach1.Parent
+        return weld
+    end
+     
+    local function buildWeld(weldName, parent, part0, part1, c0, c1)
+        local weld = Instance.new("Weld")
+        weld.Name = weldName
+        weld.Part0 = part0
+        weld.Part1 = part1
+        weld.C0 = c0
+        weld.C1 = c1
+        weld.Parent = parent
+        return weld
+    end
+     
+    local function findFirstMatchingAttachment(model, name)
+        for _, child in pairs(model:GetChildren()) do
+            if child:IsA("Attachment") and child.Name == name then
+                return child
+            elseif not child:IsA("Accoutrement") and not child:IsA("Tool") then -- Don't look in hats or tools in the character
+                local foundAttachment = findFirstMatchingAttachment(child, name)
+                if foundAttachment then
+                    return foundAttachment
+                end
+            end
+        end
+    end
+     
+    local function addAccoutrement(character : Model, accoutrement : Accessory)  
+        accoutrement.Parent = character
+        local handle = accoutrement:FindFirstChild("Handle")
+        if handle then
+            local accoutrementAttachment = handle:FindFirstChildOfClass("Attachment")
+            if accoutrementAttachment then
+                local characterAttachment = findFirstMatchingAttachment(character, accoutrementAttachment.Name)
+                if characterAttachment then
+                    weldAttachments(characterAttachment, accoutrementAttachment)
+                end
+            else
+                local head = character:FindFirstChild("Head")
+                if head then
+                    local attachmentCFrame = CFrame.new(0, 0.5, 0)
+                    local hatCFrame = accoutrement.AttachmentPoint
+                    buildWeld("HeadWeld", head, head, handle, attachmentCFrame, hatCFrame)
+                end
+            end
+        end
+    end
+
+    if RunService:IsRunning() then
+        
+    else
+        --adds the modelpreview
+        CustomizationUtil.AddAvatarToCatalogInfosArray(currentPage)
+    end
+    return currentPage
+end
+ 
 local function getViewportFrame(
     maid : Maid,
     order : number,
@@ -264,7 +331,7 @@ local function getCatalogButton(
     local isHovered = _Value(false)
 
 
-    local function weldAttachments(attach1, attach2)
+    --[[local function weldAttachments(attach1, attach2)
         local weld = Instance.new("Weld")
         weld.Part0 = attach1.Parent
         weld.Part1 = attach2.Parent
@@ -317,7 +384,7 @@ local function getCatalogButton(
                 end
             end
         end
-    end
+    end]]
     
     local content = _new("ImageLabel")({
         BackgroundColor3 = SECONDARY_COLOR,
@@ -336,10 +403,10 @@ local function getCatalogButton(
     local secondFrame
     local previewChar 
     local charPreviewPos = _Value(Vector3.new(0,0, -5))
+    print(catalogInfo.ModelPreview, " exists or nah?")
+    if catalogInfo.ModelPreview then
 
-    if char then
-
-        previewChar = char:Get():Clone()
+        previewChar = catalogInfo.ModelPreview
 
 
         secondFrame = getViewportFrame(
@@ -524,10 +591,11 @@ local function getCatalogButton(
         }
     }) :: TextButton
 
-    if previewChar then
+   --[[ if previewChar then
         local humanoid = previewChar:FindFirstChild("Humanoid") :: Humanoid ?
-        if humanoid then
+            if humanoid then
             task.spawn(function()
+
                 local asset
                 local s, e = pcall(function() asset = game:GetService("InsertService"):LoadAsset(catalogInfo.Id) end)
         
@@ -536,13 +604,14 @@ local function getCatalogButton(
                     marketInfo = game:GetService("MarketplaceService"):GetProductInfo(catalogInfo.Id, if catalogInfo.ItemType == "Asset" then Enum.InfoType.Asset elseif catalogInfo.ItemType == "Bundle" then Enum.InfoType.Bundle else nil)
                 end) 
                
+                print(s, e, " big clue!")
                 local catalogModel
-                print(marketInfo, " asset type id: ", Enum.AvatarAssetType.Face.Value, catalogModel, " why u no fire1")
                 if s and not e then
                     catalogModel = asset:GetChildren()[1] :: Accessory ?
+                    print(catalogModel)
                     if catalogModel then
                         if catalogModel:IsA("Accessory") then
-                            
+                            print("Deh")
                             addAccoutrement(previewChar :: Model, catalogModel)
                         elseif  catalogModel:IsA("Shirt") then
                             local shirt = previewChar:FindFirstChild("Shirt") :: Shirt or Instance.new("Shirt")
@@ -559,7 +628,6 @@ local function getCatalogButton(
                                 previewChar:PivotTo(CFrame.new(0, -1.5, -2.5))
                                 face.Parent = head 
                                 face.Texture = catalogModel.Texture
-                                print(face.Texture)
                             end
                         end
                         -- print(catalogModel:FindFirstChild("AccessoryWeld").C0, catalogModel:FindFirstChild("AccessoryWeld").C1)   
@@ -567,7 +635,6 @@ local function getCatalogButton(
                 end
 
                 if marketInfo then
-                    print(marketInfo, humanoid.Parent)
                     if marketInfo.BundleType == Enum.BundleType.Animations.Name and marketInfo.Items then
                         for _,item : {Id : number, Name : string, Type : string} in pairs(marketInfo.Items) do
                             if item.Id then
@@ -581,7 +648,6 @@ local function getCatalogButton(
                             end
                         end 
                     elseif marketInfo.BundleType == Enum.BundleType.BodyParts.Name and marketInfo.Items then
-                        print(humanoid.Parent)
                         CustomizationUtil.ApplyBundleFromId(previewChar, catalogInfo.Id)
                     end
                     if marketInfo.AssetTypeId then
@@ -599,7 +665,7 @@ local function getCatalogButton(
                 end
             end)
         end
-    end
+    end]]
 
     return out
 end
@@ -754,7 +820,6 @@ local function getCategoryButton(
                                         table.insert(accessoriesDisplay, currentCatalogPage[i])
                                         i = if currentCatalogPage[i + 1] then (i + 1) else 1
                                     end
-                                    print(#accessoriesDisplay)
                                     catalogDisplays:Set(accessoriesDisplay) 
 
                                 end
@@ -799,12 +864,10 @@ local function getCategoryButton(
     
 
         _maid:GiveTask(out.Destroying:Connect(function()
-            print("mendem")  
             _maid:Destroy() 
         end))
 
         if out.Parent == nil then
-            print("mendem 2")
             _maid:Destroy()
         end
 
@@ -1114,6 +1177,11 @@ return function(
         minPrice : number ?,
         maxPrice : number ?
     ) -> CatalogPages,
+    getRecommendedCatalogArray : (
+        avatarAssetType: Enum.AvatarAssetType,
+        itemTypeName : string,
+        id : number
+    ) -> {[number] : SimplifiedCatalogInfo},
 
     isVisible : ValueState<boolean>
 )
@@ -1446,7 +1514,7 @@ return function(
         BackgroundTransparency = 1,
         CanvasSize = UDim2.fromScale(0, 0),
         AutomaticCanvasSize = Enum.AutomaticSize.XY,
-        Size = UDim2.fromScale(1, 0.8), 
+        Size = UDim2.fromScale(1, 0.7), 
         Name = "Content",
         Children = {
             _new("UIListLayout")({
@@ -1967,10 +2035,51 @@ return function(
                         TextColor3 = TEXT_COLOR,
                         TextScaled = true,
                         TextWrapped = _Computed(function(catalogInfo : CatalogInfo ?) -- updates avatar info
-                            --TO BE CONTINUED BREH
+                            --agenda: make a function (which is passed from outside this script) which returns an array of simplified catalog info 
                             catalogInfoMaid:DoCleaning()
 
-                            local assetType  
+                            if catalogInfo then
+                                local assetType : Enum.AvatarAssetType =  getEnumItemFromName(Enum.AvatarAssetType, catalogInfo.AssetType) :: any
+                                if assetType then
+                                    local recommendeds = getRecommendedCatalogArray(assetType, catalogInfo.ItemType, catalogInfo.Id)
+                                    for k,simpfdCatalogInfo in pairs(recommendeds) do
+                                        local isSelected = _Value(false)
+
+                                        local button = catalogInfoMaid:GiveTask(getCatalogButton(
+                                            maid, k, simpfdCatalogInfo, {
+                                                [1] = {
+                                                    Name = "Try",
+                                                    Signal = onCatalogTry
+                                                },
+                                                [2] = {
+                                                    Name = "More Info",
+                                                    Signal = onRecommendedMoreInfoClick,
+                                                }
+                                            }, isSelected
+                                        ))
+                                        button.Parent = recommendedContent
+                                        catalogInfoMaid:GiveTask(button.Activated:Connect(function()
+                                            if currentCatalogInfoRecommendedSelectedButton:Get() ~= button then
+                                                currentCatalogInfoRecommendedSelectedButton:Set(button)
+                                            else 
+                                                currentCatalogInfoRecommendedSelectedButton:Set(nil)
+                                            end
+                                        end))
+                                        
+                                        _new("StringValue")({
+                                            Value = _Computed(function(catalogInfoRecommendedSelectedButton : GuiButton ?)
+                                                if button == catalogInfoRecommendedSelectedButton then
+                                                    isSelected:Set(true)
+                                                else
+                                                    isSelected:Set(false)
+                                                end
+                                                return ""
+                                            end, currentCatalogInfoRecommendedSelectedButton)
+                                        })
+                                    end
+                                end
+                            end
+                            --[[local assetType  
                             if catalogInfo then assetType = getEnumItemFromName(Enum.AvatarAssetType, catalogInfo.AssetType) end
                            
 
@@ -2021,7 +2130,7 @@ return function(
                                         end, currentCatalogInfoRecommendedSelectedButton)
                                     })
                                 end
-                            end
+                            end]]
                             return true
                         end, currentCatalogInfo),
                         TextXAlignment = Enum.TextXAlignment.Left,
@@ -2235,6 +2344,7 @@ return function(
                 charModel:PivotTo(CFrame.new())
 
                 char:Set(charModel) 
+                print(charModel, " nasu namu")
             end
             
             return visible
@@ -2311,7 +2421,9 @@ return function(
             creatorType : Enum.CreatorType ?,
             creatorName : string ?
         )
-            for k,v : CatalogInfo in pairs(catalogPage:GetCurrentPage()) do
+            local currentCatalogPage = addAvatarToCatalogInfosArray(catalogPage:GetCurrentPage())
+            for k,v : CatalogInfo in pairs(currentCatalogPage) do
+                print(v.ModelPreview)
                 if ((creatorType == nil) or (v.CreatorType == creatorType.Name)) and ((creatorName == nil) or (v.CreatorName:lower():find(creatorName:lower()))) then
                     local buttonMaid = Maid.new()
 
@@ -2856,7 +2968,6 @@ return function(
                         table.insert(accessories, getHumanoidDescriptionAccessory(humanoidDesc.JumpAnimation, Enum.AccessoryType.Unknown, false))
                     end
                     if humanoidDesc.MoodAnimation ~= 0  then
-                        print(humanoidDesc.MoodAnimation)
                         table.insert(accessories, getHumanoidDescriptionAccessory(humanoidDesc.MoodAnimation, Enum.AccessoryType.Unknown, false))
                     end
                     if humanoidDesc.SwimAnimation ~= 0  then
