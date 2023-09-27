@@ -17,53 +17,9 @@ local NumberUtil = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild
 
 --types
 type Category = {SubCategories : {[number] : string}, CategoryName : string}
-export type CatalogInfo = {
-    ["Id"] : number,
-    ["ItemType"] : string,
-    ["AssetType"] : string,
-    ["BundleType"] : string,
-    ["Name"] : string,
-    ["Description"] : string,
-    ["ProductId"] : number,
-    ["Genres"] : {[number] : string},
-    ["BundledItems"]: {
-      [number] : {
-        ["Owned"] : boolean,
-        ["Id"] : string,
-        ["Name"] : string,
-        ["Type"] : string
-      }
-    },
-    ["ItemStatus"] : {
-        [number] : string
-    },
-    ["ItemRestrictions"] : {
-        [number] : string
-    },
-    ["CreatorType"]: string,
-    ["CreatorTargetId"]: number,
-    ["CreatorName"] : string,
-    ["Price"]: number,
-    ["PremiumPricing"] : {
-      ["PremiumDiscountPercentage"] : number,
-      ["PremiumPriceInRobux"] : number
-    },
-    ["LowestPrice"] : number,
-    ["PriceStatus"]: string,
-    ["UnitsAvailableForConsumption"] : number,
-    ["PurchaseCount"] : number,
-    ["FavoriteCount"] : number,
-    ["ModelPreview"] : Model ?
-}
+export type CatalogInfo = CustomizationUtil.CatalogInfo
 
-export type SimplifiedCatalogInfo = {
-    ["Id"] : number,
-    ["ItemType"] : string,
-    ["Name"] : string ?,
-    ["Price"] : number ?,
-    ["CreatorName"] : string ?,
-    ["ModelPreview"] : Model ?
-}
+export type SimplifiedCatalogInfo = CustomizationUtil.SimplifiedCatalogInfo
 
 type InfoFromHumanoidDesc = {
     ["AccessoryType"] : Enum.AccessoryType,
@@ -146,18 +102,11 @@ local function convertAccessoryToSimplifiedCatalogInfo(infoFromHumanoidDesc : In
     }
 end
 
-local function addAvatarToCatalogInfosArray(currentPage : {[number] : CatalogInfo})
-    CustomizationUtil.AddAvatarToCatalogInfosArray(currentPage)
-    --adds the modelpreview on the current page...
-    
-    return currentPage
-end
- 
 local function getViewportFrame(
     maid : Maid,
     order : number,
     relativePos : CanBeState<Vector3>,
-    contentInstance : CanBeState<Model>,
+    contentInstance : CanBeState<Model ?>,
     fn : (() -> ()) ?
 )
     local _fuse = ColdFusion.fuse(maid)
@@ -341,16 +290,12 @@ local function getCatalogButton(
         }
     })
 
-
+    print("test1")
     local secondFrame
-    local previewChar 
+    local previewChar : ValueState<Model?> ?  = if char then (_Value(nil) :: any) else nil --if char then CustomizationUtil.GetAvatarFromCatalogInfo(catalogInfo) else nil
+    print("test2 yields breh??")
     local charPreviewPos = _Value(Vector3.new(0,0, -5))
-    print(catalogInfo.ModelPreview, " exists or nah?")
-    if catalogInfo.ModelPreview then
-
-        previewChar = catalogInfo.ModelPreview
-
-
+    if previewChar then
         secondFrame = getViewportFrame(
             maid, 
             1, 
@@ -363,7 +308,7 @@ local function getCatalogButton(
             Size = UDim2.fromScale(1, 1)
         })
     end
-
+    print("test2")
     local avatarTransp = _Computed(function(hovered : boolean)
         return if hovered then 0 else 1
     end, isHovered):Tween()
@@ -390,7 +335,7 @@ local function getCatalogButton(
             }),
         } 
     })
-
+    print("test3")
     if options:IsA("ViewportFrame") then
         _bind(secondFrame)({
             ImageTransparency = avatarTransp 
@@ -421,7 +366,7 @@ local function getCatalogButton(
         button.Parent = options    
     end 
 
-    
+    print("test4")
     local out = _new("TextButton")({
         LayoutOrder = order,
         BackgroundTransparency = 1,
@@ -517,7 +462,10 @@ local function getCatalogButton(
                 if char then
                     isHovered:Set(true)
 
-                    
+                    if previewChar and not previewChar:Get() then
+                        local newchar = CustomizationUtil.GetAvatarFromCatalogInfo(catalogInfo) 
+                        if previewChar then  previewChar:Set(newchar) end
+                    end
                 end
             end,
             MouseLeave = function()
@@ -2363,9 +2311,7 @@ return function(
             creatorType : Enum.CreatorType ?,
             creatorName : string ?
         )
-            local currentCatalogPage = addAvatarToCatalogInfosArray(catalogPage:GetCurrentPage())
-            for k,v : CatalogInfo in pairs(currentCatalogPage) do
-                print(v.ModelPreview)
+            for k,v : CatalogInfo  in pairs(catalogPage:GetCurrentPage()) do
                 if ((creatorType == nil) or (v.CreatorType == creatorType.Name)) and ((creatorName == nil) or (v.CreatorName:lower():find(creatorName:lower()))) then
                     local buttonMaid = Maid.new()
 

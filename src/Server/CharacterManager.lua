@@ -14,10 +14,22 @@ type Maid = Maid.Maid
 local WALK_SPEED = 6
 
 --remotes
+local CATALOG_FOLDER_NAME = "CatalogFolder"
+
 local ON_CHARACTER_APPEARANCE_RESET = "OnCharacterAppearanceReset"
+
+local GET_AVATAR_FROM_CATALOG_INFO = "GetAvatarFromCatalogInfo"
+
 --variables
 --references
 --local functions
+local function getCatalogFolder()
+    local catalogFolder = ReplicatedStorage:FindFirstChild(CATALOG_FOLDER_NAME) :: Folder or Instance.new("Folder")
+    catalogFolder.Name = CATALOG_FOLDER_NAME
+    catalogFolder.Parent = ReplicatedStorage
+    return catalogFolder
+end
+
 local function paralyzeCharacter(char : Model)
     for _,v in pairs(char:GetDescendants()) do
         if v:IsA("Motor6D") then
@@ -124,6 +136,18 @@ function CharacterManager.init(maid : Maid)
                 end
             end
         end
+    end))
+
+    maid:GiveTask(NetworkUtil.onServerInvoke(GET_AVATAR_FROM_CATALOG_INFO, function(plr : Player, catalogInfo : CustomizationUtil.CatalogInfo)
+        local catalogFolder = getCatalogFolder()
+        local asset = catalogFolder:FindFirstChild(tostring(catalogInfo.Id)) or game:GetService("InsertService"):LoadAsset(catalogInfo.Id)
+        asset.Name = tostring(catalogInfo.Id)
+        asset.Parent = catalogFolder
+        task.spawn(function()
+            task.wait(5)
+            asset:Destroy()
+        end)
+        return asset
     end))
 end
 
