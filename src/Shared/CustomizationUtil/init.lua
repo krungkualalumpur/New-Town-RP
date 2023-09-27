@@ -72,6 +72,8 @@ local CHARACTER_BUNDLE_ID_ATTRIBUTE_KEY = "BundleId"
 
 local ON_CUSTOMIZE_AVATAR_NAME = "OnCustomizeAvatarName"
 local ON_CUSTOMIZE_CHAR = "OnCustomizeCharacter"
+
+local ADD_AVATAR_TO_CATALOG_INFO_ARRAY = "AddAvatarToCatalogInfoArray"
 --variables
 --references
 local partHeadTemplate = ReplicatedStorage:WaitForChild("Assets"):WaitForChild("Others"):WaitForChild("PartHeadTemplate")
@@ -268,81 +270,85 @@ end
 local CustomizationUtil = {}
 
 function CustomizationUtil.AddAvatarToCatalogInfosArray(currentPage : {[number] : CatalogInfo})
-    --adds the modelpreview
-    for k,catalogInfo : CatalogInfo in pairs(currentPage) do
-        currentPage[k].ModelPreview = getCharacter()
-        local previewChar = currentPage[k].ModelPreview
-        if previewChar then
-            local humanoid = previewChar:FindFirstChild("Humanoid") :: Humanoid ?
-                if humanoid then
-                task.spawn(function()
-    
-                    local asset
-                    local s, e = pcall(function() asset = game:GetService("InsertService"):LoadAsset(catalogInfo.Id) end)
-            
-                    local marketInfo  
-                    local s2, e2 = pcall(function()
-                        marketInfo = game:GetService("MarketplaceService"):GetProductInfo(catalogInfo.Id, if catalogInfo.ItemType == "Asset" then Enum.InfoType.Asset elseif catalogInfo.ItemType == "Bundle" then Enum.InfoType.Bundle else nil)
-                    end) 
-                   print(s, e, " kara kara?")
-                    local catalogModel
-                    if s and not e then
-                        catalogModel = asset:GetChildren()[1] :: Accessory ?
-                        if catalogModel then
-                            previewChar:PivotTo(CFrame.new())
-                            if catalogModel:IsA("Accessory") then
-                                addAccoutrement(previewChar :: Model, catalogModel)
-                            elseif  catalogModel:IsA("Shirt") then
-                                local shirt = previewChar:FindFirstChild("Shirt") :: Shirt or Instance.new("Shirt")
-                                shirt.ShirtTemplate = catalogModel.ShirtTemplate
-                                shirt.Parent = previewChar
-                            elseif catalogModel:IsA("Pants") then
-                                local pants = previewChar:FindFirstChild("Pants") :: Pants or Instance.new("Pants")
-                                pants.PantsTemplate = catalogModel.PantsTemplate
-                                pants.Parent = previewChar
-                            elseif catalogModel:IsA("Decal")  then
-                                local head = previewChar:WaitForChild("Head", 5) :: BasePart or nil
-                                local face = if head then (head:WaitForChild("face", 5) or Instance.new("Decal")) :: Decal else nil
-                                if face then 
-                                    previewChar:PivotTo(CFrame.new(0, -1.5, -2.5))
-                                    face.Parent = head 
-                                    face.Texture = catalogModel.Texture
+    if not RunService:IsRunning() or RunService:IsServer() then
+        --adds the modelpreview
+        for k,catalogInfo : CatalogInfo in pairs(currentPage) do
+            currentPage[k].ModelPreview = getCharacter()
+            local previewChar = currentPage[k].ModelPreview
+            if previewChar then
+                local humanoid = previewChar:FindFirstChild("Humanoid") :: Humanoid ?
+                    if humanoid then
+                    task.spawn(function()
+        
+                        local asset
+                        local s, e = pcall(function() asset = game:GetService("InsertService"):LoadAsset(catalogInfo.Id) end)
+                
+                        local marketInfo  
+                        local s2, e2 = pcall(function()
+                            marketInfo = game:GetService("MarketplaceService"):GetProductInfo(catalogInfo.Id, if catalogInfo.ItemType == "Asset" then Enum.InfoType.Asset elseif catalogInfo.ItemType == "Bundle" then Enum.InfoType.Bundle else nil)
+                        end) 
+                    print(s, e, " kara kara?")
+                        local catalogModel
+                        if s and not e then
+                            catalogModel = asset:GetChildren()[1] :: Accessory ?
+                            if catalogModel then
+                                previewChar:PivotTo(CFrame.new())
+                                if catalogModel:IsA("Accessory") then
+                                    addAccoutrement(previewChar :: Model, catalogModel)
+                                elseif  catalogModel:IsA("Shirt") then
+                                    local shirt = previewChar:FindFirstChild("Shirt") :: Shirt or Instance.new("Shirt")
+                                    shirt.ShirtTemplate = catalogModel.ShirtTemplate
+                                    shirt.Parent = previewChar
+                                elseif catalogModel:IsA("Pants") then
+                                    local pants = previewChar:FindFirstChild("Pants") :: Pants or Instance.new("Pants")
+                                    pants.PantsTemplate = catalogModel.PantsTemplate
+                                    pants.Parent = previewChar
+                                elseif catalogModel:IsA("Decal")  then
+                                    local head = previewChar:WaitForChild("Head", 5) :: BasePart or nil
+                                    local face = if head then (head:WaitForChild("face", 5) or Instance.new("Decal")) :: Decal else nil
+                                    if face then 
+                                        previewChar:PivotTo(CFrame.new(0, -1.5, -2.5))
+                                        face.Parent = head 
+                                        face.Texture = catalogModel.Texture
+                                    end
                                 end
+                                -- print(catalogModel:FindFirstChild("AccessoryWeld").C0, catalogModel:FindFirstChild("AccessoryWeld").C1)   
+                            end 
+                        end
+        
+                        if marketInfo then
+                            if marketInfo.BundleType == Enum.BundleType.Animations.Name and marketInfo.Items then
+                                for _,item : {Id : number, Name : string, Type : string} in pairs(marketInfo.Items) do
+                                    if item.Id then
+                                        if item.Name:lower():find("idle") then
+                                            local animator = humanoid:FindFirstChild("Animator") :: Animator
+                                            local anim = Instance.new("Animation")
+                                            anim.AnimationId = "rbxassetid://" .. tostring(item.Id)
+                                            animator:LoadAnimation(anim)
+                                        end
+                                    end
+                                end 
+                            elseif marketInfo.BundleType == Enum.BundleType.BodyParts.Name and marketInfo.Items then
+                                CustomizationUtil.ApplyBundleFromId(previewChar, catalogInfo.Id)
                             end
-                            -- print(catalogModel:FindFirstChild("AccessoryWeld").C0, catalogModel:FindFirstChild("AccessoryWeld").C1)   
-                        end 
-                    end
-    
-                    if marketInfo then
-                        if marketInfo.BundleType == Enum.BundleType.Animations.Name and marketInfo.Items then
-                            for _,item : {Id : number, Name : string, Type : string} in pairs(marketInfo.Items) do
-                                if item.Id then
-                                    if item.Name:lower():find("idle") then
+                            if marketInfo.AssetTypeId then
+                                for _,enum : EnumItem in pairs(Enum.AvatarAssetType:GetEnumItems()) do
+                                    if enum.Name:lower():find("animation") and (enum.Value == marketInfo.AssetTypeId) then
                                         local animator = humanoid:FindFirstChild("Animator") :: Animator
                                         local anim = Instance.new("Animation")
-                                        anim.AnimationId = "rbxassetid://" .. tostring(item.Id)
+                                        anim.AnimationId = "rbxassetid://" .. tostring(catalogInfo.Id)
                                         animator:LoadAnimation(anim)
                                     end
                                 end
-                            end 
-                        elseif marketInfo.BundleType == Enum.BundleType.BodyParts.Name and marketInfo.Items then
-                            CustomizationUtil.ApplyBundleFromId(previewChar, catalogInfo.Id)
-                        end
-                        if marketInfo.AssetTypeId then
-                            for _,enum : EnumItem in pairs(Enum.AvatarAssetType:GetEnumItems()) do
-                                if enum.Name:lower():find("animation") and (enum.Value == marketInfo.AssetTypeId) then
-                                    local animator = humanoid:FindFirstChild("Animator") :: Animator
-                                    local anim = Instance.new("Animation")
-                                    anim.AnimationId = "rbxassetid://" .. tostring(catalogInfo.Id)
-                                    animator:LoadAnimation(anim)
-                                end
                             end
+                        -- catalogInfo.
                         end
-                       -- catalogInfo.
-                    end
-                end)
+                    end)
+                end
             end
         end
+    elseif RunService:IsClient() then
+        return  NetworkUtil.invokeServer(ADD_AVATAR_TO_CATALOG_INFO_ARRAY)            
     end
     return currentPage
 end
