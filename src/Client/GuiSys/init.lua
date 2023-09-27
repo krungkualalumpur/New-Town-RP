@@ -698,11 +698,12 @@ function guiSys.new()
 
    maid:GiveTask(onCatalogTry:Connect(function(catalogInfo : NewCustomizationUI.SimplifiedCatalogInfo)
        print(catalogInfo.Id, " test try?")
-       
+       CustomizationUtil.Customize(Player, catalogInfo.Id)
    end))
 
    maid:GiveTask(onCatalogDelete:Connect(function(catalogInfo : NewCustomizationUI.SimplifiedCatalogInfo)
        print("motorik ", catalogInfo.Id)
+       CustomizationUtil.Customize(Player, catalogInfo.Id)
    end))
 
    maid:GiveTask(onRPNameChange:Connect(function(inputted : string)

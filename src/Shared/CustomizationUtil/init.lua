@@ -77,8 +77,29 @@ local GET_AVATAR_FROM_CATALOG_INFO = "GetAvatarFromCatalogInfo"
 local partHeadTemplate = ReplicatedStorage:WaitForChild("Assets"):WaitForChild("Others"):WaitForChild("PartHeadTemplate")
 
 --local functions
-local function getCharacter()
-    return if RunService:IsClient() then Players:CreateHumanoidModelFromUserId(Players.LocalPlayer.UserId) else game.ServerStorage.aryoseno11:Clone() :: Model
+local function getCharacter(fromWorkspace : boolean, plr : Player ?)
+    local char 
+    if RunService:IsRunning() then 
+        if not fromWorkspace then
+            char = Players:CreateHumanoidModelFromUserId(Players.LocalPlayer.UserId) 
+        else
+            for _,charModel in pairs(workspace:GetChildren()) do
+                local humanoid = charModel:FindFirstChild("Humanoid")
+                print(charModel:IsA("Model"), humanoid, humanoid and humanoid:IsA("Humanoid"), charModel.Name == (if plr then plr.Name else Players.LocalPlayer.Name))
+                if charModel:IsA("Model") and humanoid and humanoid:IsA("Humanoid") and charModel.Name == (if plr then plr.Name else Players.LocalPlayer.Name) then
+                    charModel.Archivable = true
+                    char = charModel:Clone()
+                    charModel.Archivable = false
+                    break
+                end
+            end
+        end
+        
+    else 
+        char = game.ServerStorage.aryoseno11:Clone() 
+    end
+    
+    return char
 end
 
 local function importBundle(id) : Model ?
@@ -122,7 +143,7 @@ local function importBundle(id) : Model ?
 	end
 
 	for _, assetId in pairs(assetIds) do
-		local assetModel = InsertService:LoadAsset(assetId)
+		local assetModel = if RunService:IsClient() then NetworkUtil.invokeServer(GET_AVATAR_FROM_CATALOG_INFO, assetId):Clone() else InsertService:LoadAsset(assetId)
 		if assetModel:IsA('Model') then
 			local name = tostring(assetId)
 			--[[local success2, err = pcall(function()
@@ -273,13 +294,13 @@ end
 local CustomizationUtil = {}
 
 function CustomizationUtil.GetAvatarFromCatalogInfo(catalogInfo : SimplifiedCatalogInfo)
-    local previewChar = getCharacter()
+    local previewChar = getCharacter(true)
     if previewChar then
         local humanoid = previewChar:FindFirstChild("Humanoid") :: Humanoid ?
         if humanoid then
             
             local asset
-            local s, e = pcall(function() asset = if RunService:IsRunning() and RunService:IsClient() then NetworkUtil.invokeServer(GET_AVATAR_FROM_CATALOG_INFO, catalogInfo):Clone() else game:GetService("InsertService"):LoadAsset(catalogInfo.Id); print("lalalala yields? ", asset) end)
+            local s, e = pcall(function() asset = if RunService:IsRunning() and RunService:IsClient() then NetworkUtil.invokeServer(GET_AVATAR_FROM_CATALOG_INFO, catalogInfo.Id):Clone() else game:GetService("InsertService"):LoadAsset(catalogInfo.Id); print("lalalala yields? ", asset) end)
     
             local marketInfo  
             local s2, e2 = pcall(function()

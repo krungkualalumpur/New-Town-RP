@@ -138,17 +138,17 @@ function CharacterManager.init(maid : Maid)
         end
     end))
 
-    maid:GiveTask(NetworkUtil.onServerInvoke(GET_AVATAR_FROM_CATALOG_INFO, function(plr : Player, catalogInfo : CustomizationUtil.CatalogInfo)
+    NetworkUtil.onServerInvoke(GET_AVATAR_FROM_CATALOG_INFO, function(plr : Player, catalogId : number)
         local catalogFolder = getCatalogFolder()
-        local asset = catalogFolder:FindFirstChild(tostring(catalogInfo.Id)) or game:GetService("InsertService"):LoadAsset(catalogInfo.Id)
-        asset.Name = tostring(catalogInfo.Id)
+        local asset = catalogFolder:FindFirstChild(tostring(catalogId)) or game:GetService("InsertService"):LoadAsset(catalogId)
+        asset.Name = tostring(catalogId)
         asset.Parent = catalogFolder
         task.spawn(function()
             task.wait(5)
             asset:Destroy()
         end)
         return asset
-    end))
+    end)
 end
 
 return CharacterManager

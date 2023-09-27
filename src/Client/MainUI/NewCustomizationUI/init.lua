@@ -70,8 +70,28 @@ local function getSignal(maid : Maid, fn : (... any) -> ())
     return out 
 end
 
-local function getCharacter()
-    return if RunService:IsRunning() then Players:CreateHumanoidModelFromUserId(Players.LocalPlayer.UserId) else game.ServerStorage.aryoseno11:Clone()
+local function getCharacter(fromWorkspace : boolean, plr : Player ?)
+    local char 
+    if RunService:IsRunning() then 
+        if not fromWorkspace then
+            char = Players:CreateHumanoidModelFromUserId(Players.LocalPlayer.UserId) 
+        else
+            for _,charModel in pairs(workspace:GetChildren()) do
+                local humanoid = charModel:FindFirstChild("Humanoid")
+                if charModel:IsA("Model") and humanoid and humanoid:IsA("Humanoid") and charModel.Name == (if plr then plr.Name else Players.LocalPlayer.Name) then
+                    charModel.Archivable = true
+                    char = charModel:Clone()
+                    charModel.Archivable = false
+                    break
+                end
+            end
+        end
+        
+    else 
+        char = game.ServerStorage.aryoseno11:Clone() 
+    end
+    
+    return char
 end
 
 local function getEnumItemFromName(enum : Enum, enumItemName : string) 
@@ -208,7 +228,7 @@ local function getCatalogButton(
         }
     },
     isSelected : ValueState<boolean>,
-    char : State<Model> ?
+    char : ValueState<Model> ?
 )
     local _fuse = ColdFusion.fuse(maid)
     local _new = _fuse.new
@@ -290,10 +310,8 @@ local function getCatalogButton(
         }
     })
 
-    print("test1")
     local secondFrame
     local previewChar : ValueState<Model?> ?  = if char then (_Value(nil) :: any) else nil --if char then CustomizationUtil.GetAvatarFromCatalogInfo(catalogInfo) else nil
-    print("test2 yields breh??")
     local charPreviewPos = _Value(Vector3.new(0,0, -5))
     if previewChar then
         secondFrame = getViewportFrame(
@@ -308,7 +326,6 @@ local function getCatalogButton(
             Size = UDim2.fromScale(1, 1)
         })
     end
-    print("test2")
     local avatarTransp = _Computed(function(hovered : boolean)
         return if hovered then 0 else 1
     end, isHovered):Tween()
@@ -345,6 +362,9 @@ local function getCatalogButton(
     for k,v in pairs(buttons) do
         local button = _bind(getButton(maid, k, nil, function()
             v.Signal:Fire(catalogInfo)
+            if char then
+                char:Set(getCharacter(true))
+            end
         end))({
             BackgroundTransparency = _Computed(function(selected : boolean)
                 return if selected then 0 else 1
@@ -1088,7 +1108,7 @@ return function(
 
     local onSearch = maid:GiveTask(Signal.new())
 
-    local char : ValueState<Model> = _Value(getCharacter()) :: any
+    local char : ValueState<Model> = _Value(getCharacter(true)) :: any
 
     local currentPage : ValueState<GuiObject ?> = _Value(nil) :: any
     local currentCatalogInfo : ValueState<CatalogInfo?> = _Value(nil) :: any
@@ -2230,9 +2250,11 @@ return function(
     local out = _new("Frame")({
         Visible = _Computed(function(visible : boolean)
             if visible then
-                local charModel : Model = getCharacter()
+                local charModel = getCharacter(true)
+                print(charModel, " round and round...")
                 charModel:PivotTo(CFrame.new())
 
+                print(charModel)
                 char:Set(charModel) 
                 print(charModel, " nasu namu")
             end
@@ -2917,8 +2939,11 @@ return function(
                     end
                     
                 end
+
+                charModel.Parent = avatarViewportFrame
+
                 return ""
-            end, char),
+            end, char), 
         })
     end
 
