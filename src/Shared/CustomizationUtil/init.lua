@@ -198,7 +198,7 @@ end
 
 local function applyBundle(character : Model, bundleFolder : Model)
 	local humanoid = character:FindFirstChild("Humanoid") :: Humanoid ?
-	assert(humanoid)
+	assert(humanoid) 
 	humanoid:RemoveAccessories() 
 	humanoid:SetStateEnabled(Enum.HumanoidStateType.Dead, false)
 	
@@ -600,8 +600,7 @@ function CustomizationUtil.Customize(plr : Player, customizationId : number, bun
 
             humanoidDesc:SetAccessories(accessories, true)
         elseif infoType == Enum.InfoType.Bundle then
-            print("bandel nich...")
-            importBundle(customizationId)
+            CustomizationUtil.ApplyBundleFromId(character, customizationId)
         end
         --humanoid:ApplyDescription(info.) 
         humanoid:ApplyDescription(humanoidDesc)
