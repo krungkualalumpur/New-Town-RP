@@ -26,6 +26,7 @@ export type PlayerData = {
     Character : {
         Accessories : {[number] : number},
         Shirt : number,
+        TShirt : number,
         Pants : number,
         Face : number,
         Bundle : number,

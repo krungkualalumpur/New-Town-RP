@@ -456,6 +456,7 @@ function PlayerManager:GetData()
         Shirt = 0;
         Pants = 0;
         Face =  0;
+        TShirt = 0;
         Bundle = 0;
 
         hasDefaultAccessories = false
@@ -521,14 +522,18 @@ function PlayerManager:SetData(plrData : ManagerTypes.PlayerData)
     end
 
     for _,v in pairs(plrData.Character.Accessories) do
-        CustomizationUtil.Customize(self.Player, v)
+        CustomizationUtil.Customize(self.Player, v, Enum.AvatarItemType.Asset)
     end
-    CustomizationUtil.setCustomeFromTemplateId(self.Player, "Face", plrData.Character.Face or 0)
-    CustomizationUtil.setCustomeFromTemplateId(self.Player, "Shirt", plrData.Character.Shirt or 0)
-    CustomizationUtil.setCustomeFromTemplateId(self.Player, "Pants", plrData.Character.Pants or 0)
+    CustomizationUtil.Customize(self.Player, plrData.Character.Face, Enum.AvatarItemType.Asset)
+    CustomizationUtil.Customize(self.Player, plrData.Character.Shirt, Enum.AvatarItemType.Asset)
+    CustomizationUtil.Customize(self.Player, plrData.Character.Pants, Enum.AvatarItemType.Asset)
+    CustomizationUtil.Customize(self.Player, plrData.Character.TShirt, Enum.AvatarItemType.Asset)
+    --CustomizationUtil.setCustomeFromTemplateId(self.Player, "Face", plrData.Character.Face or 0)
+    --CustomizationUtil.setCustomeFromTemplateId(self.Player, "Shirt", plrData.Character.Shirt or 0)
+    --CustomizationUtil.setCustomeFromTemplateId(self.Player, "Pants", plrData.Character.Pants or 0)
 
      --set bundle
-    CustomizationUtil.Customize(self.Player, plrData.Character.Bundle or 0)
+    CustomizationUtil.Customize(self.Player, plrData.Character.Bundle or 0, Enum.AvatarItemType.Bundle)
 
     --set chat count
     self.ChatCount = plrData.ChatCount or 0
@@ -756,24 +761,34 @@ function PlayerManager.init(maid : Maid)
     end)
 
 
-    NetworkUtil.onServerInvoke(ON_CUSTOMIZE_CHAR, function(plr : Player, customisationId : number)
-        local customizationData = CustomizationUtil.getCustomizationDataById(customisationId)
+    NetworkUtil.onServerInvoke(ON_CUSTOMIZE_CHAR, function(plr : Player, customizationId : number, itemType : Enum.AvatarItemType)
+        local info , infoType = nil, Enum.InfoType.Asset
 
-        if customizationData.Class == "Bundle" then
+        local s,e = pcall(function() info = MarketplaceService:GetProductInfo(customizationId, infoType) end)
+        if not s and e then
+            infoType = Enum.InfoType.Bundle
+            s, e = pcall(function() info = MarketplaceService:GetProductInfo(customizationId, infoType) end)
+            print(infoType)
+        end
+        if not s and e then
+            warn ("unable to load the catalog info by the given id: " .. tostring(e))
+            return nil
+        end
+        print(customizationId, " bandel nehh ", info)
+
+        if infoType == Enum.InfoType.Bundle then
             local plrIsVIP = MarketplaceService:UserOwnsGamePassAsync(plr.UserId, MarketplaceUtil.getGamePassIdByName("VIP Feature"))
 
-            if not plrIsVIP then
-                MarketplaceService:PromptGamePassPurchase(plr, MarketplaceUtil.getGamePassIdByName("VIP Feature"))
-                return nil
-            end
-
+            --if not plrIsVIP then
+                --MarketplaceService:PromptGamePassPurchase(plr, MarketplaceUtil.getGamePassIdByName("VIP Feature"))
+                --return nil
+            --end
+            
             print(plr.Name, plrIsVIP, " vip test")
         end
 
-        if customizationData then
-            CustomizationUtil.Customize(plr, customisationId) 
-            MidasEventTree.Gameplay.CustomizeAvatar.Value(plr)
-        end
+        CustomizationUtil.Customize(plr, customizationId, itemType) 
+        MidasEventTree.Gameplay.CustomizeAvatar.Value(plr)
         return nil
     end)
     NetworkUtil.onServerInvoke(ON_CUSTOMIZE_AVATAR_NAME, function(plr : Player, descType : CustomizationUtil.DescType, descName : string)

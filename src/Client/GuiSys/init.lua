@@ -123,6 +123,18 @@ local function getListButtonInfo(
         }
     
 end
+
+local function getEnumItemFromName(enum : Enum, enumItemName : string) 
+    local enumItem 
+    for _, item : EnumItem in pairs(enum:GetEnumItems()) do
+        if item.Name == enumItemName then
+            enumItem = item
+            break
+        end
+    end
+    return enumItem
+end
+
 --class
 local currentGuiSys : GuiSys
 
@@ -723,14 +735,13 @@ function guiSys.new()
 
    maid:GiveTask(onCatalogTry:Connect(function(catalogInfo : NewCustomizationUI.SimplifiedCatalogInfo, char : ValueState<Model>)
        print(catalogInfo.Id, " test try?")
-       CustomizationUtil.Customize(Player, catalogInfo.Id)
+       
+       CustomizationUtil.Customize(Player, catalogInfo.Id, getEnumItemFromName(Enum.AvatarItemType, catalogInfo.ItemType) :: Enum.AvatarItemType)
        char:Set(getCharacter(true))
-       print("test treh.")
    end))
 
    maid:GiveTask(onCatalogDelete:Connect(function(catalogInfo : NewCustomizationUI.SimplifiedCatalogInfo)
-       print("motorik ", catalogInfo.Id)
-       CustomizationUtil.Customize(Player, catalogInfo.Id)
+       CustomizationUtil.Customize(Player, catalogInfo.Id, getEnumItemFromName(Enum.AvatarItemType, catalogInfo.ItemType) :: Enum.AvatarItemType)
    end))
 
    maid:GiveTask(onRPNameChange:Connect(function(inputted : string)

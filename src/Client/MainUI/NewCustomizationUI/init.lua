@@ -353,7 +353,6 @@ local function getCatalogButton(
             }),
         } 
     })
-    print("test3")
     if options:IsA("ViewportFrame") then
         _bind(secondFrame)({
             ImageTransparency = avatarTransp 
@@ -384,7 +383,6 @@ local function getCatalogButton(
         button.Parent = options    
     end 
 
-    print("test4")
     local out = _new("TextButton")({
         LayoutOrder = order,
         BackgroundTransparency = 1,
@@ -2249,12 +2247,8 @@ return function(
         Visible = _Computed(function(visible : boolean)
             if visible then
                 local charModel = getCharacter(true)
-                print(charModel, " round and round...")
-                charModel:PivotTo(CFrame.new())
-
-                print(charModel)
+                --charModel:PivotTo(CFrame.new())
                 char:Set(charModel) 
-                print(charModel, " nasu namu")
             end
             
             return visible
@@ -2847,7 +2841,7 @@ return function(
             Value = _Computed(function(charModel : Model)             
                 charMaid:DoCleaning()
                 local humanoid = if charModel then charModel:FindFirstChild("Humanoid") :: Humanoid else nil
-                local humanoidDesc = if humanoid then humanoid:FindFirstChild("HumanoidDescription") :: HumanoidDescription else nil
+                local humanoidDesc = if humanoid then humanoid:GetAppliedDescription() else nil
                 local humanoidRigType = if humanoid then humanoid.RigType else nil
 
                 if humanoidDesc and humanoidRigType then
@@ -2867,6 +2861,10 @@ return function(
                     end
                     if humanoidDesc.Pants ~= 0 then
                         table.insert(accessories, getHumanoidDescriptionAccessory(humanoidDesc.Pants, Enum.AccessoryType.Pants, false))
+                    end
+
+                    if humanoidDesc.Face ~= 0 then
+                        table.insert(accessories, getHumanoidDescriptionAccessory(humanoidDesc.Face, Enum.AccessoryType.Face, false))
                     end
 
                     if humanoidDesc.RunAnimation ~= 0 then
