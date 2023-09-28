@@ -6,6 +6,7 @@ local AssetService = game:GetService("AssetService")
 local RunService = game:GetService("RunService")
 local TextService = game:GetService("TextService")
 local Players = game:GetService("Players")
+local MarketplaceService = game:GetService("MarketplaceService")
 --packages
 local Maid = require(ReplicatedStorage:WaitForChild("Packages"):WaitForChild("Maid"))
 local NetworkUtil = require(ReplicatedStorage:WaitForChild("Packages"):WaitForChild("NetworkUtil"))
@@ -18,6 +19,15 @@ export type DescType = "PlayerName" | "PlayerBio"
 export type CharacterInfo = {
     AvatarType : "R6" | "R15" | "RThro"
 }
+
+export type InfoFromHumanoidDesc = {
+    ["AccessoryType"] : Enum.AccessoryType,
+    ["AssetId"] : number,
+    ["IsLayered"] : boolean,
+    ["Order"] : number ?,
+    ["Puffiness"] : number ?
+}
+
 export type CatalogInfo = {
     ["Id"] : number,
     ["ItemType"] : string,
@@ -77,6 +87,17 @@ local GET_AVATAR_FROM_CATALOG_INFO = "GetAvatarFromCatalogInfo"
 local partHeadTemplate = ReplicatedStorage:WaitForChild("Assets"):WaitForChild("Others"):WaitForChild("PartHeadTemplate")
 
 --local functions
+local function getEnumItemFromName(enum : Enum, enumItemName : string) 
+    local enumItem 
+    for _, item : EnumItem in pairs(enum:GetEnumItems()) do
+        if item.Name == enumItemName then
+            enumItem = item
+            break
+        end
+    end
+    return enumItem
+end
+
 local function getCharacter(fromWorkspace : boolean, plr : Player ?)
     local char 
     if RunService:IsRunning() then 
@@ -101,6 +122,18 @@ local function getCharacter(fromWorkspace : boolean, plr : Player ?)
     
     return char
 end
+
+
+local function getHumanoidDescriptionAccessory(
+    assetId : number,
+    enumAccessoryType : Enum.AccessoryType,
+    isLayered : boolean,
+    order : number ?,
+    puffiness : number ?
+) : InfoFromHumanoidDesc
+    return {AssetId = assetId, AccessoryType = enumAccessoryType, IsLayered = isLayered, Order = order, Puffiness = puffiness}
+end
+
 
 local function importBundle(id) : Model ?
 	local folder = Instance.new('Model')
@@ -426,7 +459,7 @@ function CustomizationUtil.Customize(plr : Player, customizationId : number)
         local character = plr.Character or plr.CharacterAdded:Wait()
         local humanoid = character:WaitForChild("Humanoid") :: Humanoid
 
-        local asset
+        --[[local asset
         local s, e = pcall(function() asset = InsertService:LoadAsset(customizationId) end)
 
         if asset then
@@ -441,25 +474,25 @@ function CustomizationUtil.Customize(plr : Player, customizationId : number)
                     if face then 
                         face.Texture = assetInstance.Texture
                     end]]
-                    CustomizationUtil.setCustomeFromTemplateId(plr, "Face", tonumber(string.match(assetInstance.Texture, "%d+")) or 0)
+                    --[[CustomizationUtil.setCustomeFromTemplateId(plr, "Face", tonumber(string.match(assetInstance.Texture, "%d+")) or 0)
                 elseif assetInstance:IsA("Accessory") then
                     local existingAccessory = character:FindFirstChild(assetInstance.Name)
                     if not existingAccessory then
                         humanoid:AddAccessory(assetInstance)
                         assetInstance:SetAttribute("CustomeId", customizationId)
-                    else
-                        existingAccessory:Destroy()
+                    --else --(revised 27/09/2023)
+                    --    existingAccessory:Destroy()
                     end
                 elseif assetInstance:IsA("Shirt") then
                     --[[local shirt = character:FindFirstChild("Shirt") :: Shirt or Instance.new("Shirt")
                     shirt.Parent = character
                     shirt.ShirtTemplate = assetInstance.ShirtTemplate]]
-                    CustomizationUtil.setCustomeFromTemplateId(plr, "Shirt", tonumber(string.match(assetInstance.ShirtTemplate, "%d+")) or 0)
+                    --[[CustomizationUtil.setCustomeFromTemplateId(plr, "Shirt", tonumber(string.match(assetInstance.ShirtTemplate, "%d+")) or 0)
                 elseif assetInstance:IsA("Pants") then
                     --[[local pants = character:FindFirstChild("Pants") :: Pants or Instance.new("Pants")
                     pants.Parent = character
                     pants.PantsTemplate = assetInstance.PantsTemplate]]
-                    CustomizationUtil.setCustomeFromTemplateId(plr, "Pants", tonumber(string.match(assetInstance.PantsTemplate, "%d+")) or 0)
+                    --[[CustomizationUtil.setCustomeFromTemplateId(plr, "Pants", tonumber(string.match(assetInstance.PantsTemplate, "%d+")) or 0)
                 end
             else
                 warn("Unable to find asset from id: " .. tostring(customizationId)) 
@@ -473,10 +506,109 @@ function CustomizationUtil.Customize(plr : Player, customizationId : number)
             else
                 character:SetAttribute(CHARACTER_BUNDLE_ID_ATTRIBUTE_KEY, nil)
             end
+        end]]
+        local humanoidDesc = humanoid:FindFirstChild("HumanoidDescription") :: HumanoidDescription
+        local info , infoType = nil, Enum.InfoType.Asset
+        
+        local s,e = pcall(function() info = MarketplaceService:GetProductInfo(customizationId, infoType) end)
+        if not s and e then
+            infoType = Enum.InfoType.Bundle
+            s, e = pcall(function() info = MarketplaceService:GetProductInfo(customizationId, infoType) end)
         end
+        if not s and e then
+            warn ("unable to load the catalog info by the given id")
+            return
+        end
+
+       
+
+        local accessories = humanoidDesc:GetAccessories(true)
+        local function hasAccessory(id : number) : InfoFromHumanoidDesc ?
+            for _,v in pairs(accessories) do 
+                if v.AssetId == id then
+                    return v
+                end
+            end
+            return nil
+        end
+
+        if not hasAccessory(customizationId) then -- and pls check if its accesssory or non accessory stuff...
+            table.insert(accessories, getHumanoidDescriptionAccessory(customizationId, Enum.AccessoryType.Face, true)) --islayered for accessoreis true but false for shirts etc!!
+        end
+        if infoType == Enum.InfoType.Asset then
+            if not hasAccessory(customizationId) then -- and pls check if its accesssory or non accessory stuff...
+                if info.AssetTypeId == Enum.AssetType.Hat.Value then
+                    table.insert(accessories, getHumanoidDescriptionAccessory(customizationId, Enum.AccessoryType.Hat, true)) --islayered for accessoreis true but false for shirts etc!!
+                    --humanoidDesc.HatAccessory = "rbxassetid://" .. tostring(customizationId)
+                elseif info.AssetTypeId == Enum.AssetType.HairAccessory.Value then
+                    table.insert(accessories, getHumanoidDescriptionAccessory(customizationId, Enum.AccessoryType.Hair, true)) 
+                    --humanoidDesc.HairAccessory = "rbxassetid://" .. tostring(customizationId)
+                elseif info.AssetTypeId == Enum.AssetType.FaceAccessory.Value then
+                    table.insert(accessories, getHumanoidDescriptionAccessory(customizationId, Enum.AccessoryType.Face, true)) 
+                    --humanoidDesc.FaceAccessory = "rbxassetid://" .. tostring(customizationId)
+                elseif info.AssetTypeId == Enum.AssetType.BackAccessory.Value then
+                    table.insert(accessories, getHumanoidDescriptionAccessory(customizationId, Enum.AccessoryType.Back, true)) 
+                    --humanoidDesc.BackAccessory = "rbxassetid://" .. tostring(customizationId)
+                elseif info.AssetTypeId == Enum.AssetType.NeckAccessory.Value then
+                    table.insert(accessories, getHumanoidDescriptionAccessory(customizationId, Enum.AccessoryType.Neck, true)) 
+                    --humanoidDesc.NeckAccessory = "rbxassetid://" .. tostring(customizationId)
+                elseif info.AssetTypeId == Enum.AssetType.FrontAccessory.Value then
+                    table.insert(accessories, getHumanoidDescriptionAccessory(customizationId, Enum.AccessoryType.Front, true)) 
+                    --humanoidDesc.FrontAccessory = "rbxassetid://" .. tostring(customizationId)
+                elseif info.AssetTypeId == Enum.AssetType.WaistAccessory.Value then
+                    table.insert(accessories, getHumanoidDescriptionAccessory(customizationId, Enum.AccessoryType.Waist, true)) 
+                    --humanoidDesc.WaistAccessory = "rbxassetid://" .. tostring(customizationId)
+
+                elseif info.AssetTypeId == Enum.AssetType.ShirtAccessory.Value then
+                    table.insert(accessories, getHumanoidDescriptionAccessory(customizationId, Enum.AccessoryType.Shirt, true)) 
+                elseif info.AssetTypeId == Enum.AssetType.PantsAccessory.Value then
+                    table.insert(accessories, getHumanoidDescriptionAccessory(customizationId, Enum.AccessoryType.Pants, true)) 
+                elseif info.AssetTypeId == Enum.AssetType.TShirtAccessory.Value then
+                    table.insert(accessories, getHumanoidDescriptionAccessory(customizationId, Enum.AccessoryType.TShirt, true)) 
+                elseif info.AssetTypeId == Enum.AssetType.DressSkirtAccessory.Value then
+                    table.insert(accessories, getHumanoidDescriptionAccessory(customizationId, Enum.AccessoryType.DressSkirt, true)) 
+                elseif info.AssetTypeId == Enum.AssetType.EyebrowAccessory.Value then
+                    table.insert(accessories, getHumanoidDescriptionAccessory(customizationId, Enum.AccessoryType.Eyebrow, true)) 
+                elseif info.AssetTypeId == Enum.AssetType.EyelashAccessory.Value then
+                    table.insert(accessories, getHumanoidDescriptionAccessory(customizationId, Enum.AccessoryType.Eyelash, true)) 
+                elseif info.AssetTypeId == Enum.AssetType.ShortsAccessory.Value then
+                    table.insert(accessories, getHumanoidDescriptionAccessory(customizationId, Enum.AccessoryType.Shorts, true)) 
+                elseif info.AssetTypeId == Enum.AssetType.ShoulderAccessory.Value then
+                    table.insert(accessories, getHumanoidDescriptionAccessory(customizationId, Enum.AccessoryType.Shoulder, true)) 
+                elseif info.AssetTypeId == Enum.AssetType.LeftShoeAccessory.Value then
+                    table.insert(accessories, getHumanoidDescriptionAccessory(customizationId, Enum.AccessoryType.LeftShoe, true)) 
+                elseif info.AssetTypeId == Enum.AssetType.RightShoeAccessory.Value then
+                    table.insert(accessories, getHumanoidDescriptionAccessory(customizationId, Enum.AccessoryType.RightShoe, true))
+                elseif info.AssetTypeId == Enum.AssetType.JacketAccessory.Value then
+                    table.insert(accessories, getHumanoidDescriptionAccessory(customizationId, Enum.AccessoryType.Jacket, true))
+                elseif info.AssetTypeId == Enum.AssetType.SweaterAccessory.Value then
+                    table.insert(accessories, getHumanoidDescriptionAccessory(customizationId, Enum.AccessoryType.Sweater, true))
+                elseif info.AssetTypeId == Enum.AssetType.NeckAccessory.Value then
+                    table.insert(accessories, getHumanoidDescriptionAccessory(customizationId, Enum.AccessoryType.Neck, true))
+                end
+            end
+            humanoidDesc:SetAccessories(accessories, true)
+        elseif infoType == Enum.InfoType.Bundle then
+            importBundle(customizationId)
+        end
+        --humanoid:ApplyDescription(info.)
+        humanoid:ApplyDescription(humanoidDesc)
     else
         NetworkUtil.invokeServer(ON_CUSTOMIZE_CHAR, customizationId)
     end 
+end
+
+function CustomizationUtil.DeleteCatalog(plr : Player, catalogInfo : SimplifiedCatalogInfo)
+    if RunService:IsServer() then
+        local character = plr.Character or plr.CharacterAdded:Wait()
+        local humanoid = character:WaitForChild("Humanoid") :: Humanoid
+
+        local humanoidDesc = humanoid:FindFirstChild("HumanoidDescription") :: HumanoidDescription
+
+        humanoidDesc.Pants = 0
+    elseif RunService:IsClient() then
+        
+    end
 end
 
 function CustomizationUtil.setDesc(plr : Player, descType : DescType, descName : string)

@@ -228,7 +228,8 @@ local function getCatalogButton(
         }
     },
     isSelected : ValueState<boolean>,
-    char : ValueState<Model> ?
+    char : ValueState<Model>,
+    displayPreview : boolean
 )
     local _fuse = ColdFusion.fuse(maid)
     local _new = _fuse.new
@@ -311,9 +312,9 @@ local function getCatalogButton(
     })
 
     local secondFrame
-    local previewChar : ValueState<Model?> ?  = if char then (_Value(nil) :: any) else nil --if char then CustomizationUtil.GetAvatarFromCatalogInfo(catalogInfo) else nil
+    local previewChar : ValueState<Model?>  = (_Value(nil) :: any) --if char then CustomizationUtil.GetAvatarFromCatalogInfo(catalogInfo) else nil
     local charPreviewPos = _Value(Vector3.new(0,0, -5))
-    if previewChar then
+    if displayPreview then
         secondFrame = getViewportFrame(
             maid, 
             1, 
@@ -361,10 +362,7 @@ local function getCatalogButton(
 
     for k,v in pairs(buttons) do
         local button = _bind(getButton(maid, k, nil, function()
-            v.Signal:Fire(catalogInfo)
-            if char then
-                char:Set(getCharacter(true))
-            end
+            v.Signal:Fire(catalogInfo, char)
         end))({
             BackgroundTransparency = _Computed(function(selected : boolean)
                 return if selected then 0 else 1
@@ -479,22 +477,20 @@ local function getCatalogButton(
         },
         Events = {
             MouseEnter = function()
-                if char then
+                if displayPreview then
                     isHovered:Set(true)
 
-                    if previewChar and not previewChar:Get() then
-                        local newchar = CustomizationUtil.GetAvatarFromCatalogInfo(catalogInfo) 
-                        if previewChar then  previewChar:Set(newchar) end
-                    end
+                    local newchar = CustomizationUtil.GetAvatarFromCatalogInfo(catalogInfo) 
+                    if displayPreview then  previewChar:Set(newchar) end
                 end
             end,
             MouseLeave = function()
-                if char then
+                if displayPreview then
                     isHovered:Set(false)
                 end
             end,
             MouseButton1Click = function()
-                if char then
+                if displayPreview then
                     isHovered:Set(false)
                 end
             end
@@ -1965,7 +1961,9 @@ return function(
                                                     Name = "More Info",
                                                     Signal = onRecommendedMoreInfoClick,
                                                 }
-                                            }, isSelected
+                                            }, isSelected,
+                                            char,
+                                            true
                                         ))
                                         button.Parent = recommendedContent
                                         catalogInfoMaid:GiveTask(button.Activated:Connect(function()
@@ -2354,7 +2352,7 @@ return function(
                             Name = "More Info",
                             Signal = onMoreInfoClick
                         }
-                    }, selectedButton, if (v.BundleType ~= Enum.BundleType.Animations.Name and (v.AssetType ~= Enum.AssetType.Animation.Name and v.AssetType ~= Enum.AssetType.EmoteAnimation.Name))then char else nil))
+                    }, selectedButton, char, if (v.BundleType ~= Enum.BundleType.Animations.Name and (v.AssetType ~= Enum.AssetType.Animation.Name and v.AssetType ~= Enum.AssetType.EmoteAnimation.Name)) then true else false))
                     catalogButton.Parent = categoryContent
                     
                     buttonMaid:GiveTask(catalogButton.Activated:Connect(function()
@@ -2854,6 +2852,12 @@ return function(
 
                 if humanoidDesc and humanoidRigType then
                     local accessories = {}
+                    --[[for _,v in pairs(charModel:GetChildren()) do
+                        if v:IsA("Accessory") then
+                            
+                            table.insert(accessories, getHumanoidDescriptionAccessory(assetId, enumAccessoryType, isLayered))
+                        end
+                    end]]
                     for _,v in pairs(humanoidDesc:GetAccessories(true)) do
                         table.insert(accessories, v)
                     end
@@ -2910,7 +2914,7 @@ return function(
                                 },
                                 
                             },
-                            selectedButton
+                            selectedButton, char, false
                         ) :: GuiButton
         
                         button.Parent = currentOutfitsFrame
@@ -2940,7 +2944,8 @@ return function(
                     
                 end
 
-                charModel.Parent = avatarViewportFrame
+                charModel:PivotTo(CFrame.new())
+               -- charModel.Parent = avatarViewportFrame
 
                 return ""
             end, char), 

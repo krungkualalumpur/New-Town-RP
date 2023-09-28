@@ -87,6 +87,31 @@ local ON_CHARACTER_APPEARANCE_RESET = "OnCharacterAppearanceReset"
 local Player = Players.LocalPlayer
 --references
 --local functions
+local function getCharacter(fromWorkspace : boolean, plr : Player ?)
+    local char 
+    if RunService:IsRunning() then 
+        if not fromWorkspace then
+            char = Players:CreateHumanoidModelFromUserId(Players.LocalPlayer.UserId) 
+        else
+            for _,charModel in pairs(workspace:GetChildren()) do
+                local humanoid = charModel:FindFirstChild("Humanoid")
+                print(charModel:IsA("Model"), humanoid, humanoid and humanoid:IsA("Humanoid"), charModel.Name == (if plr then plr.Name else Players.LocalPlayer.Name))
+                if charModel:IsA("Model") and humanoid and humanoid:IsA("Humanoid") and charModel.Name == (if plr then plr.Name else Players.LocalPlayer.Name) then
+                    charModel.Archivable = true
+                    char = charModel:Clone()
+                    charModel.Archivable = false
+                    break
+                end
+            end
+        end
+        
+    else 
+        char = game.ServerStorage.aryoseno11:Clone() 
+    end
+    
+    return char
+end
+
 local function getListButtonInfo(
     signal : Signal,
     buttonName : string
@@ -696,9 +721,11 @@ function guiSys.new()
    )
    customizationUI.Parent = target
 
-   maid:GiveTask(onCatalogTry:Connect(function(catalogInfo : NewCustomizationUI.SimplifiedCatalogInfo)
+   maid:GiveTask(onCatalogTry:Connect(function(catalogInfo : NewCustomizationUI.SimplifiedCatalogInfo, char : ValueState<Model>)
        print(catalogInfo.Id, " test try?")
        CustomizationUtil.Customize(Player, catalogInfo.Id)
+       char:Set(getCharacter(true))
+       print("test treh.")
    end))
 
    maid:GiveTask(onCatalogDelete:Connect(function(catalogInfo : NewCustomizationUI.SimplifiedCatalogInfo)
