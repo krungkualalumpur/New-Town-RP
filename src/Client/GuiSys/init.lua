@@ -734,9 +734,9 @@ function guiSys.new()
    customizationUI.Parent = target
 
    maid:GiveTask(onCatalogTry:Connect(function(catalogInfo : NewCustomizationUI.SimplifiedCatalogInfo, char : ValueState<Model>)
-       print(catalogInfo.Id, " test try?")
-       
-       CustomizationUtil.Customize(Player, catalogInfo.Id, getEnumItemFromName(Enum.AvatarItemType, catalogInfo.ItemType) :: Enum.AvatarItemType)
+       local itemType = getEnumItemFromName(Enum.AvatarItemType, catalogInfo.ItemType)
+       print(Player, catalogInfo.Id, itemType)
+       CustomizationUtil.Customize(Player, catalogInfo.Id, itemType :: Enum.AvatarItemType)
        char:Set(getCharacter(true))
    end))
 

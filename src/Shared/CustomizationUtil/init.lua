@@ -453,8 +453,9 @@ function CustomizationUtil.ApplyBundleFromId(character : Model, id : number)
     local bundleFolder = importBundle(id)
     if bundleFolder then  applyBundle(character, bundleFolder) end
 end
-function CustomizationUtil.Customize(plr : Player, customizationId : number, bundle : Enum.AvatarItemType)
+function CustomizationUtil.Customize(plr : Player, customizationId : number, itemType : Enum.AvatarItemType)
     if RunService:IsServer() then
+        print(itemType, " ooooohhh")
         local character = plr.Character or plr.CharacterAdded:Wait()
         local humanoid = character:WaitForChild("Humanoid") :: Humanoid
 
@@ -507,22 +508,30 @@ function CustomizationUtil.Customize(plr : Player, customizationId : number, bun
             end
         end]]
         local humanoidDesc = humanoid:GetAppliedDescription()
-        local info , infoType = nil, Enum.InfoType.Asset
-        
-        local s,e = pcall(function() 
-            info = MarketplaceService:GetProductInfo(customizationId, infoType) 
-            InsertService:LoadAsset(customizationId):Destroy() 
-        end)
-        if not s and e then
-            infoType = Enum.InfoType.Bundle
-            s, e = pcall(function() info = MarketplaceService:GetProductInfo(customizationId, infoType) end)
-            print("now its bundle toip")
-        end
-        if not s and e then
-            warn ("unable to load the catalog info by the given id: " .. tostring(e))
-            return
+       
+        local function getInfo(id : number, passedItemType : Enum.AvatarItemType) : (any, Enum.InfoType)
+            local info , infoType = nil, if (passedItemType == Enum.AvatarItemType.Asset) then Enum.InfoType.Asset elseif (passedItemType == Enum.AvatarItemType.Bundle) then Enum.InfoType.Bundle else nil
+            print(passedItemType, passedItemType == Enum.AvatarItemType.Asset, passedItemType == Enum.AvatarItemType.Bundle)
+
+            local s,e = pcall(function() 
+                info = MarketplaceService:GetProductInfo(id, infoType) 
+                --InsertService:LoadAsset(id):Destroy() 
+            end)
+            --if not s and e then
+            --    infoType = Enum.InfoType.Bundle
+            --    s, e = pcall(function() info = MarketplaceService:GetProductInfo(id, infoType) end)
+                --print("now its bundle toip")
+           -- end
+            if not s and e then
+                warn ("unable to load the catalog info by the given id: " .. tostring(e))
+                return info, Enum.InfoType.Asset
+            end
+            assert(infoType, "Unable to find the infotype by the item type")
+            return info, infoType
         end
 
+        local info, infoType = getInfo(customizationId, itemType)
+        if not info then return end
         local accessories = humanoidDesc:GetAccessories(true)
         local function hasAccessory(id : number) : InfoFromHumanoidDesc ?
             for _,v in pairs(accessories) do 
@@ -533,79 +542,128 @@ function CustomizationUtil.Customize(plr : Player, customizationId : number, bun
             return nil
         end
 
-        if infoType == Enum.InfoType.Asset then
-            if not hasAccessory(customizationId) then -- and pls check if its accesssory or non accessory stuff...
-                if info.AssetTypeId == Enum.AssetType.Hat.Value then
-                    table.insert(accessories, getHumanoidDescriptionAccessory(customizationId, Enum.AccessoryType.Hat, true, #accessories)) --islayered for accessoreis true but false for shirts etc!!
-                    --humanoidDesc.HatAccessory = "rbxassetid://" .. tostring(customizationId)
-                elseif info.AssetTypeId == Enum.AssetType.HairAccessory.Value then
-                    table.insert(accessories, getHumanoidDescriptionAccessory(customizationId, Enum.AccessoryType.Hair, true, #accessories)) 
-                    --humanoidDesc.HairAccessory = "rbxassetid://" .. tostring(customizationId)
-                elseif info.AssetTypeId == Enum.AssetType.FaceAccessory.Value then
-                    table.insert(accessories, getHumanoidDescriptionAccessory(customizationId, Enum.AccessoryType.Face, true, #accessories)) 
-                    --humanoidDesc.FaceAccessory = "rbxassetid://" .. tostring(customizationId)
-                elseif info.AssetTypeId == Enum.AssetType.BackAccessory.Value then
-                    table.insert(accessories, getHumanoidDescriptionAccessory(customizationId, Enum.AccessoryType.Back, true, #accessories)) 
-                    --humanoidDesc.BackAccessory = "rbxassetid://" .. tostring(customizationId)
-                elseif info.AssetTypeId == Enum.AssetType.NeckAccessory.Value then
-                    table.insert(accessories, getHumanoidDescriptionAccessory(customizationId, Enum.AccessoryType.Neck, true, #accessories)) 
-                    --humanoidDesc.NeckAccessory = "rbxassetid://" .. tostring(customizationId)
-                elseif info.AssetTypeId == Enum.AssetType.FrontAccessory.Value then
-                    table.insert(accessories, getHumanoidDescriptionAccessory(customizationId, Enum.AccessoryType.Front, true, #accessories)) 
-                    --humanoidDesc.FrontAccessory = "rbxassetid://" .. tostring(customizationId)
-                elseif info.AssetTypeId == Enum.AssetType.WaistAccessory.Value then
-                    table.insert(accessories, getHumanoidDescriptionAccessory(customizationId, Enum.AccessoryType.Waist, true, #accessories)) 
-                    --humanoidDesc.WaistAccessory = "rbxassetid://" .. tostring(customizationId)
-
-                elseif info.AssetTypeId == Enum.AssetType.ShirtAccessory.Value then
-                    table.insert(accessories, getHumanoidDescriptionAccessory(customizationId, Enum.AccessoryType.Shirt, true, #accessories)) 
-                elseif info.AssetTypeId == Enum.AssetType.PantsAccessory.Value then
-                    table.insert(accessories, getHumanoidDescriptionAccessory(customizationId, Enum.AccessoryType.Pants, true, #accessories)) 
-                elseif info.AssetTypeId == Enum.AssetType.TShirtAccessory.Value then
-                    table.insert(accessories, getHumanoidDescriptionAccessory(customizationId, Enum.AccessoryType.TShirt, true, #accessories)) 
-                elseif info.AssetTypeId == Enum.AssetType.DressSkirtAccessory.Value then
-                    table.insert(accessories, getHumanoidDescriptionAccessory(customizationId, Enum.AccessoryType.DressSkirt, true, #accessories)) 
-                elseif info.AssetTypeId == Enum.AssetType.EyebrowAccessory.Value then
-                    table.insert(accessories, getHumanoidDescriptionAccessory(customizationId, Enum.AccessoryType.Eyebrow, true, #accessories)) 
-                elseif info.AssetTypeId == Enum.AssetType.EyelashAccessory.Value then
-                    table.insert(accessories, getHumanoidDescriptionAccessory(customizationId, Enum.AccessoryType.Eyelash, true, #accessories)) 
-                elseif info.AssetTypeId == Enum.AssetType.ShortsAccessory.Value then
-                    table.insert(accessories, getHumanoidDescriptionAccessory(customizationId, Enum.AccessoryType.Shorts, true, #accessories)) 
-                elseif info.AssetTypeId == Enum.AssetType.ShoulderAccessory.Value then
-                    table.insert(accessories, getHumanoidDescriptionAccessory(customizationId, Enum.AccessoryType.Shoulder, true, #accessories)) 
-                elseif info.AssetTypeId == Enum.AssetType.LeftShoeAccessory.Value then
-                    table.insert(accessories, getHumanoidDescriptionAccessory(customizationId, Enum.AccessoryType.LeftShoe, true, #accessories)) 
-                elseif info.AssetTypeId == Enum.AssetType.RightShoeAccessory.Value then
-                    table.insert(accessories, getHumanoidDescriptionAccessory(customizationId, Enum.AccessoryType.RightShoe, true, #accessories))
-                elseif info.AssetTypeId == Enum.AssetType.JacketAccessory.Value then
-                    table.insert(accessories, getHumanoidDescriptionAccessory(customizationId, Enum.AccessoryType.Jacket, true, #accessories))
-                elseif info.AssetTypeId == Enum.AssetType.SweaterAccessory.Value then
-                    table.insert(accessories, getHumanoidDescriptionAccessory(customizationId, Enum.AccessoryType.Sweater, true, #accessories))
-                elseif info.AssetTypeId == Enum.AssetType.NeckAccessory.Value then
-                    table.insert(accessories, getHumanoidDescriptionAccessory(customizationId, Enum.AccessoryType.Neck, true, #accessories))
+        local function processingHumanoidDescById(id : number, passedItemType : Enum.AvatarItemType)
+            local passedInfo, passedInfoType = getInfo(id, passedItemType)
+            if passedInfoType == Enum.InfoType.Asset then
+                if not hasAccessory(id) then -- and pls check if its accesssory or non accessory stuff...
+                    if passedInfo.AssetTypeId == Enum.AssetType.Hat.Value then
+                        table.insert(accessories, getHumanoidDescriptionAccessory(id, Enum.AccessoryType.Hat, true, #accessories)) --islayered for accessoreis true but false for shirts etc!!
+                        --humanoidDesc.HatAccessory = "rbxassetid://" .. tostring(customizationId)
+                    elseif passedInfo.AssetTypeId == Enum.AssetType.HairAccessory.Value then
+                        table.insert(accessories, getHumanoidDescriptionAccessory(id, Enum.AccessoryType.Hair, true, #accessories)) 
+                        --humanoidDesc.HairAccessory = "rbxassetid://" .. tostring(customizationId)
+                    elseif passedInfo.AssetTypeId == Enum.AssetType.FaceAccessory.Value then
+                        table.insert(accessories, getHumanoidDescriptionAccessory(id, Enum.AccessoryType.Face, true, #accessories)) 
+                        --humanoidDesc.FaceAccessory = "rbxassetid://" .. tostring(customizationId)
+                    elseif passedInfo.AssetTypeId == Enum.AssetType.BackAccessory.Value then
+                        table.insert(accessories, getHumanoidDescriptionAccessory(id, Enum.AccessoryType.Back, true, #accessories)) 
+                        --humanoidDesc.BackAccessory = "rbxassetid://" .. tostring(customizationId)
+                    elseif passedInfo.AssetTypeId == Enum.AssetType.NeckAccessory.Value then
+                        table.insert(accessories, getHumanoidDescriptionAccessory(id, Enum.AccessoryType.Neck, true, #accessories)) 
+                        --humanoidDesc.NeckAccessory = "rbxassetid://" .. tostring(customizationId)
+                    elseif passedInfo.AssetTypeId == Enum.AssetType.FrontAccessory.Value then
+                        table.insert(accessories, getHumanoidDescriptionAccessory(id, Enum.AccessoryType.Front, true, #accessories)) 
+                        --humanoidDesc.FrontAccessory = "rbxassetid://" .. tostring(customizationId)
+                    elseif passedInfo.AssetTypeId == Enum.AssetType.WaistAccessory.Value then
+                        table.insert(accessories, getHumanoidDescriptionAccessory(id, Enum.AccessoryType.Waist, true, #accessories)) 
+                        --humanoidDesc.WaistAccessory = "rbxassetid://" .. tostring(customizationId)
+    
+                    elseif passedInfo.AssetTypeId == Enum.AssetType.ShirtAccessory.Value then
+                        table.insert(accessories, getHumanoidDescriptionAccessory(id, Enum.AccessoryType.Shirt, true, #accessories)) 
+                    elseif passedInfo.AssetTypeId == Enum.AssetType.PantsAccessory.Value then
+                        table.insert(accessories, getHumanoidDescriptionAccessory(id, Enum.AccessoryType.Pants, true, #accessories)) 
+                    elseif passedInfo.AssetTypeId == Enum.AssetType.TShirtAccessory.Value then
+                        table.insert(accessories, getHumanoidDescriptionAccessory(id, Enum.AccessoryType.TShirt, true, #accessories)) 
+                    elseif passedInfo.AssetTypeId == Enum.AssetType.DressSkirtAccessory.Value then
+                        table.insert(accessories, getHumanoidDescriptionAccessory(id, Enum.AccessoryType.DressSkirt, true, #accessories)) 
+                    elseif passedInfo.AssetTypeId == Enum.AssetType.EyebrowAccessory.Value then
+                        table.insert(accessories, getHumanoidDescriptionAccessory(id, Enum.AccessoryType.Eyebrow, true, #accessories)) 
+                    elseif passedInfo.AssetTypeId == Enum.AssetType.EyelashAccessory.Value then
+                        table.insert(accessories, getHumanoidDescriptionAccessory(id, Enum.AccessoryType.Eyelash, true, #accessories)) 
+                    elseif passedInfo.AssetTypeId == Enum.AssetType.ShortsAccessory.Value then
+                        table.insert(accessories, getHumanoidDescriptionAccessory(id, Enum.AccessoryType.Shorts, true, #accessories)) 
+                    elseif passedInfo.AssetTypeId == Enum.AssetType.ShoulderAccessory.Value then
+                        table.insert(accessories, getHumanoidDescriptionAccessory(id, Enum.AccessoryType.Shoulder, true, #accessories)) 
+                    elseif passedInfo.AssetTypeId == Enum.AssetType.LeftShoeAccessory.Value then
+                        table.insert(accessories, getHumanoidDescriptionAccessory(id, Enum.AccessoryType.LeftShoe, true, #accessories)) 
+                    elseif passedInfo.AssetTypeId == Enum.AssetType.RightShoeAccessory.Value then
+                        table.insert(accessories, getHumanoidDescriptionAccessory(id, Enum.AccessoryType.RightShoe, true, #accessories))
+                    elseif passedInfo.AssetTypeId == Enum.AssetType.JacketAccessory.Value then
+                        table.insert(accessories, getHumanoidDescriptionAccessory(id, Enum.AccessoryType.Jacket, true, #accessories))
+                    elseif passedInfo.AssetTypeId == Enum.AssetType.SweaterAccessory.Value then
+                        table.insert(accessories, getHumanoidDescriptionAccessory(id, Enum.AccessoryType.Sweater, true, #accessories))
+                    elseif passedInfo.AssetTypeId == Enum.AssetType.NeckAccessory.Value then
+                        table.insert(accessories, getHumanoidDescriptionAccessory(id, Enum.AccessoryType.Neck, true, #accessories))
+                    end
                 end
-            end
+    
+                if passedInfo.AssetTypeId == Enum.AssetType.Shirt.Value then
+                    humanoidDesc.Shirt = id
+                elseif passedInfo.AssetTypeId == Enum.AssetType.Pants.Value then
+                    humanoidDesc.Pants = id
+                elseif passedInfo.AssetTypeId == Enum.AssetType.TShirt.Value then
+                    humanoidDesc.GraphicTShirt = id
+                elseif passedInfo.AssetTypeId == Enum.AssetType.Torso.Value then
+                    humanoidDesc.Torso = id
+                elseif passedInfo.AssetTypeId == Enum.AssetType.Face.Value then
+                    humanoidDesc.Face = id
+                elseif passedInfo.AssetTypeId == Enum.AssetType.LeftArm.Value then
+                    humanoidDesc.LeftArm = id
+                elseif passedInfo.AssetTypeId == Enum.AssetType.RightArm.Value then
+                    humanoidDesc.RightArm = id
+                elseif passedInfo.AssetTypeId == Enum.AssetType.LeftLeg.Value then
+                    humanoidDesc.LeftLeg = id
+                elseif passedInfo.AssetTypeId == Enum.AssetType.RightLeg.Value then
+                    humanoidDesc.RightLeg = id
+                elseif passedInfo.AssetTypeId == Enum.AssetType.Head.Value then
+                    humanoidDesc.Head = id
+                end
+    
+                humanoidDesc:SetAccessories(accessories, true)
+                humanoid:ApplyDescription(humanoidDesc)
+            elseif passedInfoType == Enum.InfoType.Bundle then
 
-            if info.AssetTypeId == Enum.AssetType.Shirt.Value then
-                humanoidDesc.Shirt = customizationId
-            elseif info.AssetTypeId == Enum.AssetType.Pants.Value then
-                humanoidDesc.Pants = customizationId
-            elseif info.AssetTypeId == Enum.AssetType.TShirt.Value then
-                humanoidDesc.GraphicTShirt = customizationId
-            elseif info.AssetTypeId == Enum.AssetType.Torso.Value then
-                humanoidDesc.Torso = customizationId
-            elseif info.AssetTypeId == Enum.AssetType.Face.Value then
-                humanoidDesc.Face = customizationId
-            end
+                local function getHumanoidDescriptionBundle(bundleId)
+                    local function getOutfitId()
+                        if bundleId <= 0 then
+                            return nil
+                        end
+                        local info = game.AssetService:GetBundleDetailsAsync(bundleId)
+                        if not info then
+                            return nil
+                        end
+                        for _,item in pairs(info.Items) do
+                            if item.Type == "UserOutfit" then
+                                return item.Id
+                            end
+                        end 
+                        return nil
+                    end
+                    local itemId = getOutfitId()
+                    return if (itemId and itemId > 0) then game.Players:GetHumanoidDescriptionFromOutfitId(itemId) else nil
+                end
 
-            humanoidDesc:SetAccessories(accessories, true)
-        elseif infoType == Enum.InfoType.Bundle then
-            CustomizationUtil.ApplyBundleFromId(character, customizationId)
+                local newHumanoidDesc = getHumanoidDescriptionBundle(id)
+                --newHumanoidDesc:SetAccessories(accessories, true)
+                humanoid:ApplyDescription(newHumanoidDesc)
+
+                --if passedInfo.Items then
+                    --for _,v : {Id : number, Name : string, Type : string} in pairs(passedInfo.Items) do
+                        --print(v.Name, ' konuull')
+                        --local bundleItemType = getEnumItemFromName(Enum.AvatarItemType, v.Type)
+                        --processingHumanoidDescById(v.Id, bundleItemType :: Enum.AvatarItemType)
+                   -- end 
+                --end
+
+                --CustomizationUtil.ApplyBundleFromId(character, customizationId)
+            end
         end
+
+        processingHumanoidDescById(customizationId, itemType)
         --humanoid:ApplyDescription(info.) 
-        humanoid:ApplyDescription(humanoidDesc)
+        
     else
-        NetworkUtil.invokeServer(ON_CUSTOMIZE_CHAR, customizationId)
+        NetworkUtil.invokeServer(ON_CUSTOMIZE_CHAR, customizationId, itemType)
     end 
 end
 
