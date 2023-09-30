@@ -643,7 +643,10 @@ function CustomizationUtil.Customize(plr : Player, customizationId : number, ite
                     return if (itemId and itemId > 0) then game.Players:GetHumanoidDescriptionFromOutfitId(itemId) else nil
                 end
 
-                local newHumanoidDesc = getHumanoidDescriptionBundle(id)
+                --local newHumanoidDesc = getHumanoidDescriptionBundle(id)
+                CustomizationUtil.ApplyBundleFromId(character, customizationId)
+                humanoid = character:WaitForChild("Humanoid") :: Humanoid
+                local newHumanoidDesc = humanoid:GetAppliedDescription()
                 --newHumanoidDesc:SetAccessories(accessories, true)
                 humanoid:ApplyDescription(newHumanoidDesc)
 
