@@ -15,6 +15,22 @@ local CustomizationList = require(ReplicatedStorage:WaitForChild("Shared"):WaitF
 
 --types
 type Maid = Maid.Maid
+export type CharacterData = {
+    Accessories : {[number] : number},
+
+    Shirt : number,
+    Pants : number,
+    TShirt : number,
+    Face : number,
+
+    Torso : number,
+    LeftArm : number,
+    RightArm : number,
+    LeftLeg : number,
+    RightLeg : number,
+    Head : number
+}
+
 export type DescType = "PlayerName" | "PlayerBio"
 export type CharacterInfo = {
     AvatarType : "R6" | "R15" | "RThro"
@@ -453,7 +469,46 @@ function CustomizationUtil.ApplyBundleFromId(character : Model, id : number)
     local bundleFolder = importBundle(id)
     if bundleFolder then  applyBundle(character, bundleFolder) end
 end
-function CustomizationUtil.Customize(plr : Player, customizationId : number, itemType : Enum.AvatarItemType)
+
+function CustomizationUtil.GetInfoFromCharacter(character :Model) : CharacterData
+    local humanoid = character:WaitForChild("Humanoid") :: Humanoid
+    local humanoidDesc = humanoid:GetAppliedDescription()
+
+    local accessoryIds = {}
+    for _,v in pairs(humanoidDesc:GetAccessories(true)) do
+        table.insert(accessoryIds, v.AssetId)
+    end
+
+    return {
+        Accessories = accessoryIds,
+
+        Shirt = humanoidDesc.Shirt,
+        Pants = humanoidDesc.Pants,
+        TShirt = humanoidDesc.GraphicTShirt,
+        Face = humanoidDesc.Face,
+
+        Torso = humanoidDesc.Torso,
+        LeftArm = humanoidDesc.LeftArm,
+        RightArm = humanoidDesc.RightArm,
+        LeftLeg = humanoidDesc.LeftLeg,
+        RightLeg = humanoidDesc.RightLeg,
+        Head = humanoidDesc.Head
+    }
+end
+
+function CustomizationUtil.SetInfoFromCharacter(character : Model, characterData : CharacterData)
+    local humanoid = character:WaitForChild("Humanoid") :: Humanoid
+    local humanoidDesc = humanoid:GetAppliedDescription()
+
+    local accessories = {}
+    
+
+    humanoidDesc:SetAccessories(accessories, includeRigidAccessories)
+
+    return
+end
+
+function CustomizationUtil.Customize(plr : Player, customizationId : number, itemType : Enum.AvatarItemType, assetTypeId : number ?)
     if RunService:IsServer() then
         print(itemType, " ooooohhh")
         local character = plr.Character or plr.CharacterAdded:Wait()
@@ -530,8 +585,7 @@ function CustomizationUtil.Customize(plr : Player, customizationId : number, ite
             return info, infoType
         end
 
-        local info, infoType = getInfo(customizationId, itemType)
-        if not info then return end
+        --if not info then return end
         local accessories = humanoidDesc:GetAccessories(true)
         local function hasAccessory(id : number) : InfoFromHumanoidDesc ?
             for _,v in pairs(accessories) do 
@@ -544,8 +598,9 @@ function CustomizationUtil.Customize(plr : Player, customizationId : number, ite
 
         local function processingHumanoidDescById(id : number, passedItemType : Enum.AvatarItemType)
             local passedInfo, passedInfoType = getInfo(id, passedItemType)
+            local assetTypeId = passedInfo or assetTypeId
             if passedInfoType == Enum.InfoType.Asset then
-                if not hasAccessory(id) then -- and pls check if its accesssory or non accessory stuff...
+                if not hasAccessory(id) and passedInfo then -- and pls check if its accesssory or non accessory stuff...
                     if passedInfo.AssetTypeId == Enum.AssetType.Hat.Value then
                         table.insert(accessories, getHumanoidDescriptionAccessory(id, Enum.AccessoryType.Hat, true, #accessories)) --islayered for accessoreis true but false for shirts etc!!
                         --humanoidDesc.HatAccessory = "rbxassetid://" .. tostring(customizationId)
@@ -597,33 +652,32 @@ function CustomizationUtil.Customize(plr : Player, customizationId : number, ite
                     end
                 end
     
-                if passedInfo.AssetTypeId == Enum.AssetType.Shirt.Value then
+                if assetTypeId == Enum.AssetType.Shirt.Value then
                     humanoidDesc.Shirt = id
-                elseif passedInfo.AssetTypeId == Enum.AssetType.Pants.Value then
+                elseif assetTypeId == Enum.AssetType.Pants.Value then
                     humanoidDesc.Pants = id
-                elseif passedInfo.AssetTypeId == Enum.AssetType.TShirt.Value then
+                elseif assetTypeId == Enum.AssetType.TShirt.Value then
                     humanoidDesc.GraphicTShirt = id
-                elseif passedInfo.AssetTypeId == Enum.AssetType.Torso.Value then
+                elseif assetTypeId == Enum.AssetType.Torso.Value then
                     humanoidDesc.Torso = id
-                elseif passedInfo.AssetTypeId == Enum.AssetType.Face.Value then
+                elseif assetTypeId == Enum.AssetType.Face.Value then
                     humanoidDesc.Face = id
-                elseif passedInfo.AssetTypeId == Enum.AssetType.LeftArm.Value then
+                elseif assetTypeId == Enum.AssetType.LeftArm.Value then
                     humanoidDesc.LeftArm = id
-                elseif passedInfo.AssetTypeId == Enum.AssetType.RightArm.Value then
+                elseif assetTypeId == Enum.AssetType.RightArm.Value then
                     humanoidDesc.RightArm = id
-                elseif passedInfo.AssetTypeId == Enum.AssetType.LeftLeg.Value then
+                elseif assetTypeId == Enum.AssetType.LeftLeg.Value then
                     humanoidDesc.LeftLeg = id
-                elseif passedInfo.AssetTypeId == Enum.AssetType.RightLeg.Value then
+                elseif assetTypeId == Enum.AssetType.RightLeg.Value then
                     humanoidDesc.RightLeg = id
-                elseif passedInfo.AssetTypeId == Enum.AssetType.Head.Value then
+                elseif assetTypeId == Enum.AssetType.Head.Value then
                     humanoidDesc.Head = id
                 end
     
                 humanoidDesc:SetAccessories(accessories, true)
                 humanoid:ApplyDescription(humanoidDesc)
-            elseif passedInfoType == Enum.InfoType.Bundle then
-
-                local function getHumanoidDescriptionBundle(bundleId)
+            elseif passedInfoType == Enum.InfoType.Bundle and passedInfo then
+                --[[local function getHumanoidDescriptionBundle(bundleId)
                     local function getOutfitId()
                         if bundleId <= 0 then
                             return nil
@@ -641,7 +695,7 @@ function CustomizationUtil.Customize(plr : Player, customizationId : number, ite
                     end
                     local itemId = getOutfitId()
                     return if (itemId and itemId > 0) then game.Players:GetHumanoidDescriptionFromOutfitId(itemId) else nil
-                end
+                end]]
 
                 --local newHumanoidDesc = getHumanoidDescriptionBundle(id)
                 CustomizationUtil.ApplyBundleFromId(character, customizationId)

@@ -449,18 +449,11 @@ function PlayerManager:SetChatCount(count : number)
 end
 
 function PlayerManager:GetData()
+    local char = self._Maid.CharacterModel :: Model ?
+
     local plrData : ManagerTypes.PlayerData = {} :: any
     plrData.Backpack = {};
-    plrData.Character = {
-        Accessories = {};
-        Shirt = 0;
-        Pants = 0;
-        Face =  0;
-        TShirt = 0;
-        Bundle = 0;
-
-        hasDefaultAccessories = false
-    };
+    plrData.Character = CustomizationUtil.GetInfoFromCharacter(char or Players:CreateHumanoidModelFromUserId(self.Player));
     plrData.Vehicles = {};
     plrData.ChatCount = self.ChatCount
 
@@ -468,9 +461,7 @@ function PlayerManager:GetData()
         table.insert(plrData.Backpack, v.Name)
     end
 
-    local char = self._Maid.CharacterModel :: Model ?
-
-    if char then
+    --[[if char then
         for _,v in pairs(char:GetChildren()) do
             if v:IsA("Accessory") then    
                 local accId = CustomizationUtil.getAccessoryId(v)
@@ -487,7 +478,7 @@ function PlayerManager:GetData()
 
         local bundleId = CustomizationUtil.getBundleIdFromCharacter(char)
         plrData.Character.Bundle = bundleId
-    end
+    end]]
     
 
     for _,v in pairs(self.Vehicles) do
@@ -513,15 +504,16 @@ function PlayerManager:SetData(plrData : ManagerTypes.PlayerData)
     end
 
     local char = self.Player.Character or self.Player.CharacterAdded:Wait()
-    if not plrData.Character.hasDefaultAccessories then
+    --[[if not plrData.Character.hasDefaultAccessories then
         for _,v in pairs(char:GetChildren()) do
             if v:IsA("Accessory") then    
                 v:Destroy()
             end
         end
-    end
+    end]]
+    CustomizationUtil.SetInfoFromCharacter(char, plrData.Character)
 
-    for _,v in pairs(plrData.Character.Accessories) do
+   --[[ for _,v in pairs(plrData.Character.Accessories) do
         CustomizationUtil.Customize(self.Player, v, Enum.AvatarItemType.Asset)
     end
     CustomizationUtil.Customize(self.Player, plrData.Character.Face, Enum.AvatarItemType.Asset)
@@ -533,7 +525,7 @@ function PlayerManager:SetData(plrData : ManagerTypes.PlayerData)
     --CustomizationUtil.setCustomeFromTemplateId(self.Player, "Pants", plrData.Character.Pants or 0)
 
      --set bundle
-    CustomizationUtil.Customize(self.Player, plrData.Character.Bundle or 0, Enum.AvatarItemType.Bundle)
+    CustomizationUtil.Customize(self.Player, plrData.Character.Bundle or 0, Enum.AvatarItemType.Bundle)]]
 
     --set chat count
     self.ChatCount = plrData.ChatCount or 0

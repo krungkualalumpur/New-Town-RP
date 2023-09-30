@@ -7,6 +7,7 @@ local Signal = require(ReplicatedStorage:WaitForChild("Packages"):WaitForChild("
 --modules
 local ItemUtil = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("ItemUtil"))
 local BackpackUtil = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("BackpackUtil"))
+local CustomizationUtil = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("CustomizationUtil"))
 --types
 type Signal = Signal.Signal
 type Maid = Maid.Maid
@@ -20,19 +21,12 @@ export type VehicleData = ItemUtil.ItemInfo & {
     OwnerId : number
 }
 
+export type CharacterData = CustomizationUtil.CharacterData
+
 export type PlayerData = {
     Backpack : {[number] : string},
     Vehicles : {[number] : string},
-    Character : {
-        Accessories : {[number] : number},
-        Shirt : number,
-        TShirt : number,
-        Pants : number,
-        Face : number,
-        Bundle : number,
-
-        hasDefaultAccessories : boolean
-    },
+    Character : CustomizationUtil.CharacterData,
     ChatCount : number
 }
 
