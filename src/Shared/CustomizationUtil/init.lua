@@ -503,7 +503,7 @@ function CustomizationUtil.SetInfoFromCharacter(character : Model, characterData
     local accessories = {}
     
 
-    humanoidDesc:SetAccessories(accessories, includeRigidAccessories)
+    humanoidDesc:SetAccessories(accessories, true)
 
     return
 end
