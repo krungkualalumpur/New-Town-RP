@@ -536,7 +536,7 @@ return function(
 
             statusMaid:GiveTask(onCustomeButtonClick:Connect(function(custom : CustomizationList.Customization, isEquipped : ValueState<boolean>?, selectedBundle : ValueState<CustomizationList.Customization ?>)
                 if game:GetService("RunService"):IsRunning() then
-                    CustomizationUtil.Customize(game.Players.LocalPlayer, custom.TemplateId)
+                  --  CustomizationUtil.Customize(game.Players.LocalPlayer, custom.TemplateId)
                 end
                 if isEquipped  and game:GetService("RunService"):IsRunning() then 
                     print("Custome clicked ", custom.Name, custom.TemplateId) 

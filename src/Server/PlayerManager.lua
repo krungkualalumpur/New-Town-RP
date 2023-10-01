@@ -250,22 +250,19 @@ function PlayerManager.new(player : Player, maid : Maid ?)
         local count = 0
         local data = self:GetData()
 
-        if data.Character.Face then 
+        if data.Character.Face ~= 0 then 
             count += 1
         end
-        if data.Character.Pants then
+        if data.Character.Pants ~= 0 then
             count += 1
         end
-        if data.Character.Shirt then
+        if data.Character.Shirt ~= 0 then
             count += 1
         end
         for _,v in pairs(data.Character.Accessories) do
             count += 1
         end
-        if data.Character.Bundle ~= 0 then
-            count += 1
-        end
-        
+       
         return count
     end) 
 
