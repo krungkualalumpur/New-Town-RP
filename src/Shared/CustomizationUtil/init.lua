@@ -502,8 +502,11 @@ function CustomizationUtil.SetInfoFromCharacter(character : Model, characterData
 
     local accessories = {}
     
-
     humanoidDesc:SetAccessories(accessories, true)
+
+    humanoidDesc.Torso = characterData.Torso
+    humanoidDesc.Shirt = characterData.Shirt
+    humanoidDesc.GraphicTShirt = characterData.TShirt
 
     return
 end
