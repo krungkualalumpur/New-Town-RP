@@ -63,6 +63,7 @@ local DELETE_VEHICLE = "DeleteVehicle"
 
 local ON_CUSTOMIZE_AVATAR_NAME = "OnCustomizeAvatarName"
 local ON_CUSTOMIZE_CHAR = "OnCustomizeCharacter"
+local ON_DELETE_CATALOG = "OnDeleteCatalog"
 
 local KEY_VALUE_NAME = "KeyValue"
 
@@ -780,6 +781,12 @@ function PlayerManager.init(maid : Maid)
         MidasEventTree.Gameplay.CustomizeAvatar.Value(plr)
         return nil
     end)
+
+    NetworkUtil.onServerInvoke(ON_DELETE_CATALOG, function(plr : Player, customizationId : number, itemType : Enum.AvatarItemType)
+        CustomizationUtil.DeleteCatalog(plr, customizationId, itemType)
+        return nil
+    end)
+
     NetworkUtil.onServerInvoke(ON_CUSTOMIZE_AVATAR_NAME, function(plr : Player, descType : CustomizationUtil.DescType, descName : string)
         CustomizationUtil.setDesc(plr, descType, descName)
 

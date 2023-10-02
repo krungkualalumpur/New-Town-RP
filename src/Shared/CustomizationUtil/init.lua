@@ -96,6 +96,7 @@ local CHARACTER_BUNDLE_ID_ATTRIBUTE_KEY = "BundleId"
 
 local ON_CUSTOMIZE_AVATAR_NAME = "OnCustomizeAvatarName"
 local ON_CUSTOMIZE_CHAR = "OnCustomizeCharacter"
+local ON_DELETE_CATALOG = "OnDeleteCatalog"
 
 local GET_AVATAR_FROM_CATALOG_INFO = "GetAvatarFromCatalogInfo"
 --variables
@@ -299,7 +300,7 @@ local function applyBundle(character : Model, bundleFolder : Model)
     if RunService:IsServer() then humanoid:ApplyDescription(humanoidDesc) end
 end
 
-local function applyBundleByHumanoidDescription(character : Model, bundleId : number, customizeFn : (id : number, passedItemType : Enum.AvatarItemType, character : Model, passedAssetTypeId : number?) -> ())
+local function applyBundleByHumanoidDescription(character : Model, bundleId : number, customizeFn : (id : number, passedItemType : Enum.AvatarItemType, character : Model, passedAssetTypeId : number?, isDelete : boolean) -> ())
     local bundleDetails 
     local function getBundleDetail()
         local s, e = pcall(function() 
@@ -326,7 +327,7 @@ local function applyBundleByHumanoidDescription(character : Model, bundleId : nu
     for _,itemDetails in pairs(bundleDetails.Items) do
         print(itemDetails)
         if itemDetails.Type == "Asset" and itemDetails.Id then
-            customizeFn(itemDetails.Id, Enum.AvatarItemType.Asset, character)
+            customizeFn(itemDetails.Id, Enum.AvatarItemType.Asset, character, nil, false)
         end
     end
 
@@ -392,7 +393,7 @@ local function addAccoutrement(character : Model, accoutrement : Accessory)
     end
 end
 
-local function processingHumanoidDescById(id : number, passedItemType : Enum.AvatarItemType, character : Model, passedAssetTypeId : number?)
+local function processingHumanoidDescById(id : number, passedItemType : Enum.AvatarItemType, character : Model, passedAssetTypeId : number?, isDelete : boolean)
     local function getInfo(passedId : number, passedItemType : Enum.AvatarItemType) : (any, Enum.InfoType)
         local info , infoType = nil, if (passedItemType == Enum.AvatarItemType.Asset) then Enum.InfoType.Asset elseif (passedItemType == Enum.AvatarItemType.Bundle) then Enum.InfoType.Bundle else nil
         print(passedItemType, passedItemType == Enum.AvatarItemType.Asset, passedItemType == Enum.AvatarItemType.Bundle)
@@ -421,10 +422,12 @@ local function processingHumanoidDescById(id : number, passedItemType : Enum.Ava
         local accessories = humanoidDesc:GetAccessories(true)
         
         --sorting out orders
-        for k,v in pairs(accessories) do
-            accessories[k].IsLayered = true
-            if not v.Order then
-                accessories[k].Order = math.clamp(k - 1, 0, math.huge)
+        local function sortAccessoryOrder()
+            for k,v in pairs(accessories) do
+                accessories[k].IsLayered = true
+                if not v.Order then
+                    accessories[k].Order = math.clamp(k - 1, 0, math.huge)
+                end
             end
         end
 
@@ -437,10 +440,13 @@ local function processingHumanoidDescById(id : number, passedItemType : Enum.Ava
             return nil
         end
 
+        sortAccessoryOrder()
+
         local passedInfo, passedInfoType = getInfo(id, passedItemType)
         local assetTypeId = if passedInfo then passedInfo.AssetTypeId else passedAssetTypeId
         if passedInfoType == Enum.InfoType.Asset then
-            if not hasAccessory(id) and passedInfo then -- and pls check if its accesssory or non accessory stuff...
+            local ownedCurrentAccessory = hasAccessory(id)
+            if not ownedCurrentAccessory and passedInfo then -- and pls check if its accesssory or non accessory stuff...
                 local desiredOrder = #accessories
                 if assetTypeId == Enum.AssetType.Hat.Value then
                     table.insert(accessories, getHumanoidDescriptionAccessory(id, Enum.AccessoryType.Hat, true, desiredOrder)) --islayered for accessoreis true but false for shirts etc!!
@@ -491,48 +497,52 @@ local function processingHumanoidDescById(id : number, passedItemType : Enum.Ava
                 elseif assetTypeId == Enum.AssetType.NeckAccessory.Value then
                     table.insert(accessories, getHumanoidDescriptionAccessory(id, Enum.AccessoryType.Neck, true, desiredOrder))
                 end
+            elseif ownedCurrentAccessory and passedInfo and isDelete then
+                table.remove(accessories, table.find(accessories, ownedCurrentAccessory))
+                sortAccessoryOrder()
             end
 
+            local modifiedIdFromIsDelete = if not isDelete then id else 0
             if assetTypeId == Enum.AssetType.Shirt.Value then
-                humanoidDesc.Shirt = id
+                humanoidDesc.Shirt = modifiedIdFromIsDelete
             elseif assetTypeId == Enum.AssetType.Pants.Value then
-                humanoidDesc.Pants = id
+                humanoidDesc.Pants = modifiedIdFromIsDelete
             elseif assetTypeId == Enum.AssetType.TShirt.Value then
-                humanoidDesc.GraphicTShirt = id
+                humanoidDesc.GraphicTShirt = modifiedIdFromIsDelete
             elseif assetTypeId == Enum.AssetType.Torso.Value then
-                humanoidDesc.Torso = id
+                humanoidDesc.Torso = modifiedIdFromIsDelete
             elseif assetTypeId == Enum.AssetType.Face.Value then
-                humanoidDesc.Face = id
+                humanoidDesc.Face = modifiedIdFromIsDelete
             elseif assetTypeId == Enum.AssetType.LeftArm.Value then
-                humanoidDesc.LeftArm = id
+                humanoidDesc.LeftArm = modifiedIdFromIsDelete
             elseif assetTypeId == Enum.AssetType.RightArm.Value then
-                humanoidDesc.RightArm = id
+                humanoidDesc.RightArm = modifiedIdFromIsDelete
             elseif assetTypeId == Enum.AssetType.LeftLeg.Value then
-                humanoidDesc.LeftLeg = id
+                humanoidDesc.LeftLeg = modifiedIdFromIsDelete
             elseif assetTypeId == Enum.AssetType.RightLeg.Value then
-                humanoidDesc.RightLeg = id
+                humanoidDesc.RightLeg = modifiedIdFromIsDelete
             elseif assetTypeId == Enum.AssetType.Head.Value then
-                print(passedInfo, " head zombeh")
-                humanoidDesc.Head = id
+                humanoidDesc.Head = modifiedIdFromIsDelete
+            elseif assetTypeId == Enum.AssetType.DynamicHead.Value then
+                humanoidDesc.Head = modifiedIdFromIsDelete
             elseif assetTypeId == Enum.AssetType.RunAnimation.Value then
-                humanoidDesc.RunAnimation = id
+                humanoidDesc.RunAnimation = modifiedIdFromIsDelete
             elseif assetTypeId == Enum.AssetType.FallAnimation.Value then
-                humanoidDesc.FallAnimation = id
+                humanoidDesc.FallAnimation = modifiedIdFromIsDelete
             elseif assetTypeId == Enum.AssetType.IdleAnimation.Value then
-                humanoidDesc.IdleAnimation = id
+                humanoidDesc.IdleAnimation = modifiedIdFromIsDelete
             elseif assetTypeId == Enum.AssetType.JumpAnimation.Value then
-                humanoidDesc.JumpAnimation = id
+                humanoidDesc.JumpAnimation = modifiedIdFromIsDelete
             elseif assetTypeId == Enum.AssetType.MoodAnimation.Value then
-                humanoidDesc.MoodAnimation = id
+                humanoidDesc.MoodAnimation = modifiedIdFromIsDelete
             elseif assetTypeId == Enum.AssetType.SwimAnimation.Value then
-                humanoidDesc.SwimAnimation = id
+                humanoidDesc.SwimAnimation = modifiedIdFromIsDelete
             elseif assetTypeId == Enum.AssetType.WalkAnimation.Value then
-                humanoidDesc.WalkAnimation = id
+                humanoidDesc.WalkAnimation = modifiedIdFromIsDelete
             elseif assetTypeId == Enum.AssetType.ClimbAnimation.Value then 
-                humanoidDesc.ClimbAnimation = id
+                humanoidDesc.ClimbAnimation = modifiedIdFromIsDelete
             end
-
-            print(assetTypeId, passedInfo)
+ 
             humanoidDesc:SetAccessories(accessories, true)
             humanoid:ApplyDescription(humanoidDesc)
         elseif passedInfoType == Enum.InfoType.Bundle and passedInfo then
@@ -744,18 +754,18 @@ end
 
 function CustomizationUtil.SetInfoFromCharacter(character : Model, characterData : CharacterData)    
     for _,accessoryId in pairs(characterData.Accessories) do
-        processingHumanoidDescById(accessoryId, Enum.AvatarItemType.Asset, character)
+        processingHumanoidDescById(accessoryId, Enum.AvatarItemType.Asset, character, nil, false)
     end
-    processingHumanoidDescById(characterData.Face, Enum.AvatarItemType.Asset, character, Enum.AvatarAssetType.Face.Value)
-    processingHumanoidDescById(characterData.Head, Enum.AvatarItemType.Asset, character, Enum.AvatarAssetType.Head.Value)
-    processingHumanoidDescById(characterData.LeftArm, Enum.AvatarItemType.Asset, character, Enum.AvatarAssetType.LeftArm.Value)
-    processingHumanoidDescById(characterData.LeftLeg, Enum.AvatarItemType.Asset, character, Enum.AvatarAssetType.LeftLeg.Value)
-    processingHumanoidDescById(characterData.Pants, Enum.AvatarItemType.Asset, character, Enum.AvatarAssetType.Pants.Value)
-    processingHumanoidDescById(characterData.RightArm, Enum.AvatarItemType.Asset, character, Enum.AvatarAssetType.RightArm.Value)
-    processingHumanoidDescById(characterData.RightLeg, Enum.AvatarItemType.Asset, character, Enum.AvatarAssetType.RightLeg.Value)
-    processingHumanoidDescById(characterData.Shirt, Enum.AvatarItemType.Asset, character, Enum.AvatarAssetType.Shirt.Value)
-    processingHumanoidDescById(characterData.TShirt, Enum.AvatarItemType.Asset, character, Enum.AvatarAssetType.TShirt.Value)
-    processingHumanoidDescById(characterData.Torso, Enum.AvatarItemType.Asset, character, Enum.AvatarAssetType.Torso.Value)
+    processingHumanoidDescById(characterData.Face, Enum.AvatarItemType.Asset, character, Enum.AvatarAssetType.Face.Value, false)
+    processingHumanoidDescById(characterData.Head, Enum.AvatarItemType.Asset, character, Enum.AvatarAssetType.Head.Value, false)
+    processingHumanoidDescById(characterData.LeftArm, Enum.AvatarItemType.Asset, character, Enum.AvatarAssetType.LeftArm.Value, false)
+    processingHumanoidDescById(characterData.LeftLeg, Enum.AvatarItemType.Asset, character, Enum.AvatarAssetType.LeftLeg.Value, false)
+    processingHumanoidDescById(characterData.Pants, Enum.AvatarItemType.Asset, character, Enum.AvatarAssetType.Pants.Value, false)
+    processingHumanoidDescById(characterData.RightArm, Enum.AvatarItemType.Asset, character, Enum.AvatarAssetType.RightArm.Value, false)
+    processingHumanoidDescById(characterData.RightLeg, Enum.AvatarItemType.Asset, character, Enum.AvatarAssetType.RightLeg.Value, false)
+    processingHumanoidDescById(characterData.Shirt, Enum.AvatarItemType.Asset, character, Enum.AvatarAssetType.Shirt.Value, false)
+    processingHumanoidDescById(characterData.TShirt, Enum.AvatarItemType.Asset, character, Enum.AvatarAssetType.TShirt.Value, false)
+    processingHumanoidDescById(characterData.Torso, Enum.AvatarItemType.Asset, character, Enum.AvatarAssetType.Torso.Value, false)
 
     return
 end
@@ -764,22 +774,22 @@ function CustomizationUtil.Customize(plr : Player, customizationId : number, ite
     if RunService:IsServer() then
         local character = plr.Character or plr.CharacterAdded:Wait()
 
-        processingHumanoidDescById(customizationId, itemType, character, assetTypeId)        
+        processingHumanoidDescById(customizationId, itemType, character, assetTypeId, false)        
     else
         NetworkUtil.invokeServer(ON_CUSTOMIZE_CHAR, customizationId, itemType)
     end 
 end
 
-function CustomizationUtil.DeleteCatalog(plr : Player, catalogInfo : SimplifiedCatalogInfo)
+function CustomizationUtil.DeleteCatalog(plr : Player, customizationId : number, itemType : Enum.AvatarItemType, assetTypeId : number ?)
     if RunService:IsServer() then
         local character = plr.Character or plr.CharacterAdded:Wait()
         local humanoid = character:WaitForChild("Humanoid") :: Humanoid
 
         local humanoidDesc = humanoid:FindFirstChild("HumanoidDescription") :: HumanoidDescription
 
-        humanoidDesc.Pants = 0
+        processingHumanoidDescById(customizationId, itemType, character, assetTypeId, true)
     elseif RunService:IsClient() then
-        
+        NetworkUtil.invokeServer(ON_DELETE_CATALOG, customizationId, itemType)
     end
 end
 

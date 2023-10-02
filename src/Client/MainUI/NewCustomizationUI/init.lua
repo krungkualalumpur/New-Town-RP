@@ -115,12 +115,12 @@ local function getHumanoidDescriptionAccessory(
     return {AssetId = assetId, AccessoryType = enumAccessoryType, IsLayered = isLayered, Order = order, Puffiness = puffiness}
 end
 
-local function convertAccessoryToSimplifiedCatalogInfo(infoFromHumanoidDesc : InfoFromHumanoidDesc) : SimplifiedCatalogInfo
+--[[local function convertAccessoryToSimplifiedCatalogInfo(infoFromHumanoidDesc : InfoFromHumanoidDesc) : SimplifiedCatalogInfo
     return {
         Id = infoFromHumanoidDesc.AssetId,
         ItemType = infoFromHumanoidDesc.AccessoryType.Name
     }
-end
+end]]
 
 local function getViewportFrame(
     maid : Maid,
@@ -2893,7 +2893,10 @@ return function(
                     end
 
                     for k,humanoidDescription in pairs(accessories) do
-                        local catalogInfo = convertAccessoryToSimplifiedCatalogInfo(humanoidDescription)
+                        local catalogInfo = {
+                            Id = humanoidDescription.AssetId,
+                            ItemType = Enum.AvatarItemType.Asset.Name
+                        } --convertAccessoryToSimplifiedCatalogInfo(humanoidDescription)
                         
                         local buttonMaid = charMaid:GiveTask(Maid.new())
 
