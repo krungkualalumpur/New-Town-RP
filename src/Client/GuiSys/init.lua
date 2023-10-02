@@ -127,7 +127,6 @@ end
 local function getEnumItemFromName(enum : Enum, enumItemName : string) 
     local enumItem 
     for _, item : EnumItem in pairs(enum:GetEnumItems()) do
-        print(enumItemName, item.Name, item.Name == enumItemName, "puff")
         if item.Name == enumItemName then
             enumItem = item
             break
@@ -741,10 +740,11 @@ function guiSys.new()
        char:Set(getCharacter(true))
    end))
 
-   maid:GiveTask(onCatalogDelete:Connect(function(catalogInfo : NewCustomizationUI.SimplifiedCatalogInfo)
+   maid:GiveTask(onCatalogDelete:Connect(function(catalogInfo : NewCustomizationUI.SimplifiedCatalogInfo, char : ValueState<Model>)
     local itemType = getEnumItemFromName(Enum.AvatarItemType, catalogInfo.ItemType) 
     print(Player, catalogInfo.Id, itemType, catalogInfo, catalogInfo.ItemType)   
     CustomizationUtil.DeleteCatalog(Player, catalogInfo.Id, itemType :: Enum.AvatarItemType)
+    char:Set(getCharacter(true))
    end))
 
    maid:GiveTask(onRPNameChange:Connect(function(inputted : string)

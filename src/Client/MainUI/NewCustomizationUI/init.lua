@@ -2075,6 +2075,32 @@ return function(
         end, currentPage)
     })
 
+
+    local colorWheelPage = _new("Frame")({
+        BackgroundTransparency = 0,
+        Size = UDim2.fromScale(0.6, 1),
+        Children = {
+            _new("UIListLayout")({
+                SortOrder = Enum.SortOrder.LayoutOrder,
+                FillDirection = Enum.FillDirection.Vertical
+            }),
+            _new("Frame")({
+                BackgroundColor3 = TEST_COLOR, 
+                Size = UDim2.fromScale(1, 0.8)
+            }),
+            _new("Frame")({
+                Size = UDim2.fromScale(1, 0.2)
+            }),
+        }
+    }) :: Frame
+    
+    _bind(colorWheelPage)({ 
+        Visible = _Computed(function(page : GuiObject ?)
+            local isColorWheelPage = (page == colorWheelPage)
+            return isColorWheelPage
+        end, currentPage)
+    })
+
     local degreeX = -90
     local degreeY = 0
 
@@ -2119,12 +2145,12 @@ return function(
 
     local avatarViewportFrame = _bind(getViewportFrame(
         maid, 
-        2, 
+        1, 
         charViewPos, 
         char
     ))({
         BackgroundTransparency = 1,
-        Size = UDim2.fromScale(1, 0.45),
+        Size = UDim2.fromScale(0.9, 1),
         Children = {
             _new("ImageButton")({
                 BackgroundTransparency = 1,
@@ -2151,9 +2177,32 @@ return function(
                     end
                 }
             })
-        },
-       
+        }, 
     })
+
+    local avatarFrame = _new("Frame")({
+        LayoutOrder = 2,
+        BackgroundTransparency = 1,
+        Size = UDim2.fromScale(1, 0.45),
+        Children = {
+            _new("UIListLayout")({
+                FillDirection = Enum.FillDirection.Horizontal,
+                SortOrder = Enum.SortOrder.LayoutOrder,
+                VerticalAlignment = Enum.VerticalAlignment.Bottom
+            }),
+            avatarViewportFrame,
+            _bind(getImageButton(maid, 2, "rbxassetid://7017517837", nil, function()
+                currentPage:Set(if currentPage:Get() ~= colorWheelPage then colorWheelPage else mainMenuPage)
+            end))({
+                BackgroundTransparency = 1,
+                Size = UDim2.fromScale(0.1, 0.1),
+                Children = {
+                    _new("UIAspectRatioConstraint")({})
+                }
+            })
+        }
+    })
+
     
     --[[_new("ViewportFrame")({
         LayoutOrder = 2,
@@ -2284,14 +2333,15 @@ return function(
                         SortOrder = Enum.SortOrder.LayoutOrder
                     }),
                     roleplayName,
-                    avatarViewportFrame,
+                    avatarFrame,
                     avatarOptions,
                     currentOutfitsFrame
                 }
             }),
             mainMenuPage,
             categoryPage,
-            catalogInfoPage
+            catalogInfoPage,
+            colorWheelPage
         }
     })
     --currentPage:Set(mainMenuPage)
@@ -2862,7 +2912,6 @@ return function(
                     if humanoidDesc.Pants ~= 0 then
                         table.insert(accessories, getHumanoidDescriptionAccessory(humanoidDesc.Pants, Enum.AccessoryType.Pants, false))
                     end
-
                     if humanoidDesc.Face ~= 0 then
                         table.insert(accessories, getHumanoidDescriptionAccessory(humanoidDesc.Face, Enum.AccessoryType.Face, false))
                     end

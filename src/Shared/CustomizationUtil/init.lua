@@ -101,6 +101,7 @@ local ON_DELETE_CATALOG = "OnDeleteCatalog"
 local GET_AVATAR_FROM_CATALOG_INFO = "GetAvatarFromCatalogInfo"
 --variables
 --references
+local cleanHumanoidDesc = Instance.new("HumanoidDescription")
 local partHeadTemplate = ReplicatedStorage:WaitForChild("Assets"):WaitForChild("Others"):WaitForChild("PartHeadTemplate")
 
 --local functions
@@ -544,6 +545,7 @@ local function processingHumanoidDescById(id : number, passedItemType : Enum.Ava
             end
  
             humanoidDesc:SetAccessories(accessories, true)
+            --humanoid:ApplyDescription(cleanHumanoidDesc)
             humanoid:ApplyDescription(humanoidDesc)
         elseif passedInfoType == Enum.InfoType.Bundle and passedInfo then
             --[[local function getHumanoidDescriptionBundle(bundleId)
@@ -783,10 +785,6 @@ end
 function CustomizationUtil.DeleteCatalog(plr : Player, customizationId : number, itemType : Enum.AvatarItemType, assetTypeId : number ?)
     if RunService:IsServer() then
         local character = plr.Character or plr.CharacterAdded:Wait()
-        local humanoid = character:WaitForChild("Humanoid") :: Humanoid
-
-        local humanoidDesc = humanoid:FindFirstChild("HumanoidDescription") :: HumanoidDescription
-
         processingHumanoidDescById(customizationId, itemType, character, assetTypeId, true)
     elseif RunService:IsClient() then
         NetworkUtil.invokeServer(ON_DELETE_CATALOG, customizationId, itemType)
