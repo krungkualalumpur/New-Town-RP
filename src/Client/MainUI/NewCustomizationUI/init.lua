@@ -1106,6 +1106,7 @@ return function(
 
     local currentPage : ValueState<GuiObject ?> = _Value(nil) :: any
     local currentCatalogInfo : ValueState<CatalogInfo?> = _Value(nil) :: any
+    local selectedColor : ValueState<Color3> = _Value(Color3.fromHSV(0.113569, 0.470833, 0.941176))
 
     local settingsState : {[any] : any} = {
         [Enum.CatalogSortType] = Enum.CatalogSortType.Relevance :: Enum.CatalogSortType,
@@ -2075,24 +2076,222 @@ return function(
         end, currentPage)
     })
 
+    local interactableColorWheel = _new("ImageButton")({
+        Name = "ColorWheel",
+        BackgroundTransparency = 1,
+        Size = UDim2.fromScale(1, 1),
+        Rotation = -90,
+        Image = "rbxassetid://7017517837",
+        Children = {
+            _new("UICorner")({
+                CornerRadius = UDim.new(100,0)
+            }),
+            _new("UIAspectRatioConstraint")({
+                AspectRatio = 1
+            })
+        },
+    }) :: ImageButton
+    
+    local colorWheelFrame = _new("Frame")({
+        Name = "ColorWheelFrame",
+        BackgroundTransparency = 1,
+        Size = UDim2.fromScale(0.8, 1),
+        Children = {
+            interactableColorWheel
+        }
+    })
+
+    do
+        local mouse = Players.LocalPlayer:GetMouse()
+        _bind(interactableColorWheel)({
+            Events = {
+                MouseButton1Down = function()
+                    print("1")
+                    local mousePosX, mousePosY = mouse.X - (interactableColorWheel.AbsolutePosition.X + interactableColorWheel.AbsoluteSize.X*0.5), mouse.Y - (interactableColorWheel.AbsolutePosition.Y + interactableColorWheel.AbsoluteSize.Y*0.5)
+                    --selectedColor:Set()
+                    --print(mousePosX, mousePosY)
+                    local rad = math.atan2(mousePosY,mousePosX)
+                    -- local v2Unit = Vector2.new(mousePosX, mousePosY).Unit
+                    --print(math.deg(rad), math.deg(rad) + 180)
+                    local angle = (rad + math.pi)
+                    local hue = (angle)/(math.pi*2)
+                    local saturation = (Vector2.new(mousePosX, mousePosY).Magnitude)/(interactableColorWheel.AbsoluteSize.X*0.5)
+                    local value = 0.5
+                    selectedColor:Set(Color3.fromHSV(hue, saturation, value))
+                    --print(interactableColorWheel.AbsoluteSize.X*0.5, Vector2.new(mousePosX, mousePosY).Magnitude, (Vector2.new(mousePosX, mousePosY).Magnitude)/(interactableColorWheel.AbsoluteSize.X*0.5))
+
+                    --local saturation = 
+                    --Color3.fromHSV(0.5,1,1)
+                    -- print("deg: ", math.deg(rad + (2*math.pi)))
+                    print("deg: ", math.deg(angle), hue)
+                end,
+                MouseButton1Up = function()
+                end
+            }
+        })
+    end
 
     local colorWheelPage = _new("Frame")({
         BackgroundTransparency = 0,
+        BackgroundColor3 = BACKGROUND_COLOR,
         Size = UDim2.fromScale(0.6, 1),
         Children = {
             _new("UIListLayout")({
                 SortOrder = Enum.SortOrder.LayoutOrder,
-                FillDirection = Enum.FillDirection.Vertical
+                FillDirection = Enum.FillDirection.Vertical,
+                Padding = UDim.new(PADDING_SIZE_SCALE.Scale*0.2, PADDING_SIZE_SCALE.Offset*0.2)
+            }),
+            _new("UIPadding")({
+                PaddingTop = UDim.new(PADDING_SIZE_SCALE.Scale*0.2, PADDING_SIZE_SCALE.Offset*0.2),
+                PaddingBottom = UDim.new(PADDING_SIZE_SCALE.Scale*0.2, PADDING_SIZE_SCALE.Offset*0.2),
+                PaddingLeft = UDim.new(PADDING_SIZE_SCALE.Scale*0.2, PADDING_SIZE_SCALE.Offset*0.2),
+                PaddingRight = UDim.new(PADDING_SIZE_SCALE.Scale*0.2, PADDING_SIZE_SCALE.Offset*0.2),
+
             }),
             _new("Frame")({
-                BackgroundColor3 = TEST_COLOR, 
+                Name = "ColorSettings",
+                BackgroundColor3 = BACKGROUND_COLOR,
                 Size = UDim2.fromScale(1, 0.8),
                 Children = {
-                    _new("UIListLayout")({})
+                    _new("UIListLayout")({
+                        SortOrder = Enum.SortOrder.LayoutOrder,
+                        FillDirection = Enum.FillDirection.Horizontal,
+                        Padding = UDim.new(PADDING_SIZE_SCALE.Scale*0.5, PADDING_SIZE_SCALE.Offset*0.5)
+                    }),
+                    colorWheelFrame,
+                    _new("Frame")({
+                        Name = "ValueBar",
+                        BackgroundColor3 = PRIMARY_COLOR,
+                        Size = UDim2.fromScale(0.1, 1),
+                        Children = {
+                            _new("UIGradient")({
+                                Color = ColorSequence.new{
+                                    ColorSequenceKeypoint.new(0, Color3.fromRGB(0,0,0)),
+                                    ColorSequenceKeypoint.new(1, Color3.fromRGB(255,255,255))
+                                },
+                                Rotation = 90
+                            }),
+                            _new("UICorner")({}),
+                            --[[_bind(getButton(maid, 1, nil, function()  
+                                print("AA")
+                            end, BACKGROUND_COLOR))({
+                                Size = UDim2.fromScale(1, 0.06),
+                                Children = {
+                                    _new("UIStroke")({
+                                        Thickness = 2,
+                                        Color = PRIMARY_COLOR
+                                    })
+                                }
+                            }),]]
+                            _new("ImageButton")({
+                                BackgroundColor3 = BACKGROUND_COLOR,
+                                Size = UDim2.fromScale(1, 0.06),
+                                Children = {
+                                    _new("UICorner")({}),
+                                    _new("UIStroke")({
+                                        Thickness = 2,
+                                        Color = PRIMARY_COLOR
+                                    })
+                                },
+                                Activated = function()
+                                    --to be continued
+                                end
+                            })
+                        }
+                    })
                 }
             }),
             _new("Frame")({
-                Size = UDim2.fromScale(1, 0.2)
+                Name = "SelectedColorDetail",
+                BackgroundColor3 = BACKGROUND_COLOR,
+                Size = UDim2.fromScale(1, 0.17),
+                Children = {
+                    _new("UIPadding")({
+                        PaddingTop = UDim.new(PADDING_SIZE_SCALE.Scale*0.2, PADDING_SIZE_SCALE.Offset*0.2),
+                        PaddingBottom = UDim.new(PADDING_SIZE_SCALE.Scale*0.2, PADDING_SIZE_SCALE.Offset*0.2),
+                        PaddingLeft = UDim.new(PADDING_SIZE_SCALE.Scale*0.2, PADDING_SIZE_SCALE.Offset*0.2),
+                        PaddingRight = UDim.new(PADDING_SIZE_SCALE.Scale*0.2, PADDING_SIZE_SCALE.Offset*0.2),
+                    }),
+                    _new("UIListLayout")({
+                        SortOrder = Enum.SortOrder.LayoutOrder,
+                        FillDirection = Enum.FillDirection.Horizontal,
+                        HorizontalAlignment = Enum.HorizontalAlignment.Left,
+                        Padding = UDim.new(PADDING_SIZE_SCALE.Scale*0.5, PADDING_SIZE_SCALE.Offset*0.5)
+                    }),
+                    _new("Frame")({
+                        Name = "SelectedColorDisplay",
+                        BackgroundTransparency = 1,
+                        Size = UDim2.fromScale(0.2, 1),
+                        Children = {
+                            _new("UIListLayout")({
+                                SortOrder = Enum.SortOrder.LayoutOrder,
+                                FillDirection = Enum.FillDirection.Horizontal,
+                                VerticalAlignment = Enum.VerticalAlignment.Center,
+                                Padding = UDim.new(PADDING_SIZE_SCALE.Scale*0.5, PADDING_SIZE_SCALE.Offset*0.5)
+                            }),
+                            _new("Frame")({
+                                Name = "ColorDisplay",
+                                BackgroundColor3 = BACKGROUND_COLOR,
+                                Size = UDim2.fromScale(0.75, 1),
+                               
+                            }),
+                            _new("TextLabel")({
+                                Name = "ColorName",
+                                LayoutOrder = 1,
+                                BackgroundTransparency = 1,
+                                Size = UDim2.fromScale(0.4, 0.25),
+                                Text = "\tR",
+                                TextScaled = true,
+                                TextColor3 = TEXT_COLOR
+                            }),
+                            _new("TextLabel")({
+                                Name = "ColorName",
+                                LayoutOrder = 2,
+                                BackgroundColor3 = TERTIARY_COLOR,
+                                Size = UDim2.fromScale(0.4, 0.25),
+                                Text = "\t123\t",
+                                TextScaled = true,
+                                TextColor3 = TEXT_COLOR
+                            }),
+                            _new("TextLabel")({
+                                Name = "ColorName",
+                                LayoutOrder = 3,
+                                BackgroundTransparency = 1,
+                                Size = UDim2.fromScale(0.4, 0.25),
+                                Text = "\tG",
+                                TextScaled = true,
+                                TextColor3 = TEXT_COLOR
+                            }),
+                            _new("TextLabel")({
+                                Name = "ColorName",
+                                LayoutOrder = 4,
+                                BackgroundColor3 = TERTIARY_COLOR,
+                                Size = UDim2.fromScale(0.4, 0.25),
+                                Text = "\t122\t",
+                                TextScaled = true,
+                                TextColor3 = TEXT_COLOR
+                            }),
+                            _new("TextLabel")({
+                                Name = "ColorName",
+                                LayoutOrder = 5,
+                                BackgroundTransparency = 1,
+                                Size = UDim2.fromScale(0.4, 0.25),
+                                Text = "\tB",
+                                TextScaled = true,
+                                TextColor3 = TEXT_COLOR
+                            }),
+                            _new("TextLabel")({
+                                Name = "ColorName",
+                                LayoutOrder = 6,
+                                BackgroundColor3 = TERTIARY_COLOR,
+                                Size = UDim2.fromScale(0.4, 0.25),
+                                Text = "\t255\t",
+                                TextScaled = true,
+                                TextColor3 = TEXT_COLOR
+                            }),
+                        }
+                    })
+                }
             }),
         }
     }) :: Frame
