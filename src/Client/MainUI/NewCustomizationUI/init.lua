@@ -2086,7 +2086,10 @@ return function(
             }),
             _new("Frame")({
                 BackgroundColor3 = TEST_COLOR, 
-                Size = UDim2.fromScale(1, 0.8)
+                Size = UDim2.fromScale(1, 0.8),
+                Children = {
+                    _new("UIListLayout")({})
+                }
             }),
             _new("Frame")({
                 Size = UDim2.fromScale(1, 0.2)
