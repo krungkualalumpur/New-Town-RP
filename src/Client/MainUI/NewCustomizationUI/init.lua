@@ -2193,9 +2193,11 @@ return function(
                                         Color = PRIMARY_COLOR
                                     })
                                 },
-                                Activated = function()
+                                Events = {
+                                    Activated = function()
                                     --to be continued
-                                end
+                                    end
+                                }
                             })
                         }
                     })
