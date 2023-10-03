@@ -933,6 +933,101 @@ local function getTextBox(
     return out
 end
 
+local function getSlider(
+    maid : Maid,
+    order : number,
+    pos : ValueState<UDim2>
+)
+    local _maid = Maid.new()    
+
+    local _fuse = ColdFusion.fuse(_maid)
+    local _new = _fuse.new
+    local _import = _fuse.import
+    local _bind = _fuse.bind
+    local _clone = _fuse.clone
+
+    local _Value = _fuse.Value
+    local _Computed = _fuse.Computed
+
+    local slider = _new("TextButton")({
+        BackgroundColor3 = BACKGROUND_COLOR,
+        AnchorPoint = Vector2.new(0, 0.5),
+        Size = UDim2.fromScale(1, 0.06),
+        Children = {
+            _new("UICorner")({}),
+            _new("UIStroke")({
+                Thickness = 2,
+                ApplyStrokeMode = Enum.ApplyStrokeMode.Border,
+                Color = PRIMARY_COLOR
+            })
+        }
+    })
+
+    local sliderConn
+ 
+    local mouse = Players.LocalPlayer:GetMouse()
+    local intMouseX, intMouseY = mouse.X, mouse.Y
+    _bind(slider)({
+        Position = pos,
+        Events = {
+            MouseButton1Down = function()
+                if sliderConn then sliderConn:Disconnect() end
+
+                sliderConn = RunService.RenderStepped:Connect(function()
+                    local intPos = pos:Get()
+                    local currentMouseY = (mouse.Y - intMouseY)/mouse.ViewSizeY
+                    pos:Set(UDim2.fromScale(0, math.clamp((intPos.Y.Scale + currentMouseY), 0, 1)))
+                    intMouseY = mouse.Y
+                end)
+            end,
+            MouseButton1Up =  function()
+                sliderConn:Disconnect()
+            end
+        }
+    })
+    _maid:GiveTask(UserInputService.InputEnded:Connect(function(input : InputObject, gpe : boolean)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 then
+            if sliderConn then
+                sliderConn:Disconnect()
+            end
+        end
+    end))
+
+    local out = _new("Frame")({
+        Name = "ValueBar",
+        BackgroundColor3 = PRIMARY_COLOR,
+        Size = UDim2.fromScale(0.1, 1),
+        Children = {
+            _new("UIGradient")({
+                Color = ColorSequence.new{
+                    ColorSequenceKeypoint.new(0, Color3.fromRGB(0,0,0)),
+                    ColorSequenceKeypoint.new(1, Color3.fromRGB(255,255,255))
+                },
+                Rotation = 90
+            }),
+            _new("UICorner")({}),
+            --[[_bind(getButton(maid, 1, nil, function()  
+                print("AA")
+            end, BACKGROUND_COLOR))({
+                Size = UDim2.fromScale(1, 0.06),
+                Children = {
+                    _new("UIStroke")({
+                        Thickness = 2,
+                        Color = PRIMARY_COLOR
+                    })
+                }
+            }),]]
+            slider
+        },  
+    })
+
+    _maid:GiveTask(out.Destroying:Connect(function()
+        _maid:Destroy()
+    end))
+    
+    return out
+end
+
 local function getListOptions(
     maid : Maid,
     order : number,
@@ -2131,8 +2226,15 @@ return function(
         })
     end
 
+    local sliderPos = _Value(UDim2.fromScale(0, 0))
+
     local colorWheelPage = _new("Frame")({
-        BackgroundTransparency = 0,
+        BackgroundTransparency = _Computed(function(pos : UDim2)
+            local color = selectedColor:Get()
+            local h,s,v = color:ToHSV()
+            selectedColor:Set(Color3.fromHSV(h, s, pos.Y.Scale))
+            return 0
+        end, sliderPos),
         BackgroundColor3 = BACKGROUND_COLOR,
         Size = UDim2.fromScale(0.6, 1),
         Children = {
@@ -2159,7 +2261,9 @@ return function(
                         Padding = UDim.new(PADDING_SIZE_SCALE.Scale*0.5, PADDING_SIZE_SCALE.Offset*0.5)
                     }),
                     colorWheelFrame,
-                    _new("Frame")({
+                    
+                    getSlider(maid, 2, sliderPos)
+                    --[[_new("Frame")({
                         Name = "ValueBar",
                         BackgroundColor3 = PRIMARY_COLOR,
                         Size = UDim2.fromScale(0.1, 1),
@@ -2183,24 +2287,11 @@ return function(
                                     })
                                 }
                             }),]]
-                            _new("ImageButton")({
-                                BackgroundColor3 = BACKGROUND_COLOR,
-                                Size = UDim2.fromScale(1, 0.06),
-                                Children = {
-                                    _new("UICorner")({}),
-                                    _new("UIStroke")({
-                                        Thickness = 2,
-                                        Color = PRIMARY_COLOR
-                                    })
-                                },
-                                Events = {
-                                    Activated = function()
-                                    --to be continued
-                                    end
-                                }
-                            })
-                        }
-                    })
+                            --[[slider
+                        },
+                        
+                    })]]
+
                 }
             }),
             _new("Frame")({
@@ -2233,7 +2324,7 @@ return function(
                             }),
                             _new("Frame")({
                                 Name = "ColorDisplay",
-                                BackgroundColor3 = BACKGROUND_COLOR,
+                                BackgroundColor3 = selectedColor, 
                                 Size = UDim2.fromScale(0.75, 1),
                                
                             }),
@@ -2365,6 +2456,7 @@ return function(
                         local intX, intY 
                         if mouse then intX = mouse.X; intY = mouse.Y end
         
+                        if spinningConn then spinningConn:Disconnect() end
                         spinningConn = RunService.RenderStepped:Connect(function()
                             
                             if mouse then
