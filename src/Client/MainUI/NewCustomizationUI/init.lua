@@ -194,6 +194,7 @@ local function getButton(
         BackgroundColor3 = color or BACKGROUND_COLOR,
         Size = UDim2.fromScale(1, 1),
         LayoutOrder = order,
+        Font = Enum.Font.Gotham,
         Text = text,
         TextWrapped = true,
         TextStrokeTransparency = 0.7,
@@ -936,7 +937,8 @@ end
 local function getSlider(
     maid : Maid,
     order : number,
-    pos : ValueState<UDim2>
+    pos : ValueState<UDim2>,
+    isVisible : State<boolean>
 )
     local _maid = Maid.new()    
 
@@ -963,7 +965,8 @@ local function getSlider(
         }
     })
 
-    local sliderConn
+    local sliderMaid = _maid:GiveTask(Maid.new())
+    --local sliderConn
  
     local mouse = Players.LocalPlayer:GetMouse()
     local intMouseX, intMouseY = mouse.X, mouse.Y
@@ -971,30 +974,30 @@ local function getSlider(
         Position = pos,
         Events = {
             MouseButton1Down = function()
-                if sliderConn then sliderConn:Disconnect() end
-
-                sliderConn = RunService.RenderStepped:Connect(function()
+                sliderMaid.update = RunService.RenderStepped:Connect(function()
                     local intPos = pos:Get()
                     local currentMouseY = (mouse.Y - intMouseY)/mouse.ViewSizeY
+                    --print(intPos.Y.Scale, " - ", currentMouseY)
                     pos:Set(UDim2.fromScale(0, math.clamp((intPos.Y.Scale + currentMouseY), 0, 1)))
                     intMouseY = mouse.Y
                 end)
-            end,
-            MouseButton1Up =  function()
-                sliderConn:Disconnect()
             end
         }
     })
-    _maid:GiveTask(UserInputService.InputEnded:Connect(function(input : InputObject, gpe : boolean)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 then
-            if sliderConn then
-                sliderConn:Disconnect()
-            end
-        end
-    end))
+    
 
     local out = _new("Frame")({
-        Name = "ValueBar",
+        Name = _Computed(function(visible : boolean)
+            sliderMaid:DoCleaning()
+            if visible then
+                sliderMaid:GiveTask(UserInputService.InputEnded:Connect(function(input : InputObject, gpe : boolean)
+                    if input.UserInputType == Enum.UserInputType.MouseButton1 then
+                        sliderMaid.update = nil
+                    end
+                end))
+            end
+            return "ValueBar"
+        end, isVisible),
         BackgroundColor3 = PRIMARY_COLOR,
         Size = UDim2.fromScale(0.1, 1),
         Children = {
@@ -1153,11 +1156,106 @@ local function getListOptions(
     return out
 end
 
+local function getDefaultList(
+    maid : Maid,
+    order : number,
+    name : string,
+    options : {
+        [number] : {
+            Name : string,
+            Signal : Signal,
+            Content : any
+        }
+    },
+    previewModel : Model
+)
+    local _fuse = ColdFusion.fuse(maid)
+    local _new = _fuse.new
+    local _import = _fuse.import
+    local _bind = _fuse.bind
+    local _clone = _fuse.clone
+
+    local _Value = _fuse.Value
+    local _Computed = _fuse.Computed
+
+
+    previewModel:PivotTo(CFrame.new())
+    local viewport = getViewportFrame(
+        maid, 
+        1, 
+        Vector3.new(0,0,-5),
+        previewModel
+    )    
+
+    local listsFrame =  _new("Frame")({
+        LayoutOrder = 3,
+        BackgroundTransparency = 1,
+        Size = UDim2.fromScale(0.25, 1),
+        Children = {
+            _new("UIPadding")({
+                PaddingTop = UDim.new(PADDING_SIZE_SCALE.Scale*0.2, PADDING_SIZE_SCALE.Offset*0.2),
+                PaddingBottom = UDim.new(PADDING_SIZE_SCALE.Scale*0.2, PADDING_SIZE_SCALE.Offset*0.2),
+                PaddingLeft = UDim.new(PADDING_SIZE_SCALE.Scale*0.2, PADDING_SIZE_SCALE.Offset*0.2),
+                PaddingRight = UDim.new(PADDING_SIZE_SCALE.Scale*0.2, PADDING_SIZE_SCALE.Offset*0.2),
+            }),
+            _new("UIListLayout")({
+                SortOrder = Enum.SortOrder.LayoutOrder,
+                FillDirection = Enum.FillDirection.Vertical,
+                VerticalAlignment = Enum.VerticalAlignment.Center,
+                Padding = UDim.new(PADDING_SIZE_SCALE.Scale*0.5, PADDING_SIZE_SCALE.Offset*0.5)
+            }),
+        }
+    })
+
+    for k,v in pairs(options) do
+        local button = _bind(getButton(maid, k, v.Name, function()
+            v.Signal:Fire(v.Content)
+        end, SECONDARY_COLOR))({
+            Size = UDim2.fromScale(1, 0.3)
+        })
+        button.Parent = listsFrame
+    end
+
+    return _new("Frame")({
+        BackgroundColor3 = BACKGROUND_COLOR,
+        Size = UDim2.fromScale(1, 0.2),
+        Children = {
+            _new("UICorner")({}),
+            _new("UIListLayout")({
+                SortOrder = Enum.SortOrder.LayoutOrder,
+                FillDirection = Enum.FillDirection.Horizontal,
+                Padding = UDim.new(PADDING_SIZE_SCALE.Scale*0.1, PADDING_SIZE_SCALE.Offset*0.1)
+            }),
+            _bind(viewport)({
+                BackgroundTransparency = 1,
+                Size = UDim2.fromScale(0.35, 1),
+                Children = {
+                    _new("UIAspectRatioConstraint")({
+                        AspectRatio = 1
+                    })
+                }
+            }),
+            _new("TextLabel")({
+                LayoutOrder = 2,
+                BackgroundTransparency = 1,
+                Size = UDim2.fromScale(0.4, 1),
+                Font = Enum.Font.GothamMedium,
+                Text = name,
+                TextColor3 = TEXT_COLOR,
+            }),
+
+            listsFrame
+           
+        }
+    })
+end
+
 
 --class
 return function(
     maid : Maid,
     onCatalogTry : Signal,
+    onCustomizeBodyColor : Signal,
     onCatalogDelete : Signal,
 
     onRPNameChange : Signal,
@@ -1201,7 +1299,7 @@ return function(
 
     local currentPage : ValueState<GuiObject ?> = _Value(nil) :: any
     local currentCatalogInfo : ValueState<CatalogInfo?> = _Value(nil) :: any
-    local selectedColor : ValueState<Color3> = _Value(Color3.fromHSV(0.113569, 0.470833, 0.941176))
+    local selectedColor : ValueState<Color3> = _Value(Color3.fromHSV(0, 0, 0.8))
 
     local settingsState : {[any] : any} = {
         [Enum.CatalogSortType] = Enum.CatalogSortType.Relevance :: Enum.CatalogSortType,
@@ -2183,50 +2281,45 @@ return function(
             }),
             _new("UIAspectRatioConstraint")({
                 AspectRatio = 1
-            })
+            }),
+           
         },
     }) :: ImageButton
-    
+   
     local colorWheelFrame = _new("Frame")({
         Name = "ColorWheelFrame",
         BackgroundTransparency = 1,
+        ClipsDescendants = true,
         Size = UDim2.fromScale(0.8, 1),
         Children = {
+            _new("UICorner")({
+                CornerRadius = UDim.new(1000,0)
+            }),
+
             interactableColorWheel
         }
-    })
+    }) :: Frame
+  
+    local colorWheelTracker =  _new("Frame")({
+        Name = "MouseTrackerEffect",
+        Visible = false,
+        AnchorPoint = Vector2.new(0.5, 0.5),
+        Position = UDim2.fromScale(0.5, 0.5),
+        Size = UDim2.fromScale(0.05, 0.05),
+       -- Position = UDim2.fromScale(0.5, 0.5),
+        Children = {
+            _new("UICorner")({
+                CornerRadius = UDim.new(1000,0)
+            })
+        },
+        Parent = colorWheelFrame
+    }) :: Frame
 
-    do
-        local mouse = Players.LocalPlayer:GetMouse()
-        _bind(interactableColorWheel)({
-            Events = {
-                MouseButton1Down = function()
-                    print("1")
-                    local mousePosX, mousePosY = mouse.X - (interactableColorWheel.AbsolutePosition.X + interactableColorWheel.AbsoluteSize.X*0.5), mouse.Y - (interactableColorWheel.AbsolutePosition.Y + interactableColorWheel.AbsoluteSize.Y*0.5)
-                    --selectedColor:Set()
-                    --print(mousePosX, mousePosY)
-                    local rad = math.atan2(mousePosY,mousePosX)
-                    -- local v2Unit = Vector2.new(mousePosX, mousePosY).Unit
-                    --print(math.deg(rad), math.deg(rad) + 180)
-                    local angle = (rad + math.pi)
-                    local hue = (angle)/(math.pi*2)
-                    local saturation = (Vector2.new(mousePosX, mousePosY).Magnitude)/(interactableColorWheel.AbsoluteSize.X*0.5)
-                    local value = 0.5
-                    selectedColor:Set(Color3.fromHSV(hue, saturation, value))
-                    --print(interactableColorWheel.AbsoluteSize.X*0.5, Vector2.new(mousePosX, mousePosY).Magnitude, (Vector2.new(mousePosX, mousePosY).Magnitude)/(interactableColorWheel.AbsoluteSize.X*0.5))
-
-                    --local saturation = 
-                    --Color3.fromHSV(0.5,1,1)
-                    -- print("deg: ", math.deg(rad + (2*math.pi)))
-                    print("deg: ", math.deg(angle), hue)
-                end,
-                MouseButton1Up = function()
-                end
-            }
-        })
+    local sliderPos = _Value(UDim2.fromScale(0, 0.5))
+    do --adjust initial color state
+        local h,s,v = selectedColor:Get():ToHSV()
+        sliderPos:Set(UDim2.fromScale(0, v))
     end
-
-    local sliderPos = _Value(UDim2.fromScale(0, 0))
 
     local colorWheelPage = _new("Frame")({
         BackgroundTransparency = _Computed(function(pos : UDim2)
@@ -2250,10 +2343,21 @@ return function(
                 PaddingRight = UDim.new(PADDING_SIZE_SCALE.Scale*0.2, PADDING_SIZE_SCALE.Offset*0.2),
 
             }),
+            _new("TextLabel")({
+                Name = " Title",
+                LayoutOrder = 1,
+                BackgroundColor3 = BACKGROUND_COLOR,
+                Font = Enum.Font.GothamMedium,
+                Size = UDim2.fromScale(1, 0.06),
+                Text = "Body Colour",
+                TextColor3 = TEXT_COLOR,
+                TextScaled = true
+            }),
             _new("Frame")({
                 Name = "ColorSettings",
+                LayoutOrder = 2,
                 BackgroundColor3 = BACKGROUND_COLOR,
-                Size = UDim2.fromScale(1, 0.8),
+                Size = UDim2.fromScale(1, 0.7),
                 Children = {
                     _new("UIListLayout")({
                         SortOrder = Enum.SortOrder.LayoutOrder,
@@ -2262,7 +2366,7 @@ return function(
                     }),
                     colorWheelFrame,
                     
-                    getSlider(maid, 2, sliderPos)
+                    
                     --[[_new("Frame")({
                         Name = "ValueBar",
                         BackgroundColor3 = PRIMARY_COLOR,
@@ -2295,7 +2399,8 @@ return function(
                 }
             }),
             _new("Frame")({
-                Name = "SelectedColorDetail",
+                Name = "SelectedColorFooter",
+                LayoutOrder = 3,
                 BackgroundColor3 = BACKGROUND_COLOR,
                 Size = UDim2.fromScale(1, 0.17),
                 Children = {
@@ -2309,90 +2414,278 @@ return function(
                         SortOrder = Enum.SortOrder.LayoutOrder,
                         FillDirection = Enum.FillDirection.Horizontal,
                         HorizontalAlignment = Enum.HorizontalAlignment.Left,
-                        Padding = UDim.new(PADDING_SIZE_SCALE.Scale*0.5, PADDING_SIZE_SCALE.Offset*0.5)
+                        Padding = UDim.new(PADDING_SIZE_SCALE.Scale*0.1, PADDING_SIZE_SCALE.Offset*0.1)
                     }),
                     _new("Frame")({
-                        Name = "SelectedColorDisplay",
+                        Name = "SelectedColorDetail",
+                        LayoutOrder = 1,
                         BackgroundTransparency = 1,
-                        Size = UDim2.fromScale(0.2, 1),
+                        Size = UDim2.fromScale(0.8, 1),
                         Children = {
                             _new("UIListLayout")({
                                 SortOrder = Enum.SortOrder.LayoutOrder,
-                                FillDirection = Enum.FillDirection.Horizontal,
+                                FillDirection = Enum.FillDirection.Horizontal,  
                                 VerticalAlignment = Enum.VerticalAlignment.Center,
-                                Padding = UDim.new(PADDING_SIZE_SCALE.Scale*0.5, PADDING_SIZE_SCALE.Offset*0.5)
+                                Padding = UDim.new(PADDING_SIZE_SCALE.Scale*0.25, PADDING_SIZE_SCALE.Offset*0.25)
                             }),
                             _new("Frame")({
                                 Name = "ColorDisplay",
                                 BackgroundColor3 = selectedColor, 
-                                Size = UDim2.fromScale(0.75, 1),
+                                Size = UDim2.fromScale(0.75/4, 1),
                                
                             }),
                             _new("TextLabel")({
                                 Name = "ColorName",
                                 LayoutOrder = 1,
                                 BackgroundTransparency = 1,
-                                Size = UDim2.fromScale(0.4, 0.25),
-                                Text = "\tR",
+                                Size = UDim2.fromScale(0.025, 0.5),
+                                Text = "R",
                                 TextScaled = true,
-                                TextColor3 = TEXT_COLOR
+                                TextColor3 = TEXT_COLOR,
+                                TextXAlignment = Enum.TextXAlignment.Right,
+                                TextYAlignment = Enum.TextYAlignment.Center
                             }),
                             _new("TextLabel")({
                                 Name = "ColorName",
                                 LayoutOrder = 2,
                                 BackgroundColor3 = TERTIARY_COLOR,
-                                Size = UDim2.fromScale(0.4, 0.25),
-                                Text = "\t123\t",
+                                Size = UDim2.fromScale(0.08, 0.25),
+                                Text = _Computed(function(color : Color3)
+                                    return "\t" .. tostring(math.round(color.R*255)) .. "\t"
+                                end, selectedColor),
                                 TextScaled = true,
-                                TextColor3 = TEXT_COLOR
+                                TextColor3 = TEXT_COLOR,
+                                TextYAlignment = Enum.TextYAlignment.Center
                             }),
                             _new("TextLabel")({
                                 Name = "ColorName",
                                 LayoutOrder = 3,
                                 BackgroundTransparency = 1,
-                                Size = UDim2.fromScale(0.4, 0.25),
-                                Text = "\tG",
+                                Size = UDim2.fromScale(0.025, 0.5),
+                                Text = "G",
                                 TextScaled = true,
-                                TextColor3 = TEXT_COLOR
+                                TextColor3 = TEXT_COLOR,
+                                TextXAlignment = Enum.TextXAlignment.Right,
+                                TextYAlignment = Enum.TextYAlignment.Center
                             }),
                             _new("TextLabel")({
                                 Name = "ColorName",
                                 LayoutOrder = 4,
                                 BackgroundColor3 = TERTIARY_COLOR,
-                                Size = UDim2.fromScale(0.4, 0.25),
-                                Text = "\t122\t",
+                                Size = UDim2.fromScale(0.08, 0.25),
+                                Text = _Computed(function(color : Color3)
+                                    return "\t" .. tostring(math.round(color.G*255)) .. "\t"
+                                end, selectedColor),
                                 TextScaled = true,
-                                TextColor3 = TEXT_COLOR
+                                TextColor3 = TEXT_COLOR,
+                                TextYAlignment = Enum.TextYAlignment.Center
                             }),
                             _new("TextLabel")({
                                 Name = "ColorName",
                                 LayoutOrder = 5,
                                 BackgroundTransparency = 1,
-                                Size = UDim2.fromScale(0.4, 0.25),
-                                Text = "\tB",
+                                Size = UDim2.fromScale(0.025, 0.5),
+                                Text = "B",
                                 TextScaled = true,
-                                TextColor3 = TEXT_COLOR
+                                TextColor3 = TEXT_COLOR,
+                                TextXAlignment = Enum.TextXAlignment.Right,
+                                TextYAlignment = Enum.TextYAlignment.Center
                             }),
                             _new("TextLabel")({
                                 Name = "ColorName",
                                 LayoutOrder = 6,
                                 BackgroundColor3 = TERTIARY_COLOR,
-                                Size = UDim2.fromScale(0.4, 0.25),
-                                Text = "\t255\t",
+                                Size = UDim2.fromScale(0.08, 0.25),
+                                Text = _Computed(function(color : Color3)
+                                    return "\t" .. tostring(math.round(color.B*255)) .. "\t"
+                                end, selectedColor),
                                 TextScaled = true,
-                                TextColor3 = TEXT_COLOR
+                                TextColor3 = TEXT_COLOR,
+                                TextYAlignment = Enum.TextYAlignment.Center
                             }),
+                        }
+                    }),
+                    _new("Frame")({
+                        Name = "ConfirmationFrame",
+                        BackgroundTransparency = 1,
+                        LayoutOrder = 2,
+                        Size = UDim2.fromScale(0.2, 1),
+                        Children = {
+                            _new("UIListLayout")({
+                                SortOrder = Enum.SortOrder.LayoutOrder,
+                                Padding = PADDING_SIZE_SCALE,
+                                FillDirection = Enum.FillDirection.Horizontal,
+                                VerticalAlignment = Enum.VerticalAlignment.Bottom
+                            }),
+                            _bind(getButton(maid, 1, "X", function()
+                                currentPage:Set(mainMenuPage)
+                            end, RED_COLOR))({
+                                Name = "Cancel",
+                                Size = UDim2.fromScale(0.5, 0.5),
+                                TextScaled = true,
+                                Children = {
+                                    _new("UIAspectRatioConstraint")({
+                                        AspectRatio = 1
+                                    })
+                                }
+                            }),
+                            _bind(getButton(maid, 1, "✓", function()
+                                onCustomizeBodyColor:Fire(selectedColor:Get(), char)
+                            end, SELECT_COLOR))({
+                                Size = UDim2.fromScale(0.5, 0.5),
+                                TextScaled = true,
+                                Children = {
+                                    _new("UIAspectRatioConstraint")({
+                                        AspectRatio = 1
+                                    })
+                                }
+                            })
                         }
                     })
                 }
             }),
         }
     }) :: Frame
+
+    local slider = getSlider(maid, 2, sliderPos, _Computed(function(page : GuiObject ?)
+        --adjusting char
+        local sliderIsVisible = (page == colorWheelPage) 
+        if sliderIsVisible then
+            local charModel = char:Get()
+            local humanoid = charModel:FindFirstChild("Humanoid") :: Humanoid ?
+            local humanoidDesc =  if humanoid then humanoid:GetAppliedDescription() else nil 
+            if humanoidDesc then
+                local color = humanoidDesc.HeadColor
+                local h,s,v = color:ToHSV()
+                sliderPos:Set(UDim2.fromScale(0, v))
+                selectedColor:Set(color)
+            end
+        end
+
+        return sliderIsVisible
+    end, currentPage))
+    slider.Parent = colorWheelPage:WaitForChild("ColorSettings")
     
     _bind(colorWheelPage)({ 
         Visible = _Computed(function(page : GuiObject ?)
             local isColorWheelPage = (page == colorWheelPage)
             return isColorWheelPage
+        end, currentPage)
+    })
+
+        
+    do
+        local colorWheelMaid = maid:GiveTask(Maid.new())
+        local mouse = Players.LocalPlayer:GetMouse()
+        _bind(interactableColorWheel)({
+            Visible = _Computed(function(page : GuiObject ?)
+                --calculating 
+                if page == colorWheelPage then
+                    colorWheelMaid:GiveTask(UserInputService.InputEnded:Connect(function(input : InputObject, gpe : boolean)
+                        if input.UserInputType == Enum.UserInputType.MouseButton1 then
+                            colorWheelMaid.update = nil
+                            colorWheelTracker.Visible = false
+                        end
+                    end))
+                else
+                    colorWheelMaid:DoCleaning()
+                end
+                return true
+            end, currentPage),
+            Events = {
+                MouseButton1Down = function()
+                    colorWheelMaid.update = RunService.RenderStepped:Connect(function()
+                        local mousePosX, mousePosY = mouse.X - (interactableColorWheel.AbsolutePosition.X + interactableColorWheel.AbsoluteSize.X*0.5), mouse.Y - (interactableColorWheel.AbsolutePosition.Y + interactableColorWheel.AbsoluteSize.Y*0.5)
+                        --selectedColor:Set()
+                        --print(mousePosX, mousePosY)
+                        local rad = math.atan2(mousePosY,mousePosX)
+                        -- local v2Unit = Vector2.new(mousePosX, mousePosY).Unit
+                        --print(math.deg(rad), math.deg(rad) + 180)
+                        local angle = (rad + math.pi)
+                        local hue = (angle)/(2*math.pi)
+                        local saturation = math.clamp((Vector2.new(mousePosX, mousePosY).Magnitude)/(interactableColorWheel.AbsoluteSize.X*0.5), 0, 1)
+                        local intColor = selectedColor:Get()    
+                        local _,_,value = intColor:ToHSV()
+                        selectedColor:Set(Color3.fromHSV(hue, saturation, value))
+                        colorWheelTracker.Visible = true
+                        colorWheelTracker.Position = UDim2.fromOffset(mouse.X - colorWheelFrame.AbsolutePosition.X, mouse.Y - colorWheelFrame.AbsolutePosition.Y)
+                    end)
+                    --print(interactableColorWheel.AbsoluteSize.X*0.5, Vector2.new(mousePosX, mousePosY).Magnitude, (Vector2.new(mousePosX, mousePosY).Magnitude)/(interactableColorWheel.AbsoluteSize.X*0.5))
+
+                    --print("deg: ", math.deg(angle), hue)
+                end
+            }
+        })       
+    end
+
+    local model = game:GetService("ServerStorage"):WaitForChild("aryoseno11"):Clone()
+
+    local savesListContent = _new("ScrollingFrame")({
+        Name = "SavesListContent",
+        LayoutOrder = 1,
+        BackgroundTransparency = 1,
+        Size = UDim2.fromScale(1, 0.9),
+        CanvasSize = UDim2.fromScale(0,0),
+        AutomaticCanvasSize = Enum.AutomaticSize.Y,
+        Children = {
+            _new("UIPadding")({
+                PaddingTop = UDim.new(PADDING_SIZE_SCALE.Scale*0.2, PADDING_SIZE_SCALE.Offset*0.2),
+                PaddingBottom = UDim.new(PADDING_SIZE_SCALE.Scale*0.2, PADDING_SIZE_SCALE.Offset*0.2),
+                PaddingLeft = UDim.new(PADDING_SIZE_SCALE.Scale*0.2, PADDING_SIZE_SCALE.Offset*0.2),
+                PaddingRight = UDim.new(PADDING_SIZE_SCALE.Scale*0.2, PADDING_SIZE_SCALE.Offset*0.2)
+            }),
+            _new("UIListLayout")({
+                SortOrder = Enum.SortOrder.LayoutOrder,
+                Padding = UDim.new(PADDING_SIZE_SCALE.Scale*0.2, PADDING_SIZE_SCALE.Offset*0.2)
+            }),
+
+            getDefaultList(
+                maid,
+                1,
+                "Save1",
+                {
+                    [1] = {
+                        Name = "Use",
+                        Signal = maid:GiveTask(Signal.new()),
+                        Content = nil
+                    },
+                    [2] = {
+                        Name = "Delete",
+                        Signal = maid:GiveTask(Signal.new()),
+                        Content = nil
+                    }
+                },
+                model
+            )
+        }
+    })
+    local saveListPage = _new("Frame")({
+        BackgroundTransparency = 1,
+        Size = UDim2.fromScale(0.6, 1),
+        Children = {
+            _new("UIPadding")({
+                PaddingTop = UDim.new(PADDING_SIZE_SCALE.Scale*0.2, PADDING_SIZE_SCALE.Offset*0.2),
+                PaddingBottom = UDim.new(PADDING_SIZE_SCALE.Scale*0.2, PADDING_SIZE_SCALE.Offset*0.2),
+                PaddingLeft = UDim.new(PADDING_SIZE_SCALE.Scale*0.2, PADDING_SIZE_SCALE.Offset*0.2),
+                PaddingRight = UDim.new(PADDING_SIZE_SCALE.Scale*0.2, PADDING_SIZE_SCALE.Offset*0.2)
+            }),
+            _new("UIListLayout")({
+                SortOrder = Enum.SortOrder.LayoutOrder,
+                VerticalAlignment = Enum.VerticalAlignment.Top,
+                Padding = UDim.new(PADDING_SIZE_SCALE.Scale*0.2, PADDING_SIZE_SCALE.Offset*0.2)
+            }),
+            
+            savesListContent,
+            _bind(getButton(maid, 2, "+"))({
+                LayoutOrder = 1,
+                Size = UDim2.fromScale(1, 0.1)
+            }),
+        }
+    }) :: Frame
+    _bind(saveListPage)({ 
+        Visible = _Computed(function(page : GuiObject ?)
+            local isSaveListPage = (page == saveListPage)
+            return isSaveListPage
         end, currentPage)
     })
 
@@ -2445,7 +2738,7 @@ return function(
         char
     ))({
         BackgroundTransparency = 1,
-        Size = UDim2.fromScale(0.9, 1),
+        Size = UDim2.fromScale(0.8, 1),
         Children = {
             _new("ImageButton")({
                 BackgroundTransparency = 1,
@@ -2487,18 +2780,43 @@ return function(
                 VerticalAlignment = Enum.VerticalAlignment.Bottom
             }),
             avatarViewportFrame,
-            _bind(getImageButton(maid, 2, "rbxassetid://7017517837", nil, function()
-                currentPage:Set(if currentPage:Get() ~= colorWheelPage then colorWheelPage else mainMenuPage)
-            end))({
+            _new("Frame")({
+                LayoutOrder = 2,
                 BackgroundTransparency = 1,
-                Size = UDim2.fromScale(0.1, 0.1),
+                Size = UDim2.fromScale(0.1, 1),
                 Children = {
-                    _new("UIAspectRatioConstraint")({})
+                    _new("UIListLayout")({
+                        FillDirection = Enum.FillDirection.Vertical,
+                        SortOrder = Enum.SortOrder.LayoutOrder,
+                        VerticalAlignment = Enum.VerticalAlignment.Bottom,
+                        Padding = PADDING_SIZE
+                    }),
+                    
+                    _bind(getImageButton(maid, 1, "rbxassetid://12403099678", nil, function()
+                        currentPage:Set(saveListPage)
+                    end))({
+                        Name = "SaveButton",
+                        BackgroundTransparency = 1,
+                        Size = UDim2.fromScale(1, 1),
+                        Children = {
+                            _new("UIAspectRatioConstraint")({})
+                        }
+                    }),
+                    _bind(getImageButton(maid, 2, "rbxassetid://7017517837", nil, function()
+                        currentPage:Set(if currentPage:Get() ~= colorWheelPage then colorWheelPage else mainMenuPage)
+                    end))({
+                        Name = "BodyColor",
+                        BackgroundTransparency = 1,
+                        Size = UDim2.fromScale(1, 1),
+                        Children = {
+                            _new("UIAspectRatioConstraint")({})
+                        }
+                    }),
                 }
-            })
+            }),
+            
         }
     })
-
     
     --[[_new("ViewportFrame")({
         LayoutOrder = 2,
@@ -2637,7 +2955,8 @@ return function(
             mainMenuPage,
             categoryPage,
             catalogInfoPage,
-            colorWheelPage
+            colorWheelPage,
+            saveListPage
         }
     })
     --currentPage:Set(mainMenuPage)

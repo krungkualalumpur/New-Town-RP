@@ -96,12 +96,13 @@ local CHARACTER_BUNDLE_ID_ATTRIBUTE_KEY = "BundleId"
 
 local ON_CUSTOMIZE_AVATAR_NAME = "OnCustomizeAvatarName"
 local ON_CUSTOMIZE_CHAR = "OnCustomizeCharacter"
+local ON_CUSTOMIZE_CHAR_COLOR = "OnCustomizeCharColor"
 local ON_DELETE_CATALOG = "OnDeleteCatalog"
 
 local GET_AVATAR_FROM_CATALOG_INFO = "GetAvatarFromCatalogInfo"
 --variables
 --references
-local cleanHumanoidDesc = Instance.new("HumanoidDescription")
+--local cleanHumanoidDesc = Instance.new("HumanoidDescription")
 local partHeadTemplate = ReplicatedStorage:WaitForChild("Assets"):WaitForChild("Others"):WaitForChild("PartHeadTemplate")
 
 --local functions
@@ -582,7 +583,6 @@ local function processingHumanoidDescById(id : number, passedItemType : Enum.Ava
             end
             humanoid:ApplyDescription(newHumanoidDesc)]]
 
-            task.wait()
             applyBundleByHumanoidDescription(character, id, processingHumanoidDescById)
 
             --if passedInfo.Items then
@@ -780,6 +780,29 @@ function CustomizationUtil.Customize(plr : Player, customizationId : number, ite
     else
         NetworkUtil.invokeServer(ON_CUSTOMIZE_CHAR, customizationId, itemType)
     end 
+end
+
+function CustomizationUtil.CustomizeBodyColor(plr : Player, color : Color3)
+    if RunService:IsServer() then
+        local character = plr.Character or plr.CharacterAdded:Wait()
+        local humanoid = character:FindFirstChild("Humanoid") :: Humanoid ?
+        local humanoidDesc = if humanoid then humanoid:GetAppliedDescription() else nil
+
+        if humanoid and humanoidDesc then
+            humanoidDesc.HeadColor = color
+            humanoidDesc.TorsoColor = color
+            humanoidDesc.LeftArmColor = color
+            humanoidDesc.LeftLegColor = color
+            humanoidDesc.RightArmColor = color
+            humanoidDesc.RightLegColor = color
+
+            humanoid:ApplyDescription(humanoidDesc)
+        end
+    else
+        NetworkUtil.invokeServer(ON_CUSTOMIZE_CHAR_COLOR, color)
+    end
+    
+    return
 end
 
 function CustomizationUtil.DeleteCatalog(plr : Player, customizationId : number, itemType : Enum.AvatarItemType, assetTypeId : number ?)

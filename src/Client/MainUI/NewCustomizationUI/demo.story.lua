@@ -90,6 +90,7 @@ return function(target : CoreGui)
     local _Value = _fuse.Value
     
     local onCatalogTry = maid:GiveTask(Signal.new())
+    local onColorCustomize = maid:GiveTask(Signal.new())
     local onCatalogDelete = maid:GiveTask(Signal.new())
 
     --task.spawn(function()
@@ -111,6 +112,7 @@ return function(target : CoreGui)
         maid,
 
         onCatalogTry,
+        onColorCustomize,
         onCatalogDelete,
 
         onRPNameChange,
@@ -334,7 +336,10 @@ return function(target : CoreGui)
 
     maid:GiveTask(onCatalogTry:Connect(function(catalogInfo : CustomizationUI.SimplifiedCatalogInfo)
         print(catalogInfo.Id, " test try?")
-        
+    end))
+
+    maid:GiveTask(onColorCustomize:Connect(function()
+        print("i hate rullly rilli")
     end))
 
     maid:GiveTask(onCatalogDelete:Connect(function(catalogInfo : CustomizationUI.SimplifiedCatalogInfo)

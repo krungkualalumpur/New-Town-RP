@@ -63,6 +63,7 @@ local DELETE_VEHICLE = "DeleteVehicle"
 
 local ON_CUSTOMIZE_AVATAR_NAME = "OnCustomizeAvatarName"
 local ON_CUSTOMIZE_CHAR = "OnCustomizeCharacter"
+local ON_CUSTOMIZE_CHAR_COLOR = "OnCustomizeCharColor"
 local ON_DELETE_CATALOG = "OnDeleteCatalog"
 
 local KEY_VALUE_NAME = "KeyValue"
@@ -779,6 +780,11 @@ function PlayerManager.init(maid : Maid)
 
         CustomizationUtil.Customize(plr, customizationId, itemType) 
         MidasEventTree.Gameplay.CustomizeAvatar.Value(plr)
+        return nil
+    end)
+
+    NetworkUtil.onServerInvoke(ON_CUSTOMIZE_CHAR_COLOR, function(plr : Player, color : Color3)
+        CustomizationUtil.CustomizeBodyColor(plr, color)
         return nil
     end)
 

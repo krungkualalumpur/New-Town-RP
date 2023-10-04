@@ -491,6 +491,7 @@ function guiSys.new()
    -- end)
 
    local onCatalogTry = maid:GiveTask(Signal.new())
+   local onCustomizeColor = maid:GiveTask(Signal.new())
    local onCatalogDelete = maid:GiveTask(Signal.new())
 
    --task.spawn(function()
@@ -512,6 +513,7 @@ function guiSys.new()
        maid,
 
        onCatalogTry,
+       onCustomizeColor,
        onCatalogDelete,
 
        onRPNameChange,
@@ -733,26 +735,32 @@ function guiSys.new()
    )
    customizationUI.Parent = target
 
-   maid:GiveTask(onCatalogTry:Connect(function(catalogInfo : NewCustomizationUI.SimplifiedCatalogInfo, char : ValueState<Model>)
-       local itemType = getEnumItemFromName(Enum.AvatarItemType, catalogInfo.ItemType)
-       print(Player, catalogInfo.Id, itemType)
-       CustomizationUtil.Customize(Player, catalogInfo.Id, itemType :: Enum.AvatarItemType)
-       char:Set(getCharacter(true))
-   end))
+    maid:GiveTask(onCatalogTry:Connect(function(catalogInfo : NewCustomizationUI.SimplifiedCatalogInfo, char : ValueState<Model>)
+        local itemType = getEnumItemFromName(Enum.AvatarItemType, catalogInfo.ItemType)
+        print(Player, catalogInfo.Id, itemType)
+        CustomizationUtil.Customize(Player, catalogInfo.Id, itemType :: Enum.AvatarItemType)
+        char:Set(getCharacter(true))
+    end))
 
-   maid:GiveTask(onCatalogDelete:Connect(function(catalogInfo : NewCustomizationUI.SimplifiedCatalogInfo, char : ValueState<Model>)
-    local itemType = getEnumItemFromName(Enum.AvatarItemType, catalogInfo.ItemType) 
-    print(Player, catalogInfo.Id, itemType, catalogInfo, catalogInfo.ItemType)   
-    CustomizationUtil.DeleteCatalog(Player, catalogInfo.Id, itemType :: Enum.AvatarItemType)
-    char:Set(getCharacter(true))
-   end))
+    maid:GiveTask(onCustomizeColor:Connect(function(color : Color3, char : ValueState<Model>)
+        CustomizationUtil.CustomizeBodyColor(Player, color)
+        char:Set(getCharacter(true))
+        return
+    end))
 
-   maid:GiveTask(onRPNameChange:Connect(function(inputted : string)
-       print("On RP Change :", inputted)
-   end))
-   maid:GiveTask(onDescChange:Connect(function(inputted : string)
-       print("On Desc change :", inputted)
-   end))
+    maid:GiveTask(onCatalogDelete:Connect(function(catalogInfo : NewCustomizationUI.SimplifiedCatalogInfo, char : ValueState<Model>)
+            local itemType = getEnumItemFromName(Enum.AvatarItemType, catalogInfo.ItemType) 
+            print(Player, catalogInfo.Id, itemType, catalogInfo, catalogInfo.ItemType)   
+            CustomizationUtil.DeleteCatalog(Player, catalogInfo.Id, itemType :: Enum.AvatarItemType)
+            char:Set(getCharacter(true))
+    end))
+
+    maid:GiveTask(onRPNameChange:Connect(function(inputted : string)
+        print("On RP Change :", inputted)
+    end))
+    maid:GiveTask(onDescChange:Connect(function(inputted : string)
+        print("On Desc change :", inputted)
+    end))
     customizationUI.Parent = target
 
     print(customizationUI, " customization loaded")
