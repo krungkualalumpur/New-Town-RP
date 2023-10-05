@@ -27,6 +27,9 @@ export type PlayerData = {
     Backpack : {[number] : string},
     Vehicles : {[number] : string},
     Character : CustomizationUtil.CharacterData,
+    CharacterSaves : {
+        [number] : CustomizationUtil.CharacterData
+    },
     ChatCount : number
 }
 
@@ -37,6 +40,9 @@ export type PlayerManager = {
     Player : Player,
     Backpack : {[number] : ToolData<boolean>},
     Vehicles : {[number] : VehicleData},
+    CharacterSaves : {
+        [number] : CustomizationUtil.CharacterData
+    },
     ChatCount : number,
     
     isLoaded : boolean,
@@ -58,6 +64,10 @@ export type PlayerManager = {
     DeleteVehicle : (PlayerManager, key : number) -> (),
 
     SetChatCount : (PlayerManager, count : number) -> (),
+
+    SaveCharacterSlot : (PlayerManager, characterData : CharacterData ?) -> {[number] : CharacterData},
+    LoadCharacterSlot : (PlayerManager, k : number) -> {[number] : CharacterData},
+    DeleteCharacterSlot : (PlayerManager, k : number) -> {[number] : CharacterData},
 
     Destroy : (PlayerManager) -> (),
 

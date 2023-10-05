@@ -21,6 +21,10 @@ export type CatalogInfo = CustomizationUtil.CatalogInfo
 
 export type SimplifiedCatalogInfo = CustomizationUtil.SimplifiedCatalogInfo
 
+type CharacterSlotData = {
+    CharacterData : CustomizationUtil.CharacterData
+}
+
 type InfoFromHumanoidDesc = {
     ["AccessoryType"] : Enum.AccessoryType,
     ["AssetId"] : number,
@@ -1209,7 +1213,7 @@ local function getDefaultList(
 
     for k,v in pairs(options) do
         local button = _bind(getButton(maid, k, v.Name, function()
-            v.Signal:Fire(v.Content)
+            v.Signal:Fire(order, v.Content)
         end, SECONDARY_COLOR))({
             Size = UDim2.fromScale(1, 0.3)
         })
@@ -1261,18 +1265,14 @@ return function(
     onCatalogTry : Signal,
     onCustomizeBodyColor : Signal,
     onCatalogDelete : Signal,
+    onCustomizationSave : Signal,
     onSavedCustomizationLoad : Signal,
     onSavedCustomizationDelete : Signal,
 
     onRPNameChange : Signal,
     onDescChange : Signal,
 
-    saveList : State<{
-        [number] : {
-            Name : string,
-            CharacterData : CustomizationUtil.CharacterData 
-        }
-    }>,
+    saveList : State<{[number] : CustomizationUtil.CharacterData}>,
 
     getSubCategoryList : (categoryName : string) -> {[number] : string},
     getCatalogPages : (
@@ -2679,7 +2679,9 @@ return function(
                 TextXAlignment = Enum.TextXAlignment.Center
             }),
             savesListContent,
-            _bind(getButton(maid, 3, "+"))({
+            _bind(getButton(maid, 3, "+", function()  
+                onCustomizationSave:Fire()
+            end))({
                 Size = UDim2.fromScale(1, 0.1)
             }),
         }
@@ -3623,19 +3625,17 @@ return function(
         local saveListsMaid = maid:GiveTask(Maid.new())
         _new("StringValue")({
             Value = _Computed(function(list : {
-                [number] : {
-                    Name : string,
-                    CharacterData : CustomizationUtil.CharacterData 
-                }
+                [number] : CustomizationUtil.CharacterData
             })
                 saveListsMaid:DoCleaning()
 
-                for _,v in pairs(list) do
-                    local charModel = CustomizationUtil.getAvatarPreviewByCharacterData(v.CharacterData) or char:Get():Clone()   --getDisplayCharacterFromCharacterData(v.CharacterData) --char:Get():Clone()
+                for k,v in pairs(list) do
+                    local charModel = CustomizationUtil.getAvatarPreviewByCharacterData(v) or char:Get():Clone()   --getDisplayCharacterFromCharacterData(v.CharacterData) --char:Get():Clone()
+                    print(#v.Accessories)
                     local listFrame = getDefaultList(
                         saveListsMaid,
-                        1,
-                        "Save1",
+                        k,
+                        "Save " .. tostring(k),
                         {
                             [1] = {
                                 Name = "Load", 

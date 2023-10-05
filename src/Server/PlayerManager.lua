@@ -65,7 +65,10 @@ local ON_CUSTOMIZE_AVATAR_NAME = "OnCustomizeAvatarName"
 local ON_CUSTOMIZE_CHAR = "OnCustomizeCharacter"
 local ON_CUSTOMIZE_CHAR_COLOR = "OnCustomizeCharColor"
 local ON_DELETE_CATALOG = "OnDeleteCatalog"
-local GET_AVATAR_FROM_CHARACTER_DATA = "GetAvatarFromCharacterData"
+
+local SAVE_CHARACTER_SLOT = "SaveCharacterSlot"
+local LOAD_CHARACTER_SLOT = "LoadCharacterSlot"
+local DELETE_CHARACTER_SLOT = "DeleteCharacterSlot"
 
 local KEY_VALUE_NAME = "KeyValue"
 
@@ -192,6 +195,7 @@ function PlayerManager.new(player : Player, maid : Maid ?)
     self.Backpack = {}
     self.Vehicles = {}
     self.ChatCount = 0
+    self.CharacterSaves = {}
 
     self.isLoaded = false
 
@@ -536,6 +540,28 @@ function PlayerManager:SetData(plrData : ManagerTypes.PlayerData)
     return true
 end
 
+function PlayerManager:SaveCharacterSlot(characterData : CustomizationUtil.CharacterData ?)
+    local char = self._Maid.CharacterModel
+    if char then
+        table.insert(self.CharacterSaves,  characterData or table.clone(CustomizationUtil.GetInfoFromCharacter(char)))
+    end
+    print(self.CharacterSaves)
+    return self.CharacterSaves
+end
+
+function PlayerManager:LoadCharacterSlot(characterDataKey : number)
+    local data = self:GetData()
+    data.Character = self.CharacterSaves[characterDataKey]
+    print(characterDataKey)
+    self:SetData(data)
+    return self.CharacterSaves
+end
+
+function PlayerManager:DeleteCharacterSlot(characterDataKey : number)
+    table.remove(self.CharacterSaves, characterDataKey)
+    return self.CharacterSaves
+end
+
 function PlayerManager:Destroy()
     Registry[self.Player] = nil
     
@@ -801,10 +827,21 @@ function PlayerManager.init(maid : Maid)
         return nil
     end)
 
-    NetworkUtil.onServerEvent(GET_AVATAR_FROM_CHARACTER_DATA, function(characterData : CustomizationUtil.CharacterData)
-        return CustomizationUtil.getAvatarPreviewByCharacterData(characterData)
+    NetworkUtil.onServerInvoke(SAVE_CHARACTER_SLOT, function(plr : Player)
+        local plrManager = PlayerManager.get(plr)
+        return plrManager:SaveCharacterSlot()
     end)
-    
+
+    NetworkUtil.onServerInvoke(LOAD_CHARACTER_SLOT, function(plr : Player, k, content)
+        local plrManager = PlayerManager.get(plr)
+        return plrManager:LoadCharacterSlot(k)
+    end)
+
+    NetworkUtil.onServerInvoke(DELETE_CHARACTER_SLOT, function(plr : Player, k, content)
+        local plrManager = PlayerManager.get(plr)
+        return plrManager:DeleteCharacterSlot(k)
+    end)
+
     NetworkUtil.onServerEvent(ON_TOOL_ACTIVATED, function(plr : Player, toolClass : string, foodInst : Instance, toolData : BackpackUtil.ToolData<nil>)
         local plrInfo = PlayerManager.get(plr)
         ToolActions.onToolActivated(toolClass, plr, toolData, plrInfo)

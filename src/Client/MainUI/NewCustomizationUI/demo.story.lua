@@ -19,63 +19,6 @@ local CustomizationUI = require(ReplicatedStorage:WaitForChild("Client"):WaitFor
 --variables
 --references
 --local functions
-local function getCharacter()
-    return if RunService:IsRunning() then Players:CreateHumanoidModelFromUserId(Players.LocalPlayer.UserId) else game.ServerStorage.aryoseno11:Clone()
-end
-local function weldAttachments(attach1, attach2)
-    local weld = Instance.new("Weld")
-    weld.Part0 = attach1.Parent
-    weld.Part1 = attach2.Parent
-    weld.C0 = attach1.CFrame
-    weld.C1 = attach2.CFrame
-    weld.Parent = attach1.Parent
-    return weld
-end
- 
-local function buildWeld(weldName, parent, part0, part1, c0, c1)
-    local weld = Instance.new("Weld")
-    weld.Name = weldName
-    weld.Part0 = part0
-    weld.Part1 = part1
-    weld.C0 = c0
-    weld.C1 = c1
-    weld.Parent = parent
-    return weld
-end
- 
-local function findFirstMatchingAttachment(model, name)
-    for _, child in pairs(model:GetChildren()) do
-        if child:IsA("Attachment") and child.Name == name then
-            return child
-        elseif not child:IsA("Accoutrement") and not child:IsA("Tool") then -- Don't look in hats or tools in the character
-            local foundAttachment = findFirstMatchingAttachment(child, name)
-            if foundAttachment then
-                return foundAttachment
-            end
-        end
-    end
-end
- 
-local function addAccoutrement(character : Model, accoutrement : Accessory)  
-    accoutrement.Parent = character
-    local handle = accoutrement:FindFirstChild("Handle")
-    if handle then
-        local accoutrementAttachment = handle:FindFirstChildOfClass("Attachment")
-        if accoutrementAttachment then
-            local characterAttachment = findFirstMatchingAttachment(character, accoutrementAttachment.Name)
-            if characterAttachment then
-                weldAttachments(characterAttachment, accoutrementAttachment)
-            end
-        else
-            local head = character:FindFirstChild("Head")
-            if head then
-                local attachmentCFrame = CFrame.new(0, 0.5, 0)
-                local hatCFrame = accoutrement.AttachmentPoint
-                buildWeld("HeadWeld", head, head, handle, attachmentCFrame, hatCFrame)
-            end
-        end
-    end
-end
 --class
 return function(target : CoreGui)
     local maid = Maid.new()
@@ -112,11 +55,20 @@ return function(target : CoreGui)
 
     local saves = _Value({
         [1] = {
-            Name = "Ruski",
             CharacterData = CustomizationUtil.GetInfoFromCharacter(charSaveExample:Clone())
         }
     })
 
+    task.spawn(function()
+        task.wait(10)
+        saves:Set({
+            [1] = {
+                CharacterData = CustomizationUtil.GetInfoFromCharacter(charSaveExample:Clone())
+            }
+        })
+    end) 
+
+    local onCustomizationSave = maid:GiveTask(Signal.new())
     local onSavedCustomizationLoad = maid:GiveTask(Signal.new())
     local onSavedCustomizationDelete = maid:GiveTask(Signal.new())
 
@@ -126,6 +78,7 @@ return function(target : CoreGui)
         onCatalogTry,
         onColorCustomize,
         onCatalogDelete,
+        onCustomizationSave,
         onSavedCustomizationLoad,
         onSavedCustomizationDelete,
 
@@ -319,7 +272,7 @@ return function(target : CoreGui)
             local function getCatalogPages()
                 local s, e = pcall(function() 
                     catalogPages = AvatarEditorService:SearchCatalog(params) 
-                end)
+                end) 
                 return s,e
             end
             local s, e =  getCatalogPages()
@@ -362,11 +315,14 @@ return function(target : CoreGui)
         print("motorik ", catalogInfo.Id)
     end))
 
-    maid:GiveTask(onSavedCustomizationLoad:Connect(function(content)
-        print(content.Name, content.CharacterData, " on load")
+    maid:GiveTask(onCustomizationSave:Connect(function(content)
+        print(content.CharacterData, " on save")
     end))
-    maid:GiveTask(onSavedCustomizationDelete:Connect(function(content)
-        print(content.Name, content.CharacterData, " on delete")
+    maid:GiveTask(onSavedCustomizationLoad:Connect(function(k, content)
+        print(k, content.CharacterData, " on load")
+    end))
+    maid:GiveTask(onSavedCustomizationDelete:Connect(function(k, content)
+        print(k, content.CharacterData, " on delete")
     end))
 
     maid:GiveTask(onRPNameChange:Connect(function(inputted : string)

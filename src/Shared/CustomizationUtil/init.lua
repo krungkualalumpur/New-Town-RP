@@ -991,8 +991,8 @@ function CustomizationUtil.getAvatarPreviewByCharacterData(characterData : Chara
         CustomizationUtil.SetInfoFromCharacter(character, characterData)
         return character
     else
-        if not RunService:IsStudio() then
-            return NetworkUtil.invokeServer(GET_AVATAR_FROM_CHARACTER_DATA, characterData)
+        if RunService:IsRunning() then
+            return NetworkUtil.invokeServer(GET_AVATAR_FROM_CHARACTER_DATA, characterData):Clone()
         end
     end
     return nil

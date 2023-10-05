@@ -19,6 +19,8 @@ local CATALOG_FOLDER_NAME = "CatalogFolder"
 local ON_CHARACTER_APPEARANCE_RESET = "OnCharacterAppearanceReset"
 
 local GET_CATALOG_FROM_CATALOG_INFO = "GetCatalogFromCatalogInfo"
+local GET_AVATAR_FROM_CHARACTER_DATA = "GetAvatarFromCharacterData"
+
 
 --variables
 --references
@@ -149,6 +151,24 @@ function CharacterManager.init(maid : Maid)
         end)
         return asset
     end)
+
+    
+    maid:GiveTask(NetworkUtil.onServerEvent(GET_AVATAR_FROM_CHARACTER_DATA, function(characterData : CustomizationUtil.CharacterData)
+        local catalogFolder = getCatalogFolder()
+
+        local character = CustomizationUtil.getAvatarPreviewByCharacterData(characterData)
+        character.Parent = catalogFolder
+
+        task.spawn(function()
+            task.wait(5)
+            character:Destroy()
+        end)
+
+        return character
+    end))
+    
+   
+
 end
 
 return CharacterManager

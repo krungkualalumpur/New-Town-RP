@@ -83,6 +83,10 @@ local ADD_VEHICLE = "AddVehicle"
 local DELETE_VEHICLE = "DeleteVehicle"
 
 local ON_CHARACTER_APPEARANCE_RESET = "OnCharacterAppearanceReset"
+local SAVE_CHARACTER_SLOT = "SaveCharacterSlot"
+local LOAD_CHARACTER_SLOT = "LoadCharacterSlot"
+local DELETE_CHARACTER_SLOT = "DeleteCharacterSlot"
+
 --variables
 local Player = Players.LocalPlayer
 --references
@@ -506,13 +510,14 @@ function guiSys.new()
        --if not s and e then warn(e) end 
        --print(result:GetCurrentPage())
   -- end)
+    local onCustomizationSave = maid:GiveTask(Signal.new())
     local onSavedCustomizationLoad = maid:GiveTask(Signal.new())
     local onSavedCustomizationDelete = maid:GiveTask(Signal.new())
 
     local onRPNameChange = maid:GiveTask(Signal.new())
     local onDescChange = maid:GiveTask(Signal.new())
 
-    local saveList = {}
+    local saveList = _Value({})
 
     local customizationUI = NewCustomizationUI(
        maid,
@@ -521,6 +526,7 @@ function guiSys.new()
        onCustomizeColor,
 
        onCatalogDelete,
+       onCustomizationSave,
        onSavedCustomizationLoad,
        onSavedCustomizationDelete,
 
@@ -742,12 +748,12 @@ function guiSys.new()
            return catalogInfos
        end,
        _Value(true)
-   )
-   customizationUI.Parent = target
+    )
+    customizationUI.Parent = target
 
     maid:GiveTask(onCatalogTry:Connect(function(catalogInfo : NewCustomizationUI.SimplifiedCatalogInfo, char : ValueState<Model>)
         local itemType = getEnumItemFromName(Enum.AvatarItemType, catalogInfo.ItemType)
-        print(Player, catalogInfo.Id, itemType)
+
         CustomizationUtil.Customize(Player, catalogInfo.Id, itemType :: Enum.AvatarItemType)
         char:Set(getCharacter(true))
     end))
@@ -763,6 +769,23 @@ function guiSys.new()
             print(Player, catalogInfo.Id, itemType, catalogInfo, catalogInfo.ItemType)   
             CustomizationUtil.DeleteCatalog(Player, catalogInfo.Id, itemType :: Enum.AvatarItemType)
             char:Set(getCharacter(true))
+    end))
+
+    maid:GiveTask(onCustomizationSave:Connect(function()
+        print(" soiklik??")
+        local saveData = NetworkUtil.invokeServer(SAVE_CHARACTER_SLOT)
+        print(saveData)
+        saveList:Set(saveData)
+    end))
+
+    maid:GiveTask(onSavedCustomizationLoad:Connect(function(k, content)
+        local saveData =  NetworkUtil.invokeServer(LOAD_CHARACTER_SLOT, k, content)
+        saveList:Set(saveData)
+    end))
+
+    maid:GiveTask(onSavedCustomizationDelete:Connect(function(k, content)
+        local saveData = NetworkUtil.invokeServer(DELETE_CHARACTER_SLOT, k, content)
+        saveList:Set(saveData)
     end))
 
     maid:GiveTask(onRPNameChange:Connect(function(inputted : string)
