@@ -18,7 +18,7 @@ local CATALOG_FOLDER_NAME = "CatalogFolder"
 
 local ON_CHARACTER_APPEARANCE_RESET = "OnCharacterAppearanceReset"
 
-local GET_AVATAR_FROM_CATALOG_INFO = "GetAvatarFromCatalogInfo"
+local GET_CATALOG_FROM_CATALOG_INFO = "GetCatalogFromCatalogInfo"
 
 --variables
 --references
@@ -138,7 +138,7 @@ function CharacterManager.init(maid : Maid)
         end
     end))
 
-    NetworkUtil.onServerInvoke(GET_AVATAR_FROM_CATALOG_INFO, function(plr : Player, catalogId : number)
+    NetworkUtil.onServerInvoke(GET_CATALOG_FROM_CATALOG_INFO, function(plr : Player, catalogId : number)
         local catalogFolder = getCatalogFolder()
         local asset = catalogFolder:FindFirstChild(tostring(catalogId)) or game:GetService("InsertService"):LoadAsset(catalogId)
         asset.Name = tostring(catalogId)

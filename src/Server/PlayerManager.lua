@@ -65,6 +65,7 @@ local ON_CUSTOMIZE_AVATAR_NAME = "OnCustomizeAvatarName"
 local ON_CUSTOMIZE_CHAR = "OnCustomizeCharacter"
 local ON_CUSTOMIZE_CHAR_COLOR = "OnCustomizeCharColor"
 local ON_DELETE_CATALOG = "OnDeleteCatalog"
+local GET_AVATAR_FROM_CHARACTER_DATA = "GetAvatarFromCharacterData"
 
 local KEY_VALUE_NAME = "KeyValue"
 
@@ -799,6 +800,10 @@ function PlayerManager.init(maid : Maid)
         MidasEventTree.Gameplay.CustomizeAvatar.Value(plr)
         return nil
     end)
+
+    NetworkUtil.onServerEvent(GET_AVATAR_FROM_CHARACTER_DATA, function(characterData : CustomizationUtil.CharacterData)
+        return CustomizationUtil.getAvatarPreviewByCharacterData(characterData)
+    end)
     
     NetworkUtil.onServerEvent(ON_TOOL_ACTIVATED, function(plr : Player, toolClass : string, foodInst : Instance, toolData : BackpackUtil.ToolData<nil>)
         local plrInfo = PlayerManager.get(plr)
@@ -807,7 +812,7 @@ function PlayerManager.init(maid : Maid)
 
     NetworkUtil.getRemoteEvent(UPDATE_PLAYER_BACKPACK)
     NetworkUtil.getRemoteFunction(GET_PLAYER_BACKPACK)
-    NetworkUtil.getRemoteEvent(ON_CAMERA_SHAKE)
+    NetworkUtil.getRemoteEvent(ON_CAMERA_SHAKE) 
 end
 
 return PlayerManager

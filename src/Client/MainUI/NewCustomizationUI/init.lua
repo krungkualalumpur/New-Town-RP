@@ -1178,8 +1178,8 @@ local function getDefaultList(
     local _Value = _fuse.Value
     local _Computed = _fuse.Computed
 
-
     previewModel:PivotTo(CFrame.new())
+
     local viewport = getViewportFrame(
         maid, 
         1, 
@@ -1250,16 +1250,29 @@ local function getDefaultList(
     })
 end
 
-
+local function getDisplayCharacterFromCharacterData(charData : CustomizationUtil.CharacterData) 
+    local charModel = getCharacter(false)
+    
+    return charModel
+end
 --class
 return function(
     maid : Maid,
     onCatalogTry : Signal,
     onCustomizeBodyColor : Signal,
     onCatalogDelete : Signal,
+    onSavedCustomizationLoad : Signal,
+    onSavedCustomizationDelete : Signal,
 
     onRPNameChange : Signal,
     onDescChange : Signal,
+
+    saveList : State<{
+        [number] : {
+            Name : string,
+            CharacterData : CustomizationUtil.CharacterData 
+        }
+    }>,
 
     getSubCategoryList : (categoryName : string) -> {[number] : string},
     getCatalogPages : (
@@ -2618,13 +2631,11 @@ return function(
         })       
     end
 
-    local model = game:GetService("ServerStorage"):WaitForChild("aryoseno11"):Clone()
-
     local savesListContent = _new("ScrollingFrame")({
         Name = "SavesListContent",
-        LayoutOrder = 1,
+        LayoutOrder = 2,
         BackgroundTransparency = 1,
-        Size = UDim2.fromScale(1, 0.9),
+        Size = UDim2.fromScale(1, 0.75),
         CanvasSize = UDim2.fromScale(0,0),
         AutomaticCanvasSize = Enum.AutomaticSize.Y,
         Children = {
@@ -2639,24 +2650,7 @@ return function(
                 Padding = UDim.new(PADDING_SIZE_SCALE.Scale*0.2, PADDING_SIZE_SCALE.Offset*0.2)
             }),
 
-            getDefaultList(
-                maid,
-                1,
-                "Save1",
-                {
-                    [1] = {
-                        Name = "Use",
-                        Signal = maid:GiveTask(Signal.new()),
-                        Content = nil
-                    },
-                    [2] = {
-                        Name = "Delete",
-                        Signal = maid:GiveTask(Signal.new()),
-                        Content = nil
-                    }
-                },
-                model
-            )
+            
         }
     })
     local saveListPage = _new("Frame")({
@@ -2674,10 +2668,18 @@ return function(
                 VerticalAlignment = Enum.VerticalAlignment.Top,
                 Padding = UDim.new(PADDING_SIZE_SCALE.Scale*0.2, PADDING_SIZE_SCALE.Offset*0.2)
             }),
-            
-            savesListContent,
-            _bind(getButton(maid, 2, "+"))({
+            _new("TextLabel")({
                 LayoutOrder = 1,
+                BackgroundTransparency = 1,
+                Size = UDim2.fromScale(1, 0.05),
+                Font = Enum.Font.GothamBold,
+                Text = "SAVE LIST",
+                TextColor3 = TEXT_COLOR,
+                TextScaled = true,
+                TextXAlignment = Enum.TextXAlignment.Center
+            }),
+            savesListContent,
+            _bind(getButton(maid, 3, "+"))({
                 Size = UDim2.fromScale(1, 0.1)
             }),
         }
@@ -3617,6 +3619,44 @@ return function(
         })
     end
 
+    do
+        local saveListsMaid = maid:GiveTask(Maid.new())
+        _new("StringValue")({
+            Value = _Computed(function(list : {
+                [number] : {
+                    Name : string,
+                    CharacterData : CustomizationUtil.CharacterData 
+                }
+            })
+                saveListsMaid:DoCleaning()
+
+                for _,v in pairs(list) do
+                    local charModel = CustomizationUtil.getAvatarPreviewByCharacterData(v.CharacterData) or char:Get():Clone()   --getDisplayCharacterFromCharacterData(v.CharacterData) --char:Get():Clone()
+                    local listFrame = getDefaultList(
+                        saveListsMaid,
+                        1,
+                        "Save1",
+                        {
+                            [1] = {
+                                Name = "Load", 
+                                Signal = onSavedCustomizationLoad,
+                                Content = v
+                            },
+                            [2] = {
+                                Name = "Delete",
+                                Signal = onSavedCustomizationDelete,
+                                Content = v
+                            }
+                        },
+                        charModel
+                    )
+                    listFrame.Parent = savesListContent
+                end
+
+                return ""
+            end, saveList)
+        })
+    end
     --[[for i = 1, 10 do
         local button = getAccessoryButton(maid, i, {
             [1] = {

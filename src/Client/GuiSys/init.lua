@@ -506,18 +506,28 @@ function guiSys.new()
        --if not s and e then warn(e) end 
        --print(result:GetCurrentPage())
   -- end)
-  local onRPNameChange = maid:GiveTask(Signal.new())
-  local onDescChange = maid:GiveTask(Signal.new())
+    local onSavedCustomizationLoad = maid:GiveTask(Signal.new())
+    local onSavedCustomizationDelete = maid:GiveTask(Signal.new())
 
-   local customizationUI = NewCustomizationUI(
+    local onRPNameChange = maid:GiveTask(Signal.new())
+    local onDescChange = maid:GiveTask(Signal.new())
+
+    local saveList = {}
+
+    local customizationUI = NewCustomizationUI(
        maid,
 
        onCatalogTry,
        onCustomizeColor,
+
        onCatalogDelete,
+       onSavedCustomizationLoad,
+       onSavedCustomizationDelete,
 
        onRPNameChange,
        onDescChange,
+
+       saveList,
 
        function(param)
            local list = {"All"}

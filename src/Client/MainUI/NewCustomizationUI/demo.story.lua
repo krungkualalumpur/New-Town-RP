@@ -93,20 +93,32 @@ return function(target : CoreGui)
     local onColorCustomize = maid:GiveTask(Signal.new())
     local onCatalogDelete = maid:GiveTask(Signal.new())
 
-    --task.spawn(function()
-        --print(AvatarEditorService:GetItemDetails(16630147, Enum.AvatarItemType.Asset))
-        --local params = CatalogSearchParams.new()
-        --params.SearchKeyword = "featured"
-        --params.BundleTypes = {Enum.BundleType.Animations}
-        
-       -- local result = AvatarEditorService:SearchCatalog(params)
-        --print(result:GetCurrentPage())
-        --local s,e = pcall(function() result:AdvanceToNextPageAsync() end) 
-        --if not s and e then warn(e) end 
-        --print(result:GetCurrentPage())
-   -- end)
-   local onRPNameChange = maid:GiveTask(Signal.new())
-   local onDescChange = maid:GiveTask(Signal.new())
+        --task.spawn(function()
+            --print(AvatarEditorService:GetItemDetails(16630147, Enum.AvatarItemType.Asset))
+            --local params = CatalogSearchParams.new()
+            --params.SearchKeyword = "featured"
+            --params.BundleTypes = {Enum.BundleType.Animations}
+            
+        -- local result = AvatarEditorService:SearchCatalog(params)
+            --print(result:GetCurrentPage())
+            --local s,e = pcall(function() result:AdvanceToNextPageAsync() end) 
+            --if not s and e then warn(e) end 
+            --print(result:GetCurrentPage())
+    -- end)
+    local onRPNameChange = maid:GiveTask(Signal.new())
+    local onDescChange = maid:GiveTask(Signal.new())
+
+    local charSaveExample = game:GetService("ServerStorage"):WaitForChild("aryoseno11") :: Model
+
+    local saves = _Value({
+        [1] = {
+            Name = "Ruski",
+            CharacterData = CustomizationUtil.GetInfoFromCharacter(charSaveExample:Clone())
+        }
+    })
+
+    local onSavedCustomizationLoad = maid:GiveTask(Signal.new())
+    local onSavedCustomizationDelete = maid:GiveTask(Signal.new())
 
     local customizationUI = CustomizationUI(
         maid,
@@ -114,10 +126,14 @@ return function(target : CoreGui)
         onCatalogTry,
         onColorCustomize,
         onCatalogDelete,
+        onSavedCustomizationLoad,
+        onSavedCustomizationDelete,
 
         onRPNameChange,
         onDescChange,
 
+        saves,
+ 
         function(param)
             local list = {"All"}
             if param:lower() == "featured" then
@@ -344,6 +360,13 @@ return function(target : CoreGui)
 
     maid:GiveTask(onCatalogDelete:Connect(function(catalogInfo : CustomizationUI.SimplifiedCatalogInfo)
         print("motorik ", catalogInfo.Id)
+    end))
+
+    maid:GiveTask(onSavedCustomizationLoad:Connect(function(content)
+        print(content.Name, content.CharacterData, " on load")
+    end))
+    maid:GiveTask(onSavedCustomizationDelete:Connect(function(content)
+        print(content.Name, content.CharacterData, " on delete")
     end))
 
     maid:GiveTask(onRPNameChange:Connect(function(inputted : string)
