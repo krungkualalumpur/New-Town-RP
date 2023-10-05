@@ -153,11 +153,8 @@ function CharacterManager.init(maid : Maid)
     end)
 
     
-    maid:GiveTask(NetworkUtil.onServerEvent(GET_AVATAR_FROM_CHARACTER_DATA, function(characterData : CustomizationUtil.CharacterData)
-        local catalogFolder = getCatalogFolder()
-
+    NetworkUtil.onServerInvoke(GET_AVATAR_FROM_CHARACTER_DATA, function(plr : Player, characterData : CustomizationUtil.CharacterData)
         local character = CustomizationUtil.getAvatarPreviewByCharacterData(characterData)
-        character.Parent = catalogFolder
 
         task.spawn(function()
             task.wait(5)
@@ -165,7 +162,7 @@ function CharacterManager.init(maid : Maid)
         end)
 
         return character
-    end))
+    end)
     
    
 
