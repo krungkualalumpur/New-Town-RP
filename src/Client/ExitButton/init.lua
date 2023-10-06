@@ -41,7 +41,6 @@ local TEXT_SIZE = 16
 local PADDING_SIZE = UDim.new(0, 5)
 
 --vars
-local currentExitButton : ExitButton
 
 --references
 
@@ -141,15 +140,14 @@ function ExitButton.new(guiObject : GuiObject, isVisible : ValueState<boolean>, 
         exitButton.Position = UDim2.fromOffset(guiObject.AbsolutePosition.X + guiObject.AbsoluteSize.X - exitButton.AbsoluteSize.X, guiObject.AbsolutePosition.Y)
     end))
 
-    inst.Destroying:Connect(function()
+    maid:GiveTask(inst.Destroying:Connect(function()
         if self._isAlive then self:Destroy() end
-    end)
+    end))
 
-    guiObject.Destroying:Connect(function()
+    maid:GiveTask(guiObject.Destroying:Connect(function()
         if self._isAlive then self:Destroy() end
-    end)
+    end))
 
-    currentExitButton = self
     return self
 end 
 

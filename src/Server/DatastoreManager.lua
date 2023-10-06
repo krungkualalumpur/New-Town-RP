@@ -97,6 +97,7 @@ function DatastoreManager.load(player: Player, plrInfo: ManagerTypes.PlayerManag
 		local s, e = pcall(function() plrInfo:SetData(convertedData.PlayerData) end)
 		if not s and e then
 			warn("Error upon loading player data: " .. tostring(e))
+			plrInfo.onLoadingComplete:Fire()
 		end
 	end
 end

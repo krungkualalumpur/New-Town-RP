@@ -19,6 +19,9 @@ local PADDING_SIZE =  UDim.new(0, 5)
 
 local BACKGROUND_COLOR = Color3.fromRGB(50,50,50)
 local PRIMARY_COLOR = Color3.fromRGB(255,255,255)
+local SECONDARY_COLOR =  Color3.fromRGB(180,180,180)
+local TERTIARY_COLOR = Color3.fromRGB(70,70,70)
+local TEXT_COLOR = Color3.fromRGB(255,255,255)
 
 local DELAY_TIME = 5
 --variables
@@ -56,7 +59,7 @@ function getNotificationFrame(
 
     local content = _new("Frame")({
         BackgroundTransparency = transp:Tween(),
-        BackgroundColor3 = BACKGROUND_COLOR,
+        BackgroundColor3 = TERTIARY_COLOR,
         Position = pos:Tween(),
         Size = UDim2.fromScale(1, 1),
         Children = {
@@ -68,7 +71,7 @@ function getNotificationFrame(
             }), 
             
             _new("UICorner")({}),
-            _new("UIGradient")({
+            --[[_new("UIGradient")({
                 Rotation = -90,
                 Color = ColorSequence.new{
                     ColorSequenceKeypoint.new(
@@ -81,17 +84,18 @@ function getNotificationFrame(
                     )},
                     
                 }
-            ),
+            ),]]
 
             _new("TextLabel")({
                 BackgroundTransparency = 1,
                 Size = UDim2.fromScale(0.8, 1),
+                Font = Enum.Font.GothamMedium,
                 Text = text,
                 TextTransparency = _Computed(function(val : number)
                     return if val < 1 then 0 else 1
                 end, transp):Tween(),
                 TextSize = 15,
-                TextColor3 = PRIMARY_COLOR,
+                TextColor3 = TEXT_COLOR,
                 TextStrokeTransparency = _Computed(function(val : number)
                     return val + 0.3
                 end, transp):Tween(),

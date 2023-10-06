@@ -2,7 +2,9 @@
 --services
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Players = game:GetService("Players")
-local UserInputService = game:GetService("UserInputService") :: UserInputService
+local UserInputService = game:GetService("UserInputService") 
+local RunService = game:GetService("RunService")
+local AvatarEditorService = game:GetService("AvatarEditorService")
 --packages
 local Maid = require(ReplicatedStorage:WaitForChild("Packages"):WaitForChild("Maid"))
 local NetworkUtil = require(ReplicatedStorage:WaitForChild("Packages"):WaitForChild("NetworkUtil"))
@@ -11,6 +13,7 @@ local Signal = require(ReplicatedStorage:WaitForChild("Packages"):WaitForChild("
 --modules
 local BackpackUI = require(ReplicatedStorage:WaitForChild("Client"):WaitForChild("MainUI"):WaitForChild("BackpackUI"))
 local AnimationUI = require(ReplicatedStorage:WaitForChild("Client"):WaitForChild("MainUI"):WaitForChild("AnimationUI"))
+local NewCustomizationUI = require(ReplicatedStorage:WaitForChild("Client"):WaitForChild("MainUI"):WaitForChild("NewCustomizationUI"))
 local CustomizationUI = require(ReplicatedStorage:WaitForChild("Client"):WaitForChild("MainUI"):WaitForChild("CustomizationUI"))
 local ItemOptionsUI = require(ReplicatedStorage:WaitForChild("Client"):WaitForChild("ItemOptionsUI"))
 
@@ -39,15 +42,23 @@ type State<T> = ColdFusion.State<T>
 type ValueState<T> = ColdFusion.ValueState<T>
 type CanBeState<T> = ColdFusion.State<T>
 --constants
-local BACKGROUND_COLOR = Color3.fromRGB(100,100,100)
+local BACKGROUND_COLOR = Color3.fromRGB(90,90,90)
 local PRIMARY_COLOR = Color3.fromRGB(255,255,255)
 local SECONDARY_COLOR = Color3.fromRGB(42, 42, 42)
+local TERTIARY_COLOR = Color3.fromRGB(70,70,70)
+
+local TEXT_COLOR = Color3.fromRGB(255,255,255)
 
 local PADDING_SIZE = UDim.new(0,10)
 --remotes
 local GET_PLAYER_BACKPACK = "GetPlayerBackpack"
+
+local SAVE_CHARACTER_SLOT = "SaveCharacterSlot"
+local LOAD_CHARACTER_SLOT = "LoadCharacterSlot"
+local DELETE_CHARACTER_SLOT = "DeleteCharacterSlot"
 --variables
 --references
+local Player = Players.LocalPlayer
 --local functions
 local function getItemInfo(
     class : string,
@@ -57,6 +68,42 @@ local function getItemInfo(
         Class = class,
         Name = name
     }
+end
+
+local function getCharacter(fromWorkspace : boolean, plr : Player ?)
+    local char 
+    if RunService:IsRunning() then 
+        if not fromWorkspace then
+            char = Players:CreateHumanoidModelFromUserId(Players.LocalPlayer.UserId) 
+        else
+            for _,charModel in pairs(workspace:GetChildren()) do
+                local humanoid = charModel:FindFirstChild("Humanoid")
+                print(charModel:IsA("Model"), humanoid, humanoid and humanoid:IsA("Humanoid"), charModel.Name == (if plr then plr.Name else Players.LocalPlayer.Name))
+                if charModel:IsA("Model") and humanoid and humanoid:IsA("Humanoid") and charModel.Name == (if plr then plr.Name else Players.LocalPlayer.Name) then
+                    charModel.Archivable = true
+                    char = charModel:Clone()
+                    charModel.Archivable = false
+                    break
+                end
+            end
+        end
+        
+    else 
+        char = game.ServerStorage.aryoseno11:Clone() 
+    end
+    
+    return char
+end
+
+local function getEnumItemFromName(enum : Enum, enumItemName : string) 
+    local enumItem 
+    for _, item : EnumItem in pairs(enum:GetEnumItems()) do
+        if item.Name == enumItemName then
+            enumItem = item
+            break
+        end
+    end
+    return enumItem
 end
 
 local function getAnimInfo(
@@ -87,14 +134,16 @@ function getButton(
     local out = _new("TextButton")({
         Name = buttonName .. "Button",
         LayoutOrder = order,
-        AutoButtonColor = true,
         BackgroundTransparency = 0,
-        AutomaticSize = Enum.AutomaticSize.X,
+        BackgroundColor3 = TERTIARY_COLOR,
         Size = UDim2.fromScale(0, 0.05),
+        AutomaticSize = Enum.AutomaticSize.X,
         TextXAlignment = Enum.TextXAlignment.Center,
         RichText = true,
+        AutoButtonColor = true,
+        Font = Enum.Font.Gotham,
         Text = "\t<b>" .. buttonName .. "</b>\t",
-        TextColor3 = SECONDARY_COLOR,
+        TextColor3 = TEXT_COLOR,
         Children = {
             _new("UICorner")({})
         },
@@ -127,16 +176,13 @@ function getImageButton(
     local button = _new("ImageButton")({
         Name = buttonName,
         LayoutOrder = order,
-        BackgroundColor3 = BACKGROUND_COLOR,
-        BackgroundTransparency = 0.5,
+        BackgroundColor3 = TERTIARY_COLOR,
+        BackgroundTransparency = 0,
         Size = UDim2.fromScale(0.5, 0.1),
         AutoButtonColor = true,
         Image = "rbxassetid://" .. tostring(ImageId),
         Children = {
-            _new("UIStroke")({
-                Thickness = 2,
-                Color = PRIMARY_COLOR
-            }),
+           
             _new("UICorner")({}),
             _new("UIAspectRatioConstraint")({}),
             _new("TextLabel")({
@@ -145,6 +191,7 @@ function getImageButton(
                 BackgroundColor3 = BACKGROUND_COLOR,
                 Size = UDim2.fromScale(1, 0.3),
                 Position = UDim2.fromScale(1.2, 0.5),
+                Font = Enum.Font.Gotham,
                 Text = buttonName,
                 TextColor3 = PRIMARY_COLOR,
                 TextStrokeColor3 = SECONDARY_COLOR,
@@ -183,6 +230,7 @@ local function getViewport(
     })
 
     local out = _new("ViewportFrame")({
+        BackgroundColor3 = BACKGROUND_COLOR,
         CurrentCamera = currentCam,
         Children = {
             _new("UICorner")({}),
@@ -267,6 +315,7 @@ return function(
                 LayoutOrder = 1,
                 BackgroundTransparency = 1,
                 Size = UDim2.fromScale(1, 0.1),
+                Font = Enum.Font.Gotham,
                 Text = _Computed(function(items : {[number] : ToolData})
                     local text = "" 
                     for _,v in pairs(items) do
@@ -315,6 +364,7 @@ return function(
                         BackgroundTransparency = 0.5,
                         AutomaticSize = Enum.AutomaticSize.XY,
                         TextSize = 14,
+                        Font = Enum.Font.Gotham,
                         Text = if KeyboardEnabled then "L Click" elseif TouchEnabled then "Touch" elseif GamepadEnabled then "A" else nil,
                         TextColor3 = PRIMARY_COLOR
                     }),
@@ -387,8 +437,6 @@ return function(
             ))({
                 LayoutOrder = 2,
                 Size = UDim2.fromScale(1, 0.1),
-                BackgroundTransparency = 0.5,
-                BackgroundColor3 = BACKGROUND_COLOR,
                 Parent = onEquipFrame
             })
 
@@ -431,17 +479,13 @@ return function(
                         VerticalAlignment = Enum.VerticalAlignment.Center
                     }),   
                     getImageButton(maid, 2815418737, function()
-                        print(UIStatus:Get())
                         UIStatus:Set(if UIStatus:Get() ~= "Backpack" then "Backpack" else nil)
-                        print(UIStatus:Get())
                     end, "Backpack", 1),
-                    getImageButton(maid, 11127689024, function()
+                    getImageButton(maid, 11955884948, function()
                         UIStatus:Set(if UIStatus:Get() ~= "Animation" then "Animation" else nil)
-                        print(UIStatus:Get())
                     end, "Animation", 2),
                     getImageButton(maid, 13285102351, function()
                         UIStatus:Set(if UIStatus:Get() ~= "Customization" then "Customization" else nil)
-                        print(UIStatus:Get())
                     end, "Customization", 3)
                     --getImageButton(maid, 227600967),
 
@@ -463,6 +507,19 @@ return function(
         ) 
         exitButton.Instance.Parent = ui:FindFirstChild("ContentFrame")
     end
+
+    local onCatalogTry = maid:GiveTask(Signal.new())
+    local onCustomizeColor = maid:GiveTask(Signal.new())
+    local onCatalogDelete = maid:GiveTask(Signal.new())
+
+    local onCustomizationSave = maid:GiveTask(Signal.new())
+    local onSavedCustomizationLoad = maid:GiveTask(Signal.new())
+    local onSavedCustomizationDelete = maid:GiveTask(Signal.new())
+
+    local onRPNameChange = maid:GiveTask(Signal.new())
+    local onDescChange = maid:GiveTask(Signal.new())
+
+    local saveList = _Value({})
   
     local strval = _Computed(function(status : UIStatus)
         statusMaid:DoCleaning() 
@@ -522,52 +579,283 @@ return function(
 
             getExitButton(animationUI)
         elseif status == "Customization" then
-            local onCustomeButtonClick = statusMaid:GiveTask(Signal.new())
-
-            local CustomizationUI = CustomizationUI(
+            local customizationUI = NewCustomizationUI(
                 statusMaid,
-                CustomizationList,
-                onCustomeButtonClick,
 
-                nameOnCustomize,
-                onCharacterReset
-            ) :: Frame
-            CustomizationUI.Parent = out
+                onCatalogTry,
+                onCustomizeColor,
 
-            statusMaid:GiveTask(onCustomeButtonClick:Connect(function(custom : CustomizationList.Customization, isEquipped : ValueState<boolean>?, selectedBundle : ValueState<CustomizationList.Customization ?>)
-                if game:GetService("RunService"):IsRunning() then
-                  --  CustomizationUtil.Customize(game.Players.LocalPlayer, custom.TemplateId)
-                end
-                if isEquipped  and game:GetService("RunService"):IsRunning() then 
-                    print("Custome clicked ", custom.Name, custom.TemplateId) 
+                onCatalogDelete,
+                onCustomizationSave,
+                onSavedCustomizationLoad,
+                onSavedCustomizationDelete,
 
-                    local player = Players.LocalPlayer
-                    local character = player.Character or player.CharacterAdded:Wait()
-                    
-                    local equipped 
-                    for _,v in pairs(character:GetChildren()) do
-                        if v:IsA("Accessory") and (CustomizationUtil.getAccessoryId(v) == custom.TemplateId) then
-                            equipped = v
-                            break
+                onRPNameChange,
+                onDescChange,
+
+                saveList,
+
+                function(param)
+                    local list = {"All"}
+                    if param:lower() == "featured" then
+                    elseif param:lower() == "faces" then
+                        table.clear(list)
+                        --local cat = CatalogSearchParams.new()
+                        --cat.AssetTypes = {Enum.AssetType.DynamicHead}
+                        table.insert(list, "Classic")
+                        table.insert(list, "3D")
+                        table.insert(list, "Dynamic")
+                    elseif param:lower() == "clothing" then
+                        table.insert(list, "Shirts")
+                        table.insert(list, "Pants")
+                        table.insert(list, "Jackets")
+                        table.insert(list, "TShirts")
+                        table.insert(list, "Shoes")
+                    elseif param:lower() == "accessories" then
+                        table.insert(list, "Hats")
+                        table.insert(list, "Faces")
+                        table.insert(list, "Necks")
+                        table.insert(list, "Shoulder")
+                        table.insert(list, "Front")
+                        table.insert(list, "Back")
+                        table.insert(list, "Waist")
+                    elseif param:lower() == "Hair" then
+                    elseif param:lower() == "packs" then 
+                        table.insert(list, "Animation Packs")
+                        table.insert(list, "Emotes")
+                        table.insert(list, "Bundles")
+                    end
+                    return list
+                end,
+
+                function(
+                    category : string, 
+                    subCategory : string,
+                    keyWord : string,
+
+                    catalogSortType : Enum.CatalogSortType ?, 
+                    catalogSortAggregation : Enum.CatalogSortAggregation ?, 
+                    creatorType : Enum.CreatorType ?,
+
+                    minPrice : number ?,
+                    maxPrice : number ?
+                )
+                    keyWord = " " .. keyWord
+
+                    local params = CatalogSearchParams.new()
+                    params.SortType = catalogSortType or params.SortType
+                    params.SortAggregation = catalogSortAggregation or params.SortAggregation
+                    params.IncludeOffSale = false
+                    params.MinPrice = minPrice or params.MinPrice
+                    params.MaxPrice = maxPrice or params.MaxPrice
+
+                    -- print(params.SortAggregation, catalogSortAggregation)
+                    category = category:lower()
+                    subCategory = subCategory:lower()
+
+                    if category == "featured" then
+                        params.CategoryFilter = Enum.CatalogCategoryFilter.Featured
+                    elseif category == "faces" then
+                        params.AssetTypes = {Enum.AvatarAssetType.Face, Enum.AvatarAssetType.FaceAccessory}
+                        if subCategory == "classic" then
+                            params.AssetTypes = {Enum.AvatarAssetType.Face}
+                        elseif subCategory == "3d" then
+                            params.SearchKeyword = "3D face";
+                            params.AssetTypes = {Enum.AvatarAssetType.FaceAccessory} 
+                        elseif subCategory == "dynamic" then
+                            params.AssetTypes = {} 
+                            params.BundleTypes = {Enum.BundleType.DynamicHead}
+                        end
+                    elseif category == "clothing" then
+                        params.AssetTypes = {
+                            Enum.AvatarAssetType.Shirt,
+                            Enum.AvatarAssetType.Pants,
+                            Enum.AvatarAssetType.TShirt,
+
+                            Enum.AvatarAssetType.JacketAccessory,
+                            Enum.AvatarAssetType.ShirtAccessory,
+                            Enum.AvatarAssetType.TShirtAccessory,
+                            Enum.AvatarAssetType.PantsAccessory,
+
+                            Enum.AvatarAssetType.LeftShoeAccessory,
+                            Enum.AvatarAssetType.RightShoeAccessory,
+                        }
+                        
+                        if subCategory == "shirts" then
+                            params.AssetTypes = {
+                                Enum.AvatarAssetType.Shirt,
+                                Enum.AvatarAssetType.ShirtAccessory,
+                            }
+                        elseif subCategory == "pants" then
+                            params.AssetTypes = {
+                                Enum.AvatarAssetType.Pants,
+                                Enum.AvatarAssetType.PantsAccessory,
+                            }
+                        elseif subCategory == "tshirts" then
+                            params.AssetTypes = {
+                                Enum.AvatarAssetType.TShirt,
+                                Enum.AvatarAssetType.TShirtAccessory,
+                            }
+                        elseif subCategory == "jackets" then
+                            params.AssetTypes = {
+                                Enum.AvatarAssetType.JacketAccessory,
+                            }
+                        elseif subCategory == "shoes" then
+                            params.BundleTypes = {
+                                Enum.BundleType.Shoes,
+                            }
+                            params.AssetTypes = {}
+                        end
+                    elseif category == "accessories" then
+                        params.AssetTypes = {
+                            Enum.AvatarAssetType.Hat,
+                            Enum.AvatarAssetType.FaceAccessory,
+                            Enum.AvatarAssetType.NeckAccessory,
+                            Enum.AvatarAssetType.ShoulderAccessory,
+                            Enum.AvatarAssetType.FrontAccessory,
+                            Enum.AvatarAssetType.BackAccessory,
+                            Enum.AvatarAssetType.WaistAccessory
+                        }
+                        
+                        if subCategory == "hats" then
+                            params.AssetTypes = {
+                                Enum.AvatarAssetType.Hat
+                            }
+                        elseif subCategory == "faces" then
+                            params.AssetTypes = {
+                                Enum.AvatarAssetType.FaceAccessory
+                            }
+                        elseif subCategory == "necks" then
+                            params.AssetTypes = {
+                                Enum.AvatarAssetType.NeckAccessory
+                            }
+                        elseif subCategory == "shoulder" then
+                            params.AssetTypes = {
+                                Enum.AvatarAssetType.ShoulderAccessory
+                            }
+                        elseif subCategory == "front" then
+                            params.AssetTypes = {
+                                Enum.AvatarAssetType.FrontAccessory
+                            }
+                        elseif subCategory == "back" then
+                            params.AssetTypes = {
+                                Enum.AvatarAssetType.BackAccessory
+                            }
+                        elseif subCategory == "waist" then
+                            params.AssetTypes = {
+                                Enum.AvatarAssetType.WaistAccessory
+                            }
+                        end
+                    elseif category == "hair" then
+                        params.AssetTypes = {
+                            Enum.AvatarAssetType.HairAccessory,
+                        }
+                    elseif category == "packs" then
+                        local assetTypes = {}
+
+                        for _,v : Enum.AvatarAssetType in pairs(Enum.AvatarAssetType:GetEnumItems()) do
+                            if string.find(v.Name:lower(), "animation") then
+                                table.insert(assetTypes, v)
+                            end
+                        end
+                        
+                        params.AssetTypes = assetTypes
+                        params.BundleTypes = {Enum.BundleType.Animations, Enum.BundleType.BodyParts}
+
+                        if subCategory == "animation packs" then
+                            params.AssetTypes = {}
+                            params.BundleTypes = {Enum.BundleType.Animations}
+                        elseif subCategory == "emotes" then
+                            params.AssetTypes = assetTypes
+                            params.BundleTypes = {}
+                        elseif subCategory == "bundles" then
+                            params.AssetTypes = {}
+                            params.BundleTypes = {Enum.BundleType.BodyParts}
                         end
                     end
 
-                    local bundleId = CustomizationUtil.getBundleIdFromCharacter(character)
-                    if bundleId == custom.TemplateId then
-                        equipped = true
-                        selectedBundle:Set(custom)
-                    end
-                   -- local currentAccessory = character:FindFirstChild(customeModelName)
-                    isEquipped:Set(if equipped then true else false)
-                elseif isEquipped and not game:GetService("RunService"):IsRunning() then
-                    isEquipped:Set(not isEquipped:Get())
-                end
-            end))
+                    params.SearchKeyword = params.SearchKeyword .. keyWord
 
-            getExitButton(CustomizationUI)
+                    local catalogPages 
+                    local function getCatalogPages()
+                        local s, e = pcall(function() 
+                            catalogPages = AvatarEditorService:SearchCatalog(params) 
+                        end)
+                        return s,e
+                    end
+                    local s, e =  getCatalogPages()
+                    if not s and type(e) == "string" then
+                        warn("Error: " .. e)
+                        return catalogPages
+                    end            
+
+                    return catalogPages
+                end,
+                function(avatarAssetType : Enum.AvatarAssetType, itemTypeName : string, id : number)
+                    local recommendeds =  AvatarEditorService:GetRecommendedAssets(avatarAssetType, id)
+                    local catalogInfos = {}
+
+                    for _,v in pairs(recommendeds) do
+                        local SimplifiedCatalogInfo = {} :: any
+                        SimplifiedCatalogInfo.Id = v.Item.AssetId
+                        SimplifiedCatalogInfo.Name = v.Item.Name
+                        SimplifiedCatalogInfo.ItemType = itemTypeName
+                        SimplifiedCatalogInfo.CreatorName = v.Creator.Name
+                        SimplifiedCatalogInfo.Price = v.Product.PriceInRobux
+                        table.insert(catalogInfos, SimplifiedCatalogInfo)
+                    end
+                    
+                    return catalogInfos
+                end,
+                _Value(true)
+            )
+
+            customizationUI.Parent = target
         end
         return ""
     end, UIStatus)
+
+    
+    maid:GiveTask(onCatalogTry:Connect(function(catalogInfo : NewCustomizationUI.SimplifiedCatalogInfo, char : ValueState<Model>)
+        local itemType = getEnumItemFromName(Enum.AvatarItemType, catalogInfo.ItemType)
+
+        CustomizationUtil.Customize(Player, catalogInfo.Id, itemType :: Enum.AvatarItemType)
+        char:Set(getCharacter(true))
+    end))
+
+    maid:GiveTask(onCustomizeColor:Connect(function(color : Color3, char : ValueState<Model>)
+        CustomizationUtil.CustomizeBodyColor(Player, color)
+        char:Set(getCharacter(true))
+        return
+    end))
+
+    maid:GiveTask(onCatalogDelete:Connect(function(catalogInfo : NewCustomizationUI.SimplifiedCatalogInfo, char : ValueState<Model>)
+        local itemType = getEnumItemFromName(Enum.AvatarItemType, catalogInfo.ItemType) 
+        CustomizationUtil.DeleteCatalog(Player, catalogInfo.Id, itemType :: Enum.AvatarItemType)
+        char:Set(getCharacter(true))
+    end))
+
+    maid:GiveTask(onCustomizationSave:Connect(function()
+        local saveData = NetworkUtil.invokeServer(SAVE_CHARACTER_SLOT)
+        saveList:Set(saveData)
+    end))
+
+    maid:GiveTask(onSavedCustomizationLoad:Connect(function(k, content)
+        local saveData =  NetworkUtil.invokeServer(LOAD_CHARACTER_SLOT, k, content)
+        saveList:Set(saveData)
+    end))
+
+    maid:GiveTask(onSavedCustomizationDelete:Connect(function(k, content)
+        local saveData = NetworkUtil.invokeServer(DELETE_CHARACTER_SLOT, k, content)
+        saveList:Set(saveData)
+    end))
+
+    maid:GiveTask(onRPNameChange:Connect(function(inputted : string)
+        print("On RP Change :", inputted) 
+    end))
+    maid:GiveTask(onDescChange:Connect(function(inputted : string)
+        print("On Desc change :", inputted)
+    end))
 
     local strVal = _new("StringValue")({
         Value = strval  

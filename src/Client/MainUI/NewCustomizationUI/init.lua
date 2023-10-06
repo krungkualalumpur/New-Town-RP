@@ -1171,7 +1171,8 @@ local function getDefaultList(
             Content : any
         }
     },
-    previewModel : Model
+    getPreviewModel : ((... any) -> Model) | Model,
+    getParams : {[number] : any} ?
 )
     local _fuse = ColdFusion.fuse(maid)
     local _new = _fuse.new
@@ -1182,15 +1183,9 @@ local function getDefaultList(
     local _Value = _fuse.Value
     local _Computed = _fuse.Computed
 
-    previewModel:PivotTo(CFrame.new())
-
-    local viewport = getViewportFrame(
-        maid, 
-        1, 
-        Vector3.new(0,0,-5),
-        previewModel
-    )    
-
+    if typeof(getPreviewModel) == "Instance" and getPreviewModel:IsA("Model") then
+        getPreviewModel:PivotTo(CFrame.new())
+    end
     local listsFrame =  _new("Frame")({
         LayoutOrder = 3,
         BackgroundTransparency = 1,
@@ -1220,7 +1215,7 @@ local function getDefaultList(
         button.Parent = listsFrame
     end
 
-    return _new("Frame")({
+    local out = _new("Frame")({
         BackgroundColor3 = BACKGROUND_COLOR,
         Size = UDim2.fromScale(1, 0.2),
         Children = {
@@ -1230,15 +1225,7 @@ local function getDefaultList(
                 FillDirection = Enum.FillDirection.Horizontal,
                 Padding = UDim.new(PADDING_SIZE_SCALE.Scale*0.1, PADDING_SIZE_SCALE.Offset*0.1)
             }),
-            _bind(viewport)({
-                BackgroundTransparency = 1,
-                Size = UDim2.fromScale(0.35, 1),
-                Children = {
-                    _new("UIAspectRatioConstraint")({
-                        AspectRatio = 1
-                    })
-                }
-            }),
+          
             _new("TextLabel")({
                 LayoutOrder = 2,
                 BackgroundTransparency = 1,
@@ -1252,6 +1239,48 @@ local function getDefaultList(
            
         }
     })
+
+    if typeof(getPreviewModel) == "function" then
+        task.spawn(function()
+            print(table.unpack(getParams or {}))
+            local viewport = getViewportFrame(
+                maid, 
+                1, 
+                Vector3.new(0,0,-5),
+                if getParams then  getPreviewModel(table.unpack(getParams)) else getPreviewModel()
+            )    
+
+            _bind(viewport)({
+                BackgroundTransparency = 1,
+                Size = UDim2.fromScale(0.35, 1),
+                Children = {
+                    _new("UIAspectRatioConstraint")({
+                        AspectRatio = 1
+                    })
+                },
+                Parent = out
+            })
+        end)
+    elseif typeof(getPreviewModel) == "Model" then
+        local viewport = getViewportFrame(
+            maid, 
+            1, 
+            Vector3.new(0,0,-5),
+            getPreviewModel
+        )    
+
+        _bind(viewport)({
+            BackgroundTransparency = 1,
+            Size = UDim2.fromScale(0.35, 1),
+            Children = {
+                _new("UIAspectRatioConstraint")({
+                    AspectRatio = 1
+                })
+            }
+        })
+    end
+
+    return out
 end
 
 local function getDisplayCharacterFromCharacterData(charData : CustomizationUtil.CharacterData) 
@@ -1328,7 +1357,6 @@ return function(
     local CurrentCategory : ValueState<Category?> = _Value(nil) :: any
  
     local onSettingsVisible = _Value(false) 
-
     
     local mainMenuPage =  _new("Frame")({
         Size = UDim2.fromScale(0.68, 1),
@@ -1562,16 +1590,7 @@ return function(
                 VerticalAlignment = Enum.VerticalAlignment.Center,
                 Padding = PADDING_SIZE
             },
-            _bind(getTextBox(
-                maid, 
-                1, 
-                "Enter Item Link...",
-                function()
-                    
-                end
-            ))({
-                Size = UDim2.fromScale(0.3, 1),
-            }),
+           
             _bind(getImageButton(
                 maid,
                 2,
@@ -2037,7 +2056,7 @@ return function(
                                                 Size = UDim2.fromScale(1, 1),
                                                 Font = Enum.Font.Gotham,
                                                 Text = _Computed(function(catalogInfo : CatalogInfo ?)
-                                                    return if catalogInfo then spacifyStr(catalogInfo.AssetType) else "N/A"
+                                                    return if catalogInfo and catalogInfo.AssetType then spacifyStr(catalogInfo.AssetType) else "N/A"
                                                 end, currentCatalogInfo),  
                                                 TextSize = TEXT_SIZE,
                                                 TextColor3 = TEXT_COLOR,
@@ -2282,6 +2301,55 @@ return function(
         end, currentPage)
     })
 
+    local function getLoadingFunction(parent : Instance)   
+        local _maid = Maid.new()
+
+        local _fuse = ColdFusion.fuse(_maid)
+        local _new = _fuse.new
+
+        local out = _new("Frame")({
+            Parent = parent,
+            BackgroundTransparency = 1,
+            Size = UDim2.fromScale(1, 1),
+            Children = {
+                _new("UIListLayout")({
+                    SortOrder = Enum.SortOrder.LayoutOrder,
+                    HorizontalAlignment = Enum.HorizontalAlignment.Center,
+                    VerticalAlignment = Enum.VerticalAlignment.Center
+                })
+            }
+        })
+        
+        _bind(getLoadingFrame(_maid, 2, out))({
+            LayoutOrder = -1,
+            Size = UDim2.fromScale(0.5, 0.5),
+            Visible = true
+        })
+
+        _maid:GiveTask(out.Destroying:Connect(function()
+            _maid:Destroy()
+        end))
+        return out
+    end
+
+    _bind(getTextBox(
+        maid, 
+        1, 
+        "Enter Item Link...",
+        function(textInput : string)
+            local id = textInput:match("%d+")
+
+            local catalogInfo : CatalogInfo = AvatarEditorService:GetItemDetails(id, Enum.AvatarItemType.Asset)
+            currentPage:Set(catalogInfoPage)
+            local catalogLoadingFrame = getLoadingFunction(catalogInfoPage)
+            currentCatalogInfo:Set(catalogInfo)
+            catalogLoadingFrame:Destroy()
+        end
+    ))({
+        Size = UDim2.fromScale(0.3, 1),
+        Parent = categoryPageFooter
+    })
+
     local interactableColorWheel = _new("ImageButton")({
         Name = "ColorWheel",
         BackgroundTransparency = 1,
@@ -2464,6 +2532,14 @@ return function(
                                 BackgroundColor3 = TERTIARY_COLOR,
                                 Size = UDim2.fromScale(0.08, 0.25),
                                 Text = _Computed(function(color : Color3)
+                                    local charModel = char:Get()
+                                    if charModel then
+                                        for _,v in pairs(charModel:GetChildren()) do
+                                            if v:IsA("BasePart") then
+                                                v.Color = color
+                                            end
+                                        end
+                                    end
                                     return "\t" .. tostring(math.round(color.R*255)) .. "\t"
                                 end, selectedColor),
                                 TextScaled = true,
@@ -2531,6 +2607,7 @@ return function(
                                 VerticalAlignment = Enum.VerticalAlignment.Bottom
                             }),
                             _bind(getButton(maid, 1, "X", function()
+                                char:Set(getCharacter(true))
                                 currentPage:Set(mainMenuPage)
                             end, RED_COLOR))({
                                 Name = "Cancel",
@@ -2564,7 +2641,7 @@ return function(
         --adjusting char
         local sliderIsVisible = (page == colorWheelPage) 
         if sliderIsVisible then
-            local charModel = char:Get()
+            local charModel = getCharacter(true) --char:Get()
             local humanoid = charModel:FindFirstChild("Humanoid") :: Humanoid ?
             local humanoidDesc =  if humanoid then humanoid:GetAppliedDescription() else nil 
             if humanoidDesc then
@@ -2962,7 +3039,8 @@ return function(
             colorWheelPage,
             saveListPage
         }
-    })
+    }) :: Frame
+
     --currentPage:Set(mainMenuPage)
         --sub-categories
     local function getSubCategoryListFrame(categPage : Instance)
@@ -2996,7 +3074,7 @@ return function(
         )
             for k,v : CatalogInfo  in pairs(catalogPage:GetCurrentPage()) do
                 if ((creatorType == nil) or (v.CreatorType == creatorType.Name)) and ((creatorName == nil) or (v.CreatorName:lower():find(creatorName:lower()))) then
-                    local buttonMaid = Maid.new()
+                    local buttonMaid = catalogPageMaid:GiveTask(Maid.new())
 
                     local _fuse = ColdFusion.fuse(buttonMaid)
                     local _new = _fuse.new
@@ -3006,7 +3084,7 @@ return function(
 
                     local selectedButton = _Value(false)
 
-                    local catalogButton = catalogPageMaid:GiveTask(getCatalogButton(buttonMaid, k,  v, {
+                    local catalogButton = getCatalogButton(buttonMaid, k,  v, {
                         [1] = {
                             Name = "Try",
                             Signal = onCatalogTry
@@ -3015,7 +3093,7 @@ return function(
                             Name = "More Info",
                             Signal = onMoreInfoClick
                         }
-                    }, selectedButton, char, if (v.BundleType ~= Enum.BundleType.Animations.Name and (v.AssetType ~= Enum.AssetType.Animation.Name and v.AssetType ~= Enum.AssetType.EmoteAnimation.Name)) then true else false))
+                    }, selectedButton, char, if (v.BundleType ~= Enum.BundleType.Animations.Name and (v.AssetType ~= Enum.AssetType.Animation.Name and v.AssetType ~= Enum.AssetType.EmoteAnimation.Name)) then true else false)
                     catalogButton.Parent = categoryContent
                     
                     buttonMaid:GiveTask(catalogButton.Activated:Connect(function()
@@ -3201,8 +3279,10 @@ return function(
         end))
 
         maid:GiveTask(onMoreInfoClick:Connect(function(catalogInfo : CatalogInfo)
-            currentCatalogInfo:Set(catalogInfo)
             currentPage:Set(catalogInfoPage)
+            local catalogLoadingFrame = getLoadingFunction(catalogInfoPage)
+            currentCatalogInfo:Set(catalogInfo) 
+            catalogLoadingFrame:Destroy()
         end))
 
         
@@ -3470,18 +3550,18 @@ return function(
         }) :: Frame
 
 
-        local exitButton =  maid:GiveTask(ExitButton.new(
+        local settingsExitButton =  ExitButton.new(
             settingsFrame, 
             onSettingsVisible,
             function()
                 onSettingsVisible:Set(false)
                 return 
             end
-        ))
+        )
 
         _new("StringValue")({
             Value = _Computed(function(isVisible : boolean)
-                exitButton.Instance.Parent = settingsFrame            
+                settingsExitButton.Instance.Parent = settingsFrame            
                 return ""
             end, onSettingsVisible)
         })
@@ -3630,8 +3710,7 @@ return function(
                 saveListsMaid:DoCleaning()
 
                 for k,v in pairs(list) do
-                    local charModel = CustomizationUtil.getAvatarPreviewByCharacterData(v) or char:Get():Clone()   --getDisplayCharacterFromCharacterData(v.CharacterData) --char:Get():Clone()
-                    print(#v.Accessories)
+                       --getDisplayCharacterFromCharacterData(v.CharacterData) --char:Get():Clone()
                     local listFrame = getDefaultList(
                         saveListsMaid,
                         k,
@@ -3648,7 +3727,8 @@ return function(
                                 Content = v
                             }
                         },
-                        charModel
+                        if RunService:IsRunning() then CustomizationUtil.getAvatarPreviewByCharacterData else getCharacter(true),
+                        {v}
                     )
                     listFrame.Parent = savesListContent
                 end
@@ -3657,6 +3737,29 @@ return function(
             end, saveList)
         })
     end
+
+    --[[local isMainMenuVisible = _Value(mainMenuPage.Visible)
+    _new("StringValue")({
+        Value = _Computed(function(page : GuiObject ?)
+            if page == mainMenuPage then 
+                isMainMenuVisible:Set(true)
+            else
+                isMainMenuVisible:Set(false)
+            end
+            return ""
+        end, currentPage)
+    })]]
+    local exitButton = ExitButton.new(
+        mainMenuPage, 
+        isVisible,
+        function()
+            isVisible:Set(false)
+            return 
+        end
+    )
+    _bind(exitButton.Instance)({
+        Enabled = isVisible
+    })
     --[[for i = 1, 10 do
         local button = getAccessoryButton(maid, i, {
             [1] = {

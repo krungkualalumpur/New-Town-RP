@@ -32,7 +32,7 @@ return function(target : CoreGui)
     })) :: GuiObject]]
     local isExitButtonVisible = _Value(true)
 
-    local frame = _maid:GiveTask(ExitButton.new(exampleFrame, isExitButtonVisible))
+    local frame = ExitButton.new(exampleFrame, isExitButtonVisible)
     frame.Instance.Parent = target
     
     return function()

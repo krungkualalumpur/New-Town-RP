@@ -54,17 +54,14 @@ return function(target : CoreGui)
     local charSaveExample = game:GetService("ServerStorage"):WaitForChild("aryoseno11") :: Model
 
     local saves = _Value({
-        [1] = {
-            CharacterData = CustomizationUtil.GetInfoFromCharacter(charSaveExample:Clone())
-        }
+        [1] = CustomizationUtil.GetInfoFromCharacter(charSaveExample:Clone())
     })
 
     task.spawn(function()
         task.wait(10)
         saves:Set({
-            [1] = {
-                CharacterData = CustomizationUtil.GetInfoFromCharacter(charSaveExample:Clone())
-            }
+            [1] = CustomizationUtil.GetInfoFromCharacter(charSaveExample:Clone())
+            
         })
     end) 
 

@@ -41,6 +41,7 @@ export type ABType = ManagerTypes.ABType
 --constants
 local MAX_TOOLS_COUNT = 10
 local MAX_VEHICLES_COUNT = 5
+local MAX_CHARACTER_SLOT = 3
 
 local SAVE_DATA_INTERVAL = 60
 
@@ -541,18 +542,21 @@ function PlayerManager:SetData(plrData : ManagerTypes.PlayerData)
 end
 
 function PlayerManager:SaveCharacterSlot(characterData : CustomizationUtil.CharacterData ?)
+    if #self.CharacterSaves >= MAX_CHARACTER_SLOT then
+        NotificationUtil.Notify(self.Player, "You reached maximum amount of character saves!")
+        return self.CharacterSaves
+    end
+    
     local char = self._Maid.CharacterModel
     if char then
         table.insert(self.CharacterSaves,  characterData or table.clone(CustomizationUtil.GetInfoFromCharacter(char)))
     end
-    print(self.CharacterSaves)
     return self.CharacterSaves
 end
 
 function PlayerManager:LoadCharacterSlot(characterDataKey : number)
     local data = self:GetData()
     data.Character = self.CharacterSaves[characterDataKey]
-    print(characterDataKey)
     self:SetData(data)
     return self.CharacterSaves
 end
