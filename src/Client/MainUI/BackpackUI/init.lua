@@ -20,7 +20,7 @@ type ValueState<T> = ColdFusion.ValueState<T>
 type State<T> = ColdFusion.State<T>
 
 --constants
-local BACKGROUND_COLOR = Color3.fromRGB(190,190,190)
+local BACKGROUND_COLOR = Color3.fromRGB(90,90,90)
 local PRIMARY_COLOR = Color3.fromRGB(255,255,255)
 local SECONDARY_COLOR = Color3.fromRGB(25,25,25)
 local PADDING_SIZE = UDim.new(0,15)
@@ -45,8 +45,9 @@ local function getButton(
     local out = _new("TextButton")({
         AutoButtonColor = true,
         BackgroundColor3 = SECONDARY_COLOR,
-        BackgroundTransparency = 0.6,
+        BackgroundTransparency = 0,
         Size = UDim2.fromScale(1, 0.5),
+        Font = Enum.Font.Gotham,
         Text = text,
         TextStrokeTransparency = 0.5,
         TextColor3 = PRIMARY_COLOR,
@@ -121,9 +122,40 @@ local function getItemButton(
         else CFrame.new()) else nil
     })
 
+    local optionButtonsPosition = _Value(UDim2.new(2,0,0,0))
+
+    local optionButtonsFrame = _new("Frame")({
+        LayoutOrder = 1,
+        BackgroundTransparency = 1,
+        Position = optionButtonsPosition:Tween(0.1),
+        Size = UDim2.fromScale(1,1),
+        Children = {
+            _new("UIListLayout")({
+                VerticalAlignment = Enum.VerticalAlignment.Bottom,
+                Padding = UDim.new(PADDING_SIZE.Scale*0.5, PADDING_SIZE.Offset*0.5),
+            }),
+            getButton(
+                maid, 
+                if not itemInfo.IsEquipped then "Equip" else "Unequip",
+                function()
+                    onBackpackButtonEquipClickSignal:Fire(key, if not itemInfo.IsEquipped then itemInfo.Name else nil)
+                end
+            ),
+            getButton(
+                maid, 
+                "Delete",
+                function()
+                    onBackpackButtonDeleteClickSignal:Fire(key, itemInfo.Name)
+                end
+            )
+            --getButton(maid, text, fn)
+        }
+    })
+
     local out = _new("ImageButton")({
-        BackgroundTransparency = 0.5,
-        BackgroundColor3 = SECONDARY_COLOR,
+        BackgroundTransparency = 0,
+        ClipsDescendants = true,
+        BackgroundColor3 = BACKGROUND_COLOR,
         Children = {
             _new("UIStroke")({
                 Color = SECONDARY_COLOR,
@@ -139,7 +171,16 @@ local function getItemButton(
                 Size = UDim2.fromScale(1, 0.25),
                 TextColor3 = PRIMARY_COLOR,
                 TextStrokeTransparency = 0.5,
-                Text = itemInfo.Name
+                Font = Enum.Font.Gotham,
+                Text = itemInfo.Name,
+                TextScaled = true,
+                TextWrapped = true,
+                Children = {
+                    _new("UITextSizeConstraint")({
+                        MaxTextSize = 15,
+                        MinTextSize = 0,
+                    })
+                }
             }),
             _new("ViewportFrame")({
                 LayoutOrder = 2,
@@ -154,25 +195,8 @@ local function getItemButton(
                         PaddingLeft = PADDING_SIZE,
                         PaddingRight = PADDING_SIZE
                     }),
-                    _new("UIListLayout")({
-                        VerticalAlignment = Enum.VerticalAlignment.Bottom,
-                        Padding = UDim.new(PADDING_SIZE.Scale*0.5, PADDING_SIZE.Offset*0.5),
-                    }),
-
-                    getButton(
-                        maid, 
-                        if not itemInfo.IsEquipped then "Equip" else "Unequip",
-                        function()
-                            onBackpackButtonEquipClickSignal:Fire(key, if not itemInfo.IsEquipped then itemInfo.Name else nil)
-                        end
-                    ),
-                    getButton(
-                        maid, 
-                        "Delete",
-                        function()
-                            onBackpackButtonDeleteClickSignal:Fire(key, itemInfo.Name)
-                        end
-                    ),
+                   
+                    optionButtonsFrame,
 
                     viewportCam,
                     _new("WorldModel")({
@@ -182,6 +206,14 @@ local function getItemButton(
                     })
                 }
             })
+        },
+        Events = {
+            MouseEnter = function()
+                optionButtonsPosition:Set(UDim2.fromScale(0, 0))
+            end,
+            MouseLeave = function()
+                optionButtonsPosition:Set(UDim2.fromScale(2, 0))
+            end
         }
     })
 
@@ -242,6 +274,7 @@ local function getItemTypeFrame(
                 LayoutOrder = 1,
                 TextSize = 25,
                 RichText = true,
+                Font = Enum.Font.Gotham,
                 Text = typeName,
                 TextColor3 = PRIMARY_COLOR,
                 TextStrokeTransparency = 0.5,
@@ -294,7 +327,7 @@ return function(
         Visible = isVisible,
         AutomaticCanvasSize = Enum.AutomaticSize.Y,
         CanvasSize = UDim2.new(),
-        BackgroundColor3 = SECONDARY_COLOR,
+        BackgroundColor3 = BACKGROUND_COLOR,
         BackgroundTransparency = 0.74,
         Position = UDim2.fromScale(0,0),
         Size = UDim2.fromScale(0.3,1),
@@ -311,6 +344,7 @@ return function(
                 Size = UDim2.fromScale(1, 0.06),
                 RichText = true,
                 TextScaled = true,
+                Font = Enum.Font.Gotham,
                 Text = "<b>Backpack</b>",
                 TextColor3 = PRIMARY_COLOR,
                 TextStrokeTransparency = 0.5

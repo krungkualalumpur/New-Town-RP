@@ -710,31 +710,31 @@ local function getCategoryButton(
             Value = _Computed(function(visible : boolean)
                 if visible then
                     --currentCatalogPage:Get()
-                        catalogPages = catalogPages or getCatalogPages(categoryName, "All", "")
+                    catalogPages = catalogPages or getCatalogPages(categoryName, "All", "")
 
-                        if catalogPages then
-                            local currentCatalogPage = catalogPages:GetCurrentPage()
-                    
-                            local i = 1
-                            
-                            local t = tick()
-                    
-                            _maid.Loop = RunService.RenderStepped:Connect(function()
-                                if tick() - t >= 5 then
-                                    t = tick()
-                                    
-                                    local accessoriesDisplay = {}
-                                                                        
-                                    for _i = 1, (accessoryDisplayCount or 1) do
-                                        table.insert(accessoriesDisplay, currentCatalogPage[i])
-                                        i = if currentCatalogPage[i + 1] then (i + 1) else 1
-                                    end
-                                    catalogDisplays:Set(accessoriesDisplay) 
-
-                                end
-                            end)
-                        end
+                    if catalogPages then
+                        local currentCatalogPage = catalogPages:GetCurrentPage()
                 
+                        local i = 1
+                        
+                        local t = tick()
+                
+                        _maid.Loop = RunService.RenderStepped:Connect(function()
+                            if tick() - t >= 5 then
+                                t = tick()
+                                
+                                local accessoriesDisplay = {}
+                                                                    
+                                for _i = 1, (accessoryDisplayCount or 1) do
+                                    table.insert(accessoriesDisplay, currentCatalogPage[i])
+                                    i = if currentCatalogPage[i + 1] then (i + 1) else 1
+                                end
+                                catalogDisplays:Set(accessoriesDisplay) 
+
+                            end
+                        end)
+                    end
+            
             
                 else
                     _maid.Loop = nil
@@ -2708,6 +2708,51 @@ return function(
         })       
     end
 
+    local savesListHeader = _new("Frame")({
+        LayoutOrder = 1,
+        BackgroundTransparency = 1,
+        Size = UDim2.fromScale(1, 0.05),
+        Children = {
+            _new("UIPadding")({
+                PaddingTop = UDim.new(PADDING_SIZE_SCALE.Scale*0.2, PADDING_SIZE_SCALE.Offset*0.2),
+                PaddingBottom = UDim.new(PADDING_SIZE_SCALE.Scale*0.2, PADDING_SIZE_SCALE.Offset*0.2),
+                PaddingLeft = UDim.new(PADDING_SIZE_SCALE.Scale*0.2, PADDING_SIZE_SCALE.Offset*0.2),
+                PaddingRight = UDim.new(PADDING_SIZE_SCALE.Scale*0.2, PADDING_SIZE_SCALE.Offset*0.2)
+            }),
+            _new("UIListLayout")({
+                SortOrder = Enum.SortOrder.LayoutOrder,
+                FillDirection = Enum.FillDirection.Horizontal,
+                Padding = UDim.new(PADDING_SIZE_SCALE.Scale*0.2, PADDING_SIZE_SCALE.Offset*0.2)
+            }),
+            _bind(getButton(
+                maid, 
+                1,
+                "<",
+                function()
+                    currentPage:Set(mainMenuPage)
+                end
+            ))({
+                Size = UDim2.fromScale(0.1, 1),
+                Children = {
+                    _new("UIAspectRatioConstraint")({
+                        AspectRatio = 1
+                    })
+                }
+            }),
+            _new("TextLabel")({
+                LayoutOrder = 2,
+                BackgroundTransparency = 1,
+                Font = Enum.Font.GothamBold,
+                Size = UDim2.fromScale(0.85, 1),
+                Text = "SAVE LIST",
+                TextColor3 = TEXT_COLOR,
+                TextScaled = true,
+                TextXAlignment = Enum.TextXAlignment.Center
+            })
+        },
+        
+    })
+
     local savesListContent = _new("ScrollingFrame")({
         Name = "SavesListContent",
         LayoutOrder = 2,
@@ -2745,18 +2790,9 @@ return function(
                 VerticalAlignment = Enum.VerticalAlignment.Top,
                 Padding = UDim.new(PADDING_SIZE_SCALE.Scale*0.2, PADDING_SIZE_SCALE.Offset*0.2)
             }),
-            _new("TextLabel")({
-                LayoutOrder = 1,
-                BackgroundTransparency = 1,
-                Size = UDim2.fromScale(1, 0.05),
-                Font = Enum.Font.GothamBold,
-                Text = "SAVE LIST",
-                TextColor3 = TEXT_COLOR,
-                TextScaled = true,
-                TextXAlignment = Enum.TextXAlignment.Center
-            }),
+            savesListHeader,
             savesListContent,
-            _bind(getButton(maid, 3, "+", function()  
+            _bind(getButton(maid, 3, "Add Save", function()  
                 onCustomizationSave:Fire()
             end))({
                 Size = UDim2.fromScale(1, 0.1)
@@ -2989,10 +3025,20 @@ return function(
     
     local out = _new("Frame")({
         Visible = _Computed(function(visible : boolean)
+            local blur = game:GetService("Lighting"):FindFirstChild("Blur") :: BlurEffect
             if visible then
                 local charModel = getCharacter(true)
                 --charModel:PivotTo(CFrame.new())
                 char:Set(charModel) 
+
+                --blurs background
+                if blur then
+                    blur.Enabled = true
+                end
+            else
+                if blur then
+                    blur.Enabled = false
+                end
             end
             
             return visible
