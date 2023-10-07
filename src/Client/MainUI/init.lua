@@ -5,6 +5,7 @@ local Players = game:GetService("Players")
 local UserInputService = game:GetService("UserInputService") 
 local RunService = game:GetService("RunService")
 local AvatarEditorService = game:GetService("AvatarEditorService")
+local MarketplaceService = game:GetService("MarketplaceService")
 --packages
 local Maid = require(ReplicatedStorage:WaitForChild("Packages"):WaitForChild("Maid"))
 local NetworkUtil = require(ReplicatedStorage:WaitForChild("Packages"):WaitForChild("NetworkUtil"))
@@ -511,6 +512,7 @@ return function(
     local onCatalogTry = maid:GiveTask(Signal.new())
     local onCustomizeColor = maid:GiveTask(Signal.new())
     local onCatalogDelete = maid:GiveTask(Signal.new())
+    local onCatalogBuy = maid:GiveTask(Signal.new())
 
     local onCustomizationSave = maid:GiveTask(Signal.new())
     local onSavedCustomizationLoad = maid:GiveTask(Signal.new())
@@ -586,6 +588,8 @@ return function(
                 onCustomizeColor,
 
                 onCatalogDelete,
+                onCatalogBuy,
+
                 onCustomizationSave,
                 onSavedCustomizationLoad,
                 onSavedCustomizationDelete,
@@ -834,6 +838,15 @@ return function(
         CustomizationUtil.DeleteCatalog(Player, catalogInfo.Id, itemType :: Enum.AvatarItemType)
         char:Set(getCharacter(true))
     end))
+
+    maid:GiveTask(onCatalogBuy:Connect(function(catalogInfo : NewCustomizationUI.SimplifiedCatalogInfo, char : ValueState<Model>)
+        local itemType = getEnumItemFromName(Enum.AvatarItemType, catalogInfo.ItemType) 
+
+        MarketplaceService:PromptProductPurchase(Player, catalogInfo.Id)
+        --CustomizationUtil.DeleteCatalog(Player, catalogInfo.Id, itemType :: Enum.AvatarItemType)
+        --char:Set(getCharacter(true))
+    end))
+
 
     maid:GiveTask(onCustomizationSave:Connect(function()
         local saveData = NetworkUtil.invokeServer(SAVE_CHARACTER_SLOT)

@@ -1209,14 +1209,14 @@ local function getDefaultList(
     for k,v in pairs(options) do
         local button = _bind(getButton(maid, k, v.Name, function()
             v.Signal:Fire(order, v.Content)
-        end, SECONDARY_COLOR))({
+        end, BACKGROUND_COLOR))({
             Size = UDim2.fromScale(1, 0.3)
         })
         button.Parent = listsFrame
     end
 
     local out = _new("Frame")({
-        BackgroundColor3 = BACKGROUND_COLOR,
+        BackgroundColor3 = TERTIARY_COLOR,
         Size = UDim2.fromScale(1, 0.2),
         Children = {
             _new("UICorner")({}),
@@ -1294,6 +1294,7 @@ return function(
     onCatalogTry : Signal,
     onCustomizeBodyColor : Signal,
     onCatalogDelete : Signal,
+    onCatalogBuy : Signal,
     onCustomizationSave : Signal,
     onSavedCustomizationLoad : Signal,
     onSavedCustomizationDelete : Signal,
@@ -1506,7 +1507,7 @@ return function(
             }),
             _bind(getButton(maid, 1, "<", function()
                 CurrentCategory:Set(nil)
-            end))({
+            end, TERTIARY_COLOR))({
                 Name = "Back",
                 Size = UDim2.fromScale(0.1, 1),
                 TextScaled = true 
@@ -1699,7 +1700,7 @@ return function(
                     }),
                     _bind(getButton(maid, 1, "<", function()
                         currentPage:Set(categoryPage)
-                    end))({
+                    end, TERTIARY_COLOR))({
                         Name = "Back",
                         Size = UDim2.fromScale(0.1, 1),
                         TextScaled = true 
@@ -1989,6 +1990,7 @@ return function(
                                         "Buy",
                                         function()
                                             --buy action
+                                            onCatalogBuy:Fire(currentCatalogInfo:Get(), char)
                                         end
                                     ))({
                                         BackgroundColor3 = SELECT_COLOR,
@@ -2367,6 +2369,52 @@ return function(
         },
     }) :: ImageButton
    
+    local colorWheelHeader = _new("Frame")({
+        LayoutOrder = 1,
+        BackgroundTransparency = 1,
+        Size = UDim2.fromScale(1, 0.06),
+        Children = {
+            _new("UIPadding")({
+                PaddingTop = UDim.new(PADDING_SIZE_SCALE.Scale*0.2, PADDING_SIZE_SCALE.Offset*0.2),
+                PaddingBottom = UDim.new(PADDING_SIZE_SCALE.Scale*0.2, PADDING_SIZE_SCALE.Offset*0.2),
+                PaddingLeft = UDim.new(PADDING_SIZE_SCALE.Scale*0.2, PADDING_SIZE_SCALE.Offset*0.2),
+                PaddingRight = UDim.new(PADDING_SIZE_SCALE.Scale*0.2, PADDING_SIZE_SCALE.Offset*0.2)
+            }),
+            _new("UIListLayout")({
+                SortOrder = Enum.SortOrder.LayoutOrder,
+                FillDirection = Enum.FillDirection.Horizontal,
+                Padding = UDim.new(PADDING_SIZE_SCALE.Scale*0.2, PADDING_SIZE_SCALE.Offset*0.2)
+            }),
+            _bind(getButton(
+                maid, 
+                1,
+                "<",
+                function()
+                    currentPage:Set(mainMenuPage)
+                end,
+                TERTIARY_COLOR
+            ))({
+                Size = UDim2.fromScale(0.1, 1),
+                Children = {
+                    _new("UIAspectRatioConstraint")({
+                        AspectRatio = 1
+                    })
+                }
+            }),
+            _new("TextLabel")({
+                LayoutOrder = 2,
+                BackgroundTransparency = 1,
+                Font = Enum.Font.GothamBold,
+                Size = UDim2.fromScale(0.85, 1),
+                Text = "Body Colour",
+                TextColor3 = TEXT_COLOR,
+                TextScaled = true,
+                TextXAlignment = Enum.TextXAlignment.Center
+            })
+        },
+        
+    })
+
     local colorWheelFrame = _new("Frame")({
         Name = "ColorWheelFrame",
         BackgroundTransparency = 1,
@@ -2424,7 +2472,8 @@ return function(
                 PaddingRight = UDim.new(PADDING_SIZE_SCALE.Scale*0.2, PADDING_SIZE_SCALE.Offset*0.2),
 
             }),
-            _new("TextLabel")({
+            colorWheelHeader
+           --[[ _new("TextLabel")({
                 Name = " Title",
                 LayoutOrder = 1,
                 BackgroundColor3 = BACKGROUND_COLOR,
@@ -2433,7 +2482,7 @@ return function(
                 Text = "Body Colour",
                 TextColor3 = TEXT_COLOR,
                 TextScaled = true
-            }),
+            })]],
             _new("Frame")({
                 Name = "ColorSettings",
                 LayoutOrder = 2,
@@ -2606,7 +2655,7 @@ return function(
                                 FillDirection = Enum.FillDirection.Horizontal,
                                 VerticalAlignment = Enum.VerticalAlignment.Bottom
                             }),
-                            _bind(getButton(maid, 1, "X", function()
+                            --[[_bind(getButton(maid, 1, "X", function()
                                 char:Set(getCharacter(true))
                                 currentPage:Set(mainMenuPage)
                             end, RED_COLOR))({
@@ -2618,9 +2667,10 @@ return function(
                                         AspectRatio = 1
                                     })
                                 }
-                            }),
+                            }),]]
                             _bind(getButton(maid, 1, "✓", function()
                                 onCustomizeBodyColor:Fire(selectedColor:Get(), char)
+                                currentPage:Set(mainMenuPage)
                             end, SELECT_COLOR))({
                                 Size = UDim2.fromScale(0.5, 0.5),
                                 TextScaled = true,
@@ -2730,7 +2780,8 @@ return function(
                 "<",
                 function()
                     currentPage:Set(mainMenuPage)
-                end
+                end,
+                TERTIARY_COLOR
             ))({
                 Size = UDim2.fromScale(0.1, 1),
                 Children = {
@@ -2744,7 +2795,7 @@ return function(
                 BackgroundTransparency = 1,
                 Font = Enum.Font.GothamBold,
                 Size = UDim2.fromScale(0.85, 1),
-                Text = "SAVE LIST",
+                Text = "Character Saves",
                 TextColor3 = TEXT_COLOR,
                 TextScaled = true,
                 TextXAlignment = Enum.TextXAlignment.Center
@@ -2776,7 +2827,7 @@ return function(
         }
     })
     local saveListPage = _new("Frame")({
-        BackgroundTransparency = 1,
+        BackgroundColor3 = BACKGROUND_COLOR,
         Size = UDim2.fromScale(0.6, 1),
         Children = {
             _new("UIPadding")({
@@ -2794,7 +2845,7 @@ return function(
             savesListContent,
             _bind(getButton(maid, 3, "Add Save", function()  
                 onCustomizationSave:Fire()
-            end))({
+            end, TERTIARY_COLOR))({
                 Size = UDim2.fromScale(1, 0.1)
             }),
         }
@@ -3657,8 +3708,29 @@ return function(
                     if humanoidDesc.Pants ~= 0 then
                         table.insert(accessories, getHumanoidDescriptionAccessory(humanoidDesc.Pants, Enum.AccessoryType.Pants, false))
                     end
+                    if humanoidDesc.GraphicTShirt ~= 0 then
+                        table.insert(accessories, getHumanoidDescriptionAccessory(humanoidDesc.GraphicTShirt, Enum.AccessoryType.Pants, false))
+                    end
+                    if humanoidDesc.Torso ~= 0 then
+                        table.insert(accessories, getHumanoidDescriptionAccessory(humanoidDesc.Torso, Enum.AccessoryType.Pants, false))
+                    end
                     if humanoidDesc.Face ~= 0 then
                         table.insert(accessories, getHumanoidDescriptionAccessory(humanoidDesc.Face, Enum.AccessoryType.Face, false))
+                    end
+                    if humanoidDesc.LeftArm ~= 0 then
+                        table.insert(accessories, getHumanoidDescriptionAccessory(humanoidDesc.LeftArm, Enum.AccessoryType.Face, false))
+                    end
+                    if humanoidDesc.RightArm ~= 0 then
+                        table.insert(accessories, getHumanoidDescriptionAccessory(humanoidDesc.RightArm, Enum.AccessoryType.Face, false))
+                    end
+                    if humanoidDesc.LeftLeg ~= 0 then
+                        table.insert(accessories, getHumanoidDescriptionAccessory(humanoidDesc.LeftLeg, Enum.AccessoryType.Face, false))
+                    end
+                    if humanoidDesc.RightLeg ~= 0 then
+                        table.insert(accessories, getHumanoidDescriptionAccessory(humanoidDesc.RightLeg, Enum.AccessoryType.Face, false))
+                    end
+                    if humanoidDesc.Head ~= 0 then
+                        table.insert(accessories, getHumanoidDescriptionAccessory(humanoidDesc.Head, Enum.AccessoryType.Face, false))
                     end
 
                     if humanoidDesc.RunAnimation ~= 0 then

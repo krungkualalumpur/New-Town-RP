@@ -15,6 +15,13 @@ local CustomizationList = require(ReplicatedStorage:WaitForChild("Shared"):WaitF
 local CustomizationUI = require(ReplicatedStorage:WaitForChild("Client"):WaitForChild("MainUI"):WaitForChild("NewCustomizationUI"))
 
 --types
+type Maid = Maid.Maid
+type Signal = Signal.Signal
+
+type Fuse = ColdFusion.Fuse
+type CanBeState<T> = ColdFusion.CanBeState<T>
+type ValueState<T> = ColdFusion.ValueState<T>
+type State<T> = ColdFusion.State<T>
 --constants
 --variables
 --references
@@ -35,6 +42,7 @@ return function(target : CoreGui)
     local onCatalogTry = maid:GiveTask(Signal.new())
     local onColorCustomize = maid:GiveTask(Signal.new())
     local onCatalogDelete = maid:GiveTask(Signal.new())
+    local onCatalogBuy = maid:GiveTask(Signal.new())
 
         --task.spawn(function()
             --print(AvatarEditorService:GetItemDetails(16630147, Enum.AvatarItemType.Asset))
@@ -69,12 +77,15 @@ return function(target : CoreGui)
     local onSavedCustomizationLoad = maid:GiveTask(Signal.new())
     local onSavedCustomizationDelete = maid:GiveTask(Signal.new())
 
+    local isVisible = _Value(true)
+
     local customizationUI = CustomizationUI(
         maid,
 
         onCatalogTry,
         onColorCustomize,
         onCatalogDelete,
+        onCatalogBuy,
         onCustomizationSave,
         onSavedCustomizationLoad,
         onSavedCustomizationDelete,
@@ -296,7 +307,7 @@ return function(target : CoreGui)
           
             return catalogInfos
         end,
-        _Value(true)
+        isVisible
     )
     customizationUI.Parent = target
 
@@ -304,22 +315,26 @@ return function(target : CoreGui)
         print(catalogInfo.Id, " test try?")
     end))
 
-    maid:GiveTask(onColorCustomize:Connect(function()
-        print("i hate rullly rilli")
+    maid:GiveTask(onColorCustomize:Connect(function(color : Color3, char : ValueState<Model>)
+        print(color, " on color customize")
     end))
 
     maid:GiveTask(onCatalogDelete:Connect(function(catalogInfo : CustomizationUI.SimplifiedCatalogInfo)
-        print("motorik ", catalogInfo.Id)
+        print(catalogInfo.Id, " on delete")
     end))
 
-    maid:GiveTask(onCustomizationSave:Connect(function(content)
-        print(content.CharacterData, " on save")
+    maid:GiveTask(onCatalogBuy:Connect(function(catalogInfo : CustomizationUI.SimplifiedCatalogInfo)
+        print(catalogInfo.Id, " on catalog buy")
+    end))
+
+    maid:GiveTask(onCustomizationSave:Connect(function()
+        print(" on save")
     end))
     maid:GiveTask(onSavedCustomizationLoad:Connect(function(k, content)
-        print(k, content.CharacterData, " on load")
+        print(k, content, " on load")
     end))
     maid:GiveTask(onSavedCustomizationDelete:Connect(function(k, content)
-        print(k, content.CharacterData, " on delete")
+        print(k, content, " on delete")
     end))
 
     maid:GiveTask(onRPNameChange:Connect(function(inputted : string)
@@ -330,6 +345,7 @@ return function(target : CoreGui)
     end))
 
     return function()
+        isVisible:Set(false)
         maid:Destroy()
     end 
 end

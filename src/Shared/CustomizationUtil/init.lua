@@ -17,6 +17,7 @@ local CustomizationList = require(ReplicatedStorage:WaitForChild("Shared"):WaitF
 type Maid = Maid.Maid
 export type CharacterData = {
     Accessories : {[number] : number},
+    Emotes : {[number] : number},
 
     Shirt : number,
     Pants : number,
@@ -29,6 +30,15 @@ export type CharacterData = {
     LeftLeg : number,
     RightLeg : number,
     Head : number,
+
+    RunAnimation : number,
+    FallAnimation : number,
+    IdleAnimation : number,
+    JumpAnimation : number,
+    MoodAnimation : number,
+    SwimAnimation : number,
+    WalkAnimation : number,
+    ClimbAnimation : number,
 
     BodyColor : Color3
 }
@@ -428,7 +438,8 @@ local function processingHumanoidDescById(id : number, passedItemType : Enum.Ava
 
     if humanoidDesc then
         local accessories = humanoidDesc:GetAccessories(true)
-        
+        local emotes = humanoidDesc:GetEmotes()
+
         --sorting out orders
         local function sortAccessoryOrder()
             for k,v in pairs(accessories) do
@@ -448,12 +459,22 @@ local function processingHumanoidDescById(id : number, passedItemType : Enum.Ava
             return nil
         end
 
+        local function hasEmote(id : number) : (string ?, {number}?) 
+            for emoteName, nTbl in pairs(emotes) do
+                if table.find(nTbl, id) then
+                    return emoteName, nTbl
+                end
+            end
+            return nil, nil
+        end
+
         sortAccessoryOrder()
 
         local passedInfo, passedInfoType = getInfo(id, passedItemType)
         local assetTypeId = if passedInfo then passedInfo.AssetTypeId else passedAssetTypeId
         if passedInfoType == Enum.InfoType.Asset then
             local ownedCurrentAccessory = hasAccessory(id)
+            local emoteName, ownedCurrentEmote = hasEmote(id)
             if not ownedCurrentAccessory and passedInfo then -- and pls check if its accesssory or non accessory stuff...
                 local desiredOrder = #accessories
                 if assetTypeId == Enum.AssetType.Hat.Value then
@@ -510,6 +531,12 @@ local function processingHumanoidDescById(id : number, passedItemType : Enum.Ava
                 sortAccessoryOrder()
             end
 
+            if not ownedCurrentEmote and not emoteName and passedInfo then
+                emotes[passedInfo.Name] = {id}
+            elseif ownedCurrentEmote and emoteName and passedInfo and isDelete then
+                emotes[emoteName] = nil
+            end
+
             local modifiedIdFromIsDelete = if not isDelete then id else 0
             if assetTypeId == Enum.AssetType.Shirt.Value then
                 humanoidDesc.Shirt = modifiedIdFromIsDelete
@@ -552,6 +579,8 @@ local function processingHumanoidDescById(id : number, passedItemType : Enum.Ava
             end
  
             humanoidDesc:SetAccessories(accessories, true)
+            humanoidDesc:SetEmotes(emotes)
+            print(emotes) --emotes not adding even tho its there ah??!
             --humanoid:ApplyDescription(cleanHumanoidDesc)
             humanoid:ApplyDescription(humanoidDesc)
         elseif passedInfoType == Enum.InfoType.Bundle and passedInfo then
@@ -693,8 +722,16 @@ function CustomizationUtil.GetInfoFromCharacter(character :Model) : CharacterDat
         table.insert(accessoryIds, v.AssetId)
     end
 
+    local emoteIds = {}
+    for _,numberTbl in pairs(humanoidDesc:GetEmotes()) do
+        for _,n in pairs(numberTbl) do
+            table.insert(emoteIds, n)
+        end 
+    end
+
     return {
         Accessories = accessoryIds,
+        Emotes = emoteIds,
 
         Shirt = humanoidDesc.Shirt,
         Pants = humanoidDesc.Pants,
@@ -708,6 +745,15 @@ function CustomizationUtil.GetInfoFromCharacter(character :Model) : CharacterDat
         RightLeg = humanoidDesc.RightLeg,
         Head = humanoidDesc.Head,
 
+        RunAnimation = humanoidDesc.RunAnimation,
+        FallAnimation = humanoidDesc.FallAnimation,
+        IdleAnimation = humanoidDesc.IdleAnimation,
+        JumpAnimation = humanoidDesc.JumpAnimation,
+        MoodAnimation = humanoidDesc.MoodAnimation,
+        SwimAnimation = humanoidDesc.SwimAnimation,
+        WalkAnimation = humanoidDesc.WalkAnimation,
+        ClimbAnimation = humanoidDesc.ClimbAnimation,
+
         BodyColor = humanoidDesc.HeadColor
     }
 end
@@ -716,6 +762,10 @@ function CustomizationUtil.SetInfoFromCharacter(character : Model, characterData
     for _,accessoryId in pairs(characterData.Accessories) do
         processingHumanoidDescById(accessoryId, Enum.AvatarItemType.Asset, character, nil, false)
     end
+    for _,emoteId in pairs(characterData.Emotes) do
+        processingHumanoidDescById(emoteId, Enum.AvatarItemType.Asset, character, nil, false)
+    end
+
     processingHumanoidDescById(characterData.Face, Enum.AvatarItemType.Asset, character, Enum.AvatarAssetType.Face.Value, false)
     processingHumanoidDescById(characterData.Head, Enum.AvatarItemType.Asset, character, Enum.AvatarAssetType.Head.Value, false)
     processingHumanoidDescById(characterData.LeftArm, Enum.AvatarItemType.Asset, character, Enum.AvatarAssetType.LeftArm.Value, false)
@@ -727,11 +777,21 @@ function CustomizationUtil.SetInfoFromCharacter(character : Model, characterData
     processingHumanoidDescById(characterData.TShirt, Enum.AvatarItemType.Asset, character, Enum.AvatarAssetType.TShirt.Value, false)
     processingHumanoidDescById(characterData.Torso, Enum.AvatarItemType.Asset, character, Enum.AvatarAssetType.Torso.Value, false)
 
+    processingHumanoidDescById(characterData.RunAnimation, Enum.AvatarItemType.Asset, character, Enum.AvatarAssetType.RunAnimation.Value, false)
+    processingHumanoidDescById(characterData.FallAnimation, Enum.AvatarItemType.Asset, character, Enum.AvatarAssetType.FallAnimation.Value, false)
+    processingHumanoidDescById(characterData.IdleAnimation, Enum.AvatarItemType.Asset, character, Enum.AvatarAssetType.IdleAnimation.Value, false)
+    processingHumanoidDescById(characterData.JumpAnimation, Enum.AvatarItemType.Asset, character, Enum.AvatarAssetType.JumpAnimation.Value, false)
+    processingHumanoidDescById(characterData.MoodAnimation, Enum.AvatarItemType.Asset, character, Enum.AvatarAssetType.MoodAnimation.Value, false)
+    processingHumanoidDescById(characterData.SwimAnimation, Enum.AvatarItemType.Asset, character, Enum.AvatarAssetType.SwimAnimation.Value, false)
+    processingHumanoidDescById(characterData.WalkAnimation, Enum.AvatarItemType.Asset, character, Enum.AvatarAssetType.WalkAnimation.Value, false)
+    processingHumanoidDescById(characterData.ClimbAnimation, Enum.AvatarItemType.Asset, character, Enum.AvatarAssetType.ClimbAnimation.Value, false)
+
     adjustCharacterColorByCharacterData(character, characterData)
     return
 end
 
 function CustomizationUtil.Customize(plr : Player, customizationId : number, itemType : Enum.AvatarItemType, assetTypeId : number ?)
+    print(customizationId, itemType, assetTypeId)
     if RunService:IsServer() then
         local character = plr.Character or plr.CharacterAdded:Wait()
 
