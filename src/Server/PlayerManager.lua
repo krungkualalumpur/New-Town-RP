@@ -45,7 +45,10 @@ local MAX_CHARACTER_SLOT = 3
 
 local SAVE_DATA_INTERVAL = 60
 
+
 local CHAT_COUNT_VALUE_NAME = "Chat Count"
+local KEY_VALUE_NAME = "KeyValue"
+local KEY_VALUE_ATTRIBUTE = "KeyValue"
 --remotes
 local ON_INTERACT = "On_Interact"
 local ON_TOOL_INTERACT = "On_Tool_Interact"
@@ -62,7 +65,6 @@ local GET_PLAYER_VEHICLES = "GetPlayerVehicles"
 local ADD_VEHICLE = "AddVehicle"
 local DELETE_VEHICLE = "DeleteVehicle"
 
-local ON_CUSTOMIZE_AVATAR_NAME = "OnCustomizeAvatarName"
 local ON_CUSTOMIZE_CHAR = "OnCustomizeCharacter"
 local ON_CUSTOMIZE_CHAR_COLOR = "OnCustomizeCharColor"
 local ON_DELETE_CATALOG = "OnDeleteCatalog"
@@ -71,9 +73,7 @@ local SAVE_CHARACTER_SLOT = "SaveCharacterSlot"
 local LOAD_CHARACTER_SLOT = "LoadCharacterSlot"
 local DELETE_CHARACTER_SLOT = "DeleteCharacterSlot"
 
-local KEY_VALUE_NAME = "KeyValue"
-
-local KEY_VALUE_ATTRIBUTE = "KeyValue"
+local ON_ROLEPLAY_BIO_CHANGE = "OnRoleplayBioChange"
 
 local ON_CAMERA_SHAKE = "OnCameraShake"
 
@@ -193,6 +193,10 @@ function PlayerManager.new(player : Player, maid : Maid ?)
     local self : PlayerManager = setmetatable({}, PlayerManager) :: any
     self.Player = player
     self._Maid = maid or Maid.new()
+    self.RoleplayBios = {
+        Name = player.Name,
+        Bio = ""
+    }
     self.Backpack = {}
     self.Vehicles = {}
     self.ChatCount = 0
@@ -223,11 +227,13 @@ function PlayerManager.new(player : Player, maid : Maid ?)
         end
     end))
 
+    self:SetData(self:GetData())
     --hacky way to store character info
     self._Maid.CharacterModel = player.Character
 
     self._Maid:GiveTask(self.Player.CharacterAdded:Connect(function(char : Model)
         self._Maid.CharacterModel = char
+        self:SetData(self:GetData()) -- refreshing the character
     end))
 
     --setting leaderstats
@@ -283,6 +289,7 @@ function PlayerManager.new(player : Player, maid : Maid ?)
      --       print(self:GetData())
      --   end
     --end)
+   
     return self
 end
 
@@ -454,11 +461,18 @@ function PlayerManager:SetChatCount(count : number)
 end
 
 function PlayerManager:GetData()
-    local char = self._Maid.CharacterModel :: Model ?
+    local char =(self._Maid.CharacterModel or Players:CreateHumanoidModelFromUserId(self.Player.UserId)) :: Model
+    assert(char, "Unable to load character")
+    local characterData = CustomizationUtil.GetInfoFromCharacter(char)
 
     local plrData : ManagerTypes.PlayerData = {} :: any
+    
+    plrData.RoleplayBios = {} :: any
+    plrData.RoleplayBios.Name = self.RoleplayBios.Name
+    plrData.RoleplayBios.Bio = self.RoleplayBios.Bio
+  
     plrData.Backpack = {};
-    plrData.Character = CustomizationUtil.GetInfoFromCharacter(char or Players:CreateHumanoidModelFromUserId(self.Player));
+    plrData.Character = characterData;
     plrData.Vehicles = {};
     plrData.ChatCount = self.ChatCount
 
@@ -516,7 +530,7 @@ function PlayerManager:SetData(plrData : ManagerTypes.PlayerData)
             end
         end
     end]]
-    CustomizationUtil.SetInfoFromCharacter(char, plrData.Character)
+    task.spawn(function() CustomizationUtil.SetInfoFromCharacter(char, plrData.Character) end)
 
    --[[ for _,v in pairs(plrData.Character.Accessories) do
         CustomizationUtil.Customize(self.Player, v, Enum.AvatarItemType.Asset)
@@ -534,6 +548,13 @@ function PlayerManager:SetData(plrData : ManagerTypes.PlayerData)
 
     --set chat count
     self.ChatCount = plrData.ChatCount or 0
+
+    --bios
+    self.RoleplayBios.Name = plrData.RoleplayBios.Name
+    self.RoleplayBios.Bio = plrData.RoleplayBios.Bio
+    --desc
+    CustomizationUtil.setDesc(self.Player, "PlayerName", self.RoleplayBios.Name)
+    CustomizationUtil.setDesc(self.Player, "PlayerBio", self.RoleplayBios.Bio)
 
     if not self.isLoaded then
         self.onLoadingComplete:Fire() 
@@ -824,13 +845,6 @@ function PlayerManager.init(maid : Maid)
         return nil
     end)
 
-    NetworkUtil.onServerInvoke(ON_CUSTOMIZE_AVATAR_NAME, function(plr : Player, descType : CustomizationUtil.DescType, descName : string)
-        CustomizationUtil.setDesc(plr, descType, descName)
-
-        MidasEventTree.Gameplay.CustomizeAvatar.Value(plr)
-        return nil
-    end)
-
     NetworkUtil.onServerInvoke(SAVE_CHARACTER_SLOT, function(plr : Player)
         local plrManager = PlayerManager.get(plr)
         return plrManager:SaveCharacterSlot()
@@ -849,6 +863,20 @@ function PlayerManager.init(maid : Maid)
     NetworkUtil.onServerEvent(ON_TOOL_ACTIVATED, function(plr : Player, toolClass : string, foodInst : Instance, toolData : BackpackUtil.ToolData<nil>)
         local plrInfo = PlayerManager.get(plr)
         ToolActions.onToolActivated(toolClass, plr, toolData, plrInfo)
+    end)
+
+    NetworkUtil.onServerEvent(ON_ROLEPLAY_BIO_CHANGE, function(plr : Player, descType : CustomizationUtil.DescType, descName : string)
+        local plrManager = PlayerManager.get(plr)
+        assert(plrManager)
+        local plrData = plrManager:GetData()
+        if descType == "PlayerName" then
+            plrData.RoleplayBios.Name = descName
+        elseif descType == "PlayerBio" then
+            plrData.RoleplayBios.Bio = descName
+        end
+        plrManager:SetData(plrData)
+
+        MidasEventTree.Gameplay.CustomizeAvatar.Value(plr)
     end)
 
     NetworkUtil.getRemoteEvent(UPDATE_PLAYER_BACKPACK)

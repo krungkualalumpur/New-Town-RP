@@ -57,6 +57,8 @@ local GET_PLAYER_BACKPACK = "GetPlayerBackpack"
 local SAVE_CHARACTER_SLOT = "SaveCharacterSlot"
 local LOAD_CHARACTER_SLOT = "LoadCharacterSlot"
 local DELETE_CHARACTER_SLOT = "DeleteCharacterSlot"
+
+local ON_ROLEPLAY_BIO_CHANGE = "OnRoleplayBioChange"
 --variables
 --references
 local Player = Players.LocalPlayer
@@ -258,8 +260,6 @@ return function(
 
     backpackOnEquip : Signal,
     backpackOnDelete : Signal,
-
-    nameOnCustomize : Signal,
 
     onCharacterReset : Signal,
 
@@ -594,6 +594,8 @@ return function(
                 onSavedCustomizationLoad,
                 onSavedCustomizationDelete,
 
+                onCharacterReset,
+
                 onRPNameChange,
                 onDescChange,
 
@@ -865,9 +867,11 @@ return function(
 
     maid:GiveTask(onRPNameChange:Connect(function(inputted : string)
         print("On RP Change :", inputted) 
+        NetworkUtil.fireServer(ON_ROLEPLAY_BIO_CHANGE, "PlayerName", inputted)
     end))
     maid:GiveTask(onDescChange:Connect(function(inputted : string)
         print("On Desc change :", inputted)
+        NetworkUtil.fireServer(ON_ROLEPLAY_BIO_CHANGE, "PlayerBio", inputted)
     end))
 
     local strVal = _new("StringValue")({

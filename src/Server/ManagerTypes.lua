@@ -24,6 +24,10 @@ export type VehicleData = ItemUtil.ItemInfo & {
 export type CharacterData = CustomizationUtil.CharacterData
 
 export type PlayerData = {
+    RoleplayBios : {
+        Name : string,
+        Bio : string
+    },
     Backpack : {[number] : string},
     Vehicles : {[number] : string},
     Character : CustomizationUtil.CharacterData,
@@ -38,6 +42,10 @@ export type PlayerManager = {
     _Maid : Maid,
 
     Player : Player,
+    RoleplayBios : {
+        Name : string,
+        Bio : string
+    },
     Backpack : {[number] : ToolData<boolean>},
     Vehicles : {[number] : VehicleData},
     CharacterSaves : {

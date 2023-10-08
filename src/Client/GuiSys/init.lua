@@ -5,6 +5,7 @@ local RunService = game:GetService("RunService")
 local MarketplaceService = game:GetService("MarketplaceService")
 local Players = game:GetService("Players")
 local AvatarEditorService = game:GetService("AvatarEditorService")
+local TextChatService = game:GetService("TextChatService")
 
 --packages
 local Maid = require(ReplicatedStorage:WaitForChild("Packages"):WaitForChild("Maid"))
@@ -190,8 +191,6 @@ function guiSys.new()
 
         backpackOnEquip,
         backpackOnDelete,
-
-        nameCustomizationOnClick,
         
         onCharacterReset,
 
@@ -477,8 +476,9 @@ function guiSys.new()
         currentOptInfo:Set(nil)
     end))
 
-    maid:GiveTask(onCharacterReset:Connect(function(isClear : boolean)
-        NetworkUtil.fireServer(ON_CHARACTER_APPEARANCE_RESET, isClear)
+    maid:GiveTask(onCharacterReset:Connect(function(char : ValueState<Model>)
+        NetworkUtil.invokeServer(ON_CHARACTER_APPEARANCE_RESET)
+        char:Set(getCharacter(true))
     end))
 
     --task.spawn(function()

@@ -43,6 +43,7 @@ type State<T> = ColdFusion.State<T>
 
 --constants
 local TEXT_SIZE = 15
+local STR_CHAR_LIMIT =  10
 
 local PADDING_SIZE = UDim.new(0,10)
 local PADDING_SIZE_SCALE = UDim.new(0.15,0)
@@ -877,7 +878,8 @@ local function getTextBox(
     order : number,
     placeHolderText : string,
     fn : (searhedText : string) -> (),
-    confirmButtonImage : string ?
+    confirmButtonImage : string ?,
+    hasLimit : number ?
 )
     local _fuse = ColdFusion.fuse(maid)
     local _new = _fuse.new
@@ -885,17 +887,46 @@ local function getTextBox(
     local _bind = _fuse.bind
     local _clone = _fuse.clone
 
+    local _Value = _fuse.Value
+    local _Computed = _fuse.Computed
+
     local content = _new("TextBox")({
         LayoutOrder = 2,
         BackgroundTransparency = 1,
-        Size = UDim2.fromScale(0.7, 1),
+        Size = UDim2.fromScale(0.8, 1),
         TextColor3 = TEXT_COLOR,
+        TextWrapped = true,
+        TextScaled = true,
         PlaceholderText = placeHolderText,
         PlaceholderColor3 = TEXT_COLOR,
-        
+        Children = {
+            _new("UITextSizeConstraint")({
+                MinTextSize = 0,
+                MaxTextSize = 15
+            })
+        }
     }) :: TextBox
-
     
+    local currentTextAmount : ValueState<number> = _Value(#content.Text)
+    maid:GiveTask(content:GetPropertyChangedSignal("Text"):Connect(function()
+        if hasLimit then
+            if (#content.Text >= hasLimit) then
+                content.Text = content.Text:sub(1, hasLimit)
+                currentTextAmount:Set(#content.Text)
+            elseif (#content.Text < hasLimit) then
+                currentTextAmount:Set(#content.Text)
+            end
+        end
+    end))
+    --[[_bind(content)({
+        Events = {
+            InputChanged = function()
+                currentTextAmount:Set(#content.Text)
+                print(#content.Text, " test1")
+            end
+        }
+    })]]
+
     local searchButton = _new("ImageButton")({
         LayoutOrder = 1,
         Size = UDim2.fromScale(0.2, 0.8),
@@ -931,7 +962,18 @@ local function getTextBox(
                 VerticalAlignment = Enum.VerticalAlignment.Center
             }),
             searchButton,
-            content
+            content,
+            if hasLimit then 
+                _new("TextLabel")({
+                    LayoutOrder = 3,
+                    BackgroundTransparency = 1,
+                    Size = UDim2.fromScale(0.1, 1),
+                    Text = _Computed(function(text : number)
+                        return tostring(text) .. "/" .. hasLimit
+                    end, currentTextAmount),
+                    TextColor3 = TEXT_COLOR
+                }) 
+            else nil :: any
         }
     })
 
@@ -1298,6 +1340,8 @@ return function(
     onCustomizationSave : Signal,
     onSavedCustomizationLoad : Signal,
     onSavedCustomizationDelete : Signal,
+    
+    onCharacterReset : Signal,
 
     onRPNameChange : Signal,
     onDescChange : Signal,
@@ -1343,6 +1387,9 @@ return function(
     local currentPage : ValueState<GuiObject ?> = _Value(nil) :: any
     local currentCatalogInfo : ValueState<CatalogInfo?> = _Value(nil) :: any
     local selectedColor : ValueState<Color3> = _Value(Color3.fromHSV(0, 0, 0.8))
+
+    local roleplayNameState : ValueState<string> = _Value((if RunService:IsRunning() then Players.LocalPlayer.Name else "Player Name"))
+    local roleplayDescState : ValueState<string> = _Value((if RunService:IsRunning() then "" else "Player Desc"))
 
     local settingsState : {[any] : any} = {
         [Enum.CatalogSortType] = Enum.CatalogSortType.Relevance :: Enum.CatalogSortType,
@@ -2390,6 +2437,7 @@ return function(
                 1,
                 "<",
                 function()
+                    char:Set(getCharacter(true))
                     currentPage:Set(mainMenuPage)
                 end,
                 TERTIARY_COLOR
@@ -2880,7 +2928,9 @@ return function(
                 Size = UDim2.fromScale(1, 0.5),
                 RichText = true,
                 Font = Enum.Font.GothamBold,
-                Text = "<b>" .. (if RunService:IsRunning() then Players.LocalPlayer.Name else "Player Name") .. "</b>",
+                Text = _Computed(function(roleplayName : string)
+                    return "<b>" .. (roleplayName) .. "</b>"
+                end, roleplayNameState),--"<b>" .. (if RunService:IsRunning() then Players.LocalPlayer.Name else "Player Name") .. "</b>",
                 TextColor3 = TEXT_COLOR,
                 TextStrokeColor3 = PRIMARY_COLOR,
                 TextWrapped = true,
@@ -2891,7 +2941,9 @@ return function(
                 BackgroundTransparency = 1,
                 Size = UDim2.fromScale(1, 0.5),
                 Font = Enum.Font.Gotham,
-                Text = if RunService:IsRunning() then Players.LocalPlayer.Name else "Player Name",
+                Text = _Computed(function(roleplayDesc : string)
+                    return roleplayDesc
+                end, roleplayDescState),
                 TextColor3 = TEXT_COLOR,
                 TextSize = 15, 
                 TextWrapped = true,
@@ -2972,6 +3024,7 @@ return function(
                     }),
                     _bind(getImageButton(maid, 2, "rbxassetid://7017517837", nil, function()
                         currentPage:Set(if currentPage:Get() ~= colorWheelPage then colorWheelPage else mainMenuPage)
+                        char:Set(getCharacter(true))
                     end))({
                         Name = "BodyColor",
                         BackgroundTransparency = 1,
@@ -3037,17 +3090,19 @@ return function(
                 HorizontalAlignment = Enum.HorizontalAlignment.Center,
                 Padding = UDim.new(0.1, 0)
             }),
-            _bind( getButton(maid, 1, "Reset Character", nil, RED_COLOR))({
+            _bind( getButton(maid, 1, "Reset Character", function()
+                onCharacterReset:Fire(char)
+            end, RED_COLOR))({
                 Size = UDim2.fromScale(0.4, 0.4)
             }),
             _bind( getTextBox(maid, 2, "Enter Roleplay Name ...", function(inputted : string)
-                onRPNameChange:Fire(inputted)
-            end, "rbxassetid://1264515756"))({
+                onRPNameChange:Fire(inputted) 
+            end, "rbxassetid://1264515756", STR_CHAR_LIMIT))({
                 Size = UDim2.fromScale(1, 0.25)
             }),
             _bind(getTextBox(maid, 2, "Enter Desc ...", function(inputted : string)
                 onDescChange:Fire(inputted)
-            end, "rbxassetid://1264515756"))({
+            end, "rbxassetid://1264515756", STR_CHAR_LIMIT*3))({
                 Size = UDim2.fromScale(1, 0.25)
             }),
         }
@@ -3080,18 +3135,21 @@ return function(
             if visible then
                 local charModel = getCharacter(true)
                 --charModel:PivotTo(CFrame.new())
-                char:Set(charModel) 
-
-                --blurs background
-                if blur then
-                    blur.Enabled = true
-                end
-            else
-                if blur then
-                    blur.Enabled = false
-                end
+                char:Set(charModel)                
             end
             
+            --blurs background and stuff
+            if RunService:IsRunning() and blur then
+                if visible then
+                    blur.Enabled = true
+                    game:GetService("StarterGui"):SetCoreGuiEnabled(Enum.CoreGuiType.PlayerList, false)
+                    game:GetService("StarterGui"):SetCoreGuiEnabled(Enum.CoreGuiType.Chat, false)
+                else
+                    blur.Enabled = false
+                    game:GetService("StarterGui"):SetCoreGuiEnabled(Enum.CoreGuiType.PlayerList, true)
+                    game:GetService("StarterGui"):SetCoreGuiEnabled(Enum.CoreGuiType.Chat, true)
+                end
+            end
             return visible
         end, isVisible),
         Size = UDim2.fromScale(1, 1),
@@ -3878,80 +3936,33 @@ return function(
     _bind(exitButton.Instance)({
         Enabled = isVisible
     })
-    --[[for i = 1, 10 do
-        local button = getAccessoryButton(maid, i, {
-            [1] = {
-                Name = "Try",
-                Signal = onCatalogTry
-            }
-        })
-        button.Parent = categoryContent
-    end]] 
-      --testing
 
-        --outfits
-    --[[do
-        local currentSelectedButton : ValueState<GuiButton ?> = _Value(nil) :: any
-        for i = 1, 10 do
-            local buttonMaid = Maid.new()
+    local charMaid = Maid.new()
+    local function displayName(char : Model)
+        charMaid:DoCleaning()
 
-            local __fuse = ColdFusion.fuse(buttonMaid)
-            local __new = __fuse.new
+        print(char, char:FindFirstChild("DisplayNameGUI"))
+        local displayNameGui = char:WaitForChild("DisplayNameGUI")
+        print(displayNameGui)
+        local frame = displayNameGui:WaitForChild("Frame")
+        local nameText = frame:WaitForChild("NameText") :: TextLabel
+        local bioText = frame:WaitForChild("BioText") :: TextLabel
 
-            local __Value = __fuse.Value
-            local __Computed = __fuse.Computed
+        charMaid:GiveTask(nameText:GetPropertyChangedSignal("Text"):Connect(function()
+            roleplayNameState:Set(nameText.Text)
+        end))
+        charMaid:GiveTask(bioText:GetPropertyChangedSignal("Text"):Connect(function()
+            roleplayDescState:Set(bioText.Text)
+        end))
+    end
 
-            local selectedButton = __Value(false)
-            local button = getCatalogButton(
-                buttonMaid, 1, {
-                    ItemType = Enum.AvatarItemType.Asset.Name,
-                    Id = 11584239464
-                },{
-                    [1] = {
-                        Name = "Delete",
-                        Signal = onCatalogTry,
-                    },
-                    
-                },
-                selectedButton
-            ) :: GuiButton
-
-            button.Parent = currentOutfitsFrame
-            buttonMaid:GiveTask(button.Activated:Connect(function()
-                if currentSelectedButton:Get() ~= button then
-                    currentSelectedButton:Set(button)
-                else
-                    currentSelectedButton:Set(nil)
-                end
-            end))
-            buttonMaid:GiveTask(button.Destroying:Connect(function()
-                buttonMaid:Destroy()
-            end))
-
-            _new("StringValue")({
-                Value = __Computed(function(catalogButton : GuiButton ?)
-                    if button == catalogButton then
-                        selectedButton:Set(true)
-                    else
-                        selectedButton:Set(false)
-                    end
-                    return ""
-                end, currentSelectedButton)
-            })
-        end
-
-        
-        local charModel = char:Get()
-        local humanoid = if charModel then charModel:FindFirstChild("Humanoid") :: Humanoid else nil
-        local humanoidDesc = if humanoid then humanoid:FindFirstChild("HumanoidDescription") :: HumanoidDescription else nil
-        local humanoidRigType = if humanoid then humanoid.RigType else nil
-
-        if humanoidDesc and humanoidRigType then
-            print("eeh?")
-            print(humanoidDesc.Shirt, humanoidDesc.Pants, humanoidDesc:GetAccessories(false))
-            print(typeof(humanoidDesc:GetAccessories(false)[1]))
-        end
-    end]]
-
+    if RunService:IsRunning() then
+        local plr = Players.LocalPlayer
+        displayName(plr.Character)
+        maid:GiveTask(plr.CharacterAdded:Connect(function(char : Model)
+            displayName(char)
+        end))
+    end
+    
     return out
 end

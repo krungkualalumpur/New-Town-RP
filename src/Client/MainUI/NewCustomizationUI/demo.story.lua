@@ -56,6 +56,8 @@ return function(target : CoreGui)
             --if not s and e then warn(e) end 
             --print(result:GetCurrentPage())
     -- end)
+    local onCharacterReset = maid:GiveTask(Signal.new())
+
     local onRPNameChange = maid:GiveTask(Signal.new())
     local onDescChange = maid:GiveTask(Signal.new())
 
@@ -89,6 +91,8 @@ return function(target : CoreGui)
         onCustomizationSave,
         onSavedCustomizationLoad,
         onSavedCustomizationDelete,
+
+        onCharacterReset,
 
         onRPNameChange,
         onDescChange,
@@ -336,6 +340,10 @@ return function(target : CoreGui)
     maid:GiveTask(onSavedCustomizationDelete:Connect(function(k, content)
         print(k, content, " on delete")
     end))
+    maid:GiveTask(onCharacterReset:Connect(function()
+        print("Reset Character")
+    end))
+
 
     maid:GiveTask(onRPNameChange:Connect(function(inputted : string)
         print("On RP Change :", inputted)

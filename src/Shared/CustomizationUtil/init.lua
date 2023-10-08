@@ -104,11 +104,12 @@ export type SimplifiedCatalogInfo = {
 
 --constants
 --remotes
+local STR_CHAR_LIMIT =  10
+
 local CHARACTER_BUNDLE_ID_ATTRIBUTE_KEY = "BundleId"
 
 local CATALOG_FOLDER_NAME = "CatalogFolder"
 
-local ON_CUSTOMIZE_AVATAR_NAME = "OnCustomizeAvatarName"
 local ON_CUSTOMIZE_CHAR = "OnCustomizeCharacter"
 local ON_CUSTOMIZE_CHAR_COLOR = "OnCustomizeCharColor"
 local ON_DELETE_CATALOG = "OnDeleteCatalog"
@@ -825,6 +826,7 @@ function CustomizationUtil.DeleteCatalog(plr : Player, customizationId : number,
 end
 
 function CustomizationUtil.setDesc(plr : Player, descType : DescType, descName : string)
+    local charLimitedDescName =  if descType == "PlayerName" then descName:sub(1, STR_CHAR_LIMIT) else descName:sub(1, STR_CHAR_LIMIT*3)
     if RunService:IsServer() then
         local displayNameGUIName = "DisplayNameGUI"
         local frameName = "Frame"
@@ -876,20 +878,18 @@ function CustomizationUtil.setDesc(plr : Player, descType : DescType, descName :
         --filters
         local result : TextFilterResult
         local s, e = pcall(function()
-            result = TextService:FilterStringAsync(descName, plr.UserId)
+            result = TextService:FilterStringAsync(charLimitedDescName, plr.UserId)
         end)
-        descName = result:GetNonChatStringForBroadcastAsync()
-        if not s or not descName then
+        charLimitedDescName = result:GetNonChatStringForBroadcastAsync()
+        if not s or not charLimitedDescName then
             error(e or "Desc name not av")
         end
 
         if descType == "PlayerName" then
-            nameText.Text = descName
+            nameText.Text = charLimitedDescName
         elseif descType == "PlayerBio" then
-            bioText.Text = descName
+            bioText.Text = charLimitedDescName
         end
-    else
-        NetworkUtil.invokeServer(ON_CUSTOMIZE_AVATAR_NAME, descType, descName)
     end
 end
 

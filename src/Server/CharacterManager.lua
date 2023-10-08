@@ -89,8 +89,7 @@ local function onPlayerAdded(plr : Player)
         _maid:Destroy()
     end))
 
-    CustomizationUtil.setDesc(plr, "PlayerName", plr.Name)
-    CustomizationUtil.setDesc(plr, "PlayerBio", "")
+   
 
     --testing char only
     --[[local testacc
@@ -114,7 +113,7 @@ function CharacterManager.init(maid : Maid)
     maid:GiveTask(Players.PlayerAdded:Connect(onPlayerAdded))
 
 
-    maid:GiveTask(NetworkUtil.onServerEvent(ON_CHARACTER_APPEARANCE_RESET, function(plr : Player, isClear : boolean)
+    NetworkUtil.onServerInvoke(ON_CHARACTER_APPEARANCE_RESET, function( plr : Player)
         local character = plr.Character or plr.CharacterAdded:Wait()
 
         local humanoid = character:WaitForChild("Humanoid") :: Humanoid
@@ -122,23 +121,13 @@ function CharacterManager.init(maid : Maid)
         local hum_desc = game.Players:GetHumanoidDescriptionFromUserId(plr.UserId)
 
         if hum_desc then
-            humanoid:ApplyDescription(Instance.new("HumanoidDescription"))
-            humanoid:RemoveAccessories()
+            humanoid:ApplyDescription(Instance.new("HumanoidDescription") :: HumanoidDescription)
+            --humanoid:RemoveAccessories()
+            task.wait()
             humanoid:ApplyDescription(hum_desc)
-
-            if isClear then
-                for _,v in pairs(character:GetChildren()) do
-                    if v:IsA("Accessory") then
-                        v:Destroy()
-                    elseif v:IsA("Shirt") then
-                        v.ShirtTemplate = ""
-                    elseif v:IsA("Pants") then
-                        v.PantsTemplate = ""
-                    end
-                end
-            end
         end
-    end))
+        return nil
+    end)
 
     NetworkUtil.onServerInvoke(GET_CATALOG_FROM_CATALOG_INFO, function(plr : Player, catalogId : number)
         local catalogFolder = getCatalogFolder()
