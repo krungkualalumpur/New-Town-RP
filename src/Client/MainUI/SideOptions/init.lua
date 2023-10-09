@@ -57,6 +57,7 @@ local function getImageButton(
                 BackgroundColor3 = BACKGROUND_COLOR,
                 Size = UDim2.fromScale(1, 0.3),
                 Position = UDim2.fromScale(0.25, 1.2),
+                Font = Enum.Font.Gotham,
                 Text = buttonName,
                 TextScaled = true,
                 TextColor3 = PRIMARY_COLOR,

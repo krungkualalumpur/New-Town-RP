@@ -17,7 +17,6 @@ local CustomizationList = require(ReplicatedStorage:WaitForChild("Shared"):WaitF
 type Maid = Maid.Maid
 export type CharacterData = {
     Accessories : {[number] : number},
-    Emotes : {[number] : number},
 
     Shirt : number,
     Pants : number,
@@ -109,6 +108,7 @@ local STR_CHAR_LIMIT =  10
 local CHARACTER_BUNDLE_ID_ATTRIBUTE_KEY = "BundleId"
 
 local CATALOG_FOLDER_NAME = "CatalogFolder"
+local ON_ANIMATION_LOOP_SET = "OnAnimationLoopSet"
 
 local ON_CUSTOMIZE_CHAR = "OnCustomizeCharacter"
 local ON_CUSTOMIZE_CHAR_COLOR = "OnCustomizeCharColor"
@@ -159,6 +159,13 @@ local function getCharacter(fromWorkspace : boolean, plr : Player ?)
     return char
 end
 
+local function setAnimationLoop(plr : Player, animationTrack : AnimationTrack, isLooped : boolean)
+    if RunService:IsServer() then
+        NetworkUtil.fireClient(ON_ANIMATION_LOOP_SET, plr, animationTrack, isLooped)
+    else
+        animationTrack.Looped = isLooped
+    end
+end
 
 local function getHumanoidDescriptionAccessory(
     assetId : number,
@@ -439,7 +446,6 @@ local function processingHumanoidDescById(id : number, passedItemType : Enum.Ava
 
     if humanoidDesc then
         local accessories = humanoidDesc:GetAccessories(true)
-        local emotes = humanoidDesc:GetEmotes()
 
         --sorting out orders
         local function sortAccessoryOrder()
@@ -460,22 +466,12 @@ local function processingHumanoidDescById(id : number, passedItemType : Enum.Ava
             return nil
         end
 
-        local function hasEmote(id : number) : (string ?, {number}?) 
-            for emoteName, nTbl in pairs(emotes) do
-                if table.find(nTbl, id) then
-                    return emoteName, nTbl
-                end
-            end
-            return nil, nil
-        end
-
         sortAccessoryOrder()
 
         local passedInfo, passedInfoType = getInfo(id, passedItemType)
         local assetTypeId = if passedInfo then passedInfo.AssetTypeId else passedAssetTypeId
         if passedInfoType == Enum.InfoType.Asset then
             local ownedCurrentAccessory = hasAccessory(id)
-            local emoteName, ownedCurrentEmote = hasEmote(id)
             if not ownedCurrentAccessory and passedInfo then -- and pls check if its accesssory or non accessory stuff...
                 local desiredOrder = #accessories
                 if assetTypeId == Enum.AssetType.Hat.Value then
@@ -532,12 +528,6 @@ local function processingHumanoidDescById(id : number, passedItemType : Enum.Ava
                 sortAccessoryOrder()
             end
 
-            if not ownedCurrentEmote and not emoteName and passedInfo then
-                emotes[passedInfo.Name] = {id}
-            elseif ownedCurrentEmote and emoteName and passedInfo and isDelete then
-                emotes[emoteName] = nil
-            end
-
             local modifiedIdFromIsDelete = if not isDelete then id else 0
             if assetTypeId == Enum.AssetType.Shirt.Value then
                 humanoidDesc.Shirt = modifiedIdFromIsDelete
@@ -577,11 +567,31 @@ local function processingHumanoidDescById(id : number, passedItemType : Enum.Ava
                 humanoidDesc.WalkAnimation = modifiedIdFromIsDelete
             elseif assetTypeId == Enum.AssetType.ClimbAnimation.Value then 
                 humanoidDesc.ClimbAnimation = modifiedIdFromIsDelete
+            elseif assetTypeId == Enum.AssetType.EmoteAnimation.Value then
+                local asset = game.InsertService:LoadAsset(id) -- Here you can use any ID you want
+                local animation = asset:GetChildren()[1] :: Animation
+                
+
+                local charHumanoid = character:WaitForChild("Humanoid") :: Humanoid
+                local animator = charHumanoid:WaitForChild("Animator") :: Animator
+
+                local animConn 
+                local animTrack = animator:LoadAnimation(animation)
+                animTrack.Parent = ReplicatedStorage:WaitForChild("Assets") -- make the animator to client,, f###.... wip
+                animTrack.Priority = Enum.AnimationPriority.Core
+                --animTrack.Looped = false
+                setAnimationLoop(Players:GetPlayerFromCharacter(character), animTrack, false)
+                animTrack:Play()
+                asset:Destroy()
+                animConn = animTrack.Ended:Connect(function()
+                    print("Anim ended ui!")
+                    animConn:Disconnect()                
+                    animTrack:Stop()
+                    animTrack:Destroy()
+                end)
             end
  
             humanoidDesc:SetAccessories(accessories, true)
-            humanoidDesc:SetEmotes(emotes)
-            print(emotes) --emotes not adding even tho its there ah??!
             --humanoid:ApplyDescription(cleanHumanoidDesc)
             humanoid:ApplyDescription(humanoidDesc)
         elseif passedInfoType == Enum.InfoType.Bundle and passedInfo then
@@ -657,6 +667,8 @@ local function getCatalogFolder()
     catalogFolder.Parent = ReplicatedStorage
     return catalogFolder
 end
+
+
 --class
 local CustomizationUtil = {}
 
@@ -723,16 +735,8 @@ function CustomizationUtil.GetInfoFromCharacter(character :Model) : CharacterDat
         table.insert(accessoryIds, v.AssetId)
     end
 
-    local emoteIds = {}
-    for _,numberTbl in pairs(humanoidDesc:GetEmotes()) do
-        for _,n in pairs(numberTbl) do
-            table.insert(emoteIds, n)
-        end 
-    end
-
     return {
         Accessories = accessoryIds,
-        Emotes = emoteIds,
 
         Shirt = humanoidDesc.Shirt,
         Pants = humanoidDesc.Pants,
@@ -762,9 +766,6 @@ end
 function CustomizationUtil.SetInfoFromCharacter(character : Model, characterData : CharacterData)    
     for _,accessoryId in pairs(characterData.Accessories) do
         processingHumanoidDescById(accessoryId, Enum.AvatarItemType.Asset, character, nil, false)
-    end
-    for _,emoteId in pairs(characterData.Emotes) do
-        processingHumanoidDescById(emoteId, Enum.AvatarItemType.Asset, character, nil, false)
     end
 
     processingHumanoidDescById(characterData.Face, Enum.AvatarItemType.Asset, character, Enum.AvatarAssetType.Face.Value, false)

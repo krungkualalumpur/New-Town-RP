@@ -66,7 +66,7 @@ return function(target : CoreGui)
 
         onBackpackEquip,
         onBackpackDelete,
-        nameOnCustomize,
+
         onCharReset,
         
         target

@@ -2,6 +2,7 @@
 --services
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
 local TweenService = game:GetService("TweenService")
 --packages
 local Maid = require(ReplicatedStorage:WaitForChild("Packages"):WaitForChild("Maid"))
@@ -16,6 +17,7 @@ local FIELD_OF_VIEW = 70
 local CAM_SHAKE_TIME = 0.16
 --remotes
 local ON_CAMERA_SHAKE = "OnCameraShake"
+local ON_ANIMATION_LOOP_SET = "OnAnimationLoopSet"
 --variables
 --references
 local Player = Players.LocalPlayer
@@ -153,6 +155,14 @@ local function onCharacterAdded(char : Model)
     end
 end
 
+local function setAnimationLoop(plr : Player, animationTrack : AnimationTrack, isLooped : boolean)
+    if RunService:IsServer() then
+        NetworkUtil.fireClient(ON_ANIMATION_LOOP_SET, plr, animationTrack, isLooped)
+    else
+        animationTrack.Looped = isLooped
+    end
+end
+
 --class
 local CharacterManager = {}
 
@@ -163,7 +173,7 @@ function CharacterManager.init(maid: Maid)
     
     maid:GiveTask(Player.CharacterAdded:Connect(onCharacterAdded))
 
-    NetworkUtil.onClientEvent(ON_CAMERA_SHAKE, function()
+    maid:GiveTask(NetworkUtil.onClientEvent(ON_CAMERA_SHAKE, function()
         local char = Player.Character or Player.CharacterAdded:Wait()
         local humanoid = char:WaitForChild("Humanoid") :: Humanoid
         if humanoid then
@@ -180,7 +190,11 @@ function CharacterManager.init(maid: Maid)
             tween2:Destroy()
             task.wait()
         end
-    end)
+    end))
+
+    maid:GiveTask(NetworkUtil.onClientEvent(ON_ANIMATION_LOOP_SET, function(animationTrack : AnimationTrack, isLooped : boolean)
+        setAnimationLoop(Player, animationTrack, isLooped)
+    end))
 end
 
 return CharacterManager

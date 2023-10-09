@@ -17,6 +17,7 @@ local WALK_SPEED = 6
 local CATALOG_FOLDER_NAME = "CatalogFolder"
 
 local ON_CHARACTER_APPEARANCE_RESET = "OnCharacterAppearanceReset"
+local ON_ANIMATION_LOOP_SET = "OnAnimationLoopSet"
 
 local GET_CATALOG_FROM_CATALOG_INFO = "GetCatalogFromCatalogInfo"
 local GET_AVATAR_FROM_CHARACTER_DATA = "GetAvatarFromCharacterData"
@@ -153,7 +154,7 @@ function CharacterManager.init(maid : Maid)
         return character
     end)
     
-   
+    NetworkUtil.getRemoteEvent(ON_ANIMATION_LOOP_SET)
 
 end
 
