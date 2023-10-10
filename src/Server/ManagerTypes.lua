@@ -80,7 +80,7 @@ export type PlayerManager = {
     Destroy : (PlayerManager) -> (),
 
     GetData : (PlayerManager) -> PlayerData,
-    SetData : (PlayerManager, PlayerData) -> boolean,
+    SetData : (PlayerManager, PlayerData, isCharacterYield : boolean) -> boolean,
 
     get : (plr : Player) -> PlayerManager,
     init : (maid : Maid) -> ()

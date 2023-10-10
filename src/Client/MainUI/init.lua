@@ -113,12 +113,14 @@ local function playAnimation(char : Model, id : number)
     
         local catalogAsset = NetworkUtil.invokeServer(GET_CATALOG_FROM_CATALOG_INFO, id):Clone()
         local animation = catalogAsset:GetChildren()[1]
-        local animationTrack = animator:LoadAnimation(animation)
-        animationTrack.Looped = false
-        animationTrack:Play()
-        animationTrack.Ended:Wait()
-        animationTrack:Destroy()
-        catalogAsset:Destroy()
+        if animation:IsA("Animation") then
+            local animationTrack = animator:LoadAnimation(animation)
+            animationTrack.Looped = false
+            animationTrack:Play()
+            animationTrack.Ended:Wait()
+            animationTrack:Destroy()
+            catalogAsset:Destroy()
+        end
     end
 end
 
@@ -284,6 +286,7 @@ return function(
 
     backpackOnEquip : Signal,
     backpackOnDelete : Signal,
+    onNotify : Signal,
 
     onCharacterReset : Signal,
 
@@ -505,13 +508,13 @@ return function(
                     }),   
                     getImageButton(maid, 2815418737, function()
                         UIStatus:Set(if UIStatus:Get() ~= "Backpack" then "Backpack" else nil)
-                    end, "Backpack", 1),
+                    end, "← Backpack", 1),
                     getImageButton(maid, 11955884948, function()
                         UIStatus:Set(if UIStatus:Get() ~= "Animation" then "Animation" else nil)
-                    end, "Animation", 2),
+                    end, "← Basic Emotes", 2),
                     getImageButton(maid, 13285102351, function()
                         UIStatus:Set(if UIStatus:Get() ~= "Customization" then "Customization" else nil)
-                    end, "Customization", 3)
+                    end, "← Outfit", 3)
                     --getImageButton(maid, 227600967),
 
                 }
@@ -605,6 +608,7 @@ return function(
 
             getExitButton(animationUI)
         elseif status == "Customization" then
+            local isVisible =_Value(true)
             local customizationUI = NewCustomizationUI(
                 statusMaid,
 
@@ -815,7 +819,9 @@ return function(
                     end
                     local s, e =  getCatalogPages()
                     if not s and type(e) == "string" then
-                        warn("Error: " .. e)
+                        local errorMsg = "Error: " .. e
+                        onNotify:Fire(errorMsg)
+                        warn(errorMsg)
                         return catalogPages
                     end            
 
@@ -826,7 +832,7 @@ return function(
                     local catalogInfos = {}
 
                     for _,v in pairs(recommendeds) do
-                        local SimplifiedCatalogInfo = {} :: any
+                        local SimplifiedCatalogInfo : NewCustomizationUI.SimplifiedCatalogInfo = {} :: any
                         SimplifiedCatalogInfo.Id = v.Item.AssetId
                         SimplifiedCatalogInfo.Name = v.Item.Name
                         SimplifiedCatalogInfo.ItemType = itemTypeName
@@ -837,10 +843,20 @@ return function(
                     
                     return catalogInfos
                 end,
-                _Value(true)
+                isVisible
             )
 
             customizationUI.Parent = target
+
+            statusMaid:GiveTask(_new("StringValue")({
+                Value = _Computed(function(visible : boolean)
+                    if not visible then
+                        UIStatus:Set()
+                        print(UIStatus:Get(), ' noradivomo??')
+                    end
+                    return ""
+                end, isVisible)
+            }))
         end
         return ""
     end, UIStatus)
@@ -868,9 +884,7 @@ return function(
     end))
 
     maid:GiveTask(onCatalogBuy:Connect(function(catalogInfo : NewCustomizationUI.SimplifiedCatalogInfo, char : ValueState<Model>)
-        local itemType = getEnumItemFromName(Enum.AvatarItemType, catalogInfo.ItemType) 
-
-        MarketplaceService:PromptProductPurchase(Player, catalogInfo.Id)
+        MarketplaceService:PromptPurchase(Player, catalogInfo.Id)
         --CustomizationUtil.DeleteCatalog(Player, catalogInfo.Id, itemType :: Enum.AvatarItemType)
         --char:Set(getCharacter(true))
     end))
@@ -882,8 +896,11 @@ return function(
     end))
 
     maid:GiveTask(onSavedCustomizationLoad:Connect(function(k, content)
-        local saveData =  NetworkUtil.invokeServer(LOAD_CHARACTER_SLOT, k, content)
+        local pureContent = table.clone(content)
+        pureContent.CharModel = nil
+        local saveData =  NetworkUtil.invokeServer(LOAD_CHARACTER_SLOT, k, pureContent)
         saveList:Set(saveData)
+        content.CharModel:Set(getCharacter(true))
     end))
 
     maid:GiveTask(onSavedCustomizationDelete:Connect(function(k, content)

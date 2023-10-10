@@ -22,7 +22,7 @@ type PlayerSaveData = {
 }
 --constants
 local DATA_ATTEMPT_COUNT = 10
-local CURRENT_GAME_VERSION = "v1.0"
+local CURRENT_GAME_VERSION = "v1.1"
 --variables
 local gameData1 = DataStoreService:GetDataStore("GameData1")
 --module
@@ -94,7 +94,7 @@ function DatastoreManager.load(player: Player, plrInfo: ManagerTypes.PlayerManag
 	local convertedData :  PlayerSaveData = HttpService:JSONDecode(data) 
 	print("Loading: " , data, "Current Game Version : ", CURRENT_GAME_VERSION)
 	if convertedData and convertedData.PlayerData then
-		local s, e = pcall(function() plrInfo:SetData(convertedData.PlayerData) end)
+		local s, e = pcall(function() plrInfo:SetData(convertedData.PlayerData, false) end)
 		if not s and e then
 			warn("Error upon loading player data: " .. tostring(e))
 			plrInfo.onLoadingComplete:Fire()

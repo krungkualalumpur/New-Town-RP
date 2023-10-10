@@ -176,6 +176,7 @@ function guiSys.new()
 
     local backpackOnEquip = maid:GiveTask(Signal.new())
     local backpackOnDelete = maid:GiveTask(Signal.new())
+    local onNotify = maid:GiveTask(Signal.new())
     
     local nameCustomizationOnClick = maid:GiveTask(Signal.new()) 
 
@@ -191,6 +192,7 @@ function guiSys.new()
 
         backpackOnEquip,
         backpackOnDelete,
+        onNotify,
         
         onCharacterReset,
 
@@ -214,6 +216,10 @@ function guiSys.new()
             toolKey,
             toolName
         )
+    end))
+
+    maid:GiveTask(onNotify:Connect(function(msg : string)
+        self:Notify(msg)
     end))
 
 

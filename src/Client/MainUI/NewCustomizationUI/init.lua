@@ -3887,6 +3887,8 @@ return function(
 
                 for k,v in pairs(list) do
                        --getDisplayCharacterFromCharacterData(v.CharacterData) --char:Get():Clone()
+                    local loadListWithChar = table.clone(v) :: any
+                    loadListWithChar.CharModel = char
                     local listFrame = getDefaultList(
                         saveListsMaid,
                         k,
@@ -3895,7 +3897,7 @@ return function(
                             [1] = {
                                 Name = "Load", 
                                 Signal = onSavedCustomizationLoad,
-                                Content = v
+                                Content = loadListWithChar
                             },
                             [2] = {
                                 Name = "Delete",

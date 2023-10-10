@@ -227,13 +227,13 @@ function PlayerManager.new(player : Player, maid : Maid ?)
         end
     end))
 
-    self:SetData(self:GetData())
+    self:SetData(self:GetData(), false)
     --hacky way to store character info
     self._Maid.CharacterModel = player.Character
 
     self._Maid:GiveTask(self.Player.CharacterAdded:Connect(function(char : Model)
         self._Maid.CharacterModel = char
-        self:SetData(self:GetData()) -- refreshing the character
+        self:SetData(self:GetData(), false) -- refreshing the character
     end))
 
     --setting leaderstats
@@ -470,9 +470,10 @@ function PlayerManager:GetData()
     plrData.RoleplayBios = {} :: any
     plrData.RoleplayBios.Name = self.RoleplayBios.Name
     plrData.RoleplayBios.Bio = self.RoleplayBios.Bio
-  
+    print(self, " banyak buanget", self.CharacterSaves)
     plrData.Backpack = {};
     plrData.Character = characterData;
+    plrData.CharacterSaves = table.clone(self.CharacterSaves)
     plrData.Vehicles = {};
     plrData.ChatCount = self.ChatCount
 
@@ -508,7 +509,7 @@ function PlayerManager:GetData()
     return plrData
 end
 
-function PlayerManager:SetData(plrData : ManagerTypes.PlayerData)
+function PlayerManager:SetData(plrData : ManagerTypes.PlayerData, isYield : boolean)
     table.clear(self.Backpack)
     for _,v in pairs(plrData.Backpack) do
         local tool = BackpackUtil.getToolFromName(v)
@@ -530,8 +531,13 @@ function PlayerManager:SetData(plrData : ManagerTypes.PlayerData)
             end
         end
     end]]
-    task.spawn(function() CustomizationUtil.SetInfoFromCharacter(char, plrData.Character) end)
+    if isYield then
+        CustomizationUtil.SetInfoFromCharacter(char, plrData.Character)
+    else
+        task.spawn(function() CustomizationUtil.SetInfoFromCharacter(char, plrData.Character) end)
+    end
 
+    self.CharacterSaves = plrData.CharacterSaves
    --[[ for _,v in pairs(plrData.Character.Accessories) do
         CustomizationUtil.Customize(self.Player, v, Enum.AvatarItemType.Asset)
     end
@@ -578,7 +584,7 @@ end
 function PlayerManager:LoadCharacterSlot(characterDataKey : number)
     local data = self:GetData()
     data.Character = self.CharacterSaves[characterDataKey]
-    self:SetData(data)
+    self:SetData(data, true)
     return self.CharacterSaves
 end
 
@@ -621,7 +627,7 @@ function PlayerManager.init(maid : Maid)
 
                 player.CharacterAdded:Wait()
                 
-                plrInfo:SetData(plrData)
+                plrInfo:SetData(plrData, false)
             end
         end))
 
@@ -874,7 +880,7 @@ function PlayerManager.init(maid : Maid)
         elseif descType == "PlayerBio" then
             plrData.RoleplayBios.Bio = descName
         end
-        plrManager:SetData(plrData)
+        plrManager:SetData(plrData, false)
 
         MidasEventTree.Gameplay.CustomizeAvatar.Value(plr)
     end)

@@ -86,7 +86,9 @@ local function initializeSoundSystem(instances)
 		sound.Volume = 0.65
 
 		for propName, propValue: any in pairs(props) do
-			(sound :: any)[propName] = propValue
+			pcall(function()
+				(sound :: any)[propName] = propValue
+			end)
 		end
 
 		sound.Parent = rootPart

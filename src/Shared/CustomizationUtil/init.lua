@@ -98,7 +98,7 @@ export type SimplifiedCatalogInfo = {
     ["ItemType"] : string,
     ["Name"] : string ?,
     ["Price"] : number ?,
-    ["CreatorName"] : string ?,
+    ["CreatorName"] : string ?
 }
 
 --constants

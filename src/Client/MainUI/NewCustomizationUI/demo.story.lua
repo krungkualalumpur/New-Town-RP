@@ -300,7 +300,7 @@ return function(target : CoreGui)
             local catalogInfos = {}
 
             for _,v in pairs(recommendeds) do
-                local SimplifiedCatalogInfo = {} :: any
+                local SimplifiedCatalogInfo : CustomizationUtil.SimplifiedCatalogInfo = {} :: any
                 SimplifiedCatalogInfo.Id = v.Item.AssetId
                 SimplifiedCatalogInfo.Name = v.Item.Name
                 SimplifiedCatalogInfo.ItemType = itemTypeName

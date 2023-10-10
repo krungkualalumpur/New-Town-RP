@@ -52,6 +52,7 @@ return function(target : CoreGui)
 
     local onBackpackEquip = maid:GiveTask(Signal.new())
     local onBackpackDelete = maid:GiveTask(Signal.new())
+    local onNotify = maid:GiveTask(Signal.new())
 
     local nameOnCustomize = maid:GiveTask(Signal.new())
 
@@ -66,6 +67,7 @@ return function(target : CoreGui)
 
         onBackpackEquip,
         onBackpackDelete,
+        onNotify,
 
         onCharReset,
         
@@ -78,6 +80,10 @@ return function(target : CoreGui)
 
     maid:GiveTask(onBackpackDelete:Connect(function()
         print("Delete")
+    end))
+
+    maid:GiveTask(onNotify:Connect(function()
+        print("Notify")
     end))
 
     maid:GiveTask(nameOnCustomize:Connect(function()
