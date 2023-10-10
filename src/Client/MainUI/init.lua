@@ -59,6 +59,9 @@ local LOAD_CHARACTER_SLOT = "LoadCharacterSlot"
 local DELETE_CHARACTER_SLOT = "DeleteCharacterSlot"
 
 local ON_ROLEPLAY_BIO_CHANGE = "OnRoleplayBioChange"
+
+local ON_ANIMATION_SET = "OnAnimationSet"
+local GET_CATALOG_FROM_CATALOG_INFO = "GetCatalogFromCatalogInfo"
 --variables
 --references
 local Player = Players.LocalPlayer
@@ -96,6 +99,27 @@ local function getCharacter(fromWorkspace : boolean, plr : Player ?)
     end
     
     return char
+end
+
+local function playAnimation(char : Model, id : number)
+    
+    if RunService:IsServer() then
+        local plr = Players:GetPlayerFromCharacter(char)
+        assert(plr)
+        NetworkUtil.fireClient(ON_ANIMATION_SET, plr, char, id)
+    else  
+        local charHumanoid = char:WaitForChild("Humanoid") :: Humanoid
+        local animator = charHumanoid:WaitForChild("Animator") :: Animator
+    
+        local catalogAsset = NetworkUtil.invokeServer(GET_CATALOG_FROM_CATALOG_INFO, id):Clone()
+        local animation = catalogAsset:GetChildren()[1]
+        local animationTrack = animator:LoadAnimation(animation)
+        animationTrack.Looped = false
+        animationTrack:Play()
+        animationTrack.Ended:Wait()
+        animationTrack:Destroy()
+        catalogAsset:Destroy()
+    end
 end
 
 local function getEnumItemFromName(enum : Enum, enumItemName : string) 
@@ -827,6 +851,8 @@ return function(
 
         CustomizationUtil.Customize(Player, catalogInfo.Id, itemType :: Enum.AvatarItemType)
         char:Set(getCharacter(true))
+
+        playAnimation(char:Get(), catalogInfo.Id)
     end))
 
     maid:GiveTask(onCustomizeColor:Connect(function(color : Color3, char : ValueState<Model>)

@@ -17,11 +17,43 @@ local FIELD_OF_VIEW = 70
 local CAM_SHAKE_TIME = 0.16
 --remotes
 local ON_CAMERA_SHAKE = "OnCameraShake"
-local ON_ANIMATION_LOOP_SET = "OnAnimationLoopSet"
+local ON_ANIMATION_SET = "OnAnimationSet"
+local GET_CATALOG_FROM_CATALOG_INFO = "GetCatalogFromCatalogInfo"
 --variables
 --references
 local Player = Players.LocalPlayer
 --local functions
+local function playAnimation(char : Model, id : number)   
+    
+    if RunService:IsServer() then
+        local plr = Players:GetPlayerFromCharacter(char)
+        assert(plr)
+        NetworkUtil.fireClient(ON_ANIMATION_SET, plr, char, id)
+    else  
+        local maid = Maid.new()
+        local charHumanoid = char:WaitForChild("Humanoid") :: Humanoid
+        local animator = charHumanoid:WaitForChild("Animator") :: Animator
+    
+        local catalogAsset = maid:GiveTask(NetworkUtil.invokeServer(GET_CATALOG_FROM_CATALOG_INFO, id):Clone())
+        local animation = catalogAsset:GetChildren()[1]
+        local animationTrack = maid:GiveTask(animator:LoadAnimation(animation))
+        --animationTrack.Looped = false
+        animationTrack:Play()
+        --animationTrack.Ended:Wait()
+        local function stopAnimation()
+            animationTrack:Stop()
+            maid:Destroy()
+        end
+        maid:GiveTask(char.Destroying:Connect(stopAnimation))
+        maid:GiveTask(charHumanoid:GetPropertyChangedSignal("MoveDirection"):Connect(function()
+            if charHumanoid.MoveDirection.Magnitude ~= 0 then
+                stopAnimation()
+            end
+        end))
+        
+    end
+end
+
 local function camSprinting(on : boolean)
     local currentCamera = workspace.CurrentCamera
 
@@ -155,14 +187,6 @@ local function onCharacterAdded(char : Model)
     end
 end
 
-local function setAnimationLoop(plr : Player, animationTrack : AnimationTrack, isLooped : boolean)
-    if RunService:IsServer() then
-        NetworkUtil.fireClient(ON_ANIMATION_LOOP_SET, plr, animationTrack, isLooped)
-    else
-        animationTrack.Looped = isLooped
-    end
-end
-
 --class
 local CharacterManager = {}
 
@@ -192,8 +216,8 @@ function CharacterManager.init(maid: Maid)
         end
     end))
 
-    maid:GiveTask(NetworkUtil.onClientEvent(ON_ANIMATION_LOOP_SET, function(animationTrack : AnimationTrack, isLooped : boolean)
-        setAnimationLoop(Player, animationTrack, isLooped)
+    maid:GiveTask(NetworkUtil.onClientEvent(ON_ANIMATION_SET, function(char : Model, id : number)
+        playAnimation(char, id)
     end))
 end
 

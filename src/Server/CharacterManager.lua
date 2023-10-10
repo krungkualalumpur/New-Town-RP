@@ -2,6 +2,7 @@
 --services
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
 --packages
 local Maid = require(ReplicatedStorage:WaitForChild("Packages"):WaitForChild("Maid"))
 local NetworkUtil = require(ReplicatedStorage:WaitForChild("Packages"):WaitForChild("NetworkUtil"))
@@ -17,15 +18,45 @@ local WALK_SPEED = 6
 local CATALOG_FOLDER_NAME = "CatalogFolder"
 
 local ON_CHARACTER_APPEARANCE_RESET = "OnCharacterAppearanceReset"
-local ON_ANIMATION_LOOP_SET = "OnAnimationLoopSet"
 
 local GET_CATALOG_FROM_CATALOG_INFO = "GetCatalogFromCatalogInfo"
 local GET_AVATAR_FROM_CHARACTER_DATA = "GetAvatarFromCharacterData"
 
-
+local ON_ANIMATION_SET = "OnAnimationSet"
 --variables
 --references
 --local functions
+local function playAnimation(char : Model, id : number)   
+    
+    if RunService:IsServer() then
+        local plr = Players:GetPlayerFromCharacter(char)
+        assert(plr)
+        NetworkUtil.fireClient(ON_ANIMATION_SET, plr, char, id)
+    else  
+        local maid = Maid.new()
+        local charHumanoid = char:WaitForChild("Humanoid") :: Humanoid
+        local animator = charHumanoid:WaitForChild("Animator") :: Animator
+    
+        local catalogAsset = maid:GiveTask(NetworkUtil.invokeServer(GET_CATALOG_FROM_CATALOG_INFO, id):Clone())
+        local animation = catalogAsset:GetChildren()[1]
+        local animationTrack = maid:GiveTask(animator:LoadAnimation(animation))
+        --animationTrack.Looped = false
+        animationTrack:Play()
+        --animationTrack.Ended:Wait()
+        local function stopAnimation()
+            animationTrack:Stop()
+            maid:Destroy()
+        end
+        maid:GiveTask(char.Destroying:Connect(stopAnimation))
+        maid:GiveTask(charHumanoid:GetPropertyChangedSignal("MoveDirection"):Connect(function()
+            if charHumanoid.MoveDirection.Magnitude ~= 0 then
+                stopAnimation()
+            end
+        end))
+        
+    end
+end
+
 local function getCatalogFolder()
     local catalogFolder = ReplicatedStorage:FindFirstChild(CATALOG_FOLDER_NAME) :: Folder or Instance.new("Folder")
     catalogFolder.Name = CATALOG_FOLDER_NAME
@@ -154,7 +185,7 @@ function CharacterManager.init(maid : Maid)
         return character
     end)
     
-    NetworkUtil.getRemoteEvent(ON_ANIMATION_LOOP_SET)
+    NetworkUtil.getRemoteEvent(ON_ANIMATION_SET)
 
 end
 

@@ -108,7 +108,7 @@ local STR_CHAR_LIMIT =  10
 local CHARACTER_BUNDLE_ID_ATTRIBUTE_KEY = "BundleId"
 
 local CATALOG_FOLDER_NAME = "CatalogFolder"
-local ON_ANIMATION_LOOP_SET = "OnAnimationLoopSet"
+local ON_ANIMATION_SET = "OnAnimationSet"
 
 local ON_CUSTOMIZE_CHAR = "OnCustomizeCharacter"
 local ON_CUSTOMIZE_CHAR_COLOR = "OnCustomizeCharColor"
@@ -159,11 +159,34 @@ local function getCharacter(fromWorkspace : boolean, plr : Player ?)
     return char
 end
 
-local function setAnimationLoop(plr : Player, animationTrack : AnimationTrack, isLooped : boolean)
+local function playAnimation(char : Model, id : number)   
+    
     if RunService:IsServer() then
-        NetworkUtil.fireClient(ON_ANIMATION_LOOP_SET, plr, animationTrack, isLooped)
-    else
-        animationTrack.Looped = isLooped
+        local plr = Players:GetPlayerFromCharacter(char)
+        assert(plr)
+        NetworkUtil.fireClient(ON_ANIMATION_SET, plr, char, id)
+    else  
+        local maid = Maid.new()
+        local charHumanoid = char:WaitForChild("Humanoid") :: Humanoid
+        local animator = charHumanoid:WaitForChild("Animator") :: Animator
+    
+        local catalogAsset = maid:GiveTask(NetworkUtil.invokeServer(GET_CATALOG_FROM_CATALOG_INFO, id):Clone())
+        local animation = catalogAsset:GetChildren()[1]
+        local animationTrack = maid:GiveTask(animator:LoadAnimation(animation))
+        --animationTrack.Looped = false
+        animationTrack:Play()
+        --animationTrack.Ended:Wait()
+        local function stopAnimation()
+            animationTrack:Stop()
+            maid:Destroy()
+        end
+        maid:GiveTask(char.Destroying:Connect(stopAnimation))
+        maid:GiveTask(charHumanoid:GetPropertyChangedSignal("MoveDirection"):Connect(function()
+            if charHumanoid.MoveDirection.Magnitude ~= 0 then
+                stopAnimation()
+            end
+        end))
+        
     end
 end
 
@@ -568,27 +591,7 @@ local function processingHumanoidDescById(id : number, passedItemType : Enum.Ava
             elseif assetTypeId == Enum.AssetType.ClimbAnimation.Value then 
                 humanoidDesc.ClimbAnimation = modifiedIdFromIsDelete
             elseif assetTypeId == Enum.AssetType.EmoteAnimation.Value then
-                local asset = game.InsertService:LoadAsset(id) -- Here you can use any ID you want
-                local animation = asset:GetChildren()[1] :: Animation
-                
-
-                local charHumanoid = character:WaitForChild("Humanoid") :: Humanoid
-                local animator = charHumanoid:WaitForChild("Animator") :: Animator
-
-                local animConn 
-                local animTrack = animator:LoadAnimation(animation)
-                animTrack.Parent = ReplicatedStorage:WaitForChild("Assets") -- make the animator to client,, f###.... wip
-                animTrack.Priority = Enum.AnimationPriority.Core
-                --animTrack.Looped = false
-                setAnimationLoop(Players:GetPlayerFromCharacter(character), animTrack, false)
-                animTrack:Play()
-                asset:Destroy()
-                animConn = animTrack.Ended:Connect(function()
-                    print("Anim ended ui!")
-                    animConn:Disconnect()                
-                    animTrack:Stop()
-                    animTrack:Destroy()
-                end)
+                playAnimation(character, id)
             end
  
             humanoidDesc:SetAccessories(accessories, true)
