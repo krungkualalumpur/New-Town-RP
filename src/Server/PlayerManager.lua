@@ -281,9 +281,9 @@ function PlayerManager.new(player : Player, maid : Maid ?)
         return count
     end) 
 
-    MidasStateTree.Others.ABValue(player, function()
+   --[[ MidasStateTree.Others.ABValue(player, function()
         return string.byte("B")
-    end)
+    end)]]
         --testing only
     --task.spawn(function()
      --   while wait(1) do

@@ -9,6 +9,8 @@ local Maid = require(ReplicatedStorage:WaitForChild("Packages"):WaitForChild("Ma
 local NetworkUtil = require(ReplicatedStorage:WaitForChild("Packages"):WaitForChild("NetworkUtil"))
 --modules
 local InputHandler = require(ReplicatedStorage:WaitForChild("Client"):WaitForChild("InputHandler"))
+local MidasEventTree = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("MidasEventTree"))
+local MidasStateTree = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("MidasStateTree"))
 --types
 type Maid = Maid.Maid
 --constants
@@ -140,6 +142,10 @@ end
 
    -- return
 --end
+local function getRandomAB() 
+    local rand = math.random(0, 1)
+    return if rand == 0 then "A" else "B" 
+end
 
 local function onCharacterAdded(char : Model)
     local _maid = Maid.new()
@@ -180,11 +186,22 @@ local function onCharacterAdded(char : Model)
 
 
     --sprint setup 2
-    if game:GetService("UserInputService").KeyboardEnabled then
+    local abValue = getRandomAB()
+
+    if abValue == "A" then
+        char:SetAttribute("IsSprinting", true)
+    elseif abValue == "B" then
+        char:SetAttribute("IsSprinting", false)
+    end 
+
+    MidasStateTree.Others.ABValue(Player, function()
+        return string.byte(abValue)
+    end)
+    --[[if game:GetService("UserInputService").KeyboardEnabled then
         char:SetAttribute("IsSprinting", false)
     else
         char:SetAttribute("IsSprinting", true)
-    end
+    end]]
 end
 
 --class
