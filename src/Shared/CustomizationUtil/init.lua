@@ -39,7 +39,7 @@ export type CharacterData = {
     WalkAnimation : number,
     ClimbAnimation : number,
 
-    BodyColor : Color3
+    BodyColor : string
 }
 
 export type DescType = "PlayerName" | "PlayerBio"
@@ -653,12 +653,12 @@ local function adjustCharacterColorByCharacterData(character : Model, characterD
     local color = characterData.BodyColor
 
     if humanoid and humanoidDesc then
-        humanoidDesc.HeadColor = color
-        humanoidDesc.TorsoColor = color
-        humanoidDesc.LeftArmColor = color
-        humanoidDesc.LeftLegColor = color
-        humanoidDesc.RightArmColor = color
-        humanoidDesc.RightLegColor = color
+        humanoidDesc.HeadColor = Color3.fromHex(color)
+        humanoidDesc.TorsoColor = Color3.fromHex(color)
+        humanoidDesc.LeftArmColor = Color3.fromHex(color)
+        humanoidDesc.LeftLegColor = Color3.fromHex(color)
+        humanoidDesc.RightArmColor = Color3.fromHex(color)
+        humanoidDesc.RightLegColor = Color3.fromHex(color)
 
         humanoid:ApplyDescription(humanoidDesc)
     end
@@ -762,7 +762,7 @@ function CustomizationUtil.GetInfoFromCharacter(character :Model) : CharacterDat
         WalkAnimation = humanoidDesc.WalkAnimation,
         ClimbAnimation = humanoidDesc.ClimbAnimation,
 
-        BodyColor = humanoidDesc.HeadColor
+        BodyColor = humanoidDesc.HeadColor:ToHex()
     }
 end
 
@@ -811,7 +811,7 @@ function CustomizationUtil.CustomizeBodyColor(plr : Player, color : Color3)
         local character = plr.Character or plr.CharacterAdded:Wait()
 
         local characterData = CustomizationUtil.GetInfoFromCharacter(character)
-        characterData.BodyColor = color
+        characterData.BodyColor = color:ToHex()
         adjustCharacterColorByCharacterData(character, characterData)
     else
         NetworkUtil.invokeServer(ON_CUSTOMIZE_CHAR_COLOR, color)

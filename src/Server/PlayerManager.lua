@@ -69,6 +69,7 @@ local ON_CUSTOMIZE_CHAR = "OnCustomizeCharacter"
 local ON_CUSTOMIZE_CHAR_COLOR = "OnCustomizeCharColor"
 local ON_DELETE_CATALOG = "OnDeleteCatalog"
 
+local GET_CHARACTER_SLOT = "GetCharacterSlot"
 local SAVE_CHARACTER_SLOT = "SaveCharacterSlot"
 local LOAD_CHARACTER_SLOT = "LoadCharacterSlot"
 local DELETE_CHARACTER_SLOT = "DeleteCharacterSlot"
@@ -849,6 +850,11 @@ function PlayerManager.init(maid : Maid)
     NetworkUtil.onServerInvoke(ON_DELETE_CATALOG, function(plr : Player, customizationId : number, itemType : Enum.AvatarItemType)
         CustomizationUtil.DeleteCatalog(plr, customizationId, itemType)
         return nil
+    end)
+
+    NetworkUtil.onServerInvoke(GET_CHARACTER_SLOT, function(plr : Player)
+        local plrManager = PlayerManager.get(plr)
+        return plrManager.CharacterSaves
     end)
 
     NetworkUtil.onServerInvoke(SAVE_CHARACTER_SLOT, function(plr : Player)

@@ -22,9 +22,9 @@ type PlayerSaveData = {
 }
 --constants
 local DATA_ATTEMPT_COUNT = 10
-local CURRENT_GAME_VERSION = "v1.1"
+local CURRENT_GAME_VERSION = "v1.2"
 --variables
-local gameData1 = DataStoreService:GetDataStore("GameData1")
+local gameData1 = DataStoreService:GetDataStore("GameData2")
 --module
 local DatastoreManager = {}
 function DatastoreManager.save(player: Player, plrInfo : ManagerTypes.PlayerManager)
@@ -35,21 +35,21 @@ function DatastoreManager.save(player: Player, plrInfo : ManagerTypes.PlayerMana
 		not RunService:IsStudio()
 		or (ServerStorage:FindFirstChild("SaveInStudio") and ServerStorage.SaveInStudio.Value == true)
 	then
-		print("T1")
+		--print("T1")
 		--saving
 		local data : PlayerSaveData = {
             PlayerData = plrInfo:GetData(),
 			LastTimeStamp = DateTime.now().UnixTimestamp,
 			GameVersion = CURRENT_GAME_VERSION
 		}
-		print("T2")
+		--print("T2")
 		local JSONdata = HttpService:JSONEncode(data)
 		local s, e = pcall(function()
-			print("T3")
+			--print("T3")
 			gameData1:SetAsync("k" .. player.UserId, JSONdata)
 			print("saving: ", JSONdata)
 		end)
-		print("T4")
+		--print("T4")
 		if not s then
 			warn("Game datasave error: ", e)
 		end

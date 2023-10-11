@@ -2920,7 +2920,7 @@ return function(
         Children = {
             _new("UIListLayout")({
                 SortOrder = Enum.SortOrder.LayoutOrder,
-                Padding = PADDING_SIZE
+                Padding = UDim.new(PADDING_SIZE_SCALE.Scale*0.2, PADDING_SIZE_SCALE.Offset*0.2)
             }),
             _new("TextLabel")({
                 LayoutOrder = 1,
@@ -3169,17 +3169,17 @@ return function(
             _new("Frame")({
                 Name = "Avatar Frame",
                 BackgroundColor3 = BACKGROUND_COLOR,
-                Size = UDim2.fromScale(0.3, 1),
+                Size = UDim2.fromScale(0.3, 0.97),
                 Children = {
                     _new("UIPadding")({
-                        PaddingTop = PADDING_SIZE,
-                        PaddingBottom = PADDING_SIZE,
-                        PaddingLeft = PADDING_SIZE,
-                        PaddingRight = PADDING_SIZE
+                        PaddingTop = UDim.new(PADDING_SIZE_SCALE.Scale*0.1, PADDING_SIZE_SCALE.Offset*0.1),
+                        PaddingBottom = UDim.new(PADDING_SIZE_SCALE.Scale*0.1, PADDING_SIZE_SCALE.Offset*0.1),
+                        PaddingLeft = UDim.new(PADDING_SIZE_SCALE.Scale*0.1, PADDING_SIZE_SCALE.Offset*0.1),
+                        PaddingRight = UDim.new(PADDING_SIZE_SCALE.Scale*0.1, PADDING_SIZE_SCALE.Offset*0.1),
                     }),
                     _new("UIListLayout")({
                         FillDirection = Enum.FillDirection.Vertical,
-                        Padding = PADDING_SIZE,
+                        Padding = UDim.new(PADDING_SIZE_SCALE.Scale*0.1, PADDING_SIZE_SCALE.Offset*0.1),
                         SortOrder = Enum.SortOrder.LayoutOrder
                     }),
                     roleplayName,
@@ -3906,7 +3906,7 @@ return function(
                             }
                         },
                         if RunService:IsRunning() then CustomizationUtil.getAvatarPreviewByCharacterData else getCharacter(true),
-                        {v}
+                        {v} 
                     )
                     listFrame.Parent = savesListContent
                 end

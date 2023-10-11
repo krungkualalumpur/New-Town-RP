@@ -54,6 +54,7 @@ local PADDING_SIZE = UDim.new(0,10)
 --remotes
 local GET_PLAYER_BACKPACK = "GetPlayerBackpack"
 
+local GET_CHARACTER_SLOT = "GetCharacterSlot"
 local SAVE_CHARACTER_SLOT = "SaveCharacterSlot"
 local LOAD_CHARACTER_SLOT = "LoadCharacterSlot"
 local DELETE_CHARACTER_SLOT = "DeleteCharacterSlot"
@@ -857,6 +858,8 @@ return function(
                     return ""
                 end, isVisible)
             }))
+
+            saveList:Set(NetworkUtil.invokeServer(GET_CHARACTER_SLOT)) 
         end
         return ""
     end, UIStatus)
