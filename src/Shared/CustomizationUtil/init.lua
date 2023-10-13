@@ -396,8 +396,9 @@ local function applyBundleByHumanoidDescription(character : Model, bundleId : nu
 	end
 
     local humanoid = character:WaitForChild("Humanoid") :: Humanoid 
-    local empty_humanoid_Desc = Instance.new("HumanoidDescription") 
+    local empty_humanoid_Desc = if (bundleDetails.Bundle ~= Enum.BundleType.Animations.Name) then Instance.new("HumanoidDescription") else humanoid:GetAppliedDescription()
     
+
     adjustHumanoidDescColor(empty_humanoid_Desc, Color3.fromRGB(155,155,155))
     humanoid:ApplyDescription(empty_humanoid_Desc)
     --adjustCharacterColorByCharacterData(character, characterData)
