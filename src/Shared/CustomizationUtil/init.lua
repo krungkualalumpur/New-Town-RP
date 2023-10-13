@@ -190,6 +190,8 @@ local function playAnimation(char : Model, id : number)
     end
 end
 
+
+
 local function getHumanoidDescriptionAccessory(
     assetId : number,
     enumAccessoryType : Enum.AccessoryType,
@@ -328,8 +330,11 @@ local function applyBundle(character : Model, bundleFolder : Model)
                     local animType = animVal.Name:gsub("(%l)(%w*)", function(a,b) return string.upper(a)..b end :: (string) -> string) .. "Animation" 
             
                     local animation = animVal:GetChildren()[1] 
-                    if animation:IsA("Animation") then
+                    if animation:IsA("Animation") and (animType ~= "PoseAnimation") then
                         --if animType == "RunAnimation" then 
+                        --if animType == "SwimidleAnimation" then
+                          --  animType = "SwimIdleAnimation"
+                        --end
                         local s, e = pcall(function() humanoidDesc[animType] = tonumber(asset.Name:match("%d+")) end) --hacky way to bypass the tedious properties conditions
                         if not s and type(e) == "string" then warn("Error in loading animation: " .. e) end
                     end
@@ -347,6 +352,26 @@ local function applyBundle(character : Model, bundleFolder : Model)
 	humanoid:BuildRigFromAttachments()
 	humanoid:SetStateEnabled(Enum.HumanoidStateType.Dead, true)
     if RunService:IsServer() then humanoid:ApplyDescription(humanoidDesc) end
+end
+
+local function adjustHumanoidDescColor(humanoidDesc : HumanoidDescription, color : Color3)
+    humanoidDesc.HeadColor = color
+    humanoidDesc.TorsoColor = color
+    humanoidDesc.LeftArmColor = color
+    humanoidDesc.LeftLegColor = color
+    humanoidDesc.RightArmColor = color
+    humanoidDesc.RightLegColor = color
+    return
+end
+local function adjustCharacterColorByCharacterData(character : Model, characterData : CharacterData)
+    local humanoid = character:FindFirstChild("Humanoid") :: Humanoid ?
+    local humanoidDesc = if humanoid then humanoid:GetAppliedDescription() else nil
+    local color = characterData.BodyColor
+
+    if humanoid and humanoidDesc then
+        adjustHumanoidDescColor(humanoidDesc, Color3.fromHex(color))
+        humanoid:ApplyDescription(humanoidDesc)
+    end
 end
 
 local function applyBundleByHumanoidDescription(character : Model, bundleId : number, customizeFn : (id : number, passedItemType : Enum.AvatarItemType, character : Model, passedAssetTypeId : number?, isDelete : boolean) -> ())
@@ -371,7 +396,12 @@ local function applyBundleByHumanoidDescription(character : Model, bundleId : nu
 	end
 
     local humanoid = character:WaitForChild("Humanoid") :: Humanoid 
-    --local humanoidDesc = humanoid:GetAppliedDescription()
+    local empty_humanoid_Desc = Instance.new("HumanoidDescription") 
+    
+    adjustHumanoidDescColor(empty_humanoid_Desc, Color3.fromRGB(155,155,155))
+    humanoid:ApplyDescription(empty_humanoid_Desc)
+    --adjustCharacterColorByCharacterData(character, characterData)
+    --local humanoidDesc = humanoid:GetAppliedDescription() 
 
     for _,itemDetails in pairs(bundleDetails.Items) do
         print(itemDetails)
@@ -644,23 +674,6 @@ local function processingHumanoidDescById(id : number, passedItemType : Enum.Ava
 
             --CustomizationUtil.ApplyBundleFromId(character, customizationId)
         end
-    end
-end
-
-local function adjustCharacterColorByCharacterData(character : Model, characterData : CharacterData)
-    local humanoid = character:FindFirstChild("Humanoid") :: Humanoid ?
-    local humanoidDesc = if humanoid then humanoid:GetAppliedDescription() else nil
-    local color = characterData.BodyColor
-
-    if humanoid and humanoidDesc then
-        humanoidDesc.HeadColor = Color3.fromHex(color)
-        humanoidDesc.TorsoColor = Color3.fromHex(color)
-        humanoidDesc.LeftArmColor = Color3.fromHex(color)
-        humanoidDesc.LeftLegColor = Color3.fromHex(color)
-        humanoidDesc.RightArmColor = Color3.fromHex(color)
-        humanoidDesc.RightLegColor = Color3.fromHex(color)
-
-        humanoid:ApplyDescription(humanoidDesc)
     end
 end
 

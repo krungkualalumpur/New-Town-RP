@@ -866,9 +866,11 @@ return function(
     end, UIStatus)
 
     
+    local loadingMaid = maid:GiveTask(Maid.new())
     maid:GiveTask(onCatalogTry:Connect(function(catalogInfo : NewCustomizationUI.SimplifiedCatalogInfo, char : ValueState<Model>)
         local itemType = getEnumItemFromName(Enum.AvatarItemType, catalogInfo.ItemType)
 
+        LoadingFrame(loadingMaid, "Loading character").Parent = target
         CustomizationUtil.Customize(Player, catalogInfo.Id, itemType :: Enum.AvatarItemType)
         char:Set(getCharacter(true))
 
@@ -878,6 +880,8 @@ return function(
         if not s and (type(e) == "string") then
             warn("Error loading animation: " .. tostring(e))
         end
+
+        loadingMaid:DoCleaning()
     end))
 
     maid:GiveTask(onCustomizeColor:Connect(function(color : Color3, char : ValueState<Model>)
@@ -904,16 +908,15 @@ return function(
         saveList:Set(saveData)
     end))
 
-    local customizationMaid = maid:GiveTask(Maid.new())
     maid:GiveTask(onSavedCustomizationLoad:Connect(function(k, content)
-        local loadingFrame =  LoadingFrame(customizationMaid, "Loading the character")
+        local loadingFrame =  LoadingFrame(loadingMaid, "Loading the character")
         loadingFrame.Parent = target
         local pureContent = table.clone(content)
         pureContent.CharModel = nil
         local saveData =  NetworkUtil.invokeServer(LOAD_CHARACTER_SLOT, k, pureContent)
         saveList:Set(saveData)
         content.CharModel:Set(getCharacter(true)) 
-        customizationMaid:DoCleaning()
+        loadingMaid:DoCleaning()
     end))
 
     maid:GiveTask(onSavedCustomizationDelete:Connect(function(k, content)
