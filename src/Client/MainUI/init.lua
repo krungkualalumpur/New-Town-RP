@@ -17,6 +17,7 @@ local AnimationUI = require(ReplicatedStorage:WaitForChild("Client"):WaitForChil
 local NewCustomizationUI = require(ReplicatedStorage:WaitForChild("Client"):WaitForChild("MainUI"):WaitForChild("NewCustomizationUI"))
 local CustomizationUI = require(ReplicatedStorage:WaitForChild("Client"):WaitForChild("MainUI"):WaitForChild("CustomizationUI"))
 local ItemOptionsUI = require(ReplicatedStorage:WaitForChild("Client"):WaitForChild("ItemOptionsUI"))
+local LoadingFrame = require(ReplicatedStorage:WaitForChild("Client"):WaitForChild("LoadingFrame"))
 
 local ExitButton = require(ReplicatedStorage:WaitForChild("Client"):WaitForChild("ExitButton"))
 local BackpackUtil = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("BackpackUtil"))
@@ -871,7 +872,12 @@ return function(
         CustomizationUtil.Customize(Player, catalogInfo.Id, itemType :: Enum.AvatarItemType)
         char:Set(getCharacter(true))
 
-        playAnimation(char:Get(), catalogInfo.Id)
+        local s, e = pcall(function()
+            playAnimation(char:Get(), catalogInfo.Id)
+        end) -- temp read failed
+        if not s and (type(e) == "string") then
+            warn("Error loading animation: " .. tostring(e))
+        end
     end))
 
     maid:GiveTask(onCustomizeColor:Connect(function(color : Color3, char : ValueState<Model>)
@@ -898,12 +904,16 @@ return function(
         saveList:Set(saveData)
     end))
 
+    local customizationMaid = maid:GiveTask(Maid.new())
     maid:GiveTask(onSavedCustomizationLoad:Connect(function(k, content)
+        local loadingFrame =  LoadingFrame(customizationMaid, "Loading the character")
+        loadingFrame.Parent = target
         local pureContent = table.clone(content)
         pureContent.CharModel = nil
         local saveData =  NetworkUtil.invokeServer(LOAD_CHARACTER_SLOT, k, pureContent)
         saveList:Set(saveData)
-        content.CharModel:Set(getCharacter(true))
+        content.CharModel:Set(getCharacter(true)) 
+        customizationMaid:DoCleaning()
     end))
 
     maid:GiveTask(onSavedCustomizationDelete:Connect(function(k, content)

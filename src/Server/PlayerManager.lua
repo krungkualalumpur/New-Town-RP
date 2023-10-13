@@ -576,7 +576,7 @@ function PlayerManager:SetData(plrData : ManagerTypes.PlayerData, isYield : bool
     CustomizationUtil.setDesc(self.Player, "PlayerBio", self.RoleplayBios.Bio)
 
     if not self.isLoaded then
-        self.onLoadingComplete:Fire(true) 
+        self.onLoadingComplete:Fire(true)
     end
     return true
 end

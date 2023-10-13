@@ -2891,7 +2891,7 @@ return function(
             }),
             savesListHeader,
             savesListContent,
-            _bind(getButton(maid, 3, "Add Save", function()  
+            _bind(getButton(maid, 3, "Add Save for Current Character", function()  
                 onCustomizationSave:Fire()
             end, TERTIARY_COLOR))({
                 Size = UDim2.fromScale(1, 0.1)
