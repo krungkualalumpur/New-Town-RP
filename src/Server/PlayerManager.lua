@@ -212,8 +212,11 @@ function PlayerManager.new(player : Player, maid : Maid ?)
     Registry[player] = self
     MarketplaceManager.newPlayer(self._Maid, player)
 
-    self._Maid:GiveTask(self.onLoadingComplete:Connect(function()
+    self._Maid:GiveTask(self.onLoadingComplete:Connect(function(characterLoadSuccess : boolean)
         self.isLoaded = true
+        if not characterLoadSuccess then
+            self:SetData(self:GetData(), false)
+        end
     end)) 
 
     DatastoreManager.load(player, self)
@@ -228,7 +231,7 @@ function PlayerManager.new(player : Player, maid : Maid ?)
         end
     end))
 
-    self:SetData(self:GetData(), false)
+    --self:SetData(self:GetData(), false)
     --hacky way to store character info
     self._Maid.CharacterModel = player.Character
 
@@ -532,13 +535,22 @@ function PlayerManager:SetData(plrData : ManagerTypes.PlayerData, isYield : bool
             end
         end
     end]]
+    self.CharacterSaves = plrData.CharacterSaves
+
     if isYield then
+        if not char:IsDescendantOf(workspace) then
+            self.Player.CharacterAppearanceLoaded:Wait()
+        end
         CustomizationUtil.SetInfoFromCharacter(char, plrData.Character)
     else
-        task.spawn(function() CustomizationUtil.SetInfoFromCharacter(char, plrData.Character) end)
+        task.spawn(function() 
+            if not char:IsDescendantOf(workspace) then
+                self.Player.CharacterAppearanceLoaded:Wait()
+            end
+            CustomizationUtil.SetInfoFromCharacter(char, plrData.Character) 
+        end)
     end
 
-    self.CharacterSaves = plrData.CharacterSaves
    --[[ for _,v in pairs(plrData.Character.Accessories) do
         CustomizationUtil.Customize(self.Player, v, Enum.AvatarItemType.Asset)
     end
@@ -564,7 +576,7 @@ function PlayerManager:SetData(plrData : ManagerTypes.PlayerData, isYield : bool
     CustomizationUtil.setDesc(self.Player, "PlayerBio", self.RoleplayBios.Bio)
 
     if not self.isLoaded then
-        self.onLoadingComplete:Fire() 
+        self.onLoadingComplete:Fire(true) 
     end
     return true
 end

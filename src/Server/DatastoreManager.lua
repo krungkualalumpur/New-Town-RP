@@ -87,17 +87,17 @@ function DatastoreManager.load(player: Player, plrInfo: ManagerTypes.PlayerManag
 	local data = DatastoreManager.get(player)
 	if not data then
 		--loadVanilla(player, plrData, sysData)
-		plrInfo.onLoadingComplete:Fire()
+		plrInfo.onLoadingComplete:Fire(false)
 		return
 	end
 
 	local convertedData :  PlayerSaveData = HttpService:JSONDecode(data) 
 	print("Loading: " , data, "Current Game Version : ", CURRENT_GAME_VERSION)
 	if convertedData and convertedData.PlayerData then
-		local s, e = pcall(function() plrInfo:SetData(convertedData.PlayerData, false) end)
+		local s, e = pcall(function() plrInfo:SetData(convertedData.PlayerData, true) end)
 		if not s and e then
 			warn("Error upon loading player data: " .. tostring(e))
-			plrInfo.onLoadingComplete:Fire()
+			plrInfo.onLoadingComplete:Fire(false)
 		end
 	end
 end

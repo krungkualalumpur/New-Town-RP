@@ -767,6 +767,9 @@ function CustomizationUtil.GetInfoFromCharacter(character :Model) : CharacterDat
 end
 
 function CustomizationUtil.SetInfoFromCharacter(character : Model, characterData : CharacterData)    
+    local humanoid = character:WaitForChild("Humanoid") :: Humanoid
+    humanoid:ApplyDescription(Instance.new("HumanoidDescription"))
+    
     for _,accessoryId in pairs(characterData.Accessories) do
         processingHumanoidDescById(accessoryId, Enum.AvatarItemType.Asset, character, nil, false)
     end
