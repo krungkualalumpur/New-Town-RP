@@ -39,6 +39,13 @@ export type CharacterData = {
     WalkAnimation : number,
     ClimbAnimation : number,
 
+    HeadScale : number,
+    DepthScale : number,
+    WidthScale : number,
+    HeightScale : number,
+    BodyTypeScale : number,
+    ProportionScale : number,
+
     BodyColor : string
 }
 
@@ -396,10 +403,12 @@ local function applyBundleByHumanoidDescription(character : Model, bundleId : nu
 	end
 
     local humanoid = character:WaitForChild("Humanoid") :: Humanoid 
-    local empty_humanoid_Desc = if (bundleDetails.Bundle ~= Enum.BundleType.Animations.Name) then Instance.new("HumanoidDescription") else humanoid:GetAppliedDescription()
-    
+    local empty_humanoid_Desc = if (bundleDetails.BundleType ~= "AvatarAnimations") then Instance.new("HumanoidDescription") else humanoid:GetAppliedDescription()
+    -- print(bundleDetails.BundleType, " wtf mm8???")
 
-    adjustHumanoidDescColor(empty_humanoid_Desc, Color3.fromRGB(155,155,155))
+    if (bundleDetails.BundleType ~= "AvatarAnimations") then 
+        adjustHumanoidDescColor(empty_humanoid_Desc, Color3.fromRGB(155,155,155))
+    end
     humanoid:ApplyDescription(empty_humanoid_Desc)
     --adjustCharacterColorByCharacterData(character, characterData)
     --local humanoidDesc = humanoid:GetAppliedDescription() 
@@ -750,8 +759,8 @@ function CustomizationUtil.GetInfoFromCharacter(character :Model) : CharacterDat
     local accessoryIds = {}
     for _,v in pairs(humanoidDesc:GetAccessories(true)) do
         table.insert(accessoryIds, v.AssetId)
-    end
-
+    end 
+    
     return {
         Accessories = accessoryIds,
 
@@ -775,6 +784,13 @@ function CustomizationUtil.GetInfoFromCharacter(character :Model) : CharacterDat
         SwimAnimation = humanoidDesc.SwimAnimation,
         WalkAnimation = humanoidDesc.WalkAnimation,
         ClimbAnimation = humanoidDesc.ClimbAnimation,
+
+        HeadScale = humanoidDesc.HeadScale,
+        DepthScale = humanoidDesc.DepthScale,
+        WidthScale = humanoidDesc.WidthScale,
+        HeightScale = humanoidDesc.HeightScale,
+        BodyTypeScale = humanoidDesc.BodyTypeScale,
+        ProportionScale = humanoidDesc.ProportionScale,
 
         BodyColor = humanoidDesc.HeadColor:ToHex()
     }
@@ -809,6 +825,19 @@ function CustomizationUtil.SetInfoFromCharacter(character : Model, characterData
     processingHumanoidDescById(characterData.ClimbAnimation, Enum.AvatarItemType.Asset, character, Enum.AvatarAssetType.ClimbAnimation.Value, false)
 
     adjustCharacterColorByCharacterData(character, characterData)
+
+    --scales
+    do
+        local humanoidDesc = humanoid:GetAppliedDescription()
+        humanoidDesc.HeadScale = characterData.HeadScale
+        humanoidDesc.DepthScale = characterData.DepthScale
+        humanoidDesc.WidthScale = characterData.WidthScale
+        humanoidDesc.HeightScale = characterData.HeightScale
+        humanoidDesc.BodyTypeScale = characterData.BodyTypeScale
+        humanoidDesc.ProportionScale = characterData.ProportionScale
+        humanoid:ApplyDescription(humanoidDesc)
+    end
+
     return
 end
 

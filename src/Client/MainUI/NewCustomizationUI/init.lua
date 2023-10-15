@@ -12,6 +12,7 @@ local ColdFusion = require(ReplicatedStorage:WaitForChild("Packages"):WaitForChi
 local Signal = require(ReplicatedStorage:WaitForChild("Packages"):WaitForChild("Signal"))
 --modules
 local CustomizationUtil = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("CustomizationUtil"))
+local BodySizeCustomization = require(ReplicatedStorage:WaitForChild("Client"):WaitForChild("MainUI"):WaitForChild("NewCustomizationUI"):WaitForChild("BodySizeCustomization"))
 local ExitButton = require(ReplicatedStorage:WaitForChild("Client"):WaitForChild("ExitButton"))
 local NumberUtil = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("NumberUtil"))
 
@@ -1009,7 +1010,7 @@ local function getSlider(
                 Color = PRIMARY_COLOR
             })
         }
-    })
+    }) :: TextButton
 
     local sliderMaid = _maid:GiveTask(Maid.new())
     --local sliderConn
@@ -1039,6 +1040,7 @@ local function getSlider(
                 sliderMaid:GiveTask(UserInputService.InputEnded:Connect(function(input : InputObject, gpe : boolean)
                     if input.UserInputType == Enum.UserInputType.MouseButton1 then
                         sliderMaid.update = nil
+                        intMouseY = slider.AbsolutePosition.Y
                     end
                 end))
             end
@@ -2905,6 +2907,9 @@ return function(
         end, currentPage)
     })
 
+
+    local bodySizeCustomizationPage = BodySizeCustomization(maid)
+
     local degreeX = -90
     local degreeY = 0
 
@@ -2982,7 +2987,7 @@ return function(
                         end)
                     end,
                     MouseButton1Up = function()
-                        spinningConn:Disconnect()
+                        if spinningConn then spinningConn:Disconnect() end
                     end
                 }
             })
@@ -3192,7 +3197,8 @@ return function(
             categoryPage,
             catalogInfoPage,
             colorWheelPage,
-            saveListPage
+            saveListPage,
+            bodySizeCustomizationPage
         }
     }) :: Frame
 
@@ -3965,6 +3971,9 @@ return function(
             displayName(char)
         end))
     end
+
+    --testing only
+    currentPage:Set(bodySizeCustomizationPage)
     
     return out
 end
