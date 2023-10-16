@@ -40,7 +40,8 @@ local function getHorizontalSlider(
     maid : Maid,
     order : number,
     pos : ValueState<UDim2>,
-    isVisible : State<boolean>
+    isVisible : State<boolean>,
+    isRound : boolean
 )
     local _maid = Maid.new()    
 
@@ -75,6 +76,7 @@ local function getHorizontalSlider(
  
     local mouse = Players.LocalPlayer:GetMouse()
     local intMouseX, intMouseY = mouse.X, mouse.Y
+
     _bind(slider)({
         Position = pos,
         Events = {
@@ -82,8 +84,11 @@ local function getHorizontalSlider(
                 sliderMaid.update = RunService.RenderStepped:Connect(function()
                     local intPos = pos:Get()
                     local currentMouseX = (mouse.X - intMouseX)/mouse.ViewSizeX
-                    print(intPos.X.Scale, " - ", intMouseX)
-                    pos:Set(UDim2.fromScale(math.clamp((intPos.X.Scale + currentMouseX), 0, 1), 0))
+                    local sliderPosX = math.clamp((intPos.X.Scale + currentMouseX), 0, 1)
+                    local modifiedSliderPosX = if isRound then math.round(sliderPosX*10)/10 else sliderPosX
+                    print(modifiedSliderPosX)
+                    --print(intPos.X.Scale, " - ", intMouseX)
+                    pos:Set(UDim2.fromScale(modifiedSliderPosX, 0))
                     intMouseX = mouse.X
                 end)
             end
@@ -155,10 +160,10 @@ local function getListFrame(
 
     local sliderPos = _Value(UDim2.fromScale(0.5, 0))
 
+    local modifiedListName = listName:gsub(" ", "")
     local out = _new("Frame")({
         Name = _Computed(function(pos : UDim2)
-            print(pos, " ispal")
-            onSlideChange:Fire()
+            onSlideChange:Fire(modifiedListName, pos.X.Scale) 
             return ""
         end, sliderPos),
         BackgroundTransparency = 1,
@@ -190,7 +195,7 @@ local function getListFrame(
             }),
             _bind(getHorizontalSlider(maid, 2, sliderPos, _Computed(function()
                 return true
-            end)))({
+            end), false))({
                 Size = UDim2.new(0.85, 0, 0, 5)
             })
         }
@@ -414,6 +419,6 @@ return function(
             content,
             footer
         }
-    })
-    return out
+    }) :: Frame
+    return out 
 end

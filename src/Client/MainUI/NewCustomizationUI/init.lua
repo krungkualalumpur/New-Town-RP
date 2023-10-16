@@ -1393,6 +1393,10 @@ return function(
     local roleplayNameState : ValueState<string> = _Value((if RunService:IsRunning() then Players.LocalPlayer.Name else "Player Name"))
     local roleplayDescState : ValueState<string> = _Value((if RunService:IsRunning() then "" else "Player Desc"))
 
+    local onScaleChange = maid:GiveTask(Signal.new())
+    local onScaleConfirmChange = maid:GiveTask(Signal.new())
+    local onScaleBack = maid:GiveTask(Signal.new())
+
     local settingsState : {[any] : any} = {
         [Enum.CatalogSortType] = Enum.CatalogSortType.Relevance :: Enum.CatalogSortType,
         [Enum.CatalogSortAggregation] = Enum.CatalogSortAggregation.AllTime :: Enum.CatalogSortAggregation,
@@ -2907,8 +2911,12 @@ return function(
         end, currentPage)
     })
 
-
-    local bodySizeCustomizationPage = BodySizeCustomization(maid)
+    local bodySizeCustomizationPage = BodySizeCustomization(
+        maid,
+        onScaleChange,
+        onScaleConfirmChange,
+        onScaleBack
+    )
 
     local degreeX = -90
     local degreeY = 0
@@ -3945,6 +3953,24 @@ return function(
         Enabled = isVisible
     })
 
+    maid:GiveTask(onScaleChange:Connect(function(humanoidDescProperty : string, value : number)
+        print("on change")
+        local character = getCharacter(true)
+        local characterData = CustomizationUtil.GetInfoFromCharacter(character)
+        pcall(function() characterData[humanoidDescProperty] = value end)
+        CustomizationUtil.SetInfoFromCharacter(character, characterData)
+    end))
+
+    maid:GiveTask(onScaleConfirmChange:Connect(function()
+        print("on confirm")
+    end))
+
+    maid:GiveTask(onScaleBack:Connect(function()
+        currentPage:Set(mainMenuPage)
+        char:Set(getCharacter(true))
+    end))
+
+    
     local charMaid = Maid.new()
     local function displayName(char : Model)
         charMaid:DoCleaning()

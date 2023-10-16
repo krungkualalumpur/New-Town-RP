@@ -32,6 +32,18 @@ return function(target : CoreGui)
     )
     bodySizeCustomization.Parent = target
     
+    maid:GiveTask(onSignalChange:Connect(function()
+        print("on change")
+    end))
+
+    maid:GiveTask(onScaleConfirmChange:Connect(function()
+        print("on confirm")
+    end))
+
+    maid:GiveTask(onBack:Connect(function()
+        print("back!")
+    end))
+
     return function() 
         maid:Destroy()
     end
