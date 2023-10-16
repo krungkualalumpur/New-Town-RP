@@ -17,7 +17,19 @@ type Signal = Signal.Signal
 return function(target : CoreGui)
     local maid = Maid.new() 
 
-    local bodySizeCustomization  = BodySizeCustomization(maid)
+    local onSignalChange = maid:GiveTask(Signal.new())
+    local onScaleConfirmChange = maid:GiveTask(Signal.new())
+
+    local onBack = maid:GiveTask(Signal.new())
+
+    local bodySizeCustomization  = BodySizeCustomization(
+        maid,
+        
+        onSignalChange,
+        onScaleConfirmChange,
+
+        onBack
+    )
     bodySizeCustomization.Parent = target
     
     return function() 
