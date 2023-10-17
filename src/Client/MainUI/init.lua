@@ -193,7 +193,8 @@ function getImageButton(
     ImageId : number,
     activatedFn : () -> (),
     buttonName : string,
-    order : number
+    order : number,
+    textAnimated : boolean
 )
     local _fuse = ColdFusion.fuse(maid)
     local _new = _fuse.new
@@ -203,6 +204,40 @@ function getImageButton(
     
     local _Computed = _fuse.Computed
     local _Value = _fuse.Value
+
+    local imageTextPos = _Value(UDim2.fromScale(1.2, 0.5))
+    local imageTextTransp = _Value(0.5)
+
+    local interval = 1.8
+    local imageText = _new("TextLabel")({
+        AutomaticSize = Enum.AutomaticSize.XY,
+        BackgroundTransparency = 1,
+        BackgroundColor3 = BACKGROUND_COLOR,
+        Size = UDim2.fromScale(1, 0.3),
+        Position = imageTextPos:Tween(interval*0.9),
+        Font = Enum.Font.Gotham,
+        Text = buttonName,
+        TextColor3 = PRIMARY_COLOR,
+        TextStrokeColor3 = SECONDARY_COLOR,
+        TextTransparency = imageTextTransp:Tween(interval*0.9),
+        TextStrokeTransparency = _Computed(function(transp : number)
+            return math.clamp( transp,0.5, 1)
+        end, imageTextTransp):Tween(interval*0.9),
+        TextXAlignment = Enum.TextXAlignment.Left
+    })
+
+    if textAnimated then
+        local t = tick()
+        local animState = "Back"
+        maid:GiveTask(RunService.RenderStepped:Connect(function()
+            if tick() - t >= interval then
+                t = tick()
+                imageTextPos:Set(UDim2.fromScale(if animState == "Back" then 1.15 else 1.4, 0.5))
+                imageTextTransp:Set(if animState == "Back" then 0 else 0.25)
+                animState = if animState == "Back" then "Forth" else "Back"
+            end
+        end))
+    end
 
     local button = _new("ImageButton")({
         Name = buttonName,
@@ -216,24 +251,14 @@ function getImageButton(
            
             _new("UICorner")({}),
             _new("UIAspectRatioConstraint")({}),
-            _new("TextLabel")({
-                AutomaticSize = Enum.AutomaticSize.XY,
-                BackgroundTransparency = 1,
-                BackgroundColor3 = BACKGROUND_COLOR,
-                Size = UDim2.fromScale(1, 0.3),
-                Position = UDim2.fromScale(1.2, 0.5),
-                Font = Enum.Font.Gotham,
-                Text = buttonName,
-                TextColor3 = PRIMARY_COLOR,
-                TextStrokeColor3 = SECONDARY_COLOR,
-                TextStrokeTransparency = 0.5,
-                TextXAlignment = Enum.TextXAlignment.Left
-            })
+            imageText
         },
         Events = {
             Activated = activatedFn
         }
     })
+
+
     return button
 end
 
@@ -510,13 +535,13 @@ return function(
                     }),   
                     getImageButton(maid, 2815418737, function()
                         UIStatus:Set(if UIStatus:Get() ~= "Backpack" then "Backpack" else nil)
-                    end, "← Backpack", 1),
+                    end, "← Backpack", 1, true),
                     getImageButton(maid, 11955884948, function()
                         UIStatus:Set(if UIStatus:Get() ~= "Animation" then "Animation" else nil)
-                    end, "← Basic Emotes", 2),
+                    end, "← Basic Emotes", 2, true),
                     getImageButton(maid, 13285102351, function()
                         UIStatus:Set(if UIStatus:Get() ~= "Customization" then "Customization" else nil)
-                    end, "← Outfit", 3)
+                    end, "← Outfit", 3, true)
                     --getImageButton(maid, 227600967),
 
                 }
@@ -546,6 +571,9 @@ return function(
     local onCustomizationSave = maid:GiveTask(Signal.new())
     local onSavedCustomizationLoad = maid:GiveTask(Signal.new())
     local onSavedCustomizationDelete = maid:GiveTask(Signal.new())
+
+    local onScaleChange = maid:GiveTask(Signal.new())
+    local onScaleConfirmChange = maid:GiveTask(Signal.new())
 
     local onRPNameChange = maid:GiveTask(Signal.new())
     local onDescChange = maid:GiveTask(Signal.new())
@@ -621,10 +649,13 @@ return function(
                 onCatalogBuy,
 
                 onCustomizationSave,
-                onSavedCustomizationLoad,
+                onSavedCustomizationLoad, 
                 onSavedCustomizationDelete,
 
                 onCharacterReset,
+
+                onScaleChange,
+                onScaleConfirmChange,
 
                 onRPNameChange,
                 onDescChange,
@@ -870,7 +901,7 @@ return function(
     maid:GiveTask(onCatalogTry:Connect(function(catalogInfo : NewCustomizationUI.SimplifiedCatalogInfo, char : ValueState<Model>)
         local itemType = getEnumItemFromName(Enum.AvatarItemType, catalogInfo.ItemType)
 
-        LoadingFrame(loadingMaid, "Loading character").Parent = target
+        LoadingFrame(loadingMaid, "Applying the change").Parent = target
         CustomizationUtil.Customize(Player, catalogInfo.Id, itemType :: Enum.AvatarItemType)
         char:Set(getCharacter(true))
 
@@ -923,6 +954,46 @@ return function(
         local saveData = NetworkUtil.invokeServer(DELETE_CHARACTER_SLOT, k, content)
         saveList:Set(saveData)
     end))
+
+    maid:GiveTask(onScaleChange:Connect(function(humanoidDescProperty : string, value : number, char : ValueState<Model>, isPreview : boolean)
+        loadingMaid:DoCleaning()
+        local character = getCharacter(true)
+        --local humanoid = character:WaitForChild("Humanoid") :: Humanoid
+        -- character.Parent = workspace
+        --if humanoidDescProperty == "HeadScale" then
+        --    local headScale  = humanoid:WaitForChild("HeadScale") :: NumberValue
+        --    headScale.Value = value 
+        --    print(headScale)
+        --end
+        local loadingFrame = LoadingFrame(loadingMaid, "Loading Character Scales")
+        loadingFrame.Parent = target
+        
+        local characterData = CustomizationUtil.GetInfoFromCharacter(character)
+        local s, e =  pcall(function() characterData[humanoidDescProperty] = value end)
+        if not s and e then
+            warn(e)
+        end
+        if isPreview then
+            char:Set(CustomizationUtil.getAvatarPreviewByCharacterData(characterData))
+       -- else
+            --CustomizationUtil.SetInfoFromCharacter(character, characterData)
+           -- char:Set(getCharacter(true))
+        end
+        loadingMaid:DoCleaning()
+    end))
+
+    maid:GiveTask(onScaleConfirmChange:Connect(function(characterData, char : ValueState<Model>)
+        loadingMaid:DoCleaning()
+        local loadingFrame = LoadingFrame(loadingMaid, "Applying Character Scales")
+        loadingFrame.Parent = target
+        
+        local character = Player.Character
+        CustomizationUtil.SetInfoFromCharacter(character, characterData)
+
+       
+        loadingMaid:DoCleaning()
+    end))
+
 
     maid:GiveTask(onRPNameChange:Connect(function(inputted : string)
         print("On RP Change :", inputted) 

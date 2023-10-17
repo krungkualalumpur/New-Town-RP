@@ -11,6 +11,7 @@ local Maid = require(ReplicatedStorage:WaitForChild("Packages"):WaitForChild("Ma
 local ColdFusion = require(ReplicatedStorage:WaitForChild("Packages"):WaitForChild("ColdFusion8"))
 local Signal = require(ReplicatedStorage:WaitForChild("Packages"):WaitForChild("Signal"))
 --modules
+local LoadingFrame = require(ReplicatedStorage:WaitForChild("Client"):WaitForChild("LoadingFrame"))
 local CustomizationUtil = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("CustomizationUtil"))
 local BodySizeCustomization = require(ReplicatedStorage:WaitForChild("Client"):WaitForChild("MainUI"):WaitForChild("NewCustomizationUI"):WaitForChild("BodySizeCustomization"))
 local ExitButton = require(ReplicatedStorage:WaitForChild("Client"):WaitForChild("ExitButton"))
@@ -1345,6 +1346,9 @@ return function(
     
     onCharacterReset : Signal,
 
+    onScaleChange : Signal,
+    onScaleConfirmChange : Signal,
+
     onRPNameChange : Signal,
     onDescChange : Signal,
 
@@ -1393,8 +1397,6 @@ return function(
     local roleplayNameState : ValueState<string> = _Value((if RunService:IsRunning() then Players.LocalPlayer.Name else "Player Name"))
     local roleplayDescState : ValueState<string> = _Value((if RunService:IsRunning() then "" else "Player Desc"))
 
-    local onScaleChange = maid:GiveTask(Signal.new())
-    local onScaleConfirmChange = maid:GiveTask(Signal.new())
     local onScaleBack = maid:GiveTask(Signal.new())
 
     local settingsState : {[any] : any} = {
@@ -2915,8 +2917,13 @@ return function(
         maid,
         onScaleChange,
         onScaleConfirmChange,
-        onScaleBack
+        onScaleBack,
+
+        char,
+        currentPage,
+        mainMenuPage
     )
+  
 
     local degreeX = -90
     local degreeY = 0
@@ -3045,6 +3052,15 @@ return function(
                         Children = {
                             _new("UIAspectRatioConstraint")({})
                         }
+                    }),
+                    _bind(getButton(maid, 3, "Body Size", function()
+                        currentPage:Set(if currentPage:Get() ~= bodySizeCustomizationPage then bodySizeCustomizationPage else mainMenuPage)
+                        char:Set(getCharacter(true))
+                    end, TERTIARY_COLOR))({
+                        Name = "BodySizeCustomization",
+                        Size = UDim2.fromScale(2, 0.1),
+                        TextWrapped = true,
+                        TextScaled = true
                     }),
                 }
             }),
@@ -3953,18 +3969,6 @@ return function(
         Enabled = isVisible
     })
 
-    maid:GiveTask(onScaleChange:Connect(function(humanoidDescProperty : string, value : number)
-        print("on change")
-        local character = getCharacter(true)
-        local characterData = CustomizationUtil.GetInfoFromCharacter(character)
-        pcall(function() characterData[humanoidDescProperty] = value end)
-        CustomizationUtil.SetInfoFromCharacter(character, characterData)
-    end))
-
-    maid:GiveTask(onScaleConfirmChange:Connect(function()
-        print("on confirm")
-    end))
-
     maid:GiveTask(onScaleBack:Connect(function()
         currentPage:Set(mainMenuPage)
         char:Set(getCharacter(true))
@@ -3999,7 +4003,7 @@ return function(
     end
 
     --testing only
-    currentPage:Set(bodySizeCustomizationPage)
+    --currentPage:Set(bodySizeCustomizationPage)
     
     return out
 end

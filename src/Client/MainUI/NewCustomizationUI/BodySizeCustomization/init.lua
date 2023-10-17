@@ -9,6 +9,7 @@ local Maid = require(ReplicatedStorage:WaitForChild("Packages"):WaitForChild("Ma
 local ColdFusion = require(ReplicatedStorage:WaitForChild("Packages"):WaitForChild("ColdFusion8"))
 local Signal = require(ReplicatedStorage:WaitForChild("Packages"):WaitForChild("Signal"))
 --modules
+local CustomizationUtil = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("CustomizationUtil"))
 --types
 type Maid = Maid.Maid
 type Signal = Signal.Signal
@@ -19,7 +20,6 @@ type ValueState<T> = ColdFusion.ValueState<T>
 type State<T> = ColdFusion.State<T>
 --constants
 local TEXT_SIZE = 15
-local STR_CHAR_LIMIT =  10
 
 local PADDING_SIZE = UDim.new(0,10)
 local PADDING_SIZE_SCALE = UDim.new(0.15,0)
@@ -33,15 +33,23 @@ local SELECT_COLOR = Color3.fromRGB(105, 255, 102)
 local RED_COLOR = Color3.fromRGB(200,50,50)
 
 local TEST_COLOR = Color3.fromRGB(255,0,0)
+
+local SNAP_NUMBER = 50
 --variables
 --references
 --local functions
+local function roundNumber(num : number, snapNum : number)
+    return math.round(num*snapNum)/snapNum
+end
 local function getHorizontalSlider(
     maid : Maid,
     order : number,
     pos : ValueState<UDim2>,
     isVisible : State<boolean>,
-    isRound : boolean
+    isRound : boolean,
+
+    onPress : (() -> ())?,
+    onRelease : (() -> ())??
 )
     local _maid = Maid.new()    
 
@@ -58,6 +66,9 @@ local function getHorizontalSlider(
         BackgroundColor3 = BACKGROUND_COLOR,
         AnchorPoint = Vector2.new(0.5, 0.3),
         Size = UDim2.fromScale(0.1, 2.5),
+        Position = _Computed(function(udim2 : UDim2)
+            return if isRound then UDim2.fromScale(roundNumber(udim2.X.Scale, SNAP_NUMBER), udim2.Y.Scale) else udim2
+        end, pos),
         Children = {
             _new("UICorner")({}),
             _new("UIStroke")({
@@ -78,19 +89,19 @@ local function getHorizontalSlider(
     local intMouseX, intMouseY = mouse.X, mouse.Y
 
     _bind(slider)({
-        Position = pos,
         Events = {
             MouseButton1Down = function()
                 sliderMaid.update = RunService.RenderStepped:Connect(function()
                     local intPos = pos:Get()
-                    local currentMouseX = (mouse.X - intMouseX)/mouse.ViewSizeX
+                    local currentMouseX = ((mouse.X - intMouseX)/mouse.ViewSizeX)
                     local sliderPosX = math.clamp((intPos.X.Scale + currentMouseX), 0, 1)
-                    local modifiedSliderPosX = if isRound then math.round(sliderPosX*10)/10 else sliderPosX
-                    print(modifiedSliderPosX)
                     --print(intPos.X.Scale, " - ", intMouseX)
-                    pos:Set(UDim2.fromScale(modifiedSliderPosX, 0))
+                    pos:Set(UDim2.fromScale(sliderPosX, 0))
                     intMouseX = mouse.X
                 end)
+                if onPress then
+                    onPress()
+                end
             end
         }
     })
@@ -103,8 +114,12 @@ local function getHorizontalSlider(
             if visible then
                 sliderMaid:GiveTask(UserInputService.InputEnded:Connect(function(input : InputObject, gpe : boolean)
                     if input.UserInputType == Enum.UserInputType.MouseButton1 then
+                        if sliderMaid.update and onRelease then
+                            onRelease()
+                        end
                         sliderMaid.update = nil
                         intMouseX = slider.AbsolutePosition.X
+                        
                     end
                 end))
             end
@@ -126,10 +141,13 @@ local function getHorizontalSlider(
             }),]]
             _new("Frame")({
                 BackgroundColor3 = SELECT_COLOR,
-                Size = _Computed(function(u2 : UDim2)
+                Size = _Computed(function(udim2 : UDim2)
+                    return if isRound then UDim2.fromScale(roundNumber(udim2.X.Scale, SNAP_NUMBER), 1) else UDim2.fromScale(udim2.X.Scale, 1)
+                end, pos),
+                --Size = _Computed(function(u2 : UDim2)
                     -- print("Keluarge")
-                    return UDim2.fromScale(u2.X.Scale, 1)
-                end, pos) --UDim2.fromScale(0.5, 1)
+                    --return UDim2.fromScale(u2.X.Scale, 1)
+                --end, pos) --UDim2.fromScale(0.5, 1)
             }),
             slider
         },  
@@ -146,8 +164,10 @@ local function getListFrame(
     maid : Maid,
     listName : string,
     
-    onSlideChange : Signal
-    --, continue dis!
+    onSlideChange : Signal,
+    char : ValueState<Model>,
+
+    isVisible : State<boolean>
 )
     local _fuse = ColdFusion.fuse(maid)
     local _new = _fuse.new
@@ -163,7 +183,6 @@ local function getListFrame(
     local modifiedListName = listName:gsub(" ", "")
     local out = _new("Frame")({
         Name = _Computed(function(pos : UDim2)
-            onSlideChange:Fire(modifiedListName, pos.X.Scale) 
             return ""
         end, sliderPos),
         BackgroundTransparency = 1,
@@ -195,11 +214,35 @@ local function getListFrame(
             }),
             _bind(getHorizontalSlider(maid, 2, sliderPos, _Computed(function()
                 return true
-            end), false))({
+            end), true, nil, function()
+                onSlideChange:Fire(modifiedListName, sliderPos:Get().X.Scale, char, true)
+            end))({
                 Size = UDim2.new(0.85, 0, 0, 5)
             })
         }
     })
+
+    do
+        _new("StringValue")({
+            Value = _Computed(function(visible : boolean)
+                if visible then
+                    local character = char:Get()
+                    local humanoid = character:WaitForChild("Humanoid") :: Humanoid
+                    local humanoidDescription = humanoid:WaitForChild("HumanoidDescription") :: HumanoidDescription
+                    local value 
+                    local s, e = pcall(function() value = humanoidDescription[modifiedListName] end)
+                    if not s and e then
+                        warn(e)
+                    elseif s and value then
+                        sliderPos:Set(UDim2.fromScale(value, sliderPos:Get().Y.Scale))
+                    end
+                end
+                return ""
+            end, isVisible)
+        })
+       
+
+    end
     return out
 end
 
@@ -253,7 +296,11 @@ return function(
     onScaleChange : Signal,
     onScaleConfirmChange : Signal,
     
-    onBack : Signal
+    onBack : Signal,
+
+    char : ValueState<Model>,
+    currentPage : ValueState<GuiObject?>,
+    mainMenuPage : GuiObject
 )
     local _fuse = ColdFusion.fuse(maid)
     local _new = _fuse.new
@@ -287,7 +334,7 @@ return function(
             }),
             _new("Frame")({
                 LayoutOrder = 2,
-                Size = UDim2.fromScale(0.4, 1),
+                Size = UDim2.fromScale(1, 0.8),
                 BackgroundTransparency = 1,
                 Children = {
                     _new("UIListLayout")({
@@ -297,11 +344,12 @@ return function(
                     _new("TextLabel")({
                         LayoutOrder = 1,
                         BackgroundTransparency = 1,
-                        Size = UDim2.fromScale(1, 0.2),
+                        Size = UDim2.fromScale(1, 0.8),
                         TextScaled = true,
-                        Font = Enum.Font.ArialBold,
-                        Text = "",
-                        TextXAlignment = Enum.TextXAlignment.Left
+                        Font = Enum.Font.GothamBold,
+                        Text = "Body Scale",
+                        TextColor3 = TEXT_COLOR,
+                        TextXAlignment = Enum.TextXAlignment.Center
                     }),
                     --[[_bind(getTextBox(maid, 2,"Search...", function(text : string)
                        
@@ -341,7 +389,10 @@ return function(
                 }
             }),]]
             _bind(getButton(maid, 1, "✓", function()
-                onScaleConfirmChange:Fire()
+                local character = char:Get()
+                local characterData = CustomizationUtil.GetInfoFromCharacter(character)
+                onScaleConfirmChange:Fire(characterData, char)
+                currentPage:Set(mainMenuPage)
                 -- print("lagi nyambel")
                 -- onCustomizeBodyColor:Fire(selectedColor:Get(), char)
                 -- currentPage:Set(mainMenuPage)
@@ -357,6 +408,7 @@ return function(
         }
     })
  
+    local isVisible = _Value(false)
     local content = _new("Frame")({
         LayoutOrder = 2,
         BackgroundTransparency = 1,
@@ -371,39 +423,51 @@ return function(
             getListFrame(
                 maid,
                 "Head Scale",
-                onScaleChange
+                onScaleChange,
+                char,
+                isVisible
             ),
             getListFrame(
                 maid,
                 "Depth Scale",
-                onScaleChange
+                onScaleChange,
+                char,
+                isVisible
             ),
             getListFrame(
                 maid,
                 "Width Scale",
-                onScaleChange
+                onScaleChange,
+                char,
+                isVisible
             ),
             getListFrame(
                 maid,
                 "Height Scale",
-                onScaleChange
+                onScaleChange,
+                char,
+                isVisible
             ),
             getListFrame(
                 maid,
                 "Body Type Scale",
-                onScaleChange
+                onScaleChange,
+                char,
+                isVisible
             ),
             getListFrame(
                 maid,
                 "Proportion Scale",
-                onScaleChange
+                onScaleChange,
+                char,
+                isVisible
             ),
         }
     }) :: Frame
 
     local out = _new("Frame")({
         BackgroundColor3 = BACKGROUND_COLOR,
-        Size = UDim2.fromScale(0.68, 1),
+        Size = UDim2.fromScale(0.6, 1),
         Children = {
             _new("UIPadding")({
                 PaddingTop = UDim.new(PADDING_SIZE_SCALE.Scale*0.5,PADDING_SIZE_SCALE.Offset*0.5),
@@ -420,5 +484,18 @@ return function(
             footer
         }
     }) :: Frame
+
+    _bind(out)({
+        Visible = isVisible
+    })
+
+    local strVal = _new("StringValue")({
+        Value = _Computed(function(page : GuiObject ?)
+            local isBodySizeCustomizationPage = (page == out)
+            isVisible:Set(isBodySizeCustomizationPage)
+            return ""
+        end, currentPage)    
+    })
+    
     return out 
 end

@@ -22,6 +22,8 @@ local ON_CHARACTER_APPEARANCE_RESET = "OnCharacterAppearanceReset"
 local GET_CATALOG_FROM_CATALOG_INFO = "GetCatalogFromCatalogInfo"
 local GET_AVATAR_FROM_CHARACTER_DATA = "GetAvatarFromCharacterData"
 
+local ON_CHARACTER_INFO_SET_FROM_CHARACTER_DATA = "OnCharacterInfoSetFromCharacterData"
+
 local ON_ANIMATION_SET = "OnAnimationSet"
 --variables
 --references
@@ -184,7 +186,12 @@ function CharacterManager.init(maid : Maid)
 
         return character
     end)
-    
+
+    NetworkUtil.onServerInvoke(ON_CHARACTER_INFO_SET_FROM_CHARACTER_DATA, function(plr : Player, characterData)
+        CustomizationUtil.SetInfoFromCharacter(plr.Character or plr.CharacterAdded:Wait(), characterData)
+        return nil
+    end)
+
     NetworkUtil.getRemoteEvent(ON_ANIMATION_SET)
 
 end

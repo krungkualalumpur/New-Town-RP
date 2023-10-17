@@ -58,6 +58,9 @@ return function(target : CoreGui)
     -- end)
     local onCharacterReset = maid:GiveTask(Signal.new())
 
+    local onScaleChange = maid:GiveTask(Signal.new())
+    local onScaleConfirmChange = maid:GiveTask(Signal.new())
+
     local onRPNameChange = maid:GiveTask(Signal.new())
     local onDescChange = maid:GiveTask(Signal.new())
 
@@ -93,6 +96,9 @@ return function(target : CoreGui)
         onSavedCustomizationDelete,
 
         onCharacterReset,
+
+        onScaleChange,
+        onScaleConfirmChange,
 
         onRPNameChange,
         onDescChange,

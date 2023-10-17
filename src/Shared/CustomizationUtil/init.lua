@@ -124,6 +124,7 @@ local ON_DELETE_CATALOG = "OnDeleteCatalog"
 local GET_AVATAR_FROM_CHARACTER_DATA = "GetAvatarFromCharacterData"
 local GET_CATALOG_FROM_CATALOG_INFO = "GetCatalogFromCatalogInfo"
 
+local ON_CHARACTER_INFO_SET_FROM_CHARACTER_DATA = "OnCharacterInfoSetFromCharacterData"
 --variables
 --references
 --local cleanHumanoidDesc = Instance.new("HumanoidDescription")
@@ -797,47 +798,50 @@ function CustomizationUtil.GetInfoFromCharacter(character :Model) : CharacterDat
 end
 
 function CustomizationUtil.SetInfoFromCharacter(character : Model, characterData : CharacterData)    
-    local humanoid = character:WaitForChild("Humanoid") :: Humanoid
-    humanoid:ApplyDescription(Instance.new("HumanoidDescription"))
-    
-    for _,accessoryId in pairs(characterData.Accessories) do
-        processingHumanoidDescById(accessoryId, Enum.AvatarItemType.Asset, character, nil, false)
+    if RunService:IsServer() then
+        local humanoid = character:WaitForChild("Humanoid") :: Humanoid
+        humanoid:ApplyDescription(Instance.new("HumanoidDescription"))
+        
+        for _,accessoryId in pairs(characterData.Accessories) do
+            processingHumanoidDescById(accessoryId, Enum.AvatarItemType.Asset, character, nil, false)
+        end
+
+        processingHumanoidDescById(characterData.Face, Enum.AvatarItemType.Asset, character, Enum.AvatarAssetType.Face.Value, false)
+        processingHumanoidDescById(characterData.Head, Enum.AvatarItemType.Asset, character, Enum.AvatarAssetType.Head.Value, false)
+        processingHumanoidDescById(characterData.LeftArm, Enum.AvatarItemType.Asset, character, Enum.AvatarAssetType.LeftArm.Value, false)
+        processingHumanoidDescById(characterData.LeftLeg, Enum.AvatarItemType.Asset, character, Enum.AvatarAssetType.LeftLeg.Value, false)
+        processingHumanoidDescById(characterData.Pants, Enum.AvatarItemType.Asset, character, Enum.AvatarAssetType.Pants.Value, false)
+        processingHumanoidDescById(characterData.RightArm, Enum.AvatarItemType.Asset, character, Enum.AvatarAssetType.RightArm.Value, false)
+        processingHumanoidDescById(characterData.RightLeg, Enum.AvatarItemType.Asset, character, Enum.AvatarAssetType.RightLeg.Value, false)
+        processingHumanoidDescById(characterData.Shirt, Enum.AvatarItemType.Asset, character, Enum.AvatarAssetType.Shirt.Value, false)
+        processingHumanoidDescById(characterData.TShirt, Enum.AvatarItemType.Asset, character, Enum.AvatarAssetType.TShirt.Value, false)
+        processingHumanoidDescById(characterData.Torso, Enum.AvatarItemType.Asset, character, Enum.AvatarAssetType.Torso.Value, false)
+
+        processingHumanoidDescById(characterData.RunAnimation, Enum.AvatarItemType.Asset, character, Enum.AvatarAssetType.RunAnimation.Value, false)
+        processingHumanoidDescById(characterData.FallAnimation, Enum.AvatarItemType.Asset, character, Enum.AvatarAssetType.FallAnimation.Value, false)
+        processingHumanoidDescById(characterData.IdleAnimation, Enum.AvatarItemType.Asset, character, Enum.AvatarAssetType.IdleAnimation.Value, false)
+        processingHumanoidDescById(characterData.JumpAnimation, Enum.AvatarItemType.Asset, character, Enum.AvatarAssetType.JumpAnimation.Value, false)
+        processingHumanoidDescById(characterData.MoodAnimation, Enum.AvatarItemType.Asset, character, Enum.AvatarAssetType.MoodAnimation.Value, false)
+        processingHumanoidDescById(characterData.SwimAnimation, Enum.AvatarItemType.Asset, character, Enum.AvatarAssetType.SwimAnimation.Value, false)
+        processingHumanoidDescById(characterData.WalkAnimation, Enum.AvatarItemType.Asset, character, Enum.AvatarAssetType.WalkAnimation.Value, false)
+        processingHumanoidDescById(characterData.ClimbAnimation, Enum.AvatarItemType.Asset, character, Enum.AvatarAssetType.ClimbAnimation.Value, false)
+
+        adjustCharacterColorByCharacterData(character, characterData)
+
+        --scales
+        do
+            local humanoidDesc = humanoid:GetAppliedDescription()
+            humanoidDesc.HeadScale = characterData.HeadScale
+            humanoidDesc.DepthScale = characterData.DepthScale
+            humanoidDesc.WidthScale = characterData.WidthScale
+            humanoidDesc.HeightScale = characterData.HeightScale
+            humanoidDesc.BodyTypeScale = characterData.BodyTypeScale
+            humanoidDesc.ProportionScale = characterData.ProportionScale
+            humanoid:ApplyDescription(humanoidDesc)
+        end
+    else
+        NetworkUtil.invokeServer(ON_CHARACTER_INFO_SET_FROM_CHARACTER_DATA, characterData)
     end
-
-    processingHumanoidDescById(characterData.Face, Enum.AvatarItemType.Asset, character, Enum.AvatarAssetType.Face.Value, false)
-    processingHumanoidDescById(characterData.Head, Enum.AvatarItemType.Asset, character, Enum.AvatarAssetType.Head.Value, false)
-    processingHumanoidDescById(characterData.LeftArm, Enum.AvatarItemType.Asset, character, Enum.AvatarAssetType.LeftArm.Value, false)
-    processingHumanoidDescById(characterData.LeftLeg, Enum.AvatarItemType.Asset, character, Enum.AvatarAssetType.LeftLeg.Value, false)
-    processingHumanoidDescById(characterData.Pants, Enum.AvatarItemType.Asset, character, Enum.AvatarAssetType.Pants.Value, false)
-    processingHumanoidDescById(characterData.RightArm, Enum.AvatarItemType.Asset, character, Enum.AvatarAssetType.RightArm.Value, false)
-    processingHumanoidDescById(characterData.RightLeg, Enum.AvatarItemType.Asset, character, Enum.AvatarAssetType.RightLeg.Value, false)
-    processingHumanoidDescById(characterData.Shirt, Enum.AvatarItemType.Asset, character, Enum.AvatarAssetType.Shirt.Value, false)
-    processingHumanoidDescById(characterData.TShirt, Enum.AvatarItemType.Asset, character, Enum.AvatarAssetType.TShirt.Value, false)
-    processingHumanoidDescById(characterData.Torso, Enum.AvatarItemType.Asset, character, Enum.AvatarAssetType.Torso.Value, false)
-
-    processingHumanoidDescById(characterData.RunAnimation, Enum.AvatarItemType.Asset, character, Enum.AvatarAssetType.RunAnimation.Value, false)
-    processingHumanoidDescById(characterData.FallAnimation, Enum.AvatarItemType.Asset, character, Enum.AvatarAssetType.FallAnimation.Value, false)
-    processingHumanoidDescById(characterData.IdleAnimation, Enum.AvatarItemType.Asset, character, Enum.AvatarAssetType.IdleAnimation.Value, false)
-    processingHumanoidDescById(characterData.JumpAnimation, Enum.AvatarItemType.Asset, character, Enum.AvatarAssetType.JumpAnimation.Value, false)
-    processingHumanoidDescById(characterData.MoodAnimation, Enum.AvatarItemType.Asset, character, Enum.AvatarAssetType.MoodAnimation.Value, false)
-    processingHumanoidDescById(characterData.SwimAnimation, Enum.AvatarItemType.Asset, character, Enum.AvatarAssetType.SwimAnimation.Value, false)
-    processingHumanoidDescById(characterData.WalkAnimation, Enum.AvatarItemType.Asset, character, Enum.AvatarAssetType.WalkAnimation.Value, false)
-    processingHumanoidDescById(characterData.ClimbAnimation, Enum.AvatarItemType.Asset, character, Enum.AvatarAssetType.ClimbAnimation.Value, false)
-
-    adjustCharacterColorByCharacterData(character, characterData)
-
-    --scales
-    do
-        local humanoidDesc = humanoid:GetAppliedDescription()
-        humanoidDesc.HeadScale = characterData.HeadScale
-        humanoidDesc.DepthScale = characterData.DepthScale
-        humanoidDesc.WidthScale = characterData.WidthScale
-        humanoidDesc.HeightScale = characterData.HeightScale
-        humanoidDesc.BodyTypeScale = characterData.BodyTypeScale
-        humanoidDesc.ProportionScale = characterData.ProportionScale
-        humanoid:ApplyDescription(humanoidDesc)
-    end
-
     return
 end
 
