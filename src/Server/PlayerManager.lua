@@ -474,7 +474,7 @@ function PlayerManager:GetData()
     plrData.RoleplayBios = {} :: any
     plrData.RoleplayBios.Name = self.RoleplayBios.Name
     plrData.RoleplayBios.Bio = self.RoleplayBios.Bio
-    print(self, " banyak buanget", self.CharacterSaves)
+    --print(self, " banyak buanget", self.CharacterSaves)
     plrData.Backpack = {};
     plrData.Character = characterData;
     plrData.CharacterSaves = table.clone(self.CharacterSaves)
@@ -830,13 +830,13 @@ function PlayerManager.init(maid : Maid)
         if not s and e then
             infoType = Enum.InfoType.Bundle
             s, e = pcall(function() info = MarketplaceService:GetProductInfo(customizationId, infoType) end)
-            print(infoType)
+            --print(infoType)
         end
         if not s and e then
             warn ("unable to load the catalog info by the given id: " .. tostring(e))
             return nil
         end
-        print(customizationId, " bandel nehh ", info)
+        --print(customizationId, " bandel nehh ", info)
 
         if infoType == Enum.InfoType.Bundle then
             local plrIsVIP = MarketplaceService:UserOwnsGamePassAsync(plr.UserId, MarketplaceUtil.getGamePassIdByName("VIP Feature"))

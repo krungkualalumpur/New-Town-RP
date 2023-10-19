@@ -892,7 +892,7 @@ return function(
                 Value = _Computed(function(visible : boolean)
                     if not visible then
                         UIStatus:Set()
-                        print(UIStatus:Get(), ' noradivomo??')
+                        --print(UIStatus:Get(), ' noradivomo??')
                     end
                     return ""
                 end, isVisible)

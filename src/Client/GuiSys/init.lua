@@ -507,12 +507,12 @@ function guiSys.new()
 end
 
 function guiSys:Notify(text : string)
-    print("Test1")
+   -- print("Test1")
     self.NotificationStatus:Set(nil)
-    print(self.NotificationStatus:Get())
+   -- print(self.NotificationStatus:Get())
     task.wait(0.1)
     self.NotificationStatus:Set(text)
-    print(self.NotificationStatus:Get())
+   -- print(self.NotificationStatus:Get())
     return
 end
 

@@ -32,12 +32,12 @@ end
 
 function NotificationUtil.init(maid : Maid)
     if RunService:IsClient() then
-        print("test1")
+        --print("test1")
         NetworkUtil.onClientEvent(ON_NOTIFICATION, function(text : string)
             NotificationUtil.Notify(game.Players.LocalPlayer, text)
         end)
     elseif RunService:IsServer() then
-        print("test2")
+        --print("test2")
         NetworkUtil.getRemoteEvent(ON_NOTIFICATION)
     end
 end

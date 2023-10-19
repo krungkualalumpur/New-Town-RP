@@ -1799,13 +1799,46 @@ return function(
                             _new("ImageLabel")({
                                 Name = "SelectedAvatar",
                                 LayoutOrder = 1,
-                                BackgroundColor3 = PRIMARY_COLOR,
+                                BackgroundColor3 = TERTIARY_COLOR,
                                 Size = UDim2.fromScale(1, 0.7),
                                 Image = _Computed(function(catalogInfo : CatalogInfo ?)
                                     return if catalogInfo then CustomizationUtil.getAssetImageFromId(catalogInfo.Id, catalogInfo.ItemType == Enum.AvatarItemType.Bundle.Name) else ""
                                 end, currentCatalogInfo),
                                 Children = {
-                                    _new("UICorner")({})
+                                    _new("UICorner")({}),
+                                    _new("UIPadding")({
+                                        PaddingTop = PADDING_SIZE,
+                                        PaddingBottom = PADDING_SIZE,
+                                        PaddingLeft = PADDING_SIZE,
+                                        PaddingRight = PADDING_SIZE
+                                    }),
+                                    _new("UIListLayout")({
+                                        Padding = UDim.new(PADDING_SIZE_SCALE.Scale*0.1, PADDING_SIZE_SCALE.Offset*0.1), 
+                                        VerticalAlignment = Enum.VerticalAlignment.Bottom,
+                                        HorizontalAlignment = Enum.HorizontalAlignment.Right
+                                    }),
+                                    _bind(getButton(
+                                        maid, 
+                                        1,
+                                        "\tTry\t",
+                                        function()
+                                            local catalogInfo = currentCatalogInfo:Get()
+                                            if catalogInfo then
+                                                onCatalogTry:Fire(catalogInfo, char)
+                                            end
+                                        end
+                                    ))({
+                                        BackgroundColor3 = TERTIARY_COLOR,
+                                        AutomaticSize = Enum.AutomaticSize.X,
+                                        Size = UDim2.fromScale(0, 0.12),
+                                        Children = {
+                                            _new("UIStroke")({
+                                                ApplyStrokeMode = Enum.ApplyStrokeMode.Border,
+                                                Color = PRIMARY_COLOR,
+                                                Thickness = 1
+                                            })
+                                        }
+                                    })
                                 }
                             }),
                             _new("Frame")({
@@ -4004,7 +4037,7 @@ return function(
     end
 
     --testing only
-    --currentPage:Set(bodySizeCustomizationPage)
+    --currentPage:Set(catalogInfoPage)
     
     return out
 end
