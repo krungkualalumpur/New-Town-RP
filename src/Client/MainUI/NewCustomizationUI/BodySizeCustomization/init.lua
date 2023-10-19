@@ -327,6 +327,9 @@ return function(
             _bind(getButton(maid, 1, "<", function()
                 --CurrentCategory:Set(nil)
                 onBack:Fire()
+                -- print("lagi nyambel")
+                -- onCustomizeBodyColor:Fire(selectedColor:Get(), char)
+                -- currentPage:Set(mainMenuPage)
             end, TERTIARY_COLOR))({
                 Name = "Back",
                 Size = UDim2.fromScale(0.1, 1),
@@ -373,7 +376,7 @@ return function(
                 Padding = PADDING_SIZE_SCALE,
                 FillDirection = Enum.FillDirection.Horizontal,
                 VerticalAlignment = Enum.VerticalAlignment.Bottom,
-                HorizontalAlignment = Enum.HorizontalAlignment.Right
+                HorizontalAlignment = Enum.HorizontalAlignment.Center
             }),
             --[[_bind(getButton(maid, 1, "X", function()
                 char:Set(getCharacter(true))
@@ -392,7 +395,8 @@ return function(
                 local character = char:Get()
                 local characterData = CustomizationUtil.GetInfoFromCharacter(character)
                 onScaleConfirmChange:Fire(characterData, char)
-                currentPage:Set(mainMenuPage)
+                onBack:Fire()
+                --currentPage:Set(mainMenuPage)
                 -- print("lagi nyambel")
                 -- onCustomizeBodyColor:Fire(selectedColor:Get(), char)
                 -- currentPage:Set(mainMenuPage)
