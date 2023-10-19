@@ -3140,7 +3140,7 @@ return function(
     local currentOutfitsFrame =_new("ScrollingFrame")({
         LayoutOrder = 3,
         BackgroundColor3 = BACKGROUND_COLOR,
-        ScrollBarThickness = 2,
+        ScrollBarThickness = 10,
         AutomaticCanvasSize = Enum.AutomaticSize.X,
         CanvasSize = UDim2.fromScale(0, 0),
         Size = UDim2.fromScale(1, 0.23),
@@ -3153,7 +3153,8 @@ return function(
             }),
             _new("UIListLayout")({
                 FillDirection = Enum.FillDirection.Horizontal,
-                Padding = PADDING_SIZE
+                Padding = PADDING_SIZE,
+                VerticalAlignment = Enum.VerticalAlignment.Bottom
             })
         }
     })

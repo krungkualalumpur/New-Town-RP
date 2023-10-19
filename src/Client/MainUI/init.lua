@@ -211,13 +211,15 @@ function getImageButton(
     local interval = 1.8
     local imageText = _new("TextLabel")({
         AutomaticSize = Enum.AutomaticSize.XY,
+        AnchorPoint = Vector2.new(0, 0.5),
         BackgroundTransparency = 1,
         BackgroundColor3 = BACKGROUND_COLOR,
         Size = UDim2.fromScale(1, 0.3),
         Position = imageTextPos:Tween(interval*0.9),
-        Font = Enum.Font.Gotham,
+        Font = Enum.Font.GothamBold,
         Text = buttonName,
         TextColor3 = PRIMARY_COLOR,
+        TextSize = 25,
         TextStrokeColor3 = SECONDARY_COLOR,
         TextTransparency = imageTextTransp:Tween(interval*0.9),
         TextStrokeTransparency = _Computed(function(transp : number)
@@ -290,6 +292,10 @@ local function getViewport(
         CurrentCamera = currentCam,
         Children = {
             _new("UICorner")({}),
+            _new("UIStroke")({
+                Thickness = 1.5,
+                Color = BACKGROUND_COLOR
+            }),
             _new("UIAspectRatioConstraint")({}),
         
             currentCam,
@@ -418,7 +424,7 @@ return function(
                         BackgroundColor3 = SECONDARY_COLOR,
                         BackgroundTransparency = 0.5,
                         AutomaticSize = Enum.AutomaticSize.XY,
-                        TextSize = 14,
+                        TextSize = 8,
                         Font = Enum.Font.Gotham,
                         Text = if KeyboardEnabled then "L Click" elseif TouchEnabled then "Touch" elseif GamepadEnabled then "A" else nil,
                         TextColor3 = PRIMARY_COLOR
@@ -441,6 +447,7 @@ return function(
                 4
             ))({
                 BackgroundColor3 = Color3.fromRGB(255,10,10),
+                Size = UDim2.fromScale(1, 0.05),
                 TextColor3 = PRIMARY_COLOR
             })
             --[[_new("TextButton")({
@@ -535,13 +542,13 @@ return function(
                     }),   
                     getImageButton(maid, 2815418737, function()
                         UIStatus:Set(if UIStatus:Get() ~= "Backpack" then "Backpack" else nil)
-                    end, "← Backpack", 1, true),
+                    end, "← Backpack", 2, true),
                     getImageButton(maid, 11955884948, function()
                         UIStatus:Set(if UIStatus:Get() ~= "Animation" then "Animation" else nil)
-                    end, "← Basic Emotes", 2, true),
+                    end, "← Basic Emotes", 3, true),
                     getImageButton(maid, 13285102351, function()
                         UIStatus:Set(if UIStatus:Get() ~= "Customization" then "Customization" else nil)
-                    end, "← Outfit", 3, true)
+                    end, "← Outfit", 1, true)
                     --getImageButton(maid, 227600967),
 
                 }
