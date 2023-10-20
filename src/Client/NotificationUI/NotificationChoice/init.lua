@@ -22,7 +22,8 @@ type Maid = Maid.Maid
 --local functions
 --class
 return function(
-    maid : Maid
+    maid : Maid,
+    isConfirmMode : boolean
 )
     local _fuse = ColdFusion.fuse(maid)
     local _new = _fuse.new
@@ -32,4 +33,9 @@ return function(
     
     local _Computed = _fuse.Computed
     local _Value = _fuse.Value
+
+    local out = _new("Frame")({
+
+    })
+    return out
 end
