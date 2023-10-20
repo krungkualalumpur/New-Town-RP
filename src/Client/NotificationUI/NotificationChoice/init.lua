@@ -23,6 +23,8 @@ type Maid = Maid.Maid
 --class
 return function(
     maid : Maid,
+    msgTitle : string,
+    msgDesc : string,
     isConfirmMode : boolean
 )
     local _fuse = ColdFusion.fuse(maid)
@@ -35,7 +37,12 @@ return function(
     local _Value = _fuse.Value
 
     local out = _new("Frame")({
-
+        Size = UDim2.fromScale(0.5, 0.5),
+        Children = {
+            _new("TextLabel")({
+                Text = ""
+            })
+        }
     })
     return out
 end
