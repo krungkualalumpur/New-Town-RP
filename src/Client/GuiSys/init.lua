@@ -84,9 +84,7 @@ local ADD_VEHICLE = "AddVehicle"
 local DELETE_VEHICLE = "DeleteVehicle"
 
 local ON_CHARACTER_APPEARANCE_RESET = "OnCharacterAppearanceReset"
-local SAVE_CHARACTER_SLOT = "SaveCharacterSlot"
-local LOAD_CHARACTER_SLOT = "LoadCharacterSlot"
-local DELETE_CHARACTER_SLOT = "DeleteCharacterSlot"
+local ON_NOTIF_CHOICE_INIT = "OnNotifChoiceInit"
 
 --variables
 local Player = Players.LocalPlayer
@@ -454,6 +452,29 @@ function guiSys.new()
         return nil
     end)
 
+
+    local notifMaid = maid:GiveTask(Maid.new())
+    NetworkUtil.onClientInvoke(ON_NOTIF_CHOICE_INIT, function(msg : string, isConfirm : boolean)
+        notifMaid:DoCleaning()
+      
+        
+        if isConfirm then
+            _new("Frame")({
+                Position = UDim2.new(1,0,0.25,0),
+                Parent = target,
+                Children = {
+                    _new("UIAspectRatioConstraint")({
+                        AspectRatio = 0.5
+                    })
+                }
+            })
+        else
+
+        end
+        return nil
+    end)
+
+
     maid:GiveTask(onItemGet:Connect(function(inst : Instance)
         local optInfo : ItemOptionsUI.OptInfo ? = currentOptInfo:Get()
         local char = Player.Character or Player.CharacterAdded:Wait()
@@ -531,6 +552,8 @@ end
 function guiSys.init(maid : Maid)
     local newGuiSys = maid:GiveTask(guiSys.new())
 
+
+   
     return
 end
 
