@@ -25,7 +25,18 @@ return function(target : CoreGui)
     local _Computed = _fuse.Computed
     local _Value = _fuse.Value
    
-    local notifChoice = maid:GiveTask(NotificationChoice(maid, true))
+    local notifChoice = maid:GiveTask(NotificationChoice(
+        maid, 
+        "Test",
+        "Desc",
+        true,
+        function()
+            print("On click")
+        end,
+        function()
+            print("on cancel")
+        end
+    ))
     notifChoice.Parent = target
 
     return function()

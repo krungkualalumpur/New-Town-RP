@@ -30,6 +30,7 @@ local MarketplaceUtil = require(ReplicatedStorage:WaitForChild("Shared"):WaitFor
 
 local ItemOptionsUI = require(ReplicatedStorage:WaitForChild("Client"):WaitForChild("ItemOptionsUI"))
 local ListUI = require(ReplicatedStorage:WaitForChild("Client"):WaitForChild("ListUI"))
+local NotificationChoice = require(ReplicatedStorage:WaitForChild("Client"):WaitForChild("NotificationUI"):WaitForChild("NotificationChoice"))
 
 --types
 type Maid = Maid.Maid
@@ -454,23 +455,14 @@ function guiSys.new()
 
 
     local notifMaid = maid:GiveTask(Maid.new())
-    NetworkUtil.onClientInvoke(ON_NOTIF_CHOICE_INIT, function(msg : string, isConfirm : boolean)
+    NetworkUtil.onClientInvoke(ON_NOTIF_CHOICE_INIT, function(msg : string, isConfirm : boolean, actionName : string)
         notifMaid:DoCleaning()
       
-        
-        if isConfirm then
-            _new("Frame")({
-                Position = UDim2.new(1,0,0.25,0),
-                Parent = target,
-                Children = {
-                    _new("UIAspectRatioConstraint")({
-                        AspectRatio = 0.5
-                    })
-                }
-            })
-        else
+        local notificationChoiceUI = NotificationChoice(notifMaid, "Aa", "Bb", isConfirm, function()
+            print("Test1")
+        end)
+        notificationChoiceUI.Parent = target
 
-        end
         return nil
     end)
 
