@@ -12,7 +12,7 @@ local ON_NOTIF_CHOICE_INIT = "OnNotifChoiceInit"
 --references
 --local functions
 local actions = {
-    Test = function()
+    StartUp = function()
         print("Test onleh laa")
     end
 } 
