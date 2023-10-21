@@ -23,6 +23,7 @@ local MarketplaceUtil = require(ReplicatedStorage:WaitForChild("Shared"):WaitFor
 local CustomizationUtil = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("CustomizationUtil"))
 local NotificationUtil = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("NotificationUtil"))
 local ToolActions = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("ToolActions"))
+local ChoiceActions = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("ChoiceActions"))
 
 local DatastoreManager = require(ServerScriptService:WaitForChild("Server"):WaitForChild("DatastoreManager"))
 local MarketplaceManager = require(ServerScriptService:WaitForChild("Server"):WaitForChild("MarketplaceManager"))
@@ -78,6 +79,7 @@ local ON_ROLEPLAY_BIO_CHANGE = "OnRoleplayBioChange"
 
 local ON_CAMERA_SHAKE = "OnCameraShake"
 
+local ON_NOTIF_CHOICE_INIT = "OnNotifChoiceInit"
 --variables
 local Registry = {}
 --references
@@ -626,6 +628,12 @@ function PlayerManager.get(plr : Player)
 end
 
 function PlayerManager.init(maid : Maid)
+   
+    NetworkUtil.getRemoteFunction(GET_PLAYER_BACKPACK)
+    NetworkUtil.getRemoteFunction(ON_NOTIF_CHOICE_INIT)
+    NetworkUtil.getRemoteEvent(UPDATE_PLAYER_BACKPACK)
+    NetworkUtil.getRemoteEvent(ON_CAMERA_SHAKE) 
+
     local function onCharAdded(char : Model)
         local charMaid = Maid.new()
         local humanoid = char:WaitForChild("Humanoid") :: Humanoid
@@ -663,6 +671,10 @@ function PlayerManager.init(maid : Maid)
         onCharAdded(char)
 
         _maid:GiveTask(plr.CharacterAdded:Connect(onCharAdded))
+
+        ChoiceActions.requestEvent(plr, "Test", "Welcome to the New Town", "Try our new outfit catalog feature and immerse yourself in this tropical city. The playground is yours.", true)
+            
+       --NetworkUtil.invokeClient(ON_NOTIF_CHOICE_INIT, plr, "msg : string", true, "Test")
     end
 
     local function onPlayerRemove(plr : Player)
@@ -903,9 +915,6 @@ function PlayerManager.init(maid : Maid)
         MidasEventTree.Gameplay.CustomizeAvatar.Value(plr)
     end)
 
-    NetworkUtil.getRemoteEvent(UPDATE_PLAYER_BACKPACK)
-    NetworkUtil.getRemoteFunction(GET_PLAYER_BACKPACK)
-    NetworkUtil.getRemoteEvent(ON_CAMERA_SHAKE) 
 end
 
 return PlayerManager

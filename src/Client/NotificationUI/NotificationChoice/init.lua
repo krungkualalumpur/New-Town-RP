@@ -108,6 +108,7 @@ return function(
         SELECT_COLOR
     ))({
         Size = UDim2.fromScale(0.25, 1),
+        Font = Enum.Font.Gotham,
         TextScaled = true,
         Children = {
             _new("UITextSizeConstraint")({
@@ -115,7 +116,7 @@ return function(
                 MaxTextSize = TEXT_SIZE*1.5
             })
         }
-    }), if isConfirmMode then  _bind(getButton( 
+    }), if not isConfirmMode then  _bind(getButton( 
         maid,
         1,
         _Value("Cancel"),
@@ -133,16 +134,17 @@ return function(
 
 
     local content = _new("Frame")({
+        BackgroundColor3 = BACKGROUND_COLOR,
         Size = UDim2.new(0.25,0,0.25,0),
         Children = {
             _new("UIAspectRatioConstraint")({
                 AspectRatio = 2,
             }),
             _new("UIPadding")({
-                PaddingTop = PADDING_SIZE_SCALE,
-                PaddingBottom = PADDING_SIZE_SCALE,
-                PaddingLeft = PADDING_SIZE_SCALE,
-                PaddingRight = PADDING_SIZE_SCALE
+                PaddingTop = UDim.new(PADDING_SIZE_SCALE.Scale*0.2, PADDING_SIZE_SCALE.Offset*0.2),
+                PaddingBottom = UDim.new(PADDING_SIZE_SCALE.Scale*0.2, PADDING_SIZE_SCALE.Offset*0.2),
+                PaddingLeft = UDim.new(PADDING_SIZE_SCALE.Scale*0.2, PADDING_SIZE_SCALE.Offset*0.2),
+                PaddingRight = UDim.new(PADDING_SIZE_SCALE.Scale*0.2, PADDING_SIZE_SCALE.Offset*0.2),
             }),
             _new("UIListLayout")({
                 SortOrder = Enum.SortOrder.LayoutOrder,
@@ -157,25 +159,31 @@ return function(
                 LayoutOrder = 1,
                 BackgroundTransparency = 1,
                 Size = UDim2.fromScale(1, 0.2),
+                Font = Enum.Font.Gotham,
                 Text = "<b>" .. msgTitle .. "</b>",
                 TextSize = TEXT_SIZE*1.5,
-                TextColor3 = TERTIARY_COLOR,
+                TextColor3 = PRIMARY_COLOR,
                 RichText = true,
                 TextScaled = true,
                 Children = {
                     _new("UITextSizeConstraint")({
                         MinTextSize = 0,
-                        MaxTextSize = TEXT_SIZE*1.5
+                        MaxTextSize = TEXT_SIZE*2
                     })
                 }
             }),
-            _new("TextLabel")({
+            _new("Frame")({
                 LayoutOrder = 2,
+                Size = UDim2.fromScale(1, 0.01)
+            }),
+            _new("TextLabel")({
+                LayoutOrder = 3,
                 BackgroundTransparency = 1,
-                Size = UDim2.fromScale(1, 0.6),
+                Size = UDim2.fromScale(1, 0.5),
+                Font = Enum.Font.Gotham,
                 Text = msgDesc,
                 TextSize = TEXT_SIZE,
-                TextColor3 = TERTIARY_COLOR,
+                TextColor3 = PRIMARY_COLOR,
                 TextScaled = true,
                 TextXAlignment = Enum.TextXAlignment.Left,
                 TextYAlignment = Enum.TextYAlignment.Top,
@@ -187,9 +195,9 @@ return function(
                 }
             }),
             _new("Frame")({
-                LayoutOrder = 3,
+                LayoutOrder = 4,
                 BackgroundTransparency = 1,
-                Size = UDim2.fromScale(1, 0.3),
+                Size = UDim2.fromScale(1, 0.2),
                 Children = {
                     _new("UIListLayout")({
                         SortOrder = Enum.SortOrder.LayoutOrder,
@@ -205,11 +213,13 @@ return function(
         }
     })
 
+    local pos = _Value(UDim2.fromScale(0, 0.5))
+
     local out = _new("Frame")({
         BackgroundTransparency = 1,
+        Position = pos:Tween(0.5),
         Size = UDim2.fromScale(1, 1),
         Children = {
-           
             _new("UIPadding")({
                 PaddingTop = PADDING_SIZE,
                 PaddingBottom = PADDING_SIZE,
@@ -223,5 +233,6 @@ return function(
             content
         }
     })
+    pos:Set(UDim2.fromScale(0, 0))
     return out
 end

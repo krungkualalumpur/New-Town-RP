@@ -35,6 +35,7 @@ return function(target : CoreGui)
         end,
         function()
             print("on cancel")
+            --maid:Destroy()  
         end
     ))
     notifChoice.Parent = target

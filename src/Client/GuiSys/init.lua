@@ -27,6 +27,7 @@ local ItemUtil = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("
 local BackpackUtil = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("BackpackUtil"))
 local CustomizationUtil = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("CustomizationUtil"))
 local MarketplaceUtil = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("MarketplaceUtil"))
+local ChoiceActions = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("ChoiceActions"))
 
 local ItemOptionsUI = require(ReplicatedStorage:WaitForChild("Client"):WaitForChild("ItemOptionsUI"))
 local ListUI = require(ReplicatedStorage:WaitForChild("Client"):WaitForChild("ListUI"))
@@ -455,11 +456,14 @@ function guiSys.new()
 
 
     local notifMaid = maid:GiveTask(Maid.new())
-    NetworkUtil.onClientInvoke(ON_NOTIF_CHOICE_INIT, function(msg : string, isConfirm : boolean, actionName : string)
+    NetworkUtil.onClientInvoke(ON_NOTIF_CHOICE_INIT, function(actionName : string, eventTitle : string, eventDesc : string, isConfirm : boolean)
         notifMaid:DoCleaning()
       
-        local notificationChoiceUI = NotificationChoice(notifMaid, "Aa", "Bb", isConfirm, function()
-            print("Test1")
+        local notificationChoiceUI = NotificationChoice(notifMaid, eventTitle, eventDesc, isConfirm, function()
+            --print("Test1") action name ..]
+            ChoiceActions.triggerEvent(actionName)
+            notifMaid:DoCleaning()
+
         end)
         notificationChoiceUI.Parent = target
 
