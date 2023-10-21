@@ -501,12 +501,15 @@ function guiSys.new()
     end))
 
     maid:GiveTask(onCharacterReset:Connect(function(char : ValueState<Model>)
+        notifMaid:DoCleaning()
         local notif = NotificationChoice(notifMaid, "⚠️ Warning", "Are you sure you want to reset your character? All unsaved progress will be lost.", false, function()
             notifMaid:DoCleaning()
             local loadingFrame = LoadingFrame(notifMaid, "Resetting character, please what")
             loadingFrame.Parent = target
             NetworkUtil.invokeServer(ON_CHARACTER_APPEARANCE_RESET)
             char:Set(getCharacter(true))
+            notifMaid:DoCleaning()
+        end, function()
             notifMaid:DoCleaning()
         end)
         notif.Parent = target

@@ -952,7 +952,7 @@ return function(
     local notifMaid = maid:GiveTask(Maid.new())
     maid:GiveTask(onSavedCustomizationLoad:Connect(function(k, content)
         notifMaid:DoCleaning()
-        local notif = NotificationChoice(notifMaid, "Warning", "Are you sure to load this character slot (Save " .. tostring(k) .. ")?", false, function()
+        local notif = NotificationChoice(notifMaid, "⚠️ Warning", "Are you sure to load this character slot (Save " .. tostring(k) .. ")?", false, function()
             notifMaid:DoCleaning()
             local loadingFrame =  LoadingFrame(loadingMaid, "Loading the character")
             loadingFrame.Parent = target
@@ -971,7 +971,7 @@ return function(
 
     maid:GiveTask(onSavedCustomizationDelete:Connect(function(k, content)
         notifMaid:DoCleaning()
-        local notif = NotificationChoice(notifMaid, "Warning", "Are you sure to remove this character slot (Save " .. tostring(k) .. ") forever?", false, function()
+        local notif = NotificationChoice(notifMaid, "⚠️ Warning", "Are you sure to remove this character slot (Save " .. tostring(k) .. ") forever?", false, function()
             notifMaid:DoCleaning()
             local saveData = NetworkUtil.invokeServer(DELETE_CHARACTER_SLOT, k, content)
             saveList:Set(saveData)
