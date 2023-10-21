@@ -135,8 +135,12 @@ return function(
 
     local content = _new("Frame")({
         BackgroundColor3 = BACKGROUND_COLOR,
-        Size = UDim2.new(0.25,0,0.25,0),
+        Size = UDim2.new(0.35,0,0.35,0),
         Children = {
+            _new("UIStroke")({
+                Thickness = 1.5,
+                Color = TERTIARY_COLOR
+            }),
             _new("UIAspectRatioConstraint")({
                 AspectRatio = 2,
             }),
@@ -228,7 +232,7 @@ return function(
             }),
             _new("UIListLayout")({
                 HorizontalAlignment = Enum.HorizontalAlignment.Center,
-                VerticalAlignment = Enum.VerticalAlignment.Bottom,
+                VerticalAlignment = Enum.VerticalAlignment.Center,
             }),
             content
         }

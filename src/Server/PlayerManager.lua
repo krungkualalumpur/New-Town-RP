@@ -672,7 +672,7 @@ function PlayerManager.init(maid : Maid)
 
         _maid:GiveTask(plr.CharacterAdded:Connect(onCharAdded))
 
-        ChoiceActions.requestEvent(plr, "StartUp", "Welcome to the New Town", "Try our new outfit catalog feature and immerse yourself in this tropical city. The playground is yours.", true)
+        ChoiceActions.requestEvent(plr, "Default", "Welcome to the New Town", "Try our new outfit catalog feature and immerse yourself in this tropical city. The playground is yours.", true)
             
        --NetworkUtil.invokeClient(ON_NOTIF_CHOICE_INIT, plr, "msg : string", true, "Test")
     end

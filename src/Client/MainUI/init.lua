@@ -22,6 +22,7 @@ local LoadingFrame = require(ReplicatedStorage:WaitForChild("Client"):WaitForChi
 local ExitButton = require(ReplicatedStorage:WaitForChild("Client"):WaitForChild("ExitButton"))
 local BackpackUtil = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("BackpackUtil"))
 local AnimationUtil = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("AnimationUtil"))
+local NotificationChoice = require(ReplicatedStorage:WaitForChild("Client"):WaitForChild("NotificationUI"):WaitForChild("NotificationChoice"))
 
 local CustomizationUtil = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("CustomizationUtil"))
 local CustomizationList = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("CustomizationUtil"):WaitForChild("CustomizationList"))
@@ -341,7 +342,8 @@ return function(
 
     local viewportMaid = maid:GiveTask(Maid.new())
     local statusMaid = maid:GiveTask(Maid.new())
- 
+
+
     local onEquipFrame = _new("Frame")({
         LayoutOrder = 1, 
         Parent = target,
@@ -512,6 +514,7 @@ return function(
     })
 
     local out = _new("Frame")({
+        Name = "MainUI",
         Parent = target,
         BackgroundTransparency = 1,
         Size = UDim2.fromScale(1, 1),
@@ -946,20 +949,38 @@ return function(
         saveList:Set(saveData)
     end))
 
+    local notifMaid = maid:GiveTask(Maid.new())
     maid:GiveTask(onSavedCustomizationLoad:Connect(function(k, content)
-        local loadingFrame =  LoadingFrame(loadingMaid, "Loading the character")
-        loadingFrame.Parent = target
-        local pureContent = table.clone(content)
-        pureContent.CharModel = nil
-        local saveData =  NetworkUtil.invokeServer(LOAD_CHARACTER_SLOT, k, pureContent)
-        saveList:Set(saveData)
-        content.CharModel:Set(getCharacter(true)) 
-        loadingMaid:DoCleaning()
+        notifMaid:DoCleaning()
+        local notif = NotificationChoice(notifMaid, "Warning", "Are you sure to load this character slot (Save " .. tostring(k) .. ")?", false, function()
+            notifMaid:DoCleaning()
+            local loadingFrame =  LoadingFrame(loadingMaid, "Loading the character")
+            loadingFrame.Parent = target
+            local pureContent = table.clone(content)
+            pureContent.CharModel = nil
+            local saveData =  NetworkUtil.invokeServer(LOAD_CHARACTER_SLOT, k, pureContent)
+            saveList:Set(saveData)
+            content.CharModel:Set(getCharacter(true)) 
+            loadingMaid:DoCleaning()
+        end, function()
+            notifMaid:DoCleaning()
+        end)
+        notif.Parent = target
+
     end))
 
     maid:GiveTask(onSavedCustomizationDelete:Connect(function(k, content)
-        local saveData = NetworkUtil.invokeServer(DELETE_CHARACTER_SLOT, k, content)
-        saveList:Set(saveData)
+        notifMaid:DoCleaning()
+        local notif = NotificationChoice(notifMaid, "Warning", "Are you sure to remove this character slot (Save " .. tostring(k) .. ") forever?", false, function()
+            notifMaid:DoCleaning()
+            local saveData = NetworkUtil.invokeServer(DELETE_CHARACTER_SLOT, k, content)
+            saveList:Set(saveData)
+            loadingMaid:DoCleaning()
+        end, function()
+            notifMaid:DoCleaning()
+        end)
+        notif.Parent = target
+
     end))
 
     maid:GiveTask(onScaleChange:Connect(function(humanoidDescProperty : string, value : number, char : ValueState<Model>, isPreview : boolean)

@@ -22,6 +22,7 @@ local NotificationUI = require(ReplicatedStorage:WaitForChild("Client"):WaitForC
 local MapUI = require(ReplicatedStorage:WaitForChild("Client"):WaitForChild("MapUI"))
 local ExitButton = require(ReplicatedStorage:WaitForChild("Client"):WaitForChild("ExitButton"))
 local NewCustomizationUI = require(ReplicatedStorage:WaitForChild("Client"):WaitForChild("MainUI"):WaitForChild("NewCustomizationUI"))
+local LoadingFrame = require(ReplicatedStorage:WaitForChild("Client"):WaitForChild("LoadingFrame"))
 
 local ItemUtil = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("ItemUtil"))
 local BackpackUtil = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("BackpackUtil"))
@@ -500,8 +501,15 @@ function guiSys.new()
     end))
 
     maid:GiveTask(onCharacterReset:Connect(function(char : ValueState<Model>)
-        NetworkUtil.invokeServer(ON_CHARACTER_APPEARANCE_RESET)
-        char:Set(getCharacter(true))
+        local notif = NotificationChoice(notifMaid, "⚠️ Warning", "Are you sure you want to reset your character? All unsaved progress will be lost.", false, function()
+            notifMaid:DoCleaning()
+            local loadingFrame = LoadingFrame(notifMaid, "Resetting character, please what")
+            loadingFrame.Parent = target
+            NetworkUtil.invokeServer(ON_CHARACTER_APPEARANCE_RESET)
+            char:Set(getCharacter(true))
+            notifMaid:DoCleaning()
+        end)
+        notif.Parent = target
     end))
 
     --task.spawn(function()

@@ -25,6 +25,12 @@
       "StarterPlayerScripts": {
         "$path": "src/StarterPlayerScripts"
       }
+    },
+
+    "ReplicatedFirst": {
+      "Core" : {
+        "$path" : "src/Core"
+      }
     }
 
   }
