@@ -2969,7 +2969,7 @@ return function(
     local roleplayName = _new("Frame")({
         LayoutOrder = 1,
         BackgroundTransparency = 1,
-        Size = UDim2.fromScale(1, 0.1),
+        Size = UDim2.fromScale(1, 0.05),
         Children = {
             _new("UIListLayout")({
                 SortOrder = Enum.SortOrder.LayoutOrder,
@@ -2986,19 +2986,20 @@ return function(
                 end, roleplayNameState),--"<b>" .. (if RunService:IsRunning() then Players.LocalPlayer.Name else "Player Name") .. "</b>",
                 TextColor3 = TEXT_COLOR,
                 TextStrokeColor3 = PRIMARY_COLOR,
+                TextSize = TEXT_SIZE, 
                 TextWrapped = true,
                 TextScaled = true
             }),
             _new("TextLabel")({
                 LayoutOrder = 2,
                 BackgroundTransparency = 1,
-                Size = UDim2.fromScale(1, 0.5),
+                Size = UDim2.fromScale(1, 0.25),
                 Font = Enum.Font.Gotham,
                 Text = _Computed(function(roleplayDesc : string)
                     return roleplayDesc
                 end, roleplayDescState),
                 TextColor3 = TEXT_COLOR,
-                TextSize = 15, 
+                TextSize = TEXT_SIZE*0.8, 
                 TextWrapped = true,
             }),
         }
@@ -3244,6 +3245,31 @@ return function(
                         FillDirection = Enum.FillDirection.Vertical,
                         Padding = UDim.new(PADDING_SIZE_SCALE.Scale*0.1, PADDING_SIZE_SCALE.Offset*0.1),
                         SortOrder = Enum.SortOrder.LayoutOrder
+                    }),
+                    _new("Frame")({
+                        BackgroundTransparency = 1,
+                        Size = UDim2.fromScale(1, 0.04),
+                        Children = {
+                            _new("UIListLayout")({
+                                HorizontalAlignment = Enum.HorizontalAlignment.Right
+                            }),
+                            _bind(getButton(
+                                maid, 
+                                0,
+                                "X",
+                                function()
+                                    isVisible:Set(false)
+                                end,
+                                TERTIARY_COLOR
+                            ))({
+                                TextScaled = true,
+                                Children = {
+                                    _new("UIAspectRatioConstraint")({
+                                        AspectRatio = 1
+                                    })
+                                }
+                            })
+                        }
                     }),
                     roleplayName,
                     avatarFrame,
@@ -3991,17 +4017,17 @@ return function(
             return ""
         end, currentPage)
     })]]
-    local exitButton = ExitButton.new(
+    --[[local exitButton = ExitButton.new(
         mainMenuPage, 
         isVisible,
         function()
-            isVisible:Set(false)
+            isVisible:Set(false) 
             return 
         end
     )
     _bind(exitButton.Instance)({
         Enabled = isVisible
-    })
+    })]]
 
     maid:GiveTask(onScaleBack:Connect(function()
         currentPage:Set(mainMenuPage)
@@ -4013,9 +4039,9 @@ return function(
     local function displayName(char : Model)
         charMaid:DoCleaning()
 
-        print(char, char:FindFirstChild("DisplayNameGUI"))
+        --print(char, char:FindFirstChild("DisplayNameGUI"))
         local displayNameGui = char:WaitForChild("DisplayNameGUI")
-        print(displayNameGui)
+        --print(displayNameGui)
         local frame = displayNameGui:WaitForChild("Frame")
         local nameText = frame:WaitForChild("NameText") :: TextLabel
         local bioText = frame:WaitForChild("BioText") :: TextLabel

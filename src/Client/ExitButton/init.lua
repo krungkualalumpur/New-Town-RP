@@ -30,10 +30,14 @@ export type ExitButton = {
 type FrameCollectionType = "Grid" | "List"
 
 --constants
-local BACKGROUND_COLOR = Color3.fromRGB(200,200,200)
+
+local BACKGROUND_COLOR = Color3.fromRGB(90,90,90)
 local PRIMARY_COLOR = Color3.fromRGB(255,255,255)
-local SECONDARY_COLOR = Color3.fromRGB(180,180,180)
-local TERTIARY_COLOR = Color3.fromRGB(50,180,180)
+local SECONDARY_COLOR =  Color3.fromRGB(180,180,180)
+local TERTIARY_COLOR = Color3.fromRGB(70,70,70)
+local TEXT_COLOR = Color3.fromRGB(255,255,255)
+local SELECT_COLOR = Color3.fromRGB(105, 255, 102)
+local RED_COLOR = Color3.fromRGB(200,50,50)
 
 local BUTTON_SIZE = 45
 local TEXT_SIZE = 16
@@ -65,8 +69,9 @@ function ExitButton.new(guiObject : GuiObject, isVisible : ValueState<boolean>, 
     local dynamicThickness = _Value(2)
 
     local exitButton = maid:GiveTask(_new("TextButton")({
+        AnchorPoint = Vector2.new(0,0),
         Size = UDim2.fromScale(0.04, 0.04),
-        BackgroundColor3 = Color3.fromRGB(255,100,0),
+        BackgroundColor3 = TERTIARY_COLOR,
         TextColor3 = PRIMARY_COLOR,
         Font = Enum.Font.ArialBold,
         TextScaled = true,
@@ -75,6 +80,9 @@ function ExitButton.new(guiObject : GuiObject, isVisible : ValueState<boolean>, 
                 ApplyStrokeMode = Enum.ApplyStrokeMode.Border,
                 Color = Color3.fromRGB(255, 255, 255),
                 Thickness = 1,
+            }),
+            _new("UICorner")({
+                CornerRadius = UDim.new(0.25,0)
             }),
             _new("UIAspectRatioConstraint")({
                 AspectRatio = 1
@@ -88,16 +96,19 @@ function ExitButton.new(guiObject : GuiObject, isVisible : ValueState<boolean>, 
             }),
             _new("TextLabel")({
                 Size = UDim2.fromScale(1,1),
-                BackgroundColor3 = Color3.fromRGB(255,100,0),
+                BackgroundColor3 = TERTIARY_COLOR,
                 TextColor3 = PRIMARY_COLOR,
                 Font = Enum.Font.ArialBold,
                 TextScaled = true,
                 Text = "X",
                 Children = {
+                    _new("UICorner")({
+                        CornerRadius = UDim.new(0.25,0)
+                    }),
                     _new("UIStroke")({
                         ApplyStrokeMode = Enum.ApplyStrokeMode.Border,
                         Color = Color3.fromRGB(255, 255, 255),
-                        Thickness = dynamicThickness,
+                        Thickness = dynamicThickness:Tween(0.15),
                     }),
                    -- _new("")
                 },
@@ -138,7 +149,7 @@ function ExitButton.new(guiObject : GuiObject, isVisible : ValueState<boolean>, 
     maid:GiveTask(RunService.RenderStepped:Connect(function()
         exitButton.ZIndex = guiObject.ZIndex + 1
         exitButton.Visible = guiObject.Visible
-        exitButton.Position = UDim2.fromOffset(guiObject.AbsolutePosition.X + guiObject.AbsoluteSize.X - exitButton.AbsoluteSize.X, guiObject.AbsolutePosition.Y)
+        exitButton.Position = UDim2.fromOffset(guiObject.AbsolutePosition.X + guiObject.AbsoluteSize.X - (exitButton.AbsoluteSize.X), guiObject.AbsolutePosition.Y + (exitButton.AbsoluteSize.Y*2))
     end))
 
     maid:GiveTask(inst.Destroying:Connect(function()
