@@ -93,6 +93,12 @@ local function paralyzeCharacter(char : Model)
         head.CanCollide = true
     end
 
+    for _,v in pairs(char:GetDescendants()) do
+        if v:IsA("BasePart") then
+            v.Anchored = false
+        end
+    end
+
     return
 end
 
@@ -101,15 +107,24 @@ local function characterAdded(char : Model)
     
     local humanoid = char:WaitForChild("Humanoid") :: Humanoid
     if humanoid then
+        if not humanoid:IsDescendantOf(game) then
+            humanoid.AncestryChanged:Wait()
+        end
         humanoid.WalkSpeed = WALK_SPEED
         humanoid.DisplayDistanceType = Enum.HumanoidDisplayDistanceType.None
         humanoid.BreakJointsOnDeath = false
-
+        print("test eh???")
         charMaid:GiveTask(humanoid.Died:Connect(function()
+            print("test1")
             charMaid:Destroy()
             paralyzeCharacter(char)
+            print("test2")
         end))
     end
+
+    charMaid:GiveTask(char.Destroying:Connect(function()
+        charMaid:Destroy()
+    end))
 end
 
 local function onPlayerAdded(plr : Player)

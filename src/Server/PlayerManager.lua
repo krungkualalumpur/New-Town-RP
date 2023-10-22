@@ -541,13 +541,13 @@ function PlayerManager:SetData(plrData : ManagerTypes.PlayerData, isYield : bool
 
     if isYield then
         if not char:IsDescendantOf(workspace) then
-            self.Player.CharacterAppearanceLoaded:Wait()
+            char.AncestryChanged:Wait()
         end
         CustomizationUtil.SetInfoFromCharacter(char, plrData.Character)
     else
         task.spawn(function() 
             if not char:IsDescendantOf(workspace) then
-                self.Player.CharacterAppearanceLoaded:Wait()
+                char.AncestryChanged:Wait()
             end
             CustomizationUtil.SetInfoFromCharacter(char, plrData.Character) 
         end)

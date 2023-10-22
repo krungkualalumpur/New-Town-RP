@@ -800,6 +800,7 @@ end
 function CustomizationUtil.SetInfoFromCharacter(character : Model, characterData : CharacterData)    
     if RunService:IsServer() then
         local humanoid = character:WaitForChild("Humanoid") :: Humanoid
+        print(humanoid, humanoid:IsDescendantOf(game), humanoid:IsDescendantOf(workspace))
         humanoid:ApplyDescription(Instance.new("HumanoidDescription"))
         
         for _,accessoryId in pairs(characterData.Accessories) do
