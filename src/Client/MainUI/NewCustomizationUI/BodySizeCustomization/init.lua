@@ -113,7 +113,7 @@ local function getHorizontalSlider(
             sliderMaid:DoCleaning()
             if visible then
                 sliderMaid:GiveTask(UserInputService.InputEnded:Connect(function(input : InputObject, gpe : boolean)
-                    if input.UserInputType == Enum.UserInputType.MouseButton1 then
+                    if (input.UserInputType == Enum.UserInputType.MouseButton1) or (input.UserInputType == Enum.UserInputType.Touch) or (input.KeyCode == Enum.KeyCode.ButtonA) then
                         if sliderMaid.update and onRelease then
                             onRelease()
                         end

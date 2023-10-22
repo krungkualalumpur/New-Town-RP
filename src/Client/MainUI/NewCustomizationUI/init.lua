@@ -1039,7 +1039,7 @@ local function getSlider(
             sliderMaid:DoCleaning()
             if visible then
                 sliderMaid:GiveTask(UserInputService.InputEnded:Connect(function(input : InputObject, gpe : boolean)
-                    if input.UserInputType == Enum.UserInputType.MouseButton1 then
+                    if (input.UserInputType == Enum.UserInputType.MouseButton1) or (input.UserInputType == Enum.UserInputType.Touch) or (input.KeyCode == Enum.KeyCode.ButtonA) then
                         sliderMaid.update = nil
                         intMouseY = slider.AbsolutePosition.Y
                     end
@@ -2811,7 +2811,7 @@ return function(
                 --calculating 
                 if page == colorWheelPage then
                     colorWheelMaid:GiveTask(UserInputService.InputEnded:Connect(function(input : InputObject, gpe : boolean)
-                        if input.UserInputType == Enum.UserInputType.MouseButton1 then
+                        if (input.UserInputType == Enum.UserInputType.MouseButton1) or (input.UserInputType == Enum.UserInputType.Touch) or (input.KeyCode == Enum.KeyCode.ButtonA) then
                             colorWheelMaid.update = nil
                             colorWheelTracker.Visible = false
                         end
