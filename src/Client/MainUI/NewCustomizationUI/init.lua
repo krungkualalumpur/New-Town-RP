@@ -1700,7 +1700,7 @@ return function(
         BackgroundTransparency = 1,
         CanvasSize = UDim2.fromScale(0, 0),
         AutomaticCanvasSize = Enum.AutomaticSize.XY,
-        Size = UDim2.fromScale(1, 0.7), 
+        Size = UDim2.fromScale(1, 0.6), 
         Name = "Content",
         Children = {
             _new("UIListLayout")({
@@ -2232,17 +2232,17 @@ return function(
                 Size = UDim2.new(1, 0, 0, 1000),
                 Children = {
                     _new("UIPadding")({
-                        PaddingTop = PADDING_SIZE,
-                        PaddingBottom = PADDING_SIZE,
-                        PaddingLeft = PADDING_SIZE,
-                        PaddingRight = PADDING_SIZE
+                        PaddingTop = UDim.new(PADDING_SIZE_SCALE.Scale*0.1, PADDING_SIZE_SCALE.Offset*0.1),
+                        PaddingBottom = UDim.new(PADDING_SIZE_SCALE.Scale*0.1, PADDING_SIZE_SCALE.Offset*0.1),
+                        PaddingLeft = UDim.new(PADDING_SIZE_SCALE.Scale*0.1, PADDING_SIZE_SCALE.Offset*0.1),
+                        PaddingRight = UDim.new(PADDING_SIZE_SCALE.Scale*0.1, PADDING_SIZE_SCALE.Offset*0.1)
                     }),
                     _new("UIAspectRatioConstraint")({
                         AspectRatio = 3
                     }),
                     _new("UIListLayout")({
                         FillDirection = Enum.FillDirection.Vertical,
-                        Padding = PADDING_SIZE_SCALE,
+                        Padding = UDim.new(PADDING_SIZE_SCALE.Scale*0.2, PADDING_SIZE_SCALE.Offset*0.2),
                         SortOrder = Enum.SortOrder.LayoutOrder,
                     }),
                     _new("TextLabel")({
