@@ -164,6 +164,7 @@ function guiSys.new()
     local notificationUItarget = _new("ScreenGui")({
         Name = "NotificationScreenGui",
         Parent = Player:WaitForChild("PlayerGui"),
+        IgnoreGuiInset = true,
         DisplayOrder = 10
     })
 

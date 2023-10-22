@@ -127,6 +127,7 @@ function ExitButton.new(guiObject : GuiObject, isVisible : ValueState<boolean>, 
 
     self.Instance = _new("ScreenGui")({
         Parent = if RunService:IsRunning() then Players.LocalPlayer:WaitForChild("PlayerGui") else game:GetService("CoreGui"),
+        IgnoreGuiInset = true,
         Children = {
             exitButton
         }
