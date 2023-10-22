@@ -239,7 +239,7 @@ function PlayerManager.new(player : Player, maid : Maid ?)
 
     self._Maid:GiveTask(self.Player.CharacterAdded:Connect(function(char : Model)
         self._Maid.CharacterModel = char
-        self:SetData(self:GetData(), false) -- refreshing the character
+        --self:SetData(self:GetData(), false) -- refreshing the character (overriden by the other refershing char one)
     end))
 
     --setting leaderstats
@@ -516,6 +516,7 @@ function PlayerManager:GetData()
 end
 
 function PlayerManager:SetData(plrData : ManagerTypes.PlayerData, isYield : boolean)
+    --(debug.traceback("Debugging setdata method"))
     table.clear(self.Backpack)
     for _,v in pairs(plrData.Backpack) do
         local tool = BackpackUtil.getToolFromName(v)
