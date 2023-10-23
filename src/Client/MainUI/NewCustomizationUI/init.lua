@@ -2255,7 +2255,6 @@ return function(
                         TextColor3 = TEXT_COLOR,
                         TextScaled = true,
                         TextWrapped = _Computed(function(catalogInfo : CatalogInfo ?) -- updates avatar info
-                            --agenda: make a function (which is passed from outside this script) which returns an array of simplified catalog info 
                             catalogInfoMaid:DoCleaning()
 
                             if catalogInfo then
