@@ -142,6 +142,8 @@ tree:
       Value : integer
     CustomizeAvatar : 
       Value : integer
+    AvatarSaved :
+      Value : integer
   Others:
     ABValue : integer
 version:

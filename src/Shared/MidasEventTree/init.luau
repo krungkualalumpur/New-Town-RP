@@ -65,6 +65,9 @@ return {
 		["CustomizeAvatar"] = {
 			["Value"] = constructTrigger("Gameplay/CustomizeAvatar/Value") :: TriggerNode,
 		},
+		["AvatarSaved"] = {
+			["Value"] = constructTrigger("Gameplay/AvatarSaved/Value") :: TriggerNode,
+		},
 	},
 	["Others"] = {
 		["ABValue"] = constructTrigger("Others/ABValue") :: TriggerNode,

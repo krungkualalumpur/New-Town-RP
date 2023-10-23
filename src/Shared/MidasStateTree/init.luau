@@ -69,6 +69,9 @@ return {
 		["CustomizeAvatar"] = {
 			["Value"] = constructTracker("Gameplay/CustomizeAvatar/Value", 0) :: TrackerAccessNode<number>,
 		},
+		["AvatarSaved"] = {
+			["Value"] = constructTracker("Gameplay/AvatarSaved/Value", 0) :: TrackerAccessNode<number>,
+		},
 	},
 	["Others"] = {
 		["ABValue"] = constructTracker("Others/ABValue", 0) :: TrackerAccessNode<number>,

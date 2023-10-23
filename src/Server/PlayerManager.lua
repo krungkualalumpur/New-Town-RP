@@ -286,6 +286,10 @@ function PlayerManager.new(player : Player, maid : Maid ?)
         return count
     end) 
 
+    MidasStateTree.Gameplay.AvatarSaved.Value(player, function()
+        return #self.CharacterSaves 
+    end)
+
    --[[ MidasStateTree.Others.ABValue(player, function()
         return string.byte("B")
     end)]]
@@ -594,6 +598,8 @@ function PlayerManager:SaveCharacterSlot(characterData : CustomizationUtil.Chara
     if char then
         table.insert(self.CharacterSaves,  characterData or table.clone(CustomizationUtil.GetInfoFromCharacter(char)))
     end
+
+    MidasEventTree.Gameplay.AvatarSaved.Value(self.Player)
     return self.CharacterSaves
 end
 
