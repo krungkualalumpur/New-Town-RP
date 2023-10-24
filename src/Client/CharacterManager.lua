@@ -186,7 +186,7 @@ local function onCharacterAdded(char : Model)
 
 
     --sprint setup 2
-    local abValue = getRandomAB()
+    local abValue = "A" --getRandomAB()
 
     if abValue == "A" then
         char:SetAttribute("IsSprinting", true)
