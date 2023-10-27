@@ -14,6 +14,7 @@ local Minigame = require(ServerScriptService:WaitForChild("Server"):WaitForChild
 local Vehicle = require(ServerScriptService:WaitForChild("Server"):WaitForChild("Environments"):WaitForChild("Artificial"):WaitForChild("Vehicle"))
 local Speaker = require(ServerScriptService:WaitForChild("Server"):WaitForChild("Environments"):WaitForChild("Artificial"):WaitForChild("Speaker"))
 local Objects = require(ServerScriptService:WaitForChild("Server"):WaitForChild("Environments"):WaitForChild("Artificial"):WaitForChild("Objects"))
+local FishingSys = require(ServerScriptService:WaitForChild("Server"):WaitForChild("Environments"):WaitForChild("Artificial"):WaitForChild("FishingSys"))
 --types
 type Maid = Maid.Maid
 --constants
@@ -109,6 +110,7 @@ return {
         Minigame.init(maid)
         Vehicle.init(maid)
         Speaker.init(maid)
+        FishingSys.init(maid)
 
         initNightLight(maid)
     end

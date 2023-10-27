@@ -6,6 +6,7 @@ local MarketplaceService = game:GetService("MarketplaceService")
 local Players = game:GetService("Players")
 local AvatarEditorService = game:GetService("AvatarEditorService")
 local TextChatService = game:GetService("TextChatService")
+local UserInputService = game:GetService("UserInputService")
 
 --packages
 local Maid = require(ReplicatedStorage:WaitForChild("Packages"):WaitForChild("Maid"))
@@ -89,6 +90,7 @@ local DELETE_VEHICLE = "DeleteVehicle"
 local ON_CHARACTER_APPEARANCE_RESET = "OnCharacterAppearanceReset"
 local ON_NOTIF_CHOICE_INIT = "OnNotifChoiceInit"
 
+local ON_TOOL_ACTIVATED = "OnToolActivated"
 --variables
 local Player = Players.LocalPlayer
 --references
@@ -456,6 +458,110 @@ function guiSys.new()
         return nil
     end)
 
+    local toolMaid = maid:GiveTask(Maid.new())
+
+    maid:GiveTask(NetworkUtil.onClientEvent(ON_TOOL_ACTIVATED, function(toolClass : string, toolInst : Tool)
+        if toolClass == "Fishing Rod" then
+            --local mouse = Player:GetMouse() :: Mouse
+            local camera = workspace.CurrentCamera
+            local mouseLocation = UserInputService:GetMouseLocation()
+            local viewportPointRay = camera:ViewportPointToRay(mouseLocation.X, mouseLocation.Y)
+            local ray = Ray.new(viewportPointRay.Origin, viewportPointRay.Direction * 1000)
+            
+            local hit, position, normal, material = workspace:FindPartOnRay(ray)
+
+            if hit then
+                if material ~= Enum.Material.Water then
+                    self:Notify("You can only do fishing on water!")
+                    return 
+                end
+                
+                --local camera = workspace.CurrentCamera
+                local toolModel = toolInst:FindFirstChild(toolInst.Name)
+                local baitHolder = if toolModel then toolModel:FindFirstChild("BaitHolder") :: BasePart ? else nil
+                if baitHolder then
+                    local startCf = baitHolder.CFrame
+                    local endCf = CFrame.new(position)
+                    local p = toolMaid:GiveTask(Instance.new("Part")) :: Part
+                    p.Shape = Enum.PartType.Ball
+                    p.CFrame = baitHolder.CFrame
+                    p.Size = Vector3.new(1,1,1)
+                    p.Anchored = true 
+                    p.CanCollide = true
+                    p.Parent = workspace
+
+                    local attachment0 = toolMaid:GiveTask(Instance.new("Attachment")) :: Attachment
+                    local attachment1 = toolMaid:GiveTask(Instance.new("Attachment")) :: Attachment
+
+                    attachment0.Parent = baitHolder
+                    attachment1.Parent = p
+
+                    local rope = toolMaid:GiveTask(Instance.new("RopeConstraint")) :: RopeConstraint
+                    rope.Attachment0 = attachment0
+                    rope.Attachment1 = attachment1
+                    rope.Visible = true
+                    rope.Thickness = 0.1
+                    rope.Parent = toolModel
+
+                    for x = 0, 1, 0.05 do
+                        local v3 = Vector3.new(0,startCf.Position.Y,0):Lerp(Vector3.new(0,endCf.Position.Y*2,0), x):Lerp(Vector3.new(0,endCf.Position.Y,0), x)
+                        
+                        local v32 = Vector3.new(startCf.Position.X, 0, startCf.Position.Z):Lerp(Vector3.new(endCf.Position.X, 0, endCf.Position.Z), x)
+                        local pos = v32 + v3
+                        p.Position = pos
+
+                        rope.Length = (baitHolder.Position - pos).Magnitude*1
+                        task.wait()
+                    end
+
+                    toolMaid:DoCleaning()
+
+                    task.wait(5)
+
+                    local billboardPart = toolMaid:GiveTask(_new("Part")({
+                        Position = endCf.Position,
+                        CanCollide = false,
+                        Anchored = true,
+                        Transparency = 1,
+                        Parent = workspace
+                    }))
+                    _new("BillboardGui")({
+                        Size = UDim2.fromScale(5, 5),
+                        Parent = billboardPart,
+                        Children = {
+                            _new("Frame")({
+                                BackgroundTransparency = 1,
+                                Size = UDim2.fromScale(1, 1),
+                                Children = {
+                                    _new("TextLabel")({
+                                        BackgroundTransparency = 1,
+                                        Size = UDim2.fromScale(1, 1),
+                                        Text = "!",
+                                        TextColor3 = Color3.fromRGB(255,255,255),
+                                        TextStrokeTransparency = 0.6,
+                                        TextScaled = true
+                                    })
+                                }
+                            })
+                        }
+                    })
+                    --[[local tween = game:GetService("TweenService"):Create(p, TweenInfo.new(0.1), { --parablola formula stuff
+                        CFrame = mouse.Hit
+                    })
+                    tween:Play()
+                    tween.Completed:Wait()]]
+                end
+                print(toolInst)
+            end
+            --[[local p = Instance.new("Part")
+            p.CFrame = mouse.Hit
+            p.Size = Vector3.new(25,25,25)
+            p.Anchored = true
+            p.CanCollide = true
+            p.Parent = workspace]]
+        end
+        return
+    end))
 
     local notifMaid = maid:GiveTask(Maid.new())
     NetworkUtil.onClientInvoke(ON_NOTIF_CHOICE_INIT, function(actionName : string, eventTitle : string, eventDesc : string, isConfirm : boolean)

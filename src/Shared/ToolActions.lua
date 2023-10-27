@@ -81,6 +81,24 @@ local ActionLists = {
     },
 
     {
+        ToolClass = "Fishing Rod",
+        Activated = function(player : Player, toolData : BackpackUtil.ToolData<nil>)
+            --print("rodding")
+            local character = player.Character or player.CharacterAdded:Wait()
+            local toolInst : Instance
+
+            for _,v in pairs(character:GetChildren()) do
+                if v:IsA("Tool") and v.Name == toolData.Name then
+                    toolInst = v
+                    break
+                end
+            end
+
+            NetworkUtil.fireClient(ON_TOOL_ACTIVATED, player, "Fishing Rod", toolInst)
+        end
+    },
+
+    {
         ToolClass = "Miscs",
         Activated = function()
             
