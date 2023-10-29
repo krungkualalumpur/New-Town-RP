@@ -786,7 +786,6 @@ function PlayerManager.init(maid : Maid)
 
         
         local toolModel = BackpackUtil.getToolFromName(toolName)
-
         if toolModel then 
             local success = plrInfo:InsertToBackpack(toolModel) 
             if success then

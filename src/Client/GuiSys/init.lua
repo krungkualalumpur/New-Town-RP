@@ -29,6 +29,8 @@ local ItemUtil = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("
 local BackpackUtil = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("BackpackUtil"))
 local CustomizationUtil = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("CustomizationUtil"))
 local MarketplaceUtil = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("MarketplaceUtil"))
+local RarityUtil = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("RarityUtil"))
+local Fishes = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Fishing"))
 local ChoiceActions = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("ChoiceActions"))
 
 local ItemOptionsUI = require(ReplicatedStorage:WaitForChild("Client"):WaitForChild("ItemOptionsUI"))
@@ -95,6 +97,24 @@ local ON_TOOL_ACTIVATED = "OnToolActivated"
 local Player = Players.LocalPlayer
 --references
 --local functions
+function PlaySound(id, parent, volumeOptional: number ?)
+	task.spawn(function()
+		local s = Instance.new("Sound")
+
+		s.Name = "Sound"
+		s.SoundId = id
+		s.Volume = volumeOptional or 1
+        s.RollOffMaxDistance = 350
+		s.Looped = false
+		s.Parent = parent or Player:FindFirstChild("PlayerGui")
+		s:Play()
+		task.spawn(function() 
+            s.Ended:Wait()
+		    s:Destroy()
+        end)
+	end)
+end
+
 local function getCharacter(fromWorkspace : boolean, plr : Player ?)
     local char 
     if RunService:IsRunning() then 
@@ -480,9 +500,18 @@ function guiSys.new()
                 local toolModel = toolInst:FindFirstChild(toolInst.Name)
                 local baitHolder = if toolModel then toolModel:FindFirstChild("BaitHolder") :: BasePart ? else nil
                 if baitHolder then
+
+                    if (baitHolder.Position - position).Magnitude >= 80 then
+                        self:Notify("Bait is too far!")
+                        return
+                    end
+
+                    toolMaid:DoCleaning()
+
+                    local localMaid = toolMaid:GiveTask(Maid.new())
                     local startCf = baitHolder.CFrame
                     local endCf = CFrame.new(position)
-                    local p = toolMaid:GiveTask(Instance.new("Part")) :: Part
+                    local p = toolMaid:GiveTask(Instance.new("Part"))
                     p.Shape = Enum.PartType.Ball
                     p.CFrame = baitHolder.CFrame
                     p.Size = Vector3.new(1,1,1)
@@ -513,38 +542,126 @@ function guiSys.new()
                         rope.Length = (baitHolder.Position - pos).Magnitude*1
                         task.wait()
                     end
+                    PlaySound("rbxassetid://9120584671", p, 100)
 
-                    toolMaid:DoCleaning()
+                    p.Transparency = 1
 
-                    task.wait(5)
+                    local _fuse = ColdFusion.fuse(toolMaid)
+                    local _new = _fuse.new
+                    
+                    local _Value = _fuse.Value
 
-                    local billboardPart = toolMaid:GiveTask(_new("Part")({
-                        Position = endCf.Position,
-                        CanCollide = false,
-                        Anchored = true,
-                        Transparency = 1,
-                        Parent = workspace
-                    }))
-                    _new("BillboardGui")({
-                        Size = UDim2.fromScale(5, 5),
-                        Parent = billboardPart,
-                        Children = {
-                            _new("Frame")({
-                                BackgroundTransparency = 1,
-                                Size = UDim2.fromScale(1, 1),
-                                Children = {
-                                    _new("TextLabel")({
-                                        BackgroundTransparency = 1,
-                                        Size = UDim2.fromScale(1, 1),
-                                        Text = "!",
-                                        TextColor3 = Color3.fromRGB(255,255,255),
-                                        TextStrokeTransparency = 0.6,
-                                        TextScaled = true
-                                    })
-                                }
-                            })
-                        }
-                    })
+                    local t1 = tick()
+                    local t2 = tick()
+                    local bufferTime = 3
+
+                    local dynamicIconSize = _Value(UDim2.fromScale(1, 0.8))
+                    local smaller = true
+                    --size anim
+                    toolMaid:GiveTask(RunService.RenderStepped:Connect(function()
+                       -- print(tick() - intTick)
+                        if tick() - t1 > 0.5 then
+                            t1 = tick()
+                            smaller = not smaller
+                            --print("soize wut?", dynamicIconSize:Get())
+                            if not smaller then
+                                --print("1")
+                                dynamicIconSize:Set(UDim2.fromScale(1, 0.8))
+                            else
+                                --print('3')
+                                dynamicIconSize:Set(UDim2.fromScale(0.6, 0.6))
+                            end
+                        end
+                    end))
+
+                    toolMaid:GiveTask(RunService.RenderStepped:Connect(function()
+                        if tick() - t2 > bufferTime then 
+                            local luckNum = 3
+                            local randNum = math.random(1,3)
+
+                            --print(randNum, luckNum, randNum == luckNum)
+                            t2 = tick()
+                            localMaid:DoCleaning()
+
+                            if randNum == luckNum then
+                               
+
+                                local billboardPart = localMaid:GiveTask(_new("Part")({
+                                    Position = endCf.Position,
+                                    CanCollide = false,
+                                    Anchored = true,
+                                    Transparency = 1,
+                                    Parent = workspace,
+                                    Children = {
+                                       
+                                        _new("BillboardGui")({
+                                            ExtentsOffsetWorldSpace = Vector3.new(0,8,0),
+                                            Size = UDim2.fromScale(10, 10),
+                                            Children = {
+                                                _new("Frame")({
+                                                    BackgroundTransparency = 1,
+                                                    Size = UDim2.fromScale(1, 1),
+                                                    Children = {
+                                                        _new("UIListLayout")({
+                                                            SortOrder = Enum.SortOrder.LayoutOrder,
+                                                            VerticalAlignment = Enum.VerticalAlignment.Center,
+                                                            HorizontalAlignment = Enum.HorizontalAlignment.Center
+                                                        }),
+                                                        _new("TextLabel")({
+                                                            BackgroundTransparency = 1,
+                                                            Size = dynamicIconSize:Tween(0.5),
+                                                            Font = Enum.Font.GothamBold,
+                                                            Text = "!",
+                                                            TextColor3 = Color3.new(0.737255, 0.811765, 0.039216),
+                                                            TextStrokeTransparency = 0.6,
+                                                            TextScaled = true,
+                                                            Children = {
+                                                                _new("UICorner")({
+                                                                    CornerRadius = UDim.new(20,0),
+                                                                }),
+                                                                _new("UIStroke")({
+                                                                    ApplyStrokeMode = Enum.ApplyStrokeMode.Border,
+                                                                    Color = Color3.new(0.737255, 0.811765, 0.039216),
+                                                                })
+                                                            }
+                                                        }),
+                                                        _new("TextLabel")({
+                                                            BackgroundTransparency = 1,
+                                                            Size = UDim2.fromScale(1, 0.2),
+                                                            Font = Enum.Font.Gotham,
+                                                            Text = if UserInputService.KeyboardEnabled then "Right-click to catch the fish" else "Touch to catch the fish",
+                                                            TextColor3 = Color3.fromRGB(255,255,255),
+                                                            TextStrokeTransparency = 0.6,
+                                                            TextScaled = true
+                                                        })
+                                                    }
+                                                })
+                                            }
+                                        })
+                                    }
+                                }))
+                                PlaySound("rbxassetid://1584394759")
+                                
+                                --right click to interacto!
+                                localMaid:GiveTask(UserInputService.InputEnded:Connect(function(input, gpe)
+                                    if ((input.UserInputType == Enum.UserInputType.MouseButton2) or (input.UserInputType == Enum.UserInputType.Touch)) and not gpe then
+                                        
+                                        local fishesRarity = Fishes.FishesDataToRarityArray()
+                                        local fishData = RarityUtil(fishesRarity)
+
+                                        NetworkUtil.invokeServer(ADD_BACKPACK, fishData.Name)
+ 
+                                        toolMaid:DoCleaning()
+                                    end
+                                end))
+                            end
+                        end
+                        
+                    end))
+
+                    toolMaid:GiveTask(toolInst.Destroying:Connect(function()
+                        toolMaid:DoCleaning()
+                    end))
                     --[[local tween = game:GetService("TweenService"):Create(p, TweenInfo.new(0.1), { --parablola formula stuff
                         CFrame = mouse.Hit
                     })
