@@ -551,6 +551,24 @@ function guiSys.new()
                     
                     local _Value = _fuse.Value
 
+                    local waterSplashFX = _new("ParticleEmitter")({
+                        Enabled = true,
+                        Rate = 15,
+                        Lifetime = NumberRange.new(0.6,2),
+                        Size = NumberSequence.new({
+                            NumberSequenceKeypoint.new(0, 7),
+                            NumberSequenceKeypoint.new(1, 10)
+                        }),
+                        Acceleration = Vector3.new(0,1,0),
+                        Texture = "rbxassetid://341774729",
+                        SpreadAngle = Vector2.new(-180,180),
+                        Speed = NumberRange.new(2),
+                        Parent = p
+                    }) :: ParticleEmitter
+                    print(waterSplashFX)
+                    task.wait(0.1)
+                    waterSplashFX.Enabled = false
+
                     local t1 = tick()
                     local t2 = tick()
                     local bufferTime = 3
