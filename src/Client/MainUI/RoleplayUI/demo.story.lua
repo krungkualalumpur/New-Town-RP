@@ -6,9 +6,12 @@ local Maid = require(ReplicatedStorage:WaitForChild("Packages"):WaitForChild("Ma
 local ColdFusion = require(ReplicatedStorage:WaitForChild("Packages"):WaitForChild("ColdFusion8"))
 local Signal = require(ReplicatedStorage:WaitForChild("Packages"):WaitForChild("Signal"))
 --modules
-local AnimationUI = require(ReplicatedStorage:WaitForChild("Client"):WaitForChild("MainUI"):WaitForChild("AnimationUI"))
+local RoleplayUI = require(ReplicatedStorage:WaitForChild("Client"):WaitForChild("MainUI"):WaitForChild("RoleplayUI"))
+local BackpackUtil = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("BackpackUtil"))
 --types
 type Maid = Maid.Maid
+
+type ValueState<T> = ColdFusion.ValueState<T>
 
 type AnimationInfo = {
     Name : string,
@@ -43,18 +46,34 @@ return function(target : CoreGui)
     local _Value = _fuse.Value
 
     local onAnimClick = maid:GiveTask(Signal.new())
-    local animationUI = AnimationUI(
+    local onItemCartSpawn = maid:GiveTask(Signal.new())
+
+    local backpack : ValueState<{BackpackUtil.ToolData<boolean>}> = _Value({
+        BackpackUtil.newData("Jamu", "Consumption") :: any,
+        BackpackUtil.newData("Satay", "Consumption")
+    })
+
+    local animationUI = RoleplayUI(
         maid,
         {
             getAnimInfo("Hepi", 1223131),
             getAnimInfo("Sed", 1223131)
         },
-        onAnimClick
+
+        onAnimClick,
+        onItemCartSpawn,
+
+        backpack,
+        _Value("test" :: string ?)
     )
+
     maid:GiveTask(onAnimClick:Connect(function(animInfo : AnimationInfo)
         print("faiaaah ", animInfo.Name)
     end))
     animationUI.Parent = target
+    maid:GiveTask(onItemCartSpawn:Connect(function(selectedItems : {[number] : BackpackUtil.ToolData<nil>})
+        print("Item cart spawn! ", selectedItems)
+    end))
 
     return function() 
         maid:Destroy()

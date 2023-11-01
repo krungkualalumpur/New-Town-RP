@@ -13,7 +13,7 @@ local ColdFusion = require(ReplicatedStorage:WaitForChild("Packages"):WaitForChi
 local Signal = require(ReplicatedStorage:WaitForChild("Packages"):WaitForChild("Signal"))
 --modules
 local BackpackUI = require(ReplicatedStorage:WaitForChild("Client"):WaitForChild("MainUI"):WaitForChild("BackpackUI"))
-local AnimationUI = require(ReplicatedStorage:WaitForChild("Client"):WaitForChild("MainUI"):WaitForChild("AnimationUI"))
+local RoleplayUI = require(ReplicatedStorage:WaitForChild("Client"):WaitForChild("MainUI"):WaitForChild("RoleplayUI"))
 local NewCustomizationUI = require(ReplicatedStorage:WaitForChild("Client"):WaitForChild("MainUI"):WaitForChild("NewCustomizationUI"))
 local CustomizationUI = require(ReplicatedStorage:WaitForChild("Client"):WaitForChild("MainUI"):WaitForChild("CustomizationUI"))
 local ItemOptionsUI = require(ReplicatedStorage:WaitForChild("Client"):WaitForChild("ItemOptionsUI"))
@@ -33,7 +33,7 @@ local ToolActions = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChil
 type Maid = Maid.Maid
 type Signal = Signal.Signal
 
-export type UIStatus = "Backpack" | "Animation" | "Customization" | nil
+export type UIStatus = "Backpack" | "Roleplay" | "Customization" | nil
 type ToolData = BackpackUtil.ToolData<boolean>
 type AnimationInfo = {
     Name : string,
@@ -513,6 +513,32 @@ return function(
         Value = val
     })
 
+    local mainOptions =  _new("Frame")({
+        LayoutOrder = 0,
+        BackgroundTransparency = 1,
+        Size = UDim2.fromScale(0.1, 1),
+        Position = UDim2.fromScale(0, 0),   
+        Children = {
+            _new("UIListLayout")({
+                FillDirection = Enum.FillDirection.Vertical,
+                SortOrder = Enum.SortOrder.LayoutOrder,
+                Padding = PADDING_SIZE,
+                VerticalAlignment = Enum.VerticalAlignment.Center
+            }),   
+            getImageButton(maid, 2815418737, function()
+                UIStatus:Set(if UIStatus:Get() ~= "Backpack" then "Backpack" else nil)
+            end, "← Backpack", 2, true),
+            getImageButton(maid, 11955884948, function()
+                UIStatus:Set(if UIStatus:Get() ~= "Roleplay" then "Roleplay" else nil)
+            end, "← Roleplay Actions", 3, true),
+            getImageButton(maid, 13285102351, function()
+                UIStatus:Set(if UIStatus:Get() ~= "Customization" then "Customization" else nil)
+            end, "← Outfit", 1, true)
+            --getImageButton(maid, 227600967),
+
+        }
+    }) :: Frame
+
     local out = _new("Frame")({
         Name = "MainUI",
         Parent = target,
@@ -531,31 +557,7 @@ return function(
                 SortOrder = Enum.SortOrder.LayoutOrder,
                 VerticalAlignment = Enum.VerticalAlignment.Center
             }),
-            _new("Frame")({
-                LayoutOrder = 0,
-                BackgroundTransparency = 1,
-                Size = UDim2.fromScale(0.1, 1),
-                Position = UDim2.fromScale(0, 0),   
-                Children = {
-                    _new("UIListLayout")({
-                        FillDirection = Enum.FillDirection.Vertical,
-                        SortOrder = Enum.SortOrder.LayoutOrder,
-                        Padding = PADDING_SIZE,
-                        VerticalAlignment = Enum.VerticalAlignment.Center
-                    }),   
-                    getImageButton(maid, 2815418737, function()
-                        UIStatus:Set(if UIStatus:Get() ~= "Backpack" then "Backpack" else nil)
-                    end, "← Backpack", 2, true),
-                    getImageButton(maid, 11955884948, function()
-                        UIStatus:Set(if UIStatus:Get() ~= "Animation" then "Animation" else nil)
-                    end, "← Basic Emotes", 3, true),
-                    getImageButton(maid, 13285102351, function()
-                        UIStatus:Set(if UIStatus:Get() ~= "Customization" then "Customization" else nil)
-                    end, "← Outfit", 1, true)
-                    --getImageButton(maid, 227600967),
-
-                }
-            }),
+            mainOptions,
 
         }
     }) :: Frame
@@ -589,9 +591,13 @@ return function(
     local onDescChange = maid:GiveTask(Signal.new())
 
     local saveList = _Value({})
-  
+
+    local onItemCartSpawn = maid:GiveTask(Signal.new())
+
     local strval = _Computed(function(status : UIStatus)
         statusMaid:DoCleaning() 
+
+        mainOptions.Visible = (status == nil) 
         if status == "Backpack" then
             local onBackpackButtonEquipClickSignal = statusMaid:GiveTask(Signal.new())
             local onBackpackButtonDeleteClickSignal = statusMaid:GiveTask(Signal.new())
@@ -619,9 +625,9 @@ return function(
             if game:GetService("RunService"):IsRunning() then
                 backpack:Set(NetworkUtil.invokeServer(GET_PLAYER_BACKPACK))
             end
-        elseif status == "Animation" then 
+        elseif status == "Roleplay" then 
             local onAnimClickSignal = statusMaid:GiveTask(Signal.new())
-            local animationUI = AnimationUI(
+            local roleplayUI = RoleplayUI(
                 statusMaid, 
                 {
                     getAnimInfo("Dance1", 6487673963),
@@ -639,14 +645,17 @@ return function(
                     getAnimInfo("Yes", 6487622514),
 
                 },
-                onAnimClickSignal
+                onAnimClickSignal,
+                onItemCartSpawn,
+                backpack,
+                UIStatus :: any
             ) :: Frame
-            animationUI.Parent = out
+            roleplayUI.Parent = out
             statusMaid:GiveTask(onAnimClickSignal:Connect(function(animInfo : AnimationInfo)
                 AnimationUtil.playAnim(Players.LocalPlayer, animInfo.AnimationId, false)
             end))
 
-            getExitButton(animationUI)
+            --getExitButton(roleplayUI)
         elseif status == "Customization" then
             local isVisible =_Value(true)
             local customizationUI = NewCustomizationUI(
@@ -1035,6 +1044,11 @@ return function(
     local strVal = _new("StringValue")({
         Value = strval  
     })
+
+    maid:GiveTask(onItemCartSpawn:Connect(function(selectedItems : {[number] : BackpackUtil.ToolData<boolean>})
+        
+        UIStatus:Set(nil)
+    end))
     
     return out
 end
