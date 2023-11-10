@@ -56,6 +56,8 @@ return function(target : CoreGui)
 
     local nameOnCustomize = maid:GiveTask(Signal.new())
 
+    local onItemCartSpawn = maid:GiveTask(Signal.new())
+
     local onCharReset = maid:GiveTask(Signal.new())
 
     MainUI(
@@ -68,6 +70,8 @@ return function(target : CoreGui)
         onBackpackEquip,
         onBackpackDelete,
         onNotify,
+
+        onItemCartSpawn,
 
         onCharReset,
         
@@ -90,6 +94,13 @@ return function(target : CoreGui)
         print("Customize Name")
     end))
 
+    maid:GiveTask(onItemCartSpawn:Connect(function(items)
+        print("Item Cart Spawn ", items)
+    end))
+
+    maid:GiveTask(onCharReset:Connect(function()
+        print("Character Reset")
+    end))
     return function() 
         maid:Destroy()
     end

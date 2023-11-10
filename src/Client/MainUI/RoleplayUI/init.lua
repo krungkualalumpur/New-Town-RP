@@ -351,7 +351,6 @@ return function(
                         Vector3.new(1.4,1,1.4),
                         modelDisplay,
                         function()
-                           
                             local currentSelectedItems = table.clone(selectedItems:Get())
                            
                             local selectedToolData
@@ -360,6 +359,10 @@ return function(
                                     selectedToolData = toolData
                                     break
                                 end
+                            end
+
+                            if not selectedToolData and #currentSelectedItems >= 5 then
+                                return
                             end
                         
                             if not selectedToolData then
@@ -404,17 +407,10 @@ return function(
                         _bind(button)({
                             LayoutOrder = -1
                         })
-                        print("Schzio")
                     end
                 end
             end
-            
-            --[[for k,v in pairs(backpackTbl) do
-                local button = getButton(maid, k, v.Name, maid:GiveTask(Signal.new()), function()
-                    print("testme")
-                end, SELECT_COLOR)
-                button.Parent = gerobakItemsPut
-            end]]
+
             return ""
         end, backpack, selectedItems)
     })

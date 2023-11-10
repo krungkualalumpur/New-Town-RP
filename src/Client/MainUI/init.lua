@@ -322,6 +322,8 @@ return function(
     backpackOnDelete : Signal,
     onNotify : Signal,
 
+    onItemCartSpawn : Signal,
+
     onCharacterReset : Signal,
 
     target : Instance
@@ -530,6 +532,7 @@ return function(
             end, "← Backpack", 2, true),
             getImageButton(maid, 11955884948, function()
                 UIStatus:Set(if UIStatus:Get() ~= "Roleplay" then "Roleplay" else nil)
+                
             end, "← Roleplay Actions", 3, true),
             getImageButton(maid, 13285102351, function()
                 UIStatus:Set(if UIStatus:Get() ~= "Customization" then "Customization" else nil)
@@ -592,10 +595,10 @@ return function(
 
     local saveList = _Value({})
 
-    local onItemCartSpawn = maid:GiveTask(Signal.new())
-
     local strval = _Computed(function(status : UIStatus)
         statusMaid:DoCleaning() 
+
+        game:GetService("StarterGui"):SetCoreGuiEnabled(Enum.CoreGuiType.Chat, true)
 
         mainOptions.Visible = (status == nil) 
         if status == "Backpack" then
@@ -655,6 +658,7 @@ return function(
                 AnimationUtil.playAnim(Players.LocalPlayer, animInfo.AnimationId, false)
             end))
 
+            game:GetService("StarterGui"):SetCoreGuiEnabled(Enum.CoreGuiType.Chat, false)
             --getExitButton(roleplayUI)
         elseif status == "Customization" then
             local isVisible =_Value(true)
@@ -1045,10 +1049,5 @@ return function(
         Value = strval  
     })
 
-    maid:GiveTask(onItemCartSpawn:Connect(function(selectedItems : {[number] : BackpackUtil.ToolData<boolean>})
-        
-        UIStatus:Set(nil)
-    end))
-    
     return out
 end

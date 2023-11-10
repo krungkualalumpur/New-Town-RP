@@ -64,7 +64,7 @@ local function camSprinting(on : boolean)
 
     if on then
         if math.round(humanoid.MoveDirection.Magnitude) == 0 then
-            local tween = TweenService:Create(
+            --[[local tween = TweenService:Create(
                 currentCamera, 
                 TweenInfo.new(0.5), 
                 {
@@ -72,9 +72,9 @@ local function camSprinting(on : boolean)
                 }
             )
             tween:Play()
-            tween:Destroy()
+            tween:Destroy()]]
         else
-            local tween = TweenService:Create(
+            --[[local tween = TweenService:Create(
                 currentCamera, 
                 TweenInfo.new(0.5), 
                 {
@@ -82,12 +82,12 @@ local function camSprinting(on : boolean)
                 }
             )
             tween:Play()
-            tween:Destroy()
+            tween:Destroy()]]
         end
     else
         humanoid.WalkSpeed = WALK_SPEED
 
-        local tween = TweenService:Create(
+        --[[local tween = TweenService:Create(
             currentCamera, 
             TweenInfo.new(0.5), 
             {
@@ -95,7 +95,7 @@ local function camSprinting(on : boolean)
             } 
         )
         tween:Play()
-        tween:Destroy()
+        tween:Destroy()]]
     end
 end
 

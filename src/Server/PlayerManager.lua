@@ -7,6 +7,7 @@ local Players = game:GetService("Players")
 local HttpService = game:GetService("HttpService")
 local PhysicsService = game:GetService("PhysicsService")
 local MarketplaceService = game:GetService("MarketplaceService")
+local CollectionService = game:GetService("CollectionService")
 --packages
 local Maid = require(ReplicatedStorage:WaitForChild("Packages"):WaitForChild("Maid"))
 local NetworkUtil = require(ReplicatedStorage:WaitForChild("Packages"):WaitForChild("NetworkUtil"))
@@ -75,6 +76,8 @@ local SAVE_CHARACTER_SLOT = "SaveCharacterSlot"
 local LOAD_CHARACTER_SLOT = "LoadCharacterSlot"
 local DELETE_CHARACTER_SLOT = "DeleteCharacterSlot"
 
+local ON_ITEM_CART_SPAWN = "OnItemCartSpawn"
+
 local ON_ROLEPLAY_BIO_CHANGE = "OnRoleplayBioChange"
 
 local ON_CAMERA_SHAKE = "OnCameraShake"
@@ -85,6 +88,9 @@ local Registry = {}
 --references
 local CharacterSpawnLocations = workspace:WaitForChild("SpawnLocations") 
 local SpawnedVehiclesParent = workspace:WaitForChild("Assets"):WaitForChild("Temporaries"):WaitForChild("Vehicles")
+local raycastParams = RaycastParams.new()
+raycastParams.FilterType = Enum.RaycastFilterType.Include
+raycastParams.FilterDescendantsInstances = workspace:WaitForChild("Assets"):GetChildren()
 --local functions
 local function newVehicleData(
     itemType : ItemUtil.ItemType,
@@ -615,6 +621,89 @@ function PlayerManager:DeleteCharacterSlot(characterDataKey : number)
     return self.CharacterSaves
 end
 
+function PlayerManager:GetItemsCart(selectedItems : {[number] : BackpackUtil.ToolData<boolean>}, cf : CFrame)
+    if #selectedItems > 5 then
+        NotificationUtil.Notify(self.Player, "You an only have maximum 5 amount of items in the cart!")
+        return 
+    end
+    
+    local char = self.Player.Character or self.Player.CharacterAdded:Wait()
+    local cart = ReplicatedStorage:WaitForChild("Assets"):WaitForChild("Tools"):WaitForChild("RoleplayTools"):WaitForChild("Cart"):Clone() :: Model
+    local zone = cart:FindFirstChild("Zone") :: BasePart ?
+    local itemsDisplayParent = cart:FindFirstChild("Items") :: Folder ?
+  
+    self._Maid.ItemsCart = cart
+    --raycast
+    local pos = char.PrimaryPart.Position + char.PrimaryPart.CFrame.LookVector*5 -- temporary
+    local raycastResult = workspace:Raycast(pos, Vector3.new(0,-100,0), raycastParams)
+
+    if not raycastResult then NotificationUtil.Notify(self.Player, "Place not suitable to put the cart"); return end
+
+    cart:PivotTo(CFrame.new(raycastResult.Position + Vector3.new(0, cart:GetExtentsSize().Y*0.5, 0)))
+    cart.Parent = workspace:WaitForChild("Assets")
+    
+    for _,v in pairs(selectedItems) do
+        
+        local oriTool = BackpackUtil.getToolFromName(v.Name)
+        local tool = if oriTool then oriTool:Clone() else nil
+
+        if tool then
+            local toolAsset = tool:GetChildren()[1]
+
+            if zone and itemsDisplayParent then
+                assert(toolAsset, "Tool model not found")
+                --manipulate the cframe to make it look like it is stacked 
+                local height = 0
+                for _,v in pairs(itemsDisplayParent:GetChildren()) do
+                    if v:IsA("Model") then
+                        height += v:GetExtentsSize().Y 
+                    elseif v:IsA("BasePart") then
+                        height += v.Size.Y  
+                    end
+                end
+
+                height += (if toolAsset:IsA("Model") then toolAsset:GetExtentsSize().Y*0.5 elseif toolAsset:IsA("BasePart") then toolAsset.Size.Y*0.5 else 0)
+
+                local modelCf = zone.CFrame + Vector3.new(0, height - zone.Size.Y*0.5, 0) 
+
+                if toolAsset:IsA("BasePart") or toolAsset:IsA("Model") then
+                    toolAsset:PivotTo(modelCf) 
+                    if toolAsset:IsA("BasePart") then
+                        toolAsset.Anchored = true
+                        toolAsset.Parent = itemsDisplayParent
+                    elseif toolAsset:IsA("Model") then
+                        toolAsset.Parent = itemsDisplayParent
+                        for _,v in pairs(toolAsset:GetDescendants()) do
+                            if v:IsA("BasePart") then
+                                v.Anchored = true
+                            end
+                        end
+                    end
+                end
+            end
+
+            tool:Destroy()
+        end
+    end
+
+    local itemList = Instance.new("Folder")
+    itemList.Name = "ItemList"
+    itemList:SetAttribute("ListName", self.Player.Name .. "'s cart")
+    itemList.Parent = cart
+
+    for _,v in pairs(selectedItems) do
+        local strValue = Instance.new("StringValue")
+        strValue.Name = v.Name
+        strValue.Value = ""
+        strValue.Parent = itemList
+    end
+
+    CollectionService:AddTag(cart, "Interactable")
+    cart:SetAttribute("Class", "ItemOptionsUI")
+
+    return 
+end
+
 function PlayerManager:Destroy()
     Registry[self.Player] = nil
     
@@ -900,6 +989,13 @@ function PlayerManager.init(maid : Maid)
     NetworkUtil.onServerInvoke(DELETE_CHARACTER_SLOT, function(plr : Player, k, content)
         local plrManager = PlayerManager.get(plr)
         return plrManager:DeleteCharacterSlot(k)
+    end)
+
+    NetworkUtil.onServerInvoke(ON_ITEM_CART_SPAWN, function(plr : Player, selectedItems : {[number] : BackpackUtil.ToolData<boolean>}, cf : CFrame)
+        local plrManager = PlayerManager.get(plr)
+        plrManager:GetItemsCart(selectedItems, cf)
+        --print(plrManager, plrManager.GetItemsCart)
+        return nil 
     end)
 
     NetworkUtil.onServerEvent(ON_TOOL_ACTIVATED, function(plr : Player, toolClass : string, foodInst : Instance, toolData : BackpackUtil.ToolData<nil>)

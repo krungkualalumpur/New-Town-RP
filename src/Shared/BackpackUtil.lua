@@ -42,6 +42,11 @@ local function createTool(inst : Instance)
     local cf, size 
     if clonedInst:IsA("Model") then
         cf, size =  clonedInst:GetBoundingBox()
+        for _,v in pairs(clonedInst:GetDescendants()) do
+            if v:IsA("BasePart") and v:GetAttribute("IsHandle") then
+                cf, size = v.CFrame, v.Size
+            end
+        end
     elseif clonedInst:IsA("BasePart") then
         cf, size = clonedInst.CFrame, clonedInst.Size
     else 

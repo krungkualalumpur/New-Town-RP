@@ -75,6 +75,8 @@ local LIST_TYPE_ATTRIBUTE = 'ListType'
 local ON_OPTIONS_OPENED = "OnOptionsOpened"
 local ON_ITEM_OPTIONS_OPENED = "OnItemOptionsOpened"
 
+local ON_ITEM_CART_SPAWN = "OnItemCartSpawn"
+
 local GET_PLAYER_BACKPACK = "GetPlayerBackpack"
 local UPDATE_PLAYER_BACKPACK = "UpdatePlayerBackpack"
 
@@ -204,6 +206,8 @@ function guiSys.new()
     
     local nameCustomizationOnClick = maid:GiveTask(Signal.new()) 
 
+    local onItemCartSpawn = maid:GiveTask(Signal.new())
+
     local onCharacterReset = maid:GiveTask(Signal.new())
 
     local MainUIStatus : ValueState<MainUI.UIStatus> = _Value(nil) :: any
@@ -217,6 +221,8 @@ function guiSys.new()
         backpackOnEquip,
         backpackOnDelete,
         onNotify,
+
+        onItemCartSpawn,
         
         onCharacterReset,
 
@@ -246,6 +252,14 @@ function guiSys.new()
         self:Notify(msg)
     end))
 
+    
+    maid:GiveTask(onItemCartSpawn:Connect(function(selectedItems : {[number] : BackpackUtil.ToolData<boolean>})
+        MainUIStatus:Set(nil)
+
+        NetworkUtil.invokeServer(ON_ITEM_CART_SPAWN, selectedItems)
+        print("test 123")
+    end))
+    
 
     self.NotificationUI = NotificationUI(
         maid,
@@ -686,7 +700,6 @@ function guiSys.new()
                     tween:Play()
                     tween.Completed:Wait()]]
                 end
-                print(toolInst)
             end
             --[[local p = Instance.new("Part")
             p.CFrame = mouse.Hit

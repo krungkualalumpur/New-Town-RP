@@ -77,6 +77,8 @@ export type PlayerManager = {
     LoadCharacterSlot : (PlayerManager, k : number) -> {[number] : CharacterData},
     DeleteCharacterSlot : (PlayerManager, k : number) -> {[number] : CharacterData},
 
+    GetItemsCart : (PlayerManager, selectedItems : {[number] : BackpackUtil.ToolData<boolean>}, cf : CFrame) -> (),
+
     Destroy : (PlayerManager) -> (),
 
     GetData : (PlayerManager) -> PlayerData,
