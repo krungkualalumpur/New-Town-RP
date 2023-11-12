@@ -56,16 +56,21 @@ local function createTool(inst : Instance)
     local handle = Instance.new("Part")
     handle.Name = "Handle"
     handle.CanCollide = false
+    handle.Massless = true
     handle.Transparency = 1
     handle.CFrame, handle.Size = cf, size
     handle.Parent = tool
     --welds
     if clonedInst:IsA("BasePart") then
-        createWeld(handle, clonedInst)
+        if not clonedInst:GetAttribute("IsLoose") then
+            createWeld(handle, clonedInst)
+        end
     end
     for _,v in pairs(clonedInst:GetDescendants()) do
         if v:IsA("BasePart") then
-            createWeld(handle, v)
+            if not v:GetAttribute("IsLoose") then
+                createWeld(handle, v)
+            end
         end
     end
 

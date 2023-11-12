@@ -383,6 +383,9 @@ function PlayerManager:SetBackpackEquip(isEquip : boolean, toolKey : number)
                     end
                 end
 
+                if character.PrimaryPart then
+                    equippedTool:PivotTo(character.PrimaryPart.CFrame)
+                end
                 --and then set the parent
                 equippedTool.Parent = character
                

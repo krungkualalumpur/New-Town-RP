@@ -891,12 +891,13 @@ function CustomizationUtil.setDesc(plr : Player, descType : DescType, descName :
         local textColor = Color3.fromRGB(255,255,255)
 
         local character = plr.Character or plr.CharacterAdded:Wait()
+        local head = character:WaitForChild("Head") :: BasePart
         
-        local billboardGui = character:FindFirstChild(displayNameGUIName) :: BillboardGui or Instance.new("BillboardGui")
+        local billboardGui = head:FindFirstChild(displayNameGUIName) :: BillboardGui or Instance.new("BillboardGui")
         billboardGui.Name = displayNameGUIName
         billboardGui.ExtentsOffsetWorldSpace = Vector3.new(0,1.25,0)
         billboardGui.Size = UDim2.fromScale(3, 1.5)
-        billboardGui.Parent = character
+        billboardGui.Parent = head
     
         local frame = billboardGui:FindFirstChild(frameName) :: Frame or Instance.new("Frame")
         frame.Size = UDim2.fromScale(1, 1)
