@@ -69,7 +69,7 @@ return function(target : CoreGui)
 
     local backpackUI = BackpackUI(
         maid, 
-        {"ha", "hi"},
+        {"ha", "hi", "hu", "he"},
         items,
         onEquip, 
         onDelete

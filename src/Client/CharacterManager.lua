@@ -20,11 +20,35 @@ local CAM_SHAKE_TIME = 0.16
 --remotes
 local ON_CAMERA_SHAKE = "OnCameraShake"
 local ON_ANIMATION_SET = "OnAnimationSet"
+local ON_RAW_ANIMATION_SET = "OnRawAnimationSet"
 local GET_CATALOG_FROM_CATALOG_INFO = "GetCatalogFromCatalogInfo"
 --variables
 --references
 local Player = Players.LocalPlayer
 --local functions
+local function playAnimationByRawId(char : Model, id : number)
+    local maid = Maid.new()
+    local charHumanoid = char:WaitForChild("Humanoid") :: Humanoid
+    local animator = charHumanoid:WaitForChild("Animator") :: Animator
+
+    local animation = maid:GiveTask(Instance.new("Animation"))
+    animation.AnimationId = "rbxassetid://" .. tostring(id)
+    local animationTrack = maid:GiveTask(animator:LoadAnimation(animation))
+    --animationTrack.Looped = false
+    animationTrack:Play()
+    --animationTrack.Ended:Wait()
+    local function stopAnimation()
+        animationTrack:Stop()
+        maid:Destroy()
+    end
+    maid:GiveTask(char.Destroying:Connect(stopAnimation))
+    maid:GiveTask(charHumanoid:GetPropertyChangedSignal("MoveDirection"):Connect(function()
+        if charHumanoid.MoveDirection.Magnitude ~= 0 and not charHumanoid.Sit then
+            stopAnimation()
+        end
+    end))
+end
+
 local function playAnimation(char : Model, id : number)   
     
     if RunService:IsServer() then
@@ -48,11 +72,11 @@ local function playAnimation(char : Model, id : number)
         end
         maid:GiveTask(char.Destroying:Connect(stopAnimation))
         maid:GiveTask(charHumanoid:GetPropertyChangedSignal("MoveDirection"):Connect(function()
-            if charHumanoid.MoveDirection.Magnitude ~= 0 then
+            if charHumanoid.MoveDirection.Magnitude ~= 0 and not charHumanoid.Sit then
                 stopAnimation()
             end
         end))
-        
+
     end
 end
 
@@ -235,6 +259,10 @@ function CharacterManager.init(maid: Maid)
 
     maid:GiveTask(NetworkUtil.onClientEvent(ON_ANIMATION_SET, function(char : Model, id : number)
         playAnimation(char, id)
+    end))
+
+    maid:GiveTask(NetworkUtil.onClientEvent(ON_RAW_ANIMATION_SET, function(char : Model, id : number)
+        playAnimationByRawId(char, id)
     end))
 end
 

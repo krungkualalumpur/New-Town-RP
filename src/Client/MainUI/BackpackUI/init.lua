@@ -256,11 +256,25 @@ local function getItemTypeFrame(
             }),
 
         }
-    })
+    }) :: Frame
+
+    
+    local isNAFrame = _new("TextLabel")({
+        LayoutOrder = 1,
+        AutomaticSize = Enum.AutomaticSize.X,
+        BackgroundTransparency = 1,
+        Size = UDim2.fromScale(0, 0.25),
+        Text = "EMPTY LIST \n (collect by interacting with items)",
+        TextStrokeTransparency = 0.69,
+        TextTransparency = 0.5,
+        TextScaled = true,
+        TextYAlignment = Enum.TextYAlignment.Center,
+        TextColor3 = PRIMARY_COLOR,
+    }) :: TextLabel
 
     local out = _new("Frame")({
         AutomaticSize = Enum.AutomaticSize.Y,
-        BackgroundTransparency = 1,
+        BackgroundTransparency = 0.9,
         Size = UDim2.new(1, 0, 0, 0),
         Children = {
             _new("UIListLayout")({
@@ -279,9 +293,10 @@ local function getItemTypeFrame(
                 TextColor3 = PRIMARY_COLOR,
                 TextStrokeTransparency = 0.5,
             }),
+            isNAFrame,
             itemFrameList
         }
-    })
+    }) :: Frame
 
  
     Items:ForValues(function(v : ToolData & {Key : number}, pairMaid : Maid)
@@ -299,6 +314,15 @@ local function getItemTypeFrame(
         itemButton.Parent = itemFrameList
         return v
     end)
+
+    local strVal = _new("StringValue")({
+        Value = _Computed(function(items) 
+            isNAFrame.Visible = #items == 0
+            itemFrameList.Visible = not isNAFrame.Visible
+            return ""
+        end, Items)
+    })
+    
 
     return out
 end
@@ -339,7 +363,7 @@ return function(
                 SortOrder = Enum.SortOrder.LayoutOrder,
                 Padding = PADDING_SIZE
             }),
-            _new("TextLabel")({
+            --[[_new("TextLabel")({
                 BackgroundTransparency = 1,
                 Size = UDim2.fromScale(1, 0.06),
                 RichText = true,
@@ -348,7 +372,7 @@ return function(
                 Text = "<b>Backpack</b>",
                 TextColor3 = PRIMARY_COLOR,
                 TextStrokeTransparency = 0.5
-            }) 
+            }) ]]
         }
     }) :: GuiObject
 

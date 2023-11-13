@@ -253,10 +253,10 @@ function PlayerManager.new(player : Player, maid : Maid ?)
     leaderstats.Name = "leaderstats"
     leaderstats.Parent = self.Player
 
-    local chatCountVal = Instance.new"IntValue"
+    --[[local chatCountVal = Instance.new"IntValue"
     chatCountVal.Name = CHAT_COUNT_VALUE_NAME
     chatCountVal.Value = self.ChatCount
-    chatCountVal.Parent = leaderstats
+    chatCountVal.Parent = leaderstats]]
 
     self._Maid:GiveTask(self.Player.Chatted:Connect(function(str : string)
         print(self.Player.Name, " chatted! string: ", str)
@@ -474,9 +474,9 @@ end
 function PlayerManager:SetChatCount(count : number)
     self.ChatCount = count
 
-    local leaderstats = self.Player:WaitForChild("leaderstats")
-    local chatCountVal = leaderstats:WaitForChild(CHAT_COUNT_VALUE_NAME) :: IntValue
-    chatCountVal.Value = count
+    --local leaderstats = self.Player:WaitForChild("leaderstats")
+    --local chatCountVal = leaderstats:WaitForChild(CHAT_COUNT_VALUE_NAME) :: IntValue
+    --chatCountVal.Value = count
 end
 
 function PlayerManager:GetData()
@@ -582,7 +582,7 @@ function PlayerManager:SetData(plrData : ManagerTypes.PlayerData, isYield : bool
     CustomizationUtil.Customize(self.Player, plrData.Character.Bundle or 0, Enum.AvatarItemType.Bundle)]]
 
     --set chat count
-    self.ChatCount = plrData.ChatCount or 0
+    --self:SetChatCount(plrData.ChatCount or 0)
 
     --bios
     self.RoleplayBios.Name = plrData.RoleplayBios.Name

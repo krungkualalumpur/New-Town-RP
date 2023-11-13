@@ -25,6 +25,7 @@ local GET_AVATAR_FROM_CHARACTER_DATA = "GetAvatarFromCharacterData"
 local ON_CHARACTER_INFO_SET_FROM_CHARACTER_DATA = "OnCharacterInfoSetFromCharacterData"
 
 local ON_ANIMATION_SET = "OnAnimationSet"
+local ON_RAW_ANIMATION_SET = "OnRawAnimationSet"
 --variables
 --references
 --local functions
@@ -51,7 +52,7 @@ local function playAnimation(char : Model, id : number)
         end
         maid:GiveTask(char.Destroying:Connect(stopAnimation))
         maid:GiveTask(charHumanoid:GetPropertyChangedSignal("MoveDirection"):Connect(function()
-            if charHumanoid.MoveDirection.Magnitude ~= 0 then
+            if charHumanoid.MoveDirection.Magnitude ~= 0 and not charHumanoid.Sit then
                 stopAnimation()
             end
         end))
@@ -208,7 +209,7 @@ function CharacterManager.init(maid : Maid)
     end)
 
     NetworkUtil.getRemoteEvent(ON_ANIMATION_SET)
-
+    NetworkUtil.getRemoteEvent(ON_RAW_ANIMATION_SET)
 end
 
 return CharacterManager

@@ -104,26 +104,35 @@ local function getCharacter(fromWorkspace : boolean, plr : Player ?)
     return char
 end
 
-local function playAnimation(char : Model, id : number)
+
+local function playAnimation(char : Model, id : number)   
     
     if RunService:IsServer() then
         local plr = Players:GetPlayerFromCharacter(char)
         assert(plr)
         NetworkUtil.fireClient(ON_ANIMATION_SET, plr, char, id)
     else  
+        local maid = Maid.new()
         local charHumanoid = char:WaitForChild("Humanoid") :: Humanoid
         local animator = charHumanoid:WaitForChild("Animator") :: Animator
     
-        local catalogAsset = NetworkUtil.invokeServer(GET_CATALOG_FROM_CATALOG_INFO, id):Clone()
+        local catalogAsset = maid:GiveTask(NetworkUtil.invokeServer(GET_CATALOG_FROM_CATALOG_INFO, id):Clone())
         local animation = catalogAsset:GetChildren()[1]
-        if animation:IsA("Animation") then
-            local animationTrack = animator:LoadAnimation(animation)
-            animationTrack.Looped = false
-            animationTrack:Play()
-            animationTrack.Ended:Wait()
-            animationTrack:Destroy()
-            catalogAsset:Destroy()
+        local animationTrack = maid:GiveTask(animator:LoadAnimation(animation))
+        --animationTrack.Looped = false
+        animationTrack:Play()
+        --animationTrack.Ended:Wait()
+        local function stopAnimation()
+            animationTrack:Stop()
+            maid:Destroy()
         end
+        maid:GiveTask(char.Destroying:Connect(stopAnimation))
+        maid:GiveTask(charHumanoid:GetPropertyChangedSignal("MoveDirection"):Connect(function()
+            if charHumanoid.MoveDirection.Magnitude ~= 0 and not charHumanoid.Sit then
+                stopAnimation()
+            end
+        end))
+
     end
 end
 

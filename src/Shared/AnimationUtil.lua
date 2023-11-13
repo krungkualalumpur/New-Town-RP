@@ -11,10 +11,34 @@ local NetworkUtil = require(ReplicatedStorage:WaitForChild("Packages"):WaitForCh
 --constants
 --remotes
 local ON_ANIMATION_SET = "OnAnimationSet"
+local ON_RAW_ANIMATION_SET = "OnRawAnimationSet"
 local GET_CATALOG_FROM_CATALOG_INFO = "GetCatalogFromCatalogInfo"
 --variables
 --references
 --local functions
+local function playAnimationByRawId(char : Model, id : number)
+    local maid = Maid.new()
+    local charHumanoid = char:WaitForChild("Humanoid") :: Humanoid
+    local animator = charHumanoid:WaitForChild("Animator") :: Animator
+
+    local animation = maid:GiveTask(Instance.new("Animation"))
+    animation.AnimationId = "rbxassetid://" .. tostring(id)
+    local animationTrack = maid:GiveTask(animator:LoadAnimation(animation))
+    --animationTrack.Looped = false
+    animationTrack:Play()
+    --animationTrack.Ended:Wait()
+    local function stopAnimation()
+        animationTrack:Stop()
+        maid:Destroy()
+    end
+    maid:GiveTask(char.Destroying:Connect(stopAnimation))
+    maid:GiveTask(charHumanoid:GetPropertyChangedSignal("MoveDirection"):Connect(function()
+        if charHumanoid.MoveDirection.Magnitude ~= 0 and not charHumanoid.Sit then
+            stopAnimation()
+        end
+    end))
+end
+
 local function playAnimation(char : Model, id : number)   
     
     if RunService:IsServer() then
@@ -38,7 +62,7 @@ local function playAnimation(char : Model, id : number)
         end
         maid:GiveTask(char.Destroying:Connect(stopAnimation))
         maid:GiveTask(charHumanoid:GetPropertyChangedSignal("MoveDirection"):Connect(function()
-            if charHumanoid.MoveDirection.Magnitude ~= 0 then
+            if charHumanoid.MoveDirection.Magnitude ~= 0 and not charHumanoid.Sit then
                 stopAnimation()
             end
         end))
@@ -56,38 +80,10 @@ function AnimUtil.playAnim(plr : Player, animId : number | string, onLoop : bool
     local humanoid = char:WaitForChild("Humanoid") :: Humanoid
     local animator = humanoid:WaitForChild("Animator") :: Animator
 
-    --[[local humanoid = char:WaitForChild("Humanoid") :: Humanoid
-                
-    local animator = humanoid:WaitForChild("Animator") :: Animator
-    
-    local animation = Instance.new("Animation")
-    animation.AnimationId = "rbxassetid://" .. tostring(animId)
-
-    local animTrack : AnimationTrack = animator:LoadAnimation(animation)
-    animTrack.Looped = onLoop
-
-    animTrack:Play()
-    
-    task.spawn(function()
-        animTrack.Ended:Wait()
-        animation:Destroy()
-    end)]]
-    local maid = Maid.new()
-    local animation = maid:GiveTask(Instance.new("Animation"))
-    animation.AnimationId = "rbxassetid://" .. tostring(animId)
-    local animationTrack = maid:GiveTask(animator:LoadAnimation(animation))
-    --animationTrack.Looped = false
-    animationTrack:Play()
-    --animationTrack.Ended:Wait()
-    local function stopAnimation()
-        animationTrack:Stop()
-        maid:Destroy()
+    if RunService:IsServer() then
+        NetworkUtil.fireClient(ON_RAW_ANIMATION_SET, plr, char, animId)
+    else
+        playAnimationByRawId(char, animId :: number)
     end
-    maid:GiveTask(char.Destroying:Connect(stopAnimation))
-    maid:GiveTask(humanoid:GetPropertyChangedSignal("MoveDirection"):Connect(function()
-        if humanoid.MoveDirection.Magnitude ~= 0 then
-            stopAnimation()
-        end
-    end))
 end
 return AnimUtil

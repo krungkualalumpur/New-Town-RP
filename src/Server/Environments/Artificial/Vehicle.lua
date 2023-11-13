@@ -13,6 +13,7 @@ local Zone = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Zone
 local ItemUtil = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("ItemUtil"))
 local NotificationUtil = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("NotificationUtil"))
 local PlayerManager = require(ServerScriptService:WaitForChild("Server"):WaitForChild("PlayerManager"))
+local AnimationUtil = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("AnimationUtil"))
 
 local MidasEventTree = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("MidasEventTree"))
 local MidasStateTree = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("MidasStateTree"))
@@ -31,11 +32,12 @@ local SPAWN_VEHICLE = "SpawnVehicle"
 local CarSpawns = workspace:WaitForChild("Miscs"):WaitForChild("CarSpawns")
 local SpawnedCarsFolder = workspace:FindFirstChild("Assets"):WaitForChild("Temporaries"):WaitForChild("Vehicles")
 --local functions
-local function playSound(soundId : number, target : Instance, isLoop : boolean)
+local function playSound(soundId : number, target : Instance, isLoop : boolean, maxHeardDistance : number ?)
     local _maid = Maid.new()
 
     local sound = Instance.new("Sound")
     sound.Looped = isLoop
+    sound.RollOffMaxDistance = maxHeardDistance or 20
     sound.Parent = target
     sound.SoundId = "rbxassetid://" .. tostring(soundId)
     sound:Play()
@@ -82,10 +84,67 @@ function Vehicle.init(maid : Maid)
             setupSpawnedCar(vehicleModel)
             
             local _maid = Maid.new()
+
+            --[[if vehicleModel:GetAttribute("Class") == BOAT_CLASS_KEY then
+                _maid:GiveTask(vehicleSeat:GetPropertyChangedSignal("Occupant"):Connect(function()
+                    local hum = vehicleSeat.Occupant
+                    local char = if hum then hum.Parent else nil
+                   
+                    return
+                end))
+            end]]
             
             _maid:GiveTask(vehicleSeat:GetPropertyChangedSignal("Throttle"):Connect(function()
                 if vehicleModel:GetAttribute("Class") == BOAT_CLASS_KEY then
-                    vehicleSeat.AssemblyLinearVelocity += vehicleSeat.CFrame.LookVector*vehicleSeat.Throttle*6 
+                    local hum = vehicleSeat.Occupant
+                    if hum then
+                        if vehicleSeat.AssemblyLinearVelocity.Magnitude <= 10 then
+                            local throttleV3 = vehicleSeat.CFrame.LookVector*vehicleSeat.Throttle
+                            vehicleSeat.AssemblyLinearVelocity += throttleV3*15 
+                        end
+                        
+                        local char = hum.Parent
+                        local plr = if char then game:GetService("Players"):GetPlayerFromCharacter(char) :: Player else nil 
+                        if char and plr and (vehicleSeat.Throttle ~= 0) then
+                            local rowAnim = 15341401436
+                            local isPlayingTheAnim = false
+
+                            local humanoid = char:WaitForChild("Humanoid") :: Humanoid
+                            for _,v : AnimationTrack in pairs(humanoid:GetPlayingAnimationTracks()) do
+                                local animId =  tonumber(v.Animation.AnimationId:match("%d+"))
+                                if animId == rowAnim then
+                                    isPlayingTheAnim = true
+                                    break
+                                end
+                            end
+
+                            if not isPlayingTheAnim then
+                                AnimationUtil.playAnim(plr, rowAnim, false)
+
+                                local rowPart = vehicleModel:FindFirstChild("RowTool") :: BasePart ?
+                                assert(rowPart, "Row row row your boat, but where's the rowing tool?")
+                                local leftHand = char:FindFirstChild("LeftHand") :: BasePart
+                                assert(leftHand, "Cannot find the left hand!")
+            
+                                local handle = _maid:GiveTask(rowPart:Clone())
+                                handle.Name = "Handle"
+                                handle.CFrame = leftHand.CFrame + leftHand.CFrame.LookVector*(leftHand.Size.Z*0.5)
+                                handle.Parent = leftHand
+                                --local tool = Instance.new("Tool")
+                                local weld = Instance.new("WeldConstraint") :: WeldConstraint
+                                weld.Name = "WeldConstraint"
+                                weld.Part0 = handle
+                                weld.Part1 = leftHand
+                                weld.Parent = handle
+                                --tool.Parent = char    
+                                playSound(5930519356, rowPart, false)  
+                                task.wait(3)
+                                handle:Destroy()
+                            end
+                        end
+                        -- animation:Destroy()
+                    end
+                  
                 elseif vehicleModel:GetAttribute("Class") == CAR_CLASS_KEY then 
                     local seat = vehicleModel:FindFirstChild("VehicleSeat") :: VehicleSeat
                     local wheels = vehicleModel:FindFirstChild("Wheels") :: Model
@@ -112,7 +171,7 @@ function Vehicle.init(maid : Maid)
 
             _maid:GiveTask(vehicleSeat:GetPropertyChangedSignal("Steer"):Connect(function()
                 if vehicleModel:GetAttribute("Class") == BOAT_CLASS_KEY then
-                    vehicleSeat.AssemblyAngularVelocity += Vector3.new(0,0.5,0)*-vehicleSeat.Steer
+                    vehicleSeat.AssemblyAngularVelocity += Vector3.new(0,1,0)*-vehicleSeat.Steer
                 elseif vehicleModel:GetAttribute("Class") == CAR_CLASS_KEY then
                     local seat = vehicleModel:FindFirstChild("VehicleSeat") :: VehicleSeat ?
                     local wheels = vehicleModel:FindFirstChild("Wheels") :: Model ?
