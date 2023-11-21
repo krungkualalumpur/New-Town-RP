@@ -12,6 +12,8 @@ local NetworkUtil = require(ReplicatedStorage:WaitForChild("Packages"):WaitForCh
 local ColdFusion = require(ReplicatedStorage:WaitForChild("Packages"):WaitForChild("ColdFusion8"))
 local Signal = require(ReplicatedStorage:WaitForChild("Packages"):WaitForChild("Signal"))
 --modules
+local Jobs = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Jobs"))
+
 local BackpackUI = require(ReplicatedStorage:WaitForChild("Client"):WaitForChild("MainUI"):WaitForChild("BackpackUI"))
 local RoleplayUI = require(ReplicatedStorage:WaitForChild("Client"):WaitForChild("MainUI"):WaitForChild("RoleplayUI"))
 local NewCustomizationUI = require(ReplicatedStorage:WaitForChild("Client"):WaitForChild("MainUI"):WaitForChild("NewCustomizationUI"))
@@ -60,6 +62,8 @@ local GET_CHARACTER_SLOT = "GetCharacterSlot"
 local SAVE_CHARACTER_SLOT = "SaveCharacterSlot"
 local LOAD_CHARACTER_SLOT = "LoadCharacterSlot"
 local DELETE_CHARACTER_SLOT = "DeleteCharacterSlot"
+
+local ON_JOB_CHANGE = "OnJobChange"
 
 local ON_ROLEPLAY_BIO_CHANGE = "OnRoleplayBioChange"
 
@@ -332,6 +336,7 @@ return function(
     onNotify : Signal,
 
     onItemCartSpawn : Signal,
+    onJobChange : Signal,
 
     onCharacterReset : Signal,
 
@@ -638,6 +643,8 @@ return function(
                 backpack:Set(NetworkUtil.invokeServer(GET_PLAYER_BACKPACK))
             end
         elseif status == "Roleplay" then 
+            local jobsList = Jobs.getJobs()
+
             local onAnimClickSignal = statusMaid:GiveTask(Signal.new())
             local roleplayUI = RoleplayUI(
                 statusMaid, 
@@ -659,7 +666,9 @@ return function(
                 },
                 onAnimClickSignal,
                 onItemCartSpawn,
+                onJobChange,
                 backpack,
+                jobsList,
                 UIStatus :: any
             ) :: Frame
             roleplayUI.Parent = out

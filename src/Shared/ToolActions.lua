@@ -99,6 +99,32 @@ local ActionLists = {
     },
 
     {
+        ToolClass = "BathBucket",
+        Activated = function(player : Player, toolData : BackpackUtil.ToolData<nil>)
+            AnimationUtil.playAnim(player, 15370187795, false)
+
+            local character = player.Character or player.CharacterAdded:Wait()
+            local toolInst : Instance
+
+            for _,v in pairs(character:GetChildren()) do
+                if v:IsA("Tool") and v.Name == toolData.Name then
+                    toolInst = v
+                    break
+                end
+            end
+
+            local bucketModel = toolInst:WaitForChild("Bucket")
+            local bucketPart = bucketModel:WaitForChild("Bucket")
+            local water = bucketPart:WaitForChild("Water") :: ParticleEmitter
+            water.Enabled = true
+            playSound(9120504377, false, bucketPart, 0.25)
+            task.wait(0.6)
+            water.Enabled = false
+          
+        end
+    },
+
+    {
         ToolClass = "Miscs",
         Activated = function()
             

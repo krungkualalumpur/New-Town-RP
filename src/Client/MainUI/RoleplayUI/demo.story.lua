@@ -6,6 +6,8 @@ local Maid = require(ReplicatedStorage:WaitForChild("Packages"):WaitForChild("Ma
 local ColdFusion = require(ReplicatedStorage:WaitForChild("Packages"):WaitForChild("ColdFusion8"))
 local Signal = require(ReplicatedStorage:WaitForChild("Packages"):WaitForChild("Signal"))
 --modules
+local Jobs = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Jobs"))
+
 local RoleplayUI = require(ReplicatedStorage:WaitForChild("Client"):WaitForChild("MainUI"):WaitForChild("RoleplayUI"))
 local BackpackUtil = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("BackpackUtil"))
 --types
@@ -64,6 +66,7 @@ return function(target : CoreGui)
         onItemCartSpawn,
 
         backpack,
+        Jobs.getJobs(),
         _Value("test" :: string ?)
     )
 

@@ -2,6 +2,7 @@
 --services
 local BadgeService = game:GetService("BadgeService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local RunService = game:GetService("RunService")
 --packages
 local Maid = require(ReplicatedStorage:WaitForChild("Packages"):WaitForChild("Maid"))
 local ColdFusion = require(ReplicatedStorage:WaitForChild("Packages"):WaitForChild("ColdFusion8"))
@@ -9,6 +10,7 @@ local Signal = require(ReplicatedStorage:WaitForChild("Packages"):WaitForChild("
 --modules
 local BackpackUtil = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("BackpackUtil"))
 local ExitButton = require(ReplicatedStorage:WaitForChild("Client"):WaitForChild("ExitButton"))
+local Jobs = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Jobs"))
 --types
 type Maid = Maid.Maid
 type Signal = Signal.Signal
@@ -36,6 +38,8 @@ local RED_COLOR = Color3.fromRGB(200,50,50)
 local TEST_COLOR = Color3.fromRGB(255,0,0)
 
 local PADDING_SIZE = UDim.new(0,10)
+
+local TEXT_SIZE = 15
 --variables
 --references
 --local functions
@@ -86,6 +90,90 @@ local function getButton(
     })
     return out
 end
+
+local function getImageButton(
+    maid : Maid,
+    order : number,
+    image : string,
+    text : string ?,
+    fn : (() -> ()) ?
+)
+    local _fuse = ColdFusion.fuse(maid)
+    local _new = _fuse.new
+    local _import = _fuse.import
+    local _bind = _fuse.bind
+    local _clone = _fuse.clone
+
+
+    local previewFrame = _new("ImageLabel")({
+        LayoutOrder = 1,
+        ClipsDescendants = true,
+        Name = "PreviewFrame",
+        BackgroundTransparency = 1,
+        Size = UDim2.fromScale(1,0.7),
+        Image = image,
+        Children = {
+            _new("UIAspectRatioConstraint")({}),
+            _new("UIListLayout")({
+                FillDirection = Enum.FillDirection.Horizontal,
+                HorizontalAlignment = Enum.HorizontalAlignment.Left
+            })
+        }
+    })
+
+    local out = _new("TextButton")({
+        Name = text or "",
+        LayoutOrder = order,
+        AutoButtonColor = true,
+        --Image = image,
+        Size = UDim2.fromScale(1, 1),
+        Children = {
+            _new("UIListLayout")({ 
+                FillDirection = Enum.FillDirection.Vertical,
+                HorizontalAlignment = Enum.HorizontalAlignment.Center,
+                SortOrder = Enum.SortOrder.LayoutOrder,
+                Padding = PADDING_SIZE,
+            }),
+            _new("UIPadding")({
+                PaddingTop = PADDING_SIZE,
+                PaddingBottom = PADDING_SIZE,
+                PaddingLeft = PADDING_SIZE,
+                PaddingRight = PADDING_SIZE
+            }),
+            
+            previewFrame
+        },
+        Events = {
+            Activated = function()
+                if fn then
+                    fn()
+                end
+            end
+        }
+    })
+
+    if text then
+        _new("TextLabel")({
+            LayoutOrder = 2,
+            BackgroundTransparency = 1,
+            Size = UDim2.new(1,0,0.3,0),
+            RichText = true,
+            Font = Enum.Font.Gotham,
+            Text = text,
+            TextColor3 = TEXT_COLOR,
+            TextSize = TEXT_SIZE,
+            TextWrapped = true,
+            TextStrokeTransparency = 0.5,
+
+            Parent = out,
+            TextXAlignment = Enum.TextXAlignment.Center,
+            TextYAlignment = Enum.TextYAlignment.Top,
+        })
+    end
+
+    return out
+end
+
 
 local function getViewportFrame(
     maid : Maid,
@@ -227,8 +315,12 @@ return function(
 
     OnAnimClick : Signal,
     onItemCartSpawn : Signal,
+    onJobChange : Signal,
 
     backpack : ValueState<{BackpackUtil.ToolData<boolean>}>,
+    jobsList : {
+        [number] : Jobs.JobData
+    },
 
     UIStatus : ValueState<string ?>
 )
@@ -243,7 +335,7 @@ return function(
 
     local selectedItems : ValueState<{[number] : BackpackUtil.ToolData<nil>}> = _Value({})
 
-    local selectedCategory = _Value("Cart")
+    local selectedCategory = _Value("Job")
 
     local animationFrameContent = _new("ScrollingFrame")({
         AutomaticCanvasSize = Enum.AutomaticSize.Y,
@@ -526,30 +618,103 @@ return function(
                 SortOrder = Enum.SortOrder.LayoutOrder,
                 Padding = PADDING_SIZE
             }),
-            getSelectButton(maid, 1, "Cart", _Computed(function(category : string)
+           
+            getSelectButton(maid, 1, "Job", _Computed(function(category : string)
+                return category == "Job" 
+            end, selectedCategory), function()
+                if selectedCategory:Get() ~= "Job" then
+                    selectedCategory:Set("Job")          
+                end
+            end, BACKGROUND_COLOR),
+            getSelectButton(maid, 2, "Basic Animation", _Computed(function(category : string)
+                return category == "Basic Animation" 
+            end, selectedCategory), function()
+                if selectedCategory:Get() ~= "Basic Animation" then
+                    selectedCategory:Set("Basic Animation")          
+                end
+            end, BACKGROUND_COLOR),
+            getSelectButton(maid, 3, "Cart", _Computed(function(category : string)
                 return category == "Cart"
             end, selectedCategory), function()
                 if selectedCategory:Get() ~= "Cart" then
                     selectedCategory:Set("Cart")   
                 end
             end, BACKGROUND_COLOR),
-            --[[getSelectButton(maid, 2, "Basic Animation", _Computed(function(category : string)
-                return category == "Basic Animation" 
-            end, selectedCategory), function()
-                if selectedCategory:Get() ~= "Basic Animation" then
-                    selectedCategory:Set("Basic Animation")          
-                end
-            end, BACKGROUND_COLOR),]]
-            getSelectButton(maid, 3, "Basic Animation", _Computed(function(category : string)
-                return category == "Basic Animation" 
-            end, selectedCategory), function()
-                if selectedCategory:Get() ~= "Basic Animation" then
-                    selectedCategory:Set("Basic Animation")          
-                end
-            end, BACKGROUND_COLOR)
         }
     })
 
+    local jobFrameContent = _new("ScrollingFrame")({
+        AutomaticCanvasSize = Enum.AutomaticSize.Y,
+        CanvasSize = UDim2.new(),
+        BackgroundColor3 = BACKGROUND_COLOR,
+        BackgroundTransparency = 1,
+        Position = UDim2.fromScale(0,0),
+        Size = UDim2.fromScale(0.88,0.8), 
+        Children = {
+            _new("UIPadding")({
+                PaddingBottom = PADDING_SIZE,
+                PaddingTop = PADDING_SIZE,
+                PaddingLeft = PADDING_SIZE,
+                PaddingRight = PADDING_SIZE
+            }),
+            _new("UICorner")({}),
+            _new("UIGridLayout")({
+                SortOrder = Enum.SortOrder.LayoutOrder,
+                CellSize = UDim2.fromOffset(100, 100),
+                CellPadding =  UDim2.fromOffset(15, 15)
+            }),
+        }
+    })
+
+    local jobFrame = _new("Frame")({
+        Name = "JobFrame",
+        LayoutOrder = 2,
+        BackgroundTransparency = 0.5,
+        BackgroundColor3 = BACKGROUND_COLOR,
+        Visible = _Computed(function(category : string) 
+            return category == "Job" 
+        end, selectedCategory),
+        Size = UDim2.fromScale(0.9,0.85), 
+        Children = {
+            _new("UIPadding")({
+                PaddingTop = PADDING_SIZE,
+                PaddingBottom = PADDING_SIZE,
+                PaddingLeft = PADDING_SIZE,
+                PaddingRight = PADDING_SIZE,
+            }),
+            _new("UIListLayout")({
+                SortOrder = Enum.SortOrder.LayoutOrder,
+                FillDirection = Enum.FillDirection.Vertical,
+                --Padding = PADDING_SIZE,
+                VerticalAlignment = Enum.VerticalAlignment.Top,
+                HorizontalAlignment = Enum.HorizontalAlignment.Center
+            }),
+            _new("Frame")({
+                LayoutOrder = 0,
+                Size = UDim2.new(1,0,0,2)
+            }),
+
+            jobFrameContent
+        }
+    })
+
+    --testing only
+    for k,v in pairs(jobsList) do
+        local b = _bind(getImageButton(
+            maid,
+            k,
+            "rbxassetid://" .. tostring(v.ImageId),
+            v.Name,
+            function()
+                onJobChange:Fire(v)
+            end
+        ))({
+            BackgroundTransparency = 0.5,
+            BackgroundColor3 = TERTIARY_COLOR
+        })
+        b.Parent = jobFrameContent
+    end
+    
     local contentFrame = _new("Frame")({
         Name = "ContentFrame",
         BackgroundTransparency = 1,
@@ -562,7 +727,8 @@ return function(
             }),
             header,
             animationFrame,
-            gerobakFrame
+            jobFrame,
+            gerobakFrame,
         }
     })
     

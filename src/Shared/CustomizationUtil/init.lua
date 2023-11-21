@@ -319,9 +319,8 @@ local function applyBundle(character : Model, bundleFolder : Model)
 								v.Parent = newHead
 							end
 						end
-
-						head:Destroy()
-						newHead.Parent = character
+                        head:Destroy()
+                        newHead.Parent = character
 						humanoid:BuildRigFromAttachments()
 						head = newHead
 					end
@@ -885,6 +884,7 @@ function CustomizationUtil.setDesc(plr : Player, descType : DescType, descName :
     if RunService:IsServer() then
         local displayNameGUIName = "DisplayNameGUI"
         local frameName = "Frame"
+        local iconName = "Icon"
         local nameTextName = "NameText"
         local biotextName = "BioText"
 
@@ -895,8 +895,9 @@ function CustomizationUtil.setDesc(plr : Player, descType : DescType, descName :
         
         local billboardGui = head:FindFirstChild(displayNameGUIName) :: BillboardGui or Instance.new("BillboardGui")
         billboardGui.Name = displayNameGUIName
-        billboardGui.ExtentsOffsetWorldSpace = Vector3.new(0,1.25,0)
-        billboardGui.Size = UDim2.fromScale(3, 1.5)
+        billboardGui.ExtentsOffsetWorldSpace = Vector3.new(0,3.8,0)
+        billboardGui.MaxDistance = 65
+        billboardGui.Size = UDim2.fromScale(3, 4)
         billboardGui.Parent = head
     
         local frame = billboardGui:FindFirstChild(frameName) :: Frame or Instance.new("Frame")
@@ -906,12 +907,23 @@ function CustomizationUtil.setDesc(plr : Player, descType : DescType, descName :
         frame.Parent = billboardGui
 
         local uilistlayout = frame:FindFirstChild("UIListLayout") :: UIListLayout or Instance.new("UIListLayout") 
-        uilistlayout.Padding = UDim.new(0, 10)
+        uilistlayout.Padding = UDim.new(0.05, 0)
         uilistlayout.SortOrder = Enum.SortOrder.LayoutOrder
+        uilistlayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+        uilistlayout.VerticalAlignment = Enum.VerticalAlignment.Bottom
         uilistlayout.Parent = frame
 
+        local icon = frame:FindFirstChild(iconName) :: TextLabel or Instance.new("ImageLabel")
+        icon.Name = iconName
+        icon.BackgroundTransparency = 1
+        --icon.Visible = false
+        icon.Size = UDim2.fromScale(0.5,0.5)
+        icon.Parent = frame
+        local aspectRatioConst = Instance.new("UIAspectRatioConstraint")
+        aspectRatioConst.Parent = icon
+
         local nameText = frame:FindFirstChild(nameTextName) :: TextLabel or Instance.new("TextLabel")
-        nameText.Size = UDim2.fromScale(1,0.4)
+        nameText.Size = UDim2.fromScale(1,0.2)
         nameText.TextColor3 = textColor
         nameText.TextStrokeTransparency = 0.5
         nameText.TextScaled = true
@@ -921,7 +933,7 @@ function CustomizationUtil.setDesc(plr : Player, descType : DescType, descName :
         nameText.Parent = frame
 
         local bioText= frame:FindFirstChild(biotextName) :: TextLabel or Instance.new("TextLabel")
-        bioText.Size = UDim2.fromScale(1,0.3)
+        bioText.Size = UDim2.fromScale(1,0.15)
         bioText.Name = biotextName
         bioText.TextColor3 = textColor
         bioText.TextStrokeTransparency = 0.5
@@ -943,8 +955,10 @@ function CustomizationUtil.setDesc(plr : Player, descType : DescType, descName :
 
         if descType == "PlayerName" then
             nameText.Text = charLimitedDescName
+            plr:SetAttribute("PlayerName", charLimitedDescName)
         elseif descType == "PlayerBio" then
             bioText.Text = charLimitedDescName
+            plr:SetAttribute("PlayerBio", charLimitedDescName)
         end
     end
 end

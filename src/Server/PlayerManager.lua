@@ -25,6 +25,7 @@ local CustomizationUtil = require(ReplicatedStorage:WaitForChild("Shared"):WaitF
 local NotificationUtil = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("NotificationUtil"))
 local ToolActions = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("ToolActions"))
 local ChoiceActions = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("ChoiceActions"))
+local Jobs = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Jobs"))
 
 local DatastoreManager = require(ServerScriptService:WaitForChild("Server"):WaitForChild("DatastoreManager"))
 local MarketplaceManager = require(ServerScriptService:WaitForChild("Server"):WaitForChild("MarketplaceManager"))
@@ -83,6 +84,9 @@ local ON_ROLEPLAY_BIO_CHANGE = "OnRoleplayBioChange"
 local ON_CAMERA_SHAKE = "OnCameraShake"
 
 local ON_NOTIF_CHOICE_INIT = "OnNotifChoiceInit"
+
+local ON_JOB_CHANGE = "OnJobChange"
+
 --variables
 local Registry = {}
 --references
@@ -583,14 +587,12 @@ function PlayerManager:SetData(plrData : ManagerTypes.PlayerData, isYield : bool
 
     --set chat count
     --self:SetChatCount(plrData.ChatCount or 0)
-
     --bios
     self.RoleplayBios.Name = plrData.RoleplayBios.Name
     self.RoleplayBios.Bio = plrData.RoleplayBios.Bio
     --desc
     CustomizationUtil.setDesc(self.Player, "PlayerName", self.RoleplayBios.Name)
     CustomizationUtil.setDesc(self.Player, "PlayerBio", self.RoleplayBios.Bio)
-
     if not self.isLoaded then
         self.onLoadingComplete:Fire(true)
     end
@@ -758,6 +760,15 @@ function PlayerManager.init(maid : Maid)
         if spawnPart and not RunService:IsStudio() then
             char:PivotTo(spawnPart.CFrame + Vector3.new(0,5,0))
         end
+
+        charMaid:GiveTask(char.ChildAdded:Connect(function(inst : Instance)
+            print(inst:IsA("BasePart"), inst.Name == "Head", inst)
+            if inst:IsA("BasePart") and inst.Name == "Head" then
+                CustomizationUtil.setDesc(player, "PlayerName", player:GetAttribute("PlayerName") or player.Name)
+                CustomizationUtil.setDesc(player, "PlayerBio", player:GetAttribute("PlayerBio") or "")
+                Jobs.setJob(player, Jobs.getJob(player))
+            end
+        end))
     end 
     
     local function onPlayerAdded(plr : Player)
@@ -1001,12 +1012,12 @@ function PlayerManager.init(maid : Maid)
         return nil 
     end)
 
-    NetworkUtil.onServerEvent(ON_TOOL_ACTIVATED, function(plr : Player, toolClass : string, foodInst : Instance, toolData : BackpackUtil.ToolData<nil>)
+    maid:GiveTask(NetworkUtil.onServerEvent(ON_TOOL_ACTIVATED, function(plr : Player, toolClass : string, foodInst : Instance, toolData : BackpackUtil.ToolData<nil>)
         local plrInfo = PlayerManager.get(plr)
         ToolActions.onToolActivated(toolClass, plr, toolData, plrInfo)
-    end)
+    end))
 
-    NetworkUtil.onServerEvent(ON_ROLEPLAY_BIO_CHANGE, function(plr : Player, descType : CustomizationUtil.DescType, descName : string)
+    maid:GiveTask(NetworkUtil.onServerEvent(ON_ROLEPLAY_BIO_CHANGE, function(plr : Player, descType : CustomizationUtil.DescType, descName : string)
         local plrManager = PlayerManager.get(plr)
         assert(plrManager)
         local plrData = plrManager:GetData()
@@ -1018,7 +1029,15 @@ function PlayerManager.init(maid : Maid)
         plrManager:SetData(plrData, false)
 
         MidasEventTree.Gameplay.CustomizeAvatar.Value(plr)
-    end)
+    end))
+
+    maid:GiveTask(NetworkUtil.onServerEvent(ON_JOB_CHANGE, function(plr : Player, jobData : Jobs.JobData)
+        if Jobs.getJob(plr) ~= jobData.Name then
+            Jobs.setJob(plr, jobData.Name)
+        else
+            Jobs.setJob(plr, nil)
+        end
+    end))
 
 end
 

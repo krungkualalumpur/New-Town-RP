@@ -12,6 +12,7 @@ local EnvironmentSound = require(ServerScriptService:WaitForChild("Server"):Wait
 
 local PlayerManager = require(ServerScriptService:WaitForChild("Server"):WaitForChild("PlayerManager"))
 local CharacterManager = require(ServerScriptService:WaitForChild("Server"):WaitForChild("CharacterManager"))
+local Roleplay = require(ServerScriptService:WaitForChild("Server"):WaitForChild("Roleplay"))
 local MarketplaceManager = require(ServerScriptService:WaitForChild("Server"):WaitForChild("MarketplaceManager"))
 
 local BackpackUtil = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("BackpackUtil"))
@@ -42,6 +43,7 @@ MarketplaceUtil.init(maid)
 
 PlayerManager.init(maid)
 CharacterManager.init(maid)
+Roleplay.init(maid)
 task.spawn(function() MarketplaceManager.init(maid) end)
 
 

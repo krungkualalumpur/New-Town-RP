@@ -14,7 +14,7 @@ local MidasStateTree = require(ReplicatedStorage:WaitForChild("Shared"):WaitForC
 --types
 type Maid = Maid.Maid
 --constants
-local WALK_SPEED = 6
+local WALK_SPEED = 10
 local FIELD_OF_VIEW = 70
 local CAM_SHAKE_TIME = 0.16
 --remotes

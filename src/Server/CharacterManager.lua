@@ -7,6 +7,8 @@ local RunService = game:GetService("RunService")
 local Maid = require(ReplicatedStorage:WaitForChild("Packages"):WaitForChild("Maid"))
 local NetworkUtil = require(ReplicatedStorage:WaitForChild("Packages"):WaitForChild("NetworkUtil"))
 --modules
+local Jobs = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Jobs"))
+
 local CustomizationUtil = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("CustomizationUtil"))
 local CustomizationList = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("CustomizationUtil"):WaitForChild("CustomizationList"))
 --types
@@ -114,12 +116,9 @@ local function characterAdded(char : Model)
         humanoid.WalkSpeed = WALK_SPEED
         humanoid.DisplayDistanceType = Enum.HumanoidDisplayDistanceType.None
         humanoid.BreakJointsOnDeath = false
-        print("test eh???")
         charMaid:GiveTask(humanoid.Died:Connect(function()
-            print("test1")
             charMaid:Destroy()
             paralyzeCharacter(char)
-            print("test2")
         end))
     end
 
@@ -176,6 +175,9 @@ function CharacterManager.init(maid : Maid)
             task.wait()
             humanoid:ApplyDescription(hum_desc)
         end
+
+        CustomizationUtil.setDesc(plr, "PlayerName", plr.Name)
+        CustomizationUtil.setDesc(plr, "PlayerBio", "")
         return nil
     end)
 

@@ -4037,20 +4037,37 @@ return function(
     local charMaid = Maid.new()
     local function displayName(char : Model)
         charMaid:DoCleaning()
+        local headMaid = charMaid:GiveTask(Maid.new())
 
+        local function update(head)
+            if head:IsA("BasePart") and head.Name == "Head" then
+                headMaid:DoCleaning()
+                local displayNameGui = head:WaitForChild("DisplayNameGUI", 10)
+                assert(displayNameGui, "Error displaying name gui")
+                --print(displayNameGui)
+                local frame = displayNameGui:WaitForChild("Frame")
+                local icon = frame:WaitForChild("Icon")
+                local nameText = frame:WaitForChild("NameText") :: TextLabel
+                local bioText = frame:WaitForChild("BioText") :: TextLabel
+        
+                print(roleplayNameState:Get(), roleplayDescState:Get(), " desc changed!")
+                roleplayNameState:Set(nameText.Text)
+                roleplayDescState:Set(bioText.Text)
+                headMaid:GiveTask(nameText:GetPropertyChangedSignal("Text"):Connect(function()
+                    roleplayNameState:Set(nameText.Text)
+                end))
+                headMaid:GiveTask(bioText:GetPropertyChangedSignal("Text"):Connect(function()
+                    roleplayDescState:Set(bioText.Text)
+                end))
+            end
+        end
+
+        update(char:WaitForChild("Head"))
+        charMaid:GiveTask(char.ChildAdded:Connect(function(child)
+            update(child)
+        end))
         --print(char, char:FindFirstChild("DisplayNameGUI"))
-        local displayNameGui = char:WaitForChild("DisplayNameGUI")
-        --print(displayNameGui)
-        local frame = displayNameGui:WaitForChild("Frame")
-        local nameText = frame:WaitForChild("NameText") :: TextLabel
-        local bioText = frame:WaitForChild("BioText") :: TextLabel
-
-        charMaid:GiveTask(nameText:GetPropertyChangedSignal("Text"):Connect(function()
-            roleplayNameState:Set(nameText.Text)
-        end))
-        charMaid:GiveTask(bioText:GetPropertyChangedSignal("Text"):Connect(function()
-            roleplayDescState:Set(bioText.Text)
-        end))
+       
     end
 
     if RunService:IsRunning() then

@@ -95,6 +95,8 @@ local ON_CHARACTER_APPEARANCE_RESET = "OnCharacterAppearanceReset"
 local ON_NOTIF_CHOICE_INIT = "OnNotifChoiceInit"
 
 local ON_TOOL_ACTIVATED = "OnToolActivated"
+
+local ON_JOB_CHANGE = "OnJobChange"
 --variables
 local Player = Players.LocalPlayer
 --references
@@ -207,6 +209,7 @@ function guiSys.new()
     local nameCustomizationOnClick = maid:GiveTask(Signal.new()) 
 
     local onItemCartSpawn = maid:GiveTask(Signal.new())
+    local onJobChange = maid:GiveTask(Signal.new())
 
     local onCharacterReset = maid:GiveTask(Signal.new())
 
@@ -223,6 +226,7 @@ function guiSys.new()
         onNotify,
 
         onItemCartSpawn,
+        onJobChange,
         
         onCharacterReset,
 
@@ -260,6 +264,9 @@ function guiSys.new()
         print("test 123")
     end))
     
+    maid:GiveTask(onJobChange:Connect(function(job)
+        NetworkUtil.fireServer(ON_JOB_CHANGE, job)
+    end))
 
     self.NotificationUI = NotificationUI(
         maid,
@@ -529,7 +536,8 @@ function guiSys.new()
                     p.Shape = Enum.PartType.Ball
                     p.CFrame = baitHolder.CFrame
                     p.Size = Vector3.new(1,1,1)
-                    p.Anchored = true 
+                    --p.Anchored = true 
+                    p.Massless = true
                     p.CanCollide = true
                     p.Parent = workspace
 
@@ -710,6 +718,44 @@ function guiSys.new()
         end
         return
     end))
+
+    do
+        local _maid = maid:GiveTask(Maid.new())
+      
+        maid:GiveTask(NetworkUtil.onClientEvent(ON_JOB_CHANGE, function(jobData)
+            _maid:DoCleaning()
+
+            local _fuse = ColdFusion.fuse(_maid)
+            local _new = _fuse.new
+            local _Value = _fuse.Value
+                
+            local dynamicPos = _Value(UDim2.fromScale(-1, 0.5))
+            local dynamicTransp = _Value(1)
+
+            local out =  _new("ImageLabel")({
+                AnchorPoint = Vector2.new(0.5, 0.5),
+                BackgroundTransparency = 1,
+                Size = UDim2.fromScale(0.3, 0.3),
+                Position = dynamicPos:Tween(0.2),
+                Image = string.format("rbxassetid://%d", jobData.ImageId),
+                ImageTransparency = dynamicTransp:Tween(0.2),
+                Parent = target,
+                Children = {
+                    _new("UIAspectRatioConstraint")({
+                        AspectRatio = 1
+                    })
+                }
+            })
+
+            dynamicTransp:Set(0)
+            dynamicPos:Set(UDim2.fromScale(0.5, 0.5))
+            task.wait(2)
+            dynamicTransp:Set(1)
+            dynamicPos:Set(UDim2.fromScale(1, 0.5))
+            task.wait(0.2)
+            _maid:DoCleaning()
+        end))
+    end
 
     local notifMaid = maid:GiveTask(Maid.new())
     NetworkUtil.onClientInvoke(ON_NOTIF_CHOICE_INIT, function(actionName : string, eventTitle : string, eventDesc : string, isConfirm : boolean)
