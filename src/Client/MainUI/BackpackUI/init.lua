@@ -16,7 +16,8 @@ local ItemUtil = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("
 export type VehicleData = ItemUtil.ItemInfo & {
     Key : string,
     IsSpawned : boolean,
-    OwnerId : number
+    OwnerId : number,
+    DestroyLocked : boolean
 }
 
 type Maid = Maid.Maid

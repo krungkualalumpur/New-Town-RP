@@ -41,7 +41,8 @@ type ToolData = BackpackUtil.ToolData<boolean>
 export type VehicleData = ItemUtil.ItemInfo & {
     Key : string,
     IsSpawned : boolean,
-    OwnerId : number
+    OwnerId : number,
+    DestroyLocked : boolean
 }
 type AnimationInfo = {
     Name : string,

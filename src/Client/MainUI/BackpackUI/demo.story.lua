@@ -14,14 +14,16 @@ type ToolData = BackpackUtil.ToolData<boolean>
 export type VehicleData = ItemUtil.ItemInfo & {
     Key : string,
     IsSpawned : boolean,
-    OwnerId : number
+    OwnerId : number,
+    DestroyLocked : boolean
 }
 local function newVehicleData(
     itemType : ItemUtil.ItemType,
     class : string,
     isSpawned : boolean,
     name : string,
-    ownerId : number
+    ownerId : number,
+    destroyLocked : boolean
 ) : VehicleData
     
     return {
@@ -30,7 +32,8 @@ local function newVehicleData(
         IsSpawned = isSpawned,
         Name = name,
         OwnerId = ownerId,
-        Key = game.HttpService:GenerateGUID(false)
+        Key = game.HttpService:GenerateGUID(false),
+        DestroyLocked = destroyLocked
     }
 end
 
@@ -97,7 +100,8 @@ return function(target : CoreGui)
             "Motorcycle",
             true,
             "Motorcycle",
-            12121211
+            12121211,
+            true
         )
     }
     local stateList : ColdFusion.ValueState<{[number] : VehicleData}> = _Value(list)

@@ -51,7 +51,8 @@ type CanBeState<T> = ColdFusion.State<T>
 export type VehicleData = ItemUtil.ItemInfo & {
     Key : string,
     IsSpawned : boolean,
-    OwnerId : number
+    OwnerId : number,
+    DestroyLocked : boolean
 }
 
 type GuiSys = {

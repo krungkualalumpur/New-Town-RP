@@ -101,7 +101,8 @@ local function newVehicleData(
     class : string,
     isSpawned : boolean,
     name : string,
-    ownerId : number
+    ownerId : number,
+    destroyLocked : boolean
 ) : VehicleData
     
     return {
@@ -110,7 +111,8 @@ local function newVehicleData(
         IsSpawned = isSpawned,
         Name = name,
         OwnerId = ownerId,
-        Key = HttpService:GenerateGUID(false)
+        Key = HttpService:GenerateGUID(false),
+        DestroyLocked = destroyLocked
     }
 end
 
@@ -145,7 +147,8 @@ local function getVehicleData(model : Instance) : VehicleData
         IsSpawned = model:IsDescendantOf(SpawnedVehiclesParent),
         Name = model.Name,
         Key = key or "",
-        OwnerId = model:GetAttribute("OwnerId")
+        OwnerId = model:GetAttribute("OwnerId"),
+        DestroyLocked = model:GetAttribute("DestroyLocked")
     }
 end
 
@@ -309,7 +312,7 @@ function PlayerManager.new(player : Player, maid : Maid ?)
      --       print(self:GetData())
      --   end
     --end)
-    self:AddVehicle("Motorcycle")
+    self:AddVehicle("Motorcycle", true)
    
     return self
 end
@@ -424,7 +427,7 @@ function PlayerManager:DeleteBackpack(toolKey : number)
     return
 end
 
-function PlayerManager:AddVehicle(vehicleName : string)
+function PlayerManager:AddVehicle(vehicleName : string, isLocked : boolean)
     if #self.Vehicles >= MAX_VEHICLES_COUNT then
         --notif
         NotificationUtil.Notify(self.Player, "Already has max amount of vehicles to have")
@@ -432,7 +435,7 @@ function PlayerManager:AddVehicle(vehicleName : string)
     end
     
     local vehicleClass = ItemUtil.getData(ItemUtil.getItemFromName(vehicleName), false).Class
-    local vehicleData : VehicleData = newVehicleData("Vehicle", vehicleClass, false, vehicleName, self.Player.UserId) -- ItemUtil.getData(ItemUtil.getItemFromName(vehicleName), true) :: any
+    local vehicleData : VehicleData = newVehicleData("Vehicle", vehicleClass, false, vehicleName, self.Player.UserId, isLocked) -- ItemUtil.getData(ItemUtil.getItemFromName(vehicleName), true) :: any
 
     table.insert(self.Vehicles, vehicleData)
     return true
@@ -549,8 +552,8 @@ function PlayerManager:SetData(plrData : ManagerTypes.PlayerData, isYield : bool
     end
 
     table.clear(self.Vehicles)
-    for _,v in pairs(plrData.Vehicles) do
-        self:AddVehicle(v)
+    for k,v in pairs(plrData.Vehicles) do
+        self:AddVehicle(v, if k == 1 then true else false)
     end
 
     local char = self.Player.Character or self.Player.CharacterAdded:Wait()
@@ -919,7 +922,7 @@ function PlayerManager.init(maid : Maid)
 
         local plrInfo = PlayerManager.get(plr)
 
-        local success = plrInfo:AddVehicle(vehicleName)
+        local success = plrInfo:AddVehicle(vehicleName, false)
 
         if success then
             NotificationUtil.Notify(plr, "You got " .. vehicleName ..", you can spawn it at the parking lot at the nearest vehicle spawner.")

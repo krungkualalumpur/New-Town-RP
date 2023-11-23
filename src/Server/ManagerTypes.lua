@@ -18,7 +18,8 @@ export type ABType = "A" | "B"
 export type VehicleData = ItemUtil.ItemInfo & {
     Key : string,
     IsSpawned : boolean,
-    OwnerId : number
+    OwnerId : number,
+    DestroyLocked : boolean
 }
 
 export type CharacterData = CustomizationUtil.CharacterData
@@ -67,7 +68,7 @@ export type PlayerManager = {
     GetBackpack : (PlayerManager, hasDisplayType : boolean, hasEquipInfo : boolean) -> {[number] : BackpackUtil.ToolData<boolean ?>},
     SetBackpackEquip : (PlayerManager, isEquip : boolean, toolKey : number) -> (),
 
-    AddVehicle : (PlayerManager, vehicleName : string) -> boolean,
+    AddVehicle : (PlayerManager, vehicleName : string, isDestroyLocked : boolean) -> boolean,
     SpawnVehicle : (PlayerManager, key : number, isEquip : boolean, vehicleName : string ?, vehicleZones : Instance ?) -> (),
     DeleteVehicle : (PlayerManager, key : number) -> (),
 
