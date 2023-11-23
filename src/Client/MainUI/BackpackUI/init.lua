@@ -2,13 +2,23 @@
 --services
 local BadgeService = game:GetService("BadgeService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local RunService= game:GetService("RunService")
 --packages
 local Maid = require(ReplicatedStorage:WaitForChild("Packages"):WaitForChild("Maid"))
 local ColdFusion = require(ReplicatedStorage:WaitForChild("Packages"):WaitForChild("ColdFusion8"))
 local Signal = require(ReplicatedStorage:WaitForChild("Packages"):WaitForChild("Signal"))
+local NetworkUtil = require(ReplicatedStorage:WaitForChild("Packages"):WaitForChild("NetworkUtil"))
 --modules
 local BackpackUtil = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("BackpackUtil"))
+local ListUI = require(ReplicatedStorage:WaitForChild("Client"):WaitForChild("ListUI"))
+local ItemUtil = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("ItemUtil"))
 --types
+export type VehicleData = ItemUtil.ItemInfo & {
+    Key : string,
+    IsSpawned : boolean,
+    OwnerId : number
+}
+
 type Maid = Maid.Maid
 type Signal = Signal.Signal
 
@@ -24,14 +34,19 @@ local BACKGROUND_COLOR = Color3.fromRGB(90,90,90)
 local PRIMARY_COLOR = Color3.fromRGB(255,255,255)
 local SECONDARY_COLOR = Color3.fromRGB(25,25,25)
 local PADDING_SIZE = UDim.new(0,15)
+
+local SELECT_COLOR = Color3.fromRGB(75, 210, 80)
 --remotes
+local GET_PLAYER_VEHICLES = "GetPlayerVehicles"
 --variables
 --references
 --local functions
 local function getButton(
     maid : Maid, 
+    order : number,
     text : CanBeState<string>, 
-    fn : () -> ()
+    fn : () -> (),
+    color : Color3 ?
 )
     local _fuse = ColdFusion.fuse(maid)
     local _new = _fuse.new
@@ -43,8 +58,9 @@ local function getButton(
     local _Value = _fuse.Value
 
     local out = _new("TextButton")({
+        LayoutOrder = order,
         AutoButtonColor = true,
-        BackgroundColor3 = SECONDARY_COLOR,
+        BackgroundColor3 = color or BACKGROUND_COLOR,
         BackgroundTransparency = 0,
         Size = UDim2.fromScale(1, 0.5),
         Font = Enum.Font.Gotham,
@@ -136,6 +152,7 @@ local function getItemButton(
             }),
             getButton(
                 maid, 
+                1,
                 if not itemInfo.IsEquipped then "Equip" else "Unequip",
                 function()
                     onBackpackButtonEquipClickSignal:Fire(key, if not itemInfo.IsEquipped then itemInfo.Name else nil)
@@ -143,6 +160,7 @@ local function getItemButton(
             ),
             getButton(
                 maid, 
+                2,
                 "Delete",
                 function()
                     onBackpackButtonDeleteClickSignal:Fire(key, itemInfo.Name)
@@ -326,6 +344,42 @@ local function getItemTypeFrame(
 
     return out
 end
+
+local function getSelectButton(maid : Maid, order : number, text : string, isSelected : State<boolean>, fn : () -> (), color : Color3?)
+    local _fuse = ColdFusion.fuse(maid)
+    local _new = _fuse.new
+    local _import = _fuse.import
+    local _bind = _fuse.bind
+    local _clone = _fuse.clone
+
+    local _Computed = _fuse.Computed
+    local _Value = _fuse.Value
+
+    local out = getButton(maid, order, text, fn, color)
+    _bind(out)({
+        AutoButtonColor = false,
+        BackgroundColor3 = color,
+        Size = UDim2.new(0.25, 0,1,0),
+        Children = {
+            _new("UIListLayout")({
+                VerticalAlignment = Enum.VerticalAlignment.Bottom,
+                HorizontalAlignment = Enum.HorizontalAlignment.Center,
+            }),
+            _new("Frame")({
+                BackgroundColor3 = SELECT_COLOR,
+                Visible = isSelected,
+                Size = _Computed(function(selected : boolean)
+                    return if selected then UDim2.fromScale(0.8, 0.1) else UDim2.fromScale(0, 0.15)
+                end, isSelected):Tween(0.2),
+                Children = {
+                    _new("UICorner")({})
+                }
+            })
+        }
+    })
+
+    return out
+end
 --class
 return function(
     maid : Maid,
@@ -333,7 +387,11 @@ return function(
     itemsOwned : ValueState<{[number] : ToolData}>,
 
     onBackpackButtonEquipClickSignal : Signal,
-    onBackpackButtonDeleteClickSignal : Signal
+    onBackpackButtonDeleteClickSignal : Signal,
+
+    vehicleList : ValueState<{[number] : VehicleData}>,
+    onVehicleSpawn : Signal,
+    onVehicleDelete : Signal
 )
     local _fuse = ColdFusion.fuse(maid)
     local _new = _fuse.new
@@ -346,13 +404,116 @@ return function(
 
 
     local isVisible = _Value(true) --fixing the wierd state not working thing by attaching it to the properties table for the sake of updating the equip
-    local contentFrame = _new("ScrollingFrame")({
+    
+    local selectedPage = _Value("Items")
+    
+    local header = _new("Frame")({
+        Name = "Header",
+        BackgroundColor3 = BACKGROUND_COLOR,
+        Size = UDim2.fromScale(1, 0.1),
+        Children = {
+            _new("UIListLayout")({
+                SortOrder = Enum.SortOrder.LayoutOrder,
+                FillDirection = Enum.FillDirection.Horizontal,
+                Padding = PADDING_SIZE,
+
+            }),
+            getSelectButton(maid, 1, "Items", _Computed(function(page)
+                return page == "Items"
+            end, selectedPage),function()
+                selectedPage:Set("Items")
+            end),
+            getSelectButton(maid, 2, "Vehicles", _Computed(function(page)
+                return page == "Vehicles"
+            end, selectedPage),function()
+                selectedPage:Set("Vehicles")
+            end),
+        }
+    })
+    
+    local backpackContentFrame = _new("ScrollingFrame")({
         Name = "ContentFrame",
-        Visible = isVisible,
+        Visible = _Computed(function(page : string)
+           return page == "Items" 
+        end, selectedPage),
         AutomaticCanvasSize = Enum.AutomaticSize.Y,
         CanvasSize = UDim2.new(),
         BackgroundColor3 = BACKGROUND_COLOR,
         BackgroundTransparency = 0.74,
+        Position = UDim2.fromScale(0,0),
+        Size = UDim2.fromScale(1,0.8),
+        Children = {
+            _new("UICorner")({
+                CornerRadius = UDim.new(1,0)
+            }),
+            _new("UIListLayout")({
+                SortOrder = Enum.SortOrder.LayoutOrder,
+                Padding = PADDING_SIZE
+            }),
+            --[[_new("TextLabel")({
+                BackgroundTransparency = 1,
+                Size = UDim2.fromScale(1, 0.06),
+                RichText = true,
+                TextScaled = true,
+                Font = Enum.Font.Gotham,
+                Text = "<b>Backpack</b>",
+                TextColor3 = PRIMARY_COLOR,
+                TextStrokeTransparency = 0.5
+            }) ]]
+        }
+    }) :: GuiObject
+
+    local function getButtonInfo(
+        signal : Signal,
+        buttonName : string
+    )
+        return 
+            {
+                Signal = signal,
+                ButtonName = buttonName
+            }
+        
+    end
+    local options = {
+        getButtonInfo(onVehicleSpawn, "Spawn"),
+        getButtonInfo(onVehicleDelete, "Delete")
+    }
+    local vehicleNamesList = _Computed(function(list : {[number] : VehicleData})
+        local namesList = {}
+        for _,v in pairs(list) do
+            table.insert(namesList, v.Name)
+        end
+        return namesList
+    end, vehicleList)
+    local vehiclesContentFrame = _bind(ListUI(maid, "", vehicleNamesList, _Value(UDim2.new()), _Computed(function(page : string)
+        return page == "Vehicles" 
+    end, selectedPage), options))({
+        Size = UDim2.fromScale(1, 0.3)
+    })
+    
+    if RunService:IsRunning() then   
+        task.spawn(function()
+            task.wait(0.5)
+            do --init
+                local contentFrame = vehiclesContentFrame:WaitForChild("ContentFrame") :: Frame
+                for k,v in pairs(contentFrame:GetChildren()) do
+                    if v:IsA("Frame") then
+                        for k2, v2 in pairs(vehicleList:Get()) do
+                            if k2 == v.LayoutOrder then
+                                local spawnButton = v:WaitForChild("SubOptions"):WaitForChild("SpawnButton") :: TextButton
+                                spawnButton.Text = if v2.IsSpawned then "Despawn" else "Spawn"
+                            end
+                        end
+                    end
+                end
+            end
+        end)
+    end
+    local contentFrame = _new("Frame")({
+        Name = "ContentFrame",
+        Visible = isVisible,
+        BackgroundColor3 = BACKGROUND_COLOR,
+        BackgroundTransparency = 1,
         Position = UDim2.fromScale(0,0),
         Size = UDim2.fromScale(0.3,1),
         Children = {
@@ -373,6 +534,9 @@ return function(
                 TextColor3 = PRIMARY_COLOR,
                 TextStrokeTransparency = 0.5
             }) ]]
+            header,
+            backpackContentFrame,
+            vehiclesContentFrame
         }
     }) :: GuiObject
 
@@ -396,7 +560,7 @@ return function(
             onBackpackButtonEquipClickSignal,
             onBackpackButtonDeleteClickSignal
         )
-        itemTypeFrame.Parent = contentFrame
+        itemTypeFrame.Parent = backpackContentFrame
     end
 
     local out = _new("Frame")({

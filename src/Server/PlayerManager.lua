@@ -309,6 +309,7 @@ function PlayerManager.new(player : Player, maid : Maid ?)
      --       print(self:GetData())
      --   end
     --end)
+    self:AddVehicle("Motorcycle")
    
     return self
 end
@@ -442,11 +443,13 @@ function PlayerManager:SpawnVehicle(key : number, isSpawned : boolean, vehicleNa
 
     assert(vehicleInfo and (vehicleName == nil or (vehicleInfo.Name == vehicleName)), "Vehicle info not found!")
     
-    local spawnPart = getVehicleSpawnPlot(vehicleZones or workspace:WaitForChild("Miscs"):WaitForChild("CarSpawns"))
-    if not spawnPart then
-        NotificationUtil.Notify(self.Player, "Plot already full here ah!")
+    local spawnPart = if vehicleZones then getVehicleSpawnPlot(vehicleZones) else nil
+    if vehicleZones then
+        if not spawnPart then
+            NotificationUtil.Notify(self.Player, "Plot already full here ah!")
+        end
     end
-    
+
     for k,v in pairs(self.Vehicles) do
         self.Vehicles[k].IsSpawned = false
         local vehicleModel =  getVehicleModelByKey(self.Player, self.Vehicles[k].Key)
@@ -457,7 +460,10 @@ function PlayerManager:SpawnVehicle(key : number, isSpawned : boolean, vehicleNa
     
     vehicleInfo.IsSpawned = isSpawned
     if isSpawned == true then
-        local vehicleModel = createVehicleModel(vehicleInfo, spawnPart.CFrame)
+        local char = self.Player.Character or self.Player.CharacterAdded:Wait()
+        local cf = if spawnPart then spawnPart.CFrame elseif char.PrimaryPart then (char.PrimaryPart.CFrame + char.PrimaryPart.CFrame.LookVector*5) else nil
+        assert(cf)
+        local vehicleModel = createVehicleModel(vehicleInfo, cf)
         applyVehicleData(vehicleModel, vehicleInfo)
         
         self._Maid.CurrentSpawnedVehicle = vehicleModel
@@ -916,7 +922,7 @@ function PlayerManager.init(maid : Maid)
         local success = plrInfo:AddVehicle(vehicleName)
 
         if success then
-            NotificationUtil.Notify(plr, "You got " .. vehicleName)
+            NotificationUtil.Notify(plr, "You got " .. vehicleName ..", you can spawn it at the parking lot at the nearest vehicle spawner.")
         end
         MidasEventTree.Gameplay.VehiclesAdded.Value(plr)
         return nil
@@ -940,7 +946,7 @@ function PlayerManager.init(maid : Maid)
             vehicleListName[k] = v.Name
         end
 
-        return vehicleListName
+        return plrInfo.Vehicles
     end)
 
 

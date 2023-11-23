@@ -24,6 +24,7 @@ local LoadingFrame = require(ReplicatedStorage:WaitForChild("Client"):WaitForChi
 local ExitButton = require(ReplicatedStorage:WaitForChild("Client"):WaitForChild("ExitButton"))
 local BackpackUtil = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("BackpackUtil"))
 local AnimationUtil = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("AnimationUtil"))
+local ItemUtil = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("ItemUtil"))
 local NotificationChoice = require(ReplicatedStorage:WaitForChild("Client"):WaitForChild("NotificationUI"):WaitForChild("NotificationChoice"))
 
 local CustomizationUtil = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("CustomizationUtil"))
@@ -37,6 +38,11 @@ type Signal = Signal.Signal
 
 export type UIStatus = "Backpack" | "Roleplay" | "Customization" | nil
 type ToolData = BackpackUtil.ToolData<boolean>
+export type VehicleData = ItemUtil.ItemInfo & {
+    Key : string,
+    IsSpawned : boolean,
+    OwnerId : number
+}
 type AnimationInfo = {
     Name : string,
     AnimationId : string
@@ -63,6 +69,7 @@ local SAVE_CHARACTER_SLOT = "SaveCharacterSlot"
 local LOAD_CHARACTER_SLOT = "LoadCharacterSlot"
 local DELETE_CHARACTER_SLOT = "DeleteCharacterSlot"
 
+local GET_PLAYER_VEHICLES = "GetPlayerVehicles"
 local ON_JOB_CHANGE = "OnJobChange"
 
 local ON_ROLEPLAY_BIO_CHANGE = "OnRoleplayBioChange"
@@ -330,9 +337,12 @@ return function(
 
     backpack : ValueState<{BackpackUtil.ToolData<boolean>}>,
     UIStatus : ValueState<UIStatus>,
+    vehiclesList : ValueState<{[number] : VehicleData}>,
 
     backpackOnEquip : Signal,
     backpackOnDelete : Signal,
+    onVehicleSpawn : Signal,
+    onVehicleDelete : Signal,
     onNotify : Signal,
 
     onItemCartSpawn : Signal,
@@ -586,6 +596,7 @@ return function(
             isExitButtonVisible,
             function()
                 UIStatus:Set(nil)
+                game:GetService("StarterGui"):SetCoreGuiEnabled(Enum.CoreGuiType.Chat, true)
                 return nil 
             end
         ) 
@@ -633,7 +644,12 @@ return function(
                 backpack,
 
                 onBackpackButtonEquipClickSignal,
-                onBackpackButtonDeleteClickSignal
+                onBackpackButtonDeleteClickSignal,
+
+                vehiclesList,
+
+                onVehicleSpawn,
+                onVehicleDelete
             )
 
             backpackUI.Parent = out
@@ -641,7 +657,9 @@ return function(
             getExitButton(backpackUI)
             if game:GetService("RunService"):IsRunning() then
                 backpack:Set(NetworkUtil.invokeServer(GET_PLAYER_BACKPACK))
+                vehiclesList:Set(NetworkUtil.invokeServer(GET_PLAYER_VEHICLES))
             end
+            game:GetService("StarterGui"):SetCoreGuiEnabled(Enum.CoreGuiType.Chat, false)
         elseif status == "Roleplay" then 
             local jobsList = Jobs.getJobs()
 

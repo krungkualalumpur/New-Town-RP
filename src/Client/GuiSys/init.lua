@@ -49,8 +49,9 @@ type ValueState<T> = ColdFusion.ValueState<T>
 type CanBeState<T> = ColdFusion.State<T>
 
 export type VehicleData = ItemUtil.ItemInfo & {
-    IsSpawned : string,
-    Key : number ?
+    Key : string,
+    IsSpawned : boolean,
+    OwnerId : number
 }
 
 type GuiSys = {
@@ -187,6 +188,8 @@ function guiSys.new()
     local _Computed = _fuse.Computed
     local _Value = _fuse.Value
     
+    local buttonlistsInfo = {}
+
     local notificationUItarget = _new("ScreenGui")({
         Name = "NotificationScreenGui",
         Parent = Player:WaitForChild("PlayerGui"),
@@ -201,6 +204,7 @@ function guiSys.new()
     self.NotificationStatus = _Value(nil :: string ?)
 
     local backpack = _Value(NetworkUtil.invokeServer(GET_PLAYER_BACKPACK))
+    local vehicleList = _Value({}) 
 
     local backpackOnEquip = maid:GiveTask(Signal.new())
     local backpackOnDelete = maid:GiveTask(Signal.new())
@@ -210,6 +214,10 @@ function guiSys.new()
 
     local onItemCartSpawn = maid:GiveTask(Signal.new())
     local onJobChange = maid:GiveTask(Signal.new())
+    local onVehicleSpawn = maid:GiveTask(Signal.new())
+    local onVehicleDelete = maid:GiveTask(Signal.new())
+    table.insert(buttonlistsInfo, getListButtonInfo(onVehicleSpawn, "Spawn"))
+    table.insert(buttonlistsInfo, getListButtonInfo(onVehicleDelete, "Delete"))
 
     local onCharacterReset = maid:GiveTask(Signal.new())
 
@@ -221,8 +229,11 @@ function guiSys.new()
         
         MainUIStatus,
 
+        vehicleList,
         backpackOnEquip,
         backpackOnDelete,
+        onVehicleSpawn,
+        onVehicleDelete,
         onNotify,
 
         onItemCartSpawn,
@@ -232,6 +243,7 @@ function guiSys.new()
 
         target
     )
+   
 
     maid:GiveTask(nameCustomizationOnClick:Connect(function(descType, text)
         CustomizationUtil.setDesc(Player, descType, text)
@@ -366,15 +378,17 @@ function guiSys.new()
         local _Computed = _fuse.Computed
         local _Value = _fuse.Value
         
+        local localButtonListsInfo = {}
         local cam = workspace.CurrentCamera
 
         local position = _Value(UDim2.new())
         local isVisible = _Value(true)
-
-        local list = _Value({}) 
         
-        local buttonlistsInfo = {}
+        local onVehicleSpawnZone = _maid:GiveTask(Signal.new())
+        table.insert(localButtonListsInfo, getListButtonInfo(onVehicleSpawnZone, "Spawn"))
+        table.insert(localButtonListsInfo, getListButtonInfo(onVehicleDelete, "Delete"))
 
+        local list 
         if inst:GetAttribute(LIST_TYPE_ATTRIBUTE) == "Vehicle" then
             local plrIsVIP = MarketplaceService:UserOwnsGamePassAsync(Player.UserId, MarketplaceUtil.getGamePassIdByName("VIP Feature"))
             if not plrIsVIP then 
@@ -383,44 +397,42 @@ function guiSys.new()
                 return nil 
             end
             
-            list:Set(NetworkUtil.invokeServer(GET_PLAYER_VEHICLES))
+            local currentVehicleList = NetworkUtil.invokeServer(GET_PLAYER_VEHICLES)
+            vehicleList:Set(currentVehicleList)
             
-            local onVehicleSpawn = maid:GiveTask(Signal.new())
-            local onVehicleDelete = maid:GiveTask(Signal.new())
-
-            table.insert(buttonlistsInfo, getListButtonInfo(onVehicleSpawn, "Spawn"))
-            table.insert(buttonlistsInfo, getListButtonInfo(onVehicleDelete, "Delete"))
-
-            maid:GiveTask(onVehicleSpawn:Connect(function(key, val : string)
-                local spawnerZonesPointer =  inst:FindFirstChild("SpawnerZones") :: ObjectValue
-                local spawnerZones = spawnerZonesPointer.Value
-
-                NetworkUtil.invokeServer(
-                    SPAWN_VEHICLE, 
-                    key,
-                    val,
-                    spawnerZones
-                )
-            end))
-
-            maid:GiveTask(onVehicleDelete:Connect(function(key, val)
-                NetworkUtil.invokeServer(
-                    DELETE_VEHICLE,
-                    key
-                )
-
-                list:Set(NetworkUtil.invokeServer(GET_PLAYER_VEHICLES))
-            end))
+            list = _Computed(function(list : {[number] : VehicleData})
+                local namesList = {}
+                for _,v in pairs(list) do
+                    table.insert(namesList, v.Name)
+                end
+                return namesList
+            end, vehicleList)
         end
-
+        
         local listUI =  ListUI(
             _maid, 
             listName, 
             list,
             position,
             isVisible,
-            buttonlistsInfo
+            localButtonListsInfo
         ) :: GuiObject
+   
+        if RunService:IsRunning() and inst:GetAttribute(LIST_TYPE_ATTRIBUTE) == "Vehicle" then   
+            do --init
+                local contentFrame = listUI:WaitForChild("ContentFrame") :: Frame
+                for k,v in pairs(contentFrame:GetChildren()) do
+                    if v:IsA("Frame") then
+                        for k2, v2 in pairs(vehicleList:Get()) do
+                            if k2 == v.LayoutOrder then
+                                local spawnButton = v:WaitForChild("SubOptions"):WaitForChild("SpawnButton") :: TextButton
+                                spawnButton.Text = if v2.IsSpawned then "Despawn" else "Spawn"
+                            end
+                        end
+                    end
+                end
+            end
+        end
 
         ExitButton.new(
             listUI, 
@@ -433,6 +445,24 @@ function guiSys.new()
 
         maid.ItemOptionsUI = _maid
         listUI.Parent = target
+        
+        _maid:GiveTask(onVehicleSpawnZone:Connect(function(key, val : string, button : TextButton)
+            local spawnerZonesPointer =  inst:FindFirstChild("SpawnerZones") :: ObjectValue
+            local spawnerZones = spawnerZonesPointer.Value
+            local vehicles : {[number] : VehicleData} = NetworkUtil.invokeServer(
+                SPAWN_VEHICLE, 
+                key,
+                val,
+                spawnerZones
+            )
+            local vehicleData = vehicles[key] 
+            if vehicleData and vehicleData.IsSpawned then
+                button.Text = "Despawn"
+            else
+                button.Text = "Spawn"
+            end
+            --print(vehicles)
+        end))
 
         _maid:GiveTask(RunService.Stepped:Connect(function()
             local worldPos 
@@ -828,6 +858,30 @@ function guiSys.new()
         --if not s and e then warn(e) end 
         --print(result:GetCurrentPage())
    -- end)
+
+   maid:GiveTask(onVehicleSpawn:Connect(function(key, val : string, button : TextButton)
+        local vehicles : {[number] : VehicleData} = NetworkUtil.invokeServer(
+            SPAWN_VEHICLE, 
+            key,
+            val
+        )
+        local vehicleData = vehicles[key] 
+        if vehicleData and vehicleData.IsSpawned then
+            button.Text = "Despawn"
+        else
+            button.Text = "Spawn"
+        end
+        --print(vehicles)
+    end))
+    maid:GiveTask(onVehicleDelete:Connect(function(key, val)
+        NetworkUtil.invokeServer(
+            DELETE_VEHICLE,
+            key
+        )
+        local vehicles = NetworkUtil.invokeServer(GET_PLAYER_VEHICLES)
+        vehicleList:Set(vehicles)
+        --print(vehicles, " dun dun dun?")
+    end))
 
     --setting default backpack to untrue it 
     game:GetService("StarterGui"):SetCoreGuiEnabled(Enum.CoreGuiType.Backpack,false)

@@ -8,8 +8,32 @@ local Signal = require(ReplicatedStorage:WaitForChild("Packages"):WaitForChild("
 --modules
 local BackpackUtil = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("BackpackUtil"))
 local BackpackUI = require(ReplicatedStorage:WaitForChild("Client"):WaitForChild("MainUI"):WaitForChild("BackpackUI"))
+local ItemUtil = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("ItemUtil"))
 --types
 type ToolData = BackpackUtil.ToolData<boolean>
+export type VehicleData = ItemUtil.ItemInfo & {
+    Key : string,
+    IsSpawned : boolean,
+    OwnerId : number
+}
+local function newVehicleData(
+    itemType : ItemUtil.ItemType,
+    class : string,
+    isSpawned : boolean,
+    name : string,
+    ownerId : number
+) : VehicleData
+    
+    return {
+        Type = itemType,
+        Class = class,
+        IsSpawned = isSpawned,
+        Name = name,
+        OwnerId = ownerId,
+        Key = game.HttpService:GenerateGUID(false)
+    }
+end
+
 --constants
 --variables
 --references
@@ -67,12 +91,30 @@ return function(target : CoreGui)
     local onEquip = maid:GiveTask(Signal.new())
     local onDelete = maid:GiveTask(Signal.new())
 
+    local list = {
+        newVehicleData(
+            "Vehicle",
+            "Motorcycle",
+            true,
+            "Motorcycle",
+            12121211
+        )
+    }
+    local stateList : ColdFusion.ValueState<{[number] : VehicleData}> = _Value(list)
+
+    local onVehicleSpawn = maid:GiveTask(Signal.new())
+    local onVehicleDelete = maid:GiveTask(Signal.new())
     local backpackUI = BackpackUI(
         maid, 
         {"ha", "hi", "hu", "he"},
         items,
         onEquip, 
-        onDelete
+        onDelete,
+
+        stateList,
+
+        onVehicleSpawn,
+        onVehicleDelete
     )
     backpackUI.Parent = target
     print(backpackUI)

@@ -22,9 +22,9 @@ type PlayerSaveData = {
 }
 --constants
 local DATA_ATTEMPT_COUNT = 10
-local CURRENT_GAME_VERSION = "v1.2"
+local CURRENT_GAME_VERSION = "v1.3"
 --variables
-local gameData1 = DataStoreService:GetDataStore("GameData4")
+local gameData1 = DataStoreService:GetDataStore("GameData5")
 --module
 local DatastoreManager = {}
 function DatastoreManager.save(player: Player, plrInfo : ManagerTypes.PlayerManager)

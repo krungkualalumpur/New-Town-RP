@@ -36,6 +36,7 @@ local function getButton(
     local _clone = _fuse.clone
 
     local out = _new("TextButton")({
+        Name = text .. "Button",
         AutoButtonColor = true,
         BackgroundColor3 = TERTIARY_COLOR,
         Size = UDim2.fromScale(1, 0.3),
@@ -54,7 +55,7 @@ local function getButton(
                 onClick()
             end
         }
-    })
+    }) :: TextButton
 
     return out
 end
@@ -78,6 +79,7 @@ local function getListFrame(
     local _clone = _fuse.clone
 
     local subOptionsFrame = _new("Frame")({
+        Name = "SubOptions",
         LayoutOrder = 2,
         BackgroundTransparency = 1,
         Size = UDim2.fromScale(0.23, 1),
@@ -130,11 +132,12 @@ local function getListFrame(
     })
     
     for _,v in pairs(subOptions) do
-        local button = getButton(
+        local button 
+        button = getButton(
             maid, 
             v.ButtonName,
             function()
-                v.Signal:Fire(order, listName)
+                v.Signal:Fire(order, listName, button)
             end
         )
         button.Parent = subOptionsFrame
@@ -166,6 +169,7 @@ return function(
     local _Value = _fuse.Value
     
     local contentFrame = _new("ScrollingFrame")({
+        Name = "ContentFrame",
         BackgroundTransparency = 1,
         Size = UDim2.fromScale(1, 0.85),
         CanvasSize = UDim2.fromScale(0, 0),

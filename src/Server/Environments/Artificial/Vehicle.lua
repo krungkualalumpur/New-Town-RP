@@ -270,12 +270,18 @@ function Vehicle.init(maid : Maid)
     NetworkUtil.onServerInvoke(SPAWN_VEHICLE, function(plr : Player, key : number, vehicleName : string, partZones : Instance ?)
         local plrInfo = PlayerManager.get(plr)
        -- print(carSpawnZone.ItemIsInside(v, plr.Character.PrimaryPart), " is insoide or nahhh", v)
-        plrInfo:SpawnVehicle(key, true, vehicleName, partZones)
-        NotificationUtil.Notify(plr, "You spawned " .. tostring(plrInfo.Vehicles[key].Name))
+        local existingVehicleData = plrInfo.Vehicles[key]
+        if existingVehicleData and (existingVehicleData.IsSpawned == false) then
+            plrInfo:SpawnVehicle(key, true, vehicleName, partZones)
+            NotificationUtil.Notify(plr, "You spawned " .. tostring(plrInfo.Vehicles[key].Name) .. " at the nearest parking lot.")
+        elseif existingVehicleData and (existingVehicleData.IsSpawned == true) then
+            plrInfo:SpawnVehicle(key, false)
+            NotificationUtil.Notify(plr, "You despawned " .. tostring(plrInfo.Vehicles[key].Name))
+        end
 
         MidasEventTree.Gameplay.EquipVehicle.Value(plr)
 
-        return nil
+        return plrInfo.Vehicles
     end)
 
 end
