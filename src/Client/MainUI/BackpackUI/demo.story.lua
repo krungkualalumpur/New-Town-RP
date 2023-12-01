@@ -102,7 +102,47 @@ return function(target : CoreGui)
             "Motorcycle",
             12121211,
             true
-        )
+        ),
+        newVehicleData(
+            "Vehicle",
+            "Motorcycle",
+            true,
+            "Motorcycle",
+            12121211,
+            true
+        ),
+        newVehicleData(
+            "Vehicle",
+            "Motorcycle",
+            true,
+            "Motorcycle",
+            12121211,
+            true
+        ),
+        newVehicleData(
+            "Vehicle",
+            "Motorcycle",
+            true,
+            "Motorcycle",
+            12121211,
+            true
+        ),
+        newVehicleData(
+            "Vehicle",
+            "Motorcycle",
+            true,
+            "Motorcycle",
+            12121211,
+            true
+        ),
+        newVehicleData(
+            "Vehicle",
+            "Motorcycle",
+            true,
+            "Motorcycle",
+            12121211,
+            true
+        ),
     }
     local stateList : ColdFusion.ValueState<{[number] : VehicleData}> = _Value(list)
 

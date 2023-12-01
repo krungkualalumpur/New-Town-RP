@@ -6,6 +6,11 @@
 -- Constants
 -- Variables
 -- References
+-- Local Functions
+
+local function getMilisecondsFromSecond(sec : number, decimalPlaces : number ?)
+	return (sec - math.floor(sec))*(10^(decimalPlaces or 2))
+end
 -- Class
 local NumberUtil = {}
 
@@ -77,9 +82,9 @@ function NumberUtil.MonetizeNumber(number : number)
 	return string.format("%s$%s", if math.sign(number) >= 0 then "" else "-", NumberUtil.NotateDecimals(math.abs(number), true))
 end
 
-function NumberUtil.NumberToClock(num : number, displaySecond : boolean)
-	print(displaySecond)
-	return string.format("%.1d:%.2d" .. if displaySecond then ":%.2d" else "", math.floor(num/(60*60)), math.floor((num/60)%60), if displaySecond then num%60 else nil) 
+function NumberUtil.NumberToClock(num : number, displaySecond : boolean, secondDecimalPlace : number ?)
+	local miliseconds = getMilisecondsFromSecond(num, secondDecimalPlace)
+	return string.format("%.1d:%.2d" .. (if displaySecond then ":%.2d" else "") .. (if displaySecond and secondDecimalPlace then (".%." .. tostring(secondDecimalPlace) .. "d") else ""), math.floor(num/(60*60)), math.floor((num/60)%60), if displaySecond then num%60 else nil, (if displaySecond and secondDecimalPlace then getMilisecondsFromSecond(num, secondDecimalPlace) else nil)) 
 end
 
 return NumberUtil

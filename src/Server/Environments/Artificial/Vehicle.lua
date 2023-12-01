@@ -152,9 +152,10 @@ function Vehicle.init(maid : Maid)
                     if seat and wheels then
                         for _,v in pairs(wheels:GetDescendants()) do
                             if v:IsA("HingeConstraint") and v.ActuatorType == Enum.ActuatorType.Motor then
+                                v.MotorMaxTorque = 99999999999
                                 v.AngularVelocity = seat.Throttle*convertionKpHtoVelocity((vehicleSpeed)*(if math.sign(seat.Throttle) == 1 then 1 else 0.5))
-                                print(vehicleModel.PrimaryPart.CFrame:VectorToObjectSpace(vehicleModel.PrimaryPart.AssemblyLinearVelocity), " heh? ")
                                 local accDir = vehicleModel.PrimaryPart.CFrame:VectorToObjectSpace(vehicleModel.PrimaryPart.AssemblyLinearVelocity).Z
+                                task.spawn(function() task.wait(1); v.MotorMaxTorque = 550000000; end)
                                 if seat.Throttle ~= 0 then
                                     v.MotorMaxAcceleration = if math.sign(accDir*seat.Throttle) == 1 then 60 else 25
                                     if math.sign(accDir*seat.Throttle) == 1 then
@@ -241,8 +242,11 @@ function Vehicle.init(maid : Maid)
                     
                         task.spawn(function()
                             task.wait(1)
-                            local sound = occupantMaid:GiveTask(playSound(532147820, vehicleModel.PrimaryPart, true))
+                            local sound = occupantMaid:GiveTask(playSound(vehicleModel:GetAttribute("EngineSound") or 532147820, vehicleModel.PrimaryPart, true))
                             occupantMaid:GiveTask(RunService.Stepped:Connect(function()
+                                if not vehicleModel.PrimaryPart then
+                                    _maid:Destroy()
+                                end
                                 sound.PlaybackSpeed = 1 + math.sqrt(vehicleModel.PrimaryPart.AssemblyLinearVelocity.Magnitude)/4
                             end))
                         end)
@@ -251,6 +255,7 @@ function Vehicle.init(maid : Maid)
             end
 
             _maid:GiveTask(vehicleModel.Destroying:Connect(function()
+                print(vehicleModel, " destroyed")
                 _maid:Destroy()
             end))
         end
@@ -273,7 +278,6 @@ function Vehicle.init(maid : Maid)
         local existingVehicleData = plrInfo.Vehicles[key]
         if existingVehicleData and (existingVehicleData.IsSpawned == false) then
             plrInfo:SpawnVehicle(key, true, vehicleName, partZones)
-            NotificationUtil.Notify(plr, "You spawned " .. tostring(plrInfo.Vehicles[key].Name) .. " at the nearest parking lot.")
         elseif existingVehicleData and (existingVehicleData.IsSpawned == true) then
             plrInfo:SpawnVehicle(key, false)
             NotificationUtil.Notify(plr, "You despawned " .. tostring(plrInfo.Vehicles[key].Name))

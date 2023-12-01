@@ -25,12 +25,12 @@ local ExitButton = require(ReplicatedStorage:WaitForChild("Client"):WaitForChild
 local NewCustomizationUI = require(ReplicatedStorage:WaitForChild("Client"):WaitForChild("MainUI"):WaitForChild("NewCustomizationUI"))
 local LoadingFrame = require(ReplicatedStorage:WaitForChild("Client"):WaitForChild("LoadingFrame"))
 
+local CustomEnum = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("CustomEnum"))
+local NumberUtil = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("NumberUtil"))
 local ItemUtil = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("ItemUtil"))
 local BackpackUtil = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("BackpackUtil"))
 local CustomizationUtil = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("CustomizationUtil"))
 local MarketplaceUtil = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("MarketplaceUtil"))
-local RarityUtil = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("RarityUtil"))
-local Fishes = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Fishing"))
 local ChoiceActions = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("ChoiceActions"))
 
 local ItemOptionsUI = require(ReplicatedStorage:WaitForChild("Client"):WaitForChild("ItemOptionsUI"))
@@ -73,6 +73,7 @@ type GuiSys = {
 local MAX_DISTANCE = 18
 
 local LIST_TYPE_ATTRIBUTE = 'ListType'
+local DAY_VALUE_KEY = "DayValue"
 --remotes
 local ON_OPTIONS_OPENED = "OnOptionsOpened"
 local ON_ITEM_OPTIONS_OPENED = "OnItemOptionsOpened"
@@ -96,12 +97,11 @@ local DELETE_VEHICLE = "DeleteVehicle"
 local ON_CHARACTER_APPEARANCE_RESET = "OnCharacterAppearanceReset"
 local ON_NOTIF_CHOICE_INIT = "OnNotifChoiceInit"
 
-local ON_TOOL_ACTIVATED = "OnToolActivated"
-
 local ON_JOB_CHANGE = "OnJobChange"
 --variables
 local Player = Players.LocalPlayer
 --references
+local dayValue = workspace:WaitForChild(DAY_VALUE_KEY) :: IntValue
 --local functions
 function PlaySound(id, parent, volumeOptional: number ?)
 	task.spawn(function()
@@ -169,6 +169,19 @@ local function getEnumItemFromName(enum : Enum, enumItemName : string)
     return enumItem
 end
 
+local function getDayEnumFromNum(num : number) : CustomEnum.Day
+    for _,v in pairs(CustomEnum.Day:GetEnumItems()) do
+        if v.Value == num then
+            return v
+        end
+    end
+    error("Unable to find the enum")
+end
+
+local function getCurrentDay() : CustomEnum.Day
+    return getDayEnumFromNum(workspace:WaitForChild(DAY_VALUE_KEY).Value)
+end
+
 --class
 local currentGuiSys : GuiSys
 
@@ -177,7 +190,7 @@ guiSys.__index = guiSys
 
 function guiSys.new()
     local maid = Maid.new()
-    
+
     local target = Player:WaitForChild("PlayerGui"):WaitForChild("ScreenGui")
 
     local _fuse = ColdFusion.fuse(maid)
@@ -206,6 +219,7 @@ function guiSys.new()
 
     local backpack = _Value(NetworkUtil.invokeServer(GET_PLAYER_BACKPACK))
     local vehicleList = _Value({}) 
+    local date = _Value(string.format("%s\n%s", getCurrentDay().Name, NumberUtil.NumberToClock(game.Lighting.ClockTime, false)))
 
     local backpackOnEquip = maid:GiveTask(Signal.new())
     local backpackOnDelete = maid:GiveTask(Signal.new())
@@ -231,6 +245,7 @@ function guiSys.new()
         MainUIStatus,
 
         vehicleList,
+        date,
         backpackOnEquip,
         backpackOnDelete,
         onVehicleSpawn,
@@ -245,6 +260,9 @@ function guiSys.new()
         target
     )
    
+    maid:GiveTask(game.Lighting.Changed:Connect(function()
+        date:Set(string.format("%s\n%s", getCurrentDay().Name, NumberUtil.NumberToClock(game.Lighting.ClockTime*60*60, false)))
+    end))
 
     maid:GiveTask(nameCustomizationOnClick:Connect(function(descType, text)
         CustomizationUtil.setDesc(Player, descType, text)
@@ -428,6 +446,10 @@ function guiSys.new()
                             if k2 == v.LayoutOrder then
                                 local spawnButton = v:WaitForChild("SubOptions"):WaitForChild("SpawnButton") :: TextButton
                                 spawnButton.Text = if v2.IsSpawned then "Despawn" else "Spawn"
+                                if v2.DestroyLocked == true then
+                                    local deleteButton = v:WaitForChild("SubOptions"):WaitForChild("DeleteButton") :: TextButton
+                                    deleteButton.Visible = false
+                                end
                             end
                         end
                     end
@@ -456,6 +478,13 @@ function guiSys.new()
                 val,
                 spawnerZones
             )
+
+            for _,v in pairs(button.Parent.Parent.Parent:GetDescendants()) do
+                if v:IsA("TextButton") and v.Text == "Despawn" then
+                    v.Text = "Spawn"
+                end
+            end
+            
             local vehicleData = vehicles[key] 
             if vehicleData and vehicleData.IsSpawned then
                 button.Text = "Despawn"
@@ -530,226 +559,7 @@ function guiSys.new()
         return nil
     end)
 
-    local toolMaid = maid:GiveTask(Maid.new())
-
-    maid:GiveTask(NetworkUtil.onClientEvent(ON_TOOL_ACTIVATED, function(toolClass : string, toolInst : Tool)
-        if toolClass == "Fishing Rod" then
-            --local mouse = Player:GetMouse() :: Mouse
-            local camera = workspace.CurrentCamera
-            local mouseLocation = UserInputService:GetMouseLocation()
-            local viewportPointRay = camera:ViewportPointToRay(mouseLocation.X, mouseLocation.Y)
-            local ray = Ray.new(viewportPointRay.Origin, viewportPointRay.Direction * 1000)
-            
-            local hit, position, normal, material = workspace:FindPartOnRay(ray)
-
-            if hit then
-                if material ~= Enum.Material.Water then
-                    self:Notify("You can only do fishing on water!")
-                    return 
-                end
-                
-                --local camera = workspace.CurrentCamera
-                local toolModel = toolInst:FindFirstChild(toolInst.Name)
-                local baitHolder = if toolModel then toolModel:FindFirstChild("BaitHolder") :: BasePart ? else nil
-                if baitHolder then
-
-                    if (baitHolder.Position - position).Magnitude >= 80 then
-                        self:Notify("Bait is too far!")
-                        return
-                    end
-
-                    toolMaid:DoCleaning()
-
-                    local localMaid = toolMaid:GiveTask(Maid.new())
-                    local startCf = baitHolder.CFrame
-                    local endCf = CFrame.new(position)
-                    local p = toolMaid:GiveTask(Instance.new("Part"))
-                    p.Shape = Enum.PartType.Ball
-                    p.CFrame = baitHolder.CFrame
-                    p.Size = Vector3.new(1,1,1)
-                    --p.Anchored = true 
-                    p.Massless = true
-                    p.CanCollide = true
-                    p.Parent = workspace
-
-                    local attachment0 = toolMaid:GiveTask(Instance.new("Attachment")) :: Attachment
-                    local attachment1 = toolMaid:GiveTask(Instance.new("Attachment")) :: Attachment
-
-                    attachment0.Parent = baitHolder
-                    attachment1.Parent = p
-
-                    local rope = toolMaid:GiveTask(Instance.new("RopeConstraint")) :: RopeConstraint
-                    rope.Attachment0 = attachment0
-                    rope.Attachment1 = attachment1
-                    rope.Visible = true
-                    rope.Thickness = 0.1
-                    rope.Parent = toolModel
-
-                    for x = 0, 1, 0.05 do
-                        local v3 = Vector3.new(0,startCf.Position.Y,0):Lerp(Vector3.new(0,endCf.Position.Y*2,0), x):Lerp(Vector3.new(0,endCf.Position.Y,0), x)
-                        
-                        local v32 = Vector3.new(startCf.Position.X, 0, startCf.Position.Z):Lerp(Vector3.new(endCf.Position.X, 0, endCf.Position.Z), x)
-                        local pos = v32 + v3
-                        p.Position = pos
-
-                        rope.Length = (baitHolder.Position - pos).Magnitude*1
-                        task.wait()
-                    end
-                    PlaySound("rbxassetid://9120584671", p, 100)
-
-                    p.Transparency = 1
-
-                    local _fuse = ColdFusion.fuse(toolMaid)
-                    local _new = _fuse.new
-                    
-                    local _Value = _fuse.Value
-
-                    local waterSplashFX = _new("ParticleEmitter")({
-                        Enabled = true,
-                        Rate = 15,
-                        Lifetime = NumberRange.new(0.6,2),
-                        Size = NumberSequence.new({
-                            NumberSequenceKeypoint.new(0, 7),
-                            NumberSequenceKeypoint.new(1, 10)
-                        }),
-                        Acceleration = Vector3.new(0,1,0),
-                        Texture = "rbxassetid://341774729",
-                        SpreadAngle = Vector2.new(-180,180),
-                        Speed = NumberRange.new(2),
-                        Parent = p
-                    }) :: ParticleEmitter
-                    print(waterSplashFX)
-                    task.wait(0.1)
-                    waterSplashFX.Enabled = false
-
-                    local t1 = tick()
-                    local t2 = tick()
-                    local bufferTime = 3
-
-                    local dynamicIconSize = _Value(UDim2.fromScale(1, 0.8))
-                    local smaller = true
-                    --size anim
-                    toolMaid:GiveTask(RunService.RenderStepped:Connect(function()
-                       -- print(tick() - intTick)
-                        if tick() - t1 > 0.5 then
-                            t1 = tick()
-                            smaller = not smaller
-                            --print("soize wut?", dynamicIconSize:Get())
-                            if not smaller then
-                                --print("1")
-                                dynamicIconSize:Set(UDim2.fromScale(1, 0.8))
-                            else
-                                --print('3')
-                                dynamicIconSize:Set(UDim2.fromScale(0.6, 0.6))
-                            end
-                        end
-                    end))
-
-                    toolMaid:GiveTask(RunService.RenderStepped:Connect(function()
-                        if tick() - t2 > bufferTime then 
-                            local luckNum = 3
-                            local randNum = math.random(1,3)
-
-                            --print(randNum, luckNum, randNum == luckNum)
-                            t2 = tick()
-                            localMaid:DoCleaning()
-
-                            if randNum == luckNum then
-                               
-
-                                local billboardPart = localMaid:GiveTask(_new("Part")({
-                                    Position = endCf.Position,
-                                    CanCollide = false,
-                                    Anchored = true,
-                                    Transparency = 1,
-                                    Parent = workspace,
-                                    Children = {
-                                       
-                                        _new("BillboardGui")({
-                                            ExtentsOffsetWorldSpace = Vector3.new(0,8,0),
-                                            Size = UDim2.fromScale(10, 10),
-                                            Children = {
-                                                _new("Frame")({
-                                                    BackgroundTransparency = 1,
-                                                    Size = UDim2.fromScale(1, 1),
-                                                    Children = {
-                                                        _new("UIListLayout")({
-                                                            SortOrder = Enum.SortOrder.LayoutOrder,
-                                                            VerticalAlignment = Enum.VerticalAlignment.Center,
-                                                            HorizontalAlignment = Enum.HorizontalAlignment.Center
-                                                        }),
-                                                        _new("TextLabel")({
-                                                            BackgroundTransparency = 1,
-                                                            Size = dynamicIconSize:Tween(0.5),
-                                                            Font = Enum.Font.GothamBold,
-                                                            Text = "!",
-                                                            TextColor3 = Color3.new(0.737255, 0.811765, 0.039216),
-                                                            TextStrokeTransparency = 0.6,
-                                                            TextScaled = true,
-                                                            Children = {
-                                                                _new("UICorner")({
-                                                                    CornerRadius = UDim.new(20,0),
-                                                                }),
-                                                                _new("UIStroke")({
-                                                                    ApplyStrokeMode = Enum.ApplyStrokeMode.Border,
-                                                                    Color = Color3.new(0.737255, 0.811765, 0.039216),
-                                                                })
-                                                            }
-                                                        }),
-                                                        _new("TextLabel")({
-                                                            BackgroundTransparency = 1,
-                                                            Size = UDim2.fromScale(1, 0.2),
-                                                            Font = Enum.Font.Gotham,
-                                                            Text = if UserInputService.KeyboardEnabled then "Right-click to catch the fish" else "Touch to catch the fish",
-                                                            TextColor3 = Color3.fromRGB(255,255,255),
-                                                            TextStrokeTransparency = 0.6,
-                                                            TextScaled = true
-                                                        })
-                                                    }
-                                                })
-                                            }
-                                        })
-                                    }
-                                }))
-                                PlaySound("rbxassetid://1584394759")
-                                
-                                --right click to interacto!
-                                localMaid:GiveTask(UserInputService.InputEnded:Connect(function(input, gpe)
-                                    if ((input.UserInputType == Enum.UserInputType.MouseButton2) or (input.UserInputType == Enum.UserInputType.Touch)) and not gpe then
-                                        
-                                        local fishesRarity = Fishes.FishesDataToRarityArray()
-                                        local fishData = RarityUtil(fishesRarity)
-
-                                        NetworkUtil.invokeServer(ADD_BACKPACK, fishData.Name)
- 
-                                        toolMaid:DoCleaning()
-                                    end
-                                end))
-                            end
-                        end
-                        
-                    end))
-
-                    toolMaid:GiveTask(toolInst.Destroying:Connect(function()
-                        toolMaid:DoCleaning()
-                    end))
-                    --[[local tween = game:GetService("TweenService"):Create(p, TweenInfo.new(0.1), { --parablola formula stuff
-                        CFrame = mouse.Hit
-                    })
-                    tween:Play()
-                    tween.Completed:Wait()]]
-                end
-            end
-            --[[local p = Instance.new("Part")
-            p.CFrame = mouse.Hit
-            p.Size = Vector3.new(25,25,25)
-            p.Anchored = true
-            p.CanCollide = true
-            p.Parent = workspace]]
-        end
-        return
-    end))
-
+    
     do
         local _maid = maid:GiveTask(Maid.new())
       
@@ -866,6 +676,14 @@ function guiSys.new()
             key,
             val
         )
+
+        for _,v in pairs(button.Parent.Parent.Parent:GetDescendants()) do
+            print(v)
+            if v:IsA("TextButton") and v.Text == "Despawn" then
+                v.Text = "Spawn"
+            end
+        end
+
         local vehicleData = vehicles[key] 
         if vehicleData and vehicleData.IsSpawned then
             button.Text = "Despawn"
@@ -879,6 +697,7 @@ function guiSys.new()
             DELETE_VEHICLE,
             key
         )
+
         local vehicles = NetworkUtil.invokeServer(GET_PLAYER_VEHICLES)
         vehicleList:Set(vehicles)
         --print(vehicles, " dun dun dun?")

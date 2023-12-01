@@ -13,6 +13,8 @@ local AnimationUtil = require(ReplicatedStorage:WaitForChild("Shared"):WaitForCh
 type Maid = Maid.Maid
 --constants
 local SOUND_NAME = "SFX"
+
+local TOOL_IS_WRITING_KEY = "IsWriting"
 --remotes
 local ON_TOOL_ACTIVATED = "OnToolActivated"
 local ON_CAMERA_SHAKE = "OnCameraShake"
@@ -40,7 +42,7 @@ end
 local ActionLists = {
     {
         ToolClass = "Consumption",
-        Activated = function(player : Player, toolData : BackpackUtil.ToolData<nil>, plrInfo : any)            
+        Activated = function(player : Player, toolData : BackpackUtil.ToolData<nil>, plrInfo : any, IsReleased : boolean ?)            
             local character = player.Character or player.CharacterAdded:Wait()
             local foodInst : Instance
 
@@ -75,14 +77,14 @@ local ActionLists = {
     },
     {
         ToolClass = "Reading",
-        Activated = function(player : Player, toolData : BackpackUtil.ToolData<nil>, plrInfo : any)
+        Activated = function(player : Player, toolData : BackpackUtil.ToolData<nil>, plrInfo : any, IsReleased : boolean ?)
             AnimationUtil.playAnim(player, 6831327167, false)
         end
     },
 
     {
         ToolClass = "Fishing Rod",
-        Activated = function(player : Player, toolData : BackpackUtil.ToolData<nil>)
+        Activated = function(player : Player, toolData : BackpackUtil.ToolData<nil>, plrInfo : any, IsReleased : boolean ?)
             --print("rodding")
             local character = player.Character or player.CharacterAdded:Wait()
             local toolInst : Instance
@@ -94,13 +96,13 @@ local ActionLists = {
                 end
             end
 
-            NetworkUtil.fireClient(ON_TOOL_ACTIVATED, player, "Fishing Rod", toolInst)
+            NetworkUtil.fireClient(ON_TOOL_ACTIVATED, player, toolData.Class, player, toolData)
         end
     },
 
     {
         ToolClass = "BathBucket",
-        Activated = function(player : Player, toolData : BackpackUtil.ToolData<nil>)
+        Activated = function(player : Player, toolData : BackpackUtil.ToolData<nil>, plrInfo : any, IsReleased : boolean ?)
             AnimationUtil.playAnim(player, 15370187795, false)
 
             local character = player.Character or player.CharacterAdded:Wait()
@@ -132,8 +134,31 @@ local ActionLists = {
     },
 
     {
+        ToolClass = "SoundPlayer",
+        Activated = function(player : Player, toolData : BackpackUtil.ToolData<nil>, plrInfo : any, IsReleased : boolean ?)
+            local character = player.Character or player.CharacterAdded:Wait()
+            local toolInst : Tool
+
+            for _,v in pairs(character:GetChildren()) do
+                if v:IsA("Tool") and v.Name == toolData.Name then
+                    toolInst = v
+                    break
+                end
+            end
+
+            if toolInst then
+                local model = toolInst:FindFirstChild(toolInst.Name) :: Model ?
+                print(model, model and model.PrimaryPart)
+                if model and model.PrimaryPart then
+                    playSound(9117124777, false, model.PrimaryPart)
+                end
+            end
+        end
+    },
+
+    {
         ToolClass = "Weapon",
-        Activated = function(player : Player, toolData : BackpackUtil.ToolData<nil>, plrInfo : any)
+        Activated = function(player : Player, toolData : BackpackUtil.ToolData<nil>, plrInfo : any, IsReleased : boolean ?)
             local character = player.Character or player.CharacterAdded:Wait()
             local weaponTool : Tool
 
@@ -248,6 +273,34 @@ local ActionLists = {
                 weaponTool:Destroy()
             end
         end
+    },
+
+    {
+        ToolClass = "Pencil",
+        Activated = function(player : Player, toolData : BackpackUtil.ToolData<nil>, plrInfo : any, IsReleased : boolean ?)
+            local character = player.Character or player.CharacterAdded:Wait()
+            local toolInst : Tool
+
+            for _,v in pairs(character:GetChildren()) do
+                if v:IsA("Tool") and v.Name == toolData.Name then
+                    toolInst = v
+                    break
+                end
+            end
+
+            if toolInst then
+                if not IsReleased then
+                    toolInst:SetAttribute(TOOL_IS_WRITING_KEY, true)
+                elseif IsReleased == true then
+                    toolInst:SetAttribute(TOOL_IS_WRITING_KEY, nil)
+                end
+                --[[if toolInst:GetAttribute(TOOL_IS_WRITING_KEY) == nil then
+                    toolInst:SetAttribute(TOOL_IS_WRITING_KEY, true)
+                elseif toolInst:GetAttribute(TOOL_IS_WRITING_KEY) == true then
+                    toolInst:SetAttribute(TOOL_IS_WRITING_KEY, nil)
+                end]]
+            end
+        end
     }
 }
 --references
@@ -255,12 +308,36 @@ local ActionLists = {
 --class
 local ToolActions = {}
 
-function ToolActions.onToolActivated(toolClass : string, player : Player, toolData : BackpackUtil.ToolData<nil>, plrInfo : any)
+function ToolActions.onToolActivated(toolClass : string, player : Player, toolData : BackpackUtil.ToolData<nil>, plrInfo : any, isReleased : boolean ?)
     if RunService:IsServer() then
         local actionInfo = ToolActions.getActionInfo(toolClass)
-        actionInfo.Activated(player, toolData, plrInfo)
+        actionInfo.Activated(player, toolData, plrInfo, isReleased)
+        if toolData.OnRelease and ((isReleased == nil) or (isReleased == false)) then
+            NetworkUtil.fireClient(ON_TOOL_ACTIVATED, player, toolClass, player, toolData, nil, false)
+        --elseif toolData.OnRelease and (isReleased == true) then
+            --NetworkUtil.fireClient(ON_TOOL_ACTIVATED, player, toolClass, player, toolData, nil, true)
+            --print("Terawangg")
+        end
     else
-        NetworkUtil.fireServer(ON_TOOL_ACTIVATED, toolClass, player, toolData)
+        if (toolData.OnRelease == true) then
+            --print("Onrelease property true")
+            if isReleased == nil then
+                NetworkUtil.fireServer(ON_TOOL_ACTIVATED, toolClass, player, toolData, nil, false)
+            end
+            if (isReleased == nil) or (isReleased == false) then
+                local conn
+                conn = game:GetService("UserInputService").InputEnded:Connect(function(input : InputObject, gpe : boolean)
+                    --print(input.UserInputType, input.UserInputType == Enum.UserInputType.MouseButton1)
+                    if input.UserInputType == Enum.UserInputType.MouseButton1 then
+                        --print("Libit")
+                        NetworkUtil.fireServer(ON_TOOL_ACTIVATED, toolClass, player, toolData, nil, true)
+                        conn:Disconnect()
+                    end
+                end)
+            end
+        elseif (toolData.OnRelease == false) then
+            NetworkUtil.fireServer(ON_TOOL_ACTIVATED, toolClass, player, toolData, plrInfo)
+        end
     end
     return
 end

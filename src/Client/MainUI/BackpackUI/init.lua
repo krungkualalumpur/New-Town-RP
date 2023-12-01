@@ -484,12 +484,13 @@ return function(
         for _,v in pairs(list) do
             table.insert(namesList, v.Name)
         end
+        print(namesList, " dirikoee")
         return namesList
     end, vehicleList)
     local vehiclesContentFrame = _bind(ListUI(maid, "", vehicleNamesList, _Value(UDim2.new()), _Computed(function(page : string)
         return page == "Vehicles" 
     end, selectedPage), options))({
-        Size = UDim2.fromScale(1, 0.3)
+        Size = UDim2.fromScale(1, 0.8)
     })
     
     if RunService:IsRunning() then   
@@ -503,6 +504,11 @@ return function(
                             if k2 == v.LayoutOrder then
                                 local spawnButton = v:WaitForChild("SubOptions"):WaitForChild("SpawnButton") :: TextButton
                                 spawnButton.Text = if v2.IsSpawned then "Despawn" else "Spawn"
+                                print(v2)
+                                if v2.DestroyLocked == true then
+                                    local deleteButton = v:WaitForChild("SubOptions"):WaitForChild("DeleteButton") :: TextButton
+                                    deleteButton.Visible = false
+                                end
                             end
                         end
                     end

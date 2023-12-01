@@ -12,7 +12,8 @@ type Maid = Maid.Maid
 export type ToolData<isEquipped> = {
     Name : string,
     Class : string,
-    IsEquipped : isEquipped
+    IsEquipped : isEquipped,
+    OnRelease : boolean
 }
 --constants
 --variables
@@ -84,10 +85,11 @@ end
 --class
 local BackpackUtil = {}
 
-function BackpackUtil.newData(name : string, class : string)
+function BackpackUtil.newData(name : string, class : string, onRelease : boolean) : ToolData<nil>
     return {
         Name = name,
-        Class = class
+        Class = class,
+        OnRelease = onRelease
     }
 end
 
@@ -95,6 +97,7 @@ function BackpackUtil.getData(toolModel : Instance, classAsDisplayType : boolean
     return {
         Name = toolModel.Name,
         Class = if classAsDisplayType and toolModel:GetAttribute("DisplayTypeName") then toolModel:GetAttribute("DisplayTypeName") else toolModel:GetAttribute("Class"),
+        OnRelease = toolModel:GetAttribute("OnRelease")
     }
 end
 
@@ -143,25 +146,6 @@ end
 
 function BackpackUtil.createTool(inst : Instance)
     return createTool(inst)
-end
-
---initializing backpack
-function BackpackUtil.init(maid : Maid)
-    if RunService:IsServer() then
-        local ToolCollections = ReplicatedStorage:WaitForChild("Assets"):WaitForChild("Tools")
-
-        for _,v in pairs(CollectionService:GetTagged("Tool")) do
-            for k, child in pairs(v:GetDescendants()) do
-                if child:GetAttribute("IsTool") and not BackpackUtil.getToolFromName(child.Name) then
-                    local newTool = child:Clone()
-                    newTool.Parent = ToolCollections
-                    CollectionService:AddTag(newTool, "Tool")
-                    newTool:SetAttribute("Class", v:GetAttribute("Class"))
-                    newTool:SetAttribute("DisplayTypeName", v:GetAttribute("DisplayTypeName"))
-                end
-            end
-        end
-    end
 end
 
 return BackpackUtil

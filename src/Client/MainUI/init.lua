@@ -27,6 +27,8 @@ local AnimationUtil = require(ReplicatedStorage:WaitForChild("Shared"):WaitForCh
 local ItemUtil = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("ItemUtil"))
 local NotificationChoice = require(ReplicatedStorage:WaitForChild("Client"):WaitForChild("NotificationUI"):WaitForChild("NotificationChoice"))
 
+local NumberUtil = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("NumberUtil"))
+
 local CustomizationUtil = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("CustomizationUtil"))
 local CustomizationList = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("CustomizationUtil"):WaitForChild("CustomizationList"))
 
@@ -62,6 +64,8 @@ local TERTIARY_COLOR = Color3.fromRGB(70,70,70)
 local TEXT_COLOR = Color3.fromRGB(255,255,255)
 
 local PADDING_SIZE = UDim.new(0,10)
+
+local DAY_VALUE_KEY = "DayValue"
 --remotes
 local GET_PLAYER_BACKPACK = "GetPlayerBackpack"
 
@@ -339,6 +343,7 @@ return function(
     backpack : ValueState<{BackpackUtil.ToolData<boolean>}>,
     UIStatus : ValueState<UIStatus>,
     vehiclesList : ValueState<{[number] : VehicleData}>,
+    date : ValueState<string>,
 
     backpackOnEquip : Signal,
     backpackOnDelete : Signal,
@@ -540,6 +545,43 @@ return function(
         Value = val
     })
 
+    
+    local dateFrame = _new("Frame")({
+        LayoutOrder = 2,
+        BackgroundTransparency = 1,
+        Size = UDim2.fromScale(0.9, 1),
+        Visible = _Computed(function(status : UIStatus)
+            return status == nil 
+        end, UIStatus),
+        Children = {
+            _new("UIPadding")({
+                PaddingTop = PADDING_SIZE,
+                PaddingBottom = PADDING_SIZE,
+                PaddingLeft = PADDING_SIZE,
+                PaddingRight = PADDING_SIZE
+            }),
+            _new("UIListLayout")({
+                SortOrder = Enum.SortOrder.LayoutOrder,
+                HorizontalAlignment = Enum.HorizontalAlignment.Right,
+                VerticalAlignment = Enum.VerticalAlignment.Bottom
+            }),
+            _new("Frame")({
+                BackgroundTransparency = 1,
+                Size = UDim2.fromScale(0.15, 0.1),
+                Children = {
+                    _new("TextLabel")({
+                        BackgroundTransparency = 1,
+                        Size = UDim2.fromScale(1, 1),
+                        Text = date,
+                        TextScaled = true,
+                        TextColor3 = TEXT_COLOR,
+                        TextStrokeTransparency = 0.5
+                    })
+                }
+            })
+        }
+    })
+
     local mainOptions =  _new("Frame")({
         LayoutOrder = 0,
         BackgroundTransparency = 1,
@@ -585,6 +627,7 @@ return function(
                 SortOrder = Enum.SortOrder.LayoutOrder,
                 VerticalAlignment = Enum.VerticalAlignment.Center
             }),
+            dateFrame,
             mainOptions,
 
         }

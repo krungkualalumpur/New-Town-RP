@@ -52,6 +52,9 @@ return function(target : CoreGui)
 
     local onBackpackEquip = maid:GiveTask(Signal.new())
     local onBackpackDelete = maid:GiveTask(Signal.new())
+    local onVehicleSpawn = maid:GiveTask(Signal.new())
+    local onVehicleDelete = maid:GiveTask(Signal.new())
+    local onJobChange = maid:GiveTask(Signal.new())
     local onNotify = maid:GiveTask(Signal.new())
 
     local nameOnCustomize = maid:GiveTask(Signal.new())
@@ -67,12 +70,18 @@ return function(target : CoreGui)
 
         MainUIStatus,
 
+        _Value({}),
+        _Value(game.Lighting.TimeOfDay),
         onBackpackEquip,
         onBackpackDelete,
+        onVehicleSpawn,
+        onVehicleDelete,
+
         onNotify,
 
         onItemCartSpawn,
 
+        onJobChange,
         onCharReset,
         
         target
@@ -101,6 +110,7 @@ return function(target : CoreGui)
     maid:GiveTask(onCharReset:Connect(function()
         print("Character Reset")
     end))
+
     return function() 
         maid:Destroy()
     end

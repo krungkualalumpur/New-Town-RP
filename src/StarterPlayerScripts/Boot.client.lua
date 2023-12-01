@@ -11,6 +11,7 @@ local InputHandler = require(ReplicatedStorage:WaitForChild("Client"):WaitForChi
 local GuiSys = require(ReplicatedStorage:WaitForChild("Client"):WaitForChild("GuiSys"))
 local OptimizationSys = require(ReplicatedStorage:WaitForChild("Client"):WaitForChild("OptimizationSys"))
 local CharacterManager = require(ReplicatedStorage:WaitForChild("Client"):WaitForChild("CharacterManager"))
+local ToolManager = require(ReplicatedStorage:WaitForChild("Client"):WaitForChild("ToolManager"))
 
 local NotificationUtil = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("NotificationUtil"))
 --types
@@ -28,5 +29,6 @@ EnvironmentSound.init(maid)
 GuiSys.init(maid)
 OptimizationSys.init(maid)
 CharacterManager.init(maid)
+ToolManager.init(maid)
 
 NotificationUtil.init(maid)

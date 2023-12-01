@@ -15,7 +15,7 @@ type State<T> = ColdFusion.State<T>
 type ValueState<T> = ColdFusion.ValueState<T>
 type CanBeState<T> = ColdFusion.State<T>
 --constants
-local PADDING_SIZE =  UDim.new(0.05, 0)
+local PADDING_SIZE =  UDim.new(0, 5)
 
 local BACKGROUND_COLOR = Color3.fromRGB(200,200,200)
 local PRIMARY_COLOR = Color3.fromRGB(255,255,255)
@@ -96,7 +96,7 @@ local function getListFrame(
         LayoutOrder = order,
         BackgroundColor3 = TERTIARY_COLOR,
         BackgroundTransparency = 0.6,
-        Size = UDim2.fromScale(1, 0.45),
+        Size = UDim2.new(1, 0, 0, 70),
         
         Children = {
             _new("UICorner")({}),
@@ -201,8 +201,8 @@ return function(
             _new("TextLabel")({
                 LayoutOrder = 0,
                 BackgroundTransparency = 1,
-                Size = UDim2.fromScale(1, 0.15),
-                Text =  titleName,
+                Size = UDim2.fromScale(1, if titleName:match("[^%s]") then 0.15 else 0),
+                Text = titleName,
                 TextColor3 = PRIMARY_COLOR,
                 TextStrokeTransparency = 0.6,
                 TextScaled = true

@@ -175,6 +175,8 @@ local function onCharacterAdded(char : Model)
     local _maid = Maid.new()
     local humanoid = char:WaitForChild("Humanoid") :: Humanoid
 
+    Player.CameraMaxZoomDistance = 8
+
     _maid:GiveTask(char:GetAttributeChangedSignal("IsSprinting"):Connect(function()
         if char:GetAttribute("IsSprinting") then
             humanoid.WalkSpeed = WALK_SPEED*2.3
@@ -183,6 +185,15 @@ local function onCharacterAdded(char : Model)
     
         else
             camSprinting(false)
+        end
+    end))
+
+    _maid:GiveTask(humanoid:GetPropertyChangedSignal("SeatPart"):Connect(function()
+        local seat = humanoid.SeatPart
+        if seat and seat:IsDescendantOf(workspace:WaitForChild("Assets"):WaitForChild("Temporaries"):WaitForChild("Vehicles")) then
+            Player.CameraMaxZoomDistance = 18
+        else
+            Player.CameraMaxZoomDistance = 8
         end
     end))
 

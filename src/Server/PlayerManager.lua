@@ -155,7 +155,7 @@ end
 local function getVehicleModelByKey(player : Player, key : string)
     for _,vehicleModel in pairs(SpawnedVehiclesParent:GetChildren()) do
         local vehicleData = getVehicleData(vehicleModel)
-        print(vehicleData.Key, " : " ,key)
+        --print(vehicleData.Key, " : " ,key)
         if vehicleData.Key == key and (player.UserId == vehicleData.OwnerId) then
             return vehicleModel
         end
@@ -185,7 +185,7 @@ local function getVehicleSpawnPlot(partZones : Instance)
                     break
                 end
             end
-            print(isEmpty)
+           -- print(isEmpty)
             if isEmpty then
                 emptySpawnZone = v
                 break
@@ -230,6 +230,11 @@ function PlayerManager.new(player : Player, maid : Maid ?)
     self._Maid:GiveTask(self.onLoadingComplete:Connect(function(characterLoadSuccess : boolean)
         self.isLoaded = true
         if not characterLoadSuccess then
+            --loads vanilla
+            self:AddVehicle("Motorcycle", true)
+            self:AddVehicle("Bajaj", true)
+            self:AddVehicle("Taxi", true)
+        
             self:SetData(self:GetData(), false)
         end
     end)) 
@@ -266,7 +271,6 @@ function PlayerManager.new(player : Player, maid : Maid ?)
     chatCountVal.Parent = leaderstats]]
 
     self._Maid:GiveTask(self.Player.Chatted:Connect(function(str : string)
-        print(self.Player.Name, " chatted! string: ", str)
         self:SetChatCount(self.ChatCount + 1)
     end))
 
@@ -312,7 +316,6 @@ function PlayerManager.new(player : Player, maid : Maid ?)
      --       print(self:GetData())
      --   end
     --end)
-    self:AddVehicle("Motorcycle", true)
    
     return self
 end
@@ -428,15 +431,19 @@ function PlayerManager:DeleteBackpack(toolKey : number)
 end
 
 function PlayerManager:AddVehicle(vehicleName : string, isLocked : boolean)
+    --print(#self.Vehicles, " eh?")
+    --print("debug: ", debug.traceback("when vehicle spawn"))
     if #self.Vehicles >= MAX_VEHICLES_COUNT then
         --notif
+        --print("debug: ", debug.traceback("when vehicle spawn"))
+        
         NotificationUtil.Notify(self.Player, "Already has max amount of vehicles to have")
         return false
     end
     
     local vehicleClass = ItemUtil.getData(ItemUtil.getItemFromName(vehicleName), false).Class
     local vehicleData : VehicleData = newVehicleData("Vehicle", vehicleClass, false, vehicleName, self.Player.UserId, isLocked) -- ItemUtil.getData(ItemUtil.getItemFromName(vehicleName), true) :: any
-
+   -- print(vehicleData.DestroyLocked, vehicleData.Name, " Why u not lock ah/?!?!", isLocked)
     table.insert(self.Vehicles, vehicleData)
     return true
 end
@@ -449,7 +456,7 @@ function PlayerManager:SpawnVehicle(key : number, isSpawned : boolean, vehicleNa
     local spawnPart = if vehicleZones then getVehicleSpawnPlot(vehicleZones) else nil
     if vehicleZones then
         if not spawnPart then
-            NotificationUtil.Notify(self.Player, "Plot already full here ah!")
+            NotificationUtil.Notify(self.Player, "Plot already full here!")
         end
     end
 
@@ -467,9 +474,45 @@ function PlayerManager:SpawnVehicle(key : number, isSpawned : boolean, vehicleNa
         local cf = if spawnPart then spawnPart.CFrame elseif char.PrimaryPart then (char.PrimaryPart.CFrame + char.PrimaryPart.CFrame.LookVector*5) else nil
         assert(cf)
         local vehicleModel = createVehicleModel(vehicleInfo, cf)
+
         applyVehicleData(vehicleModel, vehicleInfo)
         
         self._Maid.CurrentSpawnedVehicle = vehicleModel
+
+        local vehicleMaid = Maid.new()
+        
+        local vehicleSeat = vehicleModel:FindFirstChildWhichIsA("VehicleSeat") :: VehicleSeat
+        local currentOccupant
+        if vehicleSeat then
+            vehicleMaid:GiveTask(vehicleSeat:GetPropertyChangedSignal("Occupant"):Connect(function()
+                currentOccupant = vehicleSeat.Occupant 
+            end))
+        end
+
+        vehicleMaid:GiveTask(vehicleModel.Destroying:Connect(function()
+            if currentOccupant then
+                currentOccupant.Sit = false
+            end
+            vehicleMaid:Destroy()
+        end))
+
+         --check if it overlaps
+         local overlapParams = OverlapParams.new()
+         overlapParams.FilterType = Enum.RaycastFilterType.Include
+         overlapParams.FilterDescendantsInstances = {
+            workspace:WaitForChild("Assets"):WaitForChild("Buildings"):GetChildren(), 
+            workspace:WaitForChild("Assets"):WaitForChild("Environment"):GetChildren(),
+            workspace:WaitForChild("Assets"):WaitForChild("Houses"):GetChildren(),
+            workspace:WaitForChild("Assets"):WaitForChild("Shops"):GetChildren()
+        }
+
+         local parts = workspace:GetPartBoundsInBox(cf, vehicleModel:GetExtentsSize(), overlapParams)
+         if #parts > 0 then
+             self:SpawnVehicle(key, false)
+             NotificationUtil.Notify(self.Player, "Can not spawn vehicles inside a building!")
+             return
+         end
+ 
     else
         self._Maid.CurrentSpawnedVehicle = nil
     end
@@ -551,10 +594,21 @@ function PlayerManager:SetData(plrData : ManagerTypes.PlayerData, isYield : bool
         end
     end
 
+    local lockedVehiclesCount = 0
+    for _,v in pairs(self.Vehicles) do
+        if v.DestroyLocked == true then
+            lockedVehiclesCount += 1
+        end
+    end 
+
+    --print(plrData.Vehicles, self.Vehicles, lockedVehiclesCount, " LOcked vehicles count?")
     table.clear(self.Vehicles)
+    --print(self.Vehicles)
     for k,v in pairs(plrData.Vehicles) do
-        self:AddVehicle(v, if k == 1 then true else false)
+        self:AddVehicle(v, if k <= lockedVehiclesCount then true else false) --hacky way to set vehicle's destroy locked properteh
+       -- print(k, v)
     end
+    --print(self.Vehicles)
 
     local char = self.Player.Character or self.Player.CharacterAdded:Wait()
     --[[if not plrData.Character.hasDefaultAccessories then
@@ -771,7 +825,7 @@ function PlayerManager.init(maid : Maid)
         end
 
         charMaid:GiveTask(char.ChildAdded:Connect(function(inst : Instance)
-            print(inst:IsA("BasePart"), inst.Name == "Head", inst)
+            --print(inst:IsA("BasePart"), inst.Name == "Head", inst)
             if inst:IsA("BasePart") and inst.Name == "Head" then
                 CustomizationUtil.setDesc(player, "PlayerName", player:GetAttribute("PlayerName") or player.Name)
                 CustomizationUtil.setDesc(player, "PlayerBio", player:GetAttribute("PlayerBio") or "")
@@ -934,7 +988,6 @@ function PlayerManager.init(maid : Maid)
     NetworkUtil.onServerInvoke(DELETE_VEHICLE, function(plr : Player, key : number)
         local plrInfo = PlayerManager.get(plr)
 
-        print(key)
         plrInfo:DeleteVehicle(key)
 
         MidasEventTree.Gameplay.VehiclesDeleted.Value(plr) 
@@ -1021,9 +1074,11 @@ function PlayerManager.init(maid : Maid)
         return nil 
     end)
 
-    maid:GiveTask(NetworkUtil.onServerEvent(ON_TOOL_ACTIVATED, function(plr : Player, toolClass : string, foodInst : Instance, toolData : BackpackUtil.ToolData<nil>)
-        local plrInfo = PlayerManager.get(plr)
-        ToolActions.onToolActivated(toolClass, plr, toolData, plrInfo)
+    --maid:GiveTask(NetworkUtil.onServerEvent(ON_TOOL_ACTIVATED, function(plr : Player, toolClass : string, foodInst : Instance, toolData : BackpackUtil.ToolData<nil>)
+    maid:GiveTask(NetworkUtil.onServerEvent(ON_TOOL_ACTIVATED, function(plr : Player, toolClass : string, player : Player, toolData : BackpackUtil.ToolData<nil>, plrInfo : any, isReleased : boolean?)
+       -- print(toolData, toolData.OnRelease)
+        local plrInfo = PlayerManager.get(player)
+        ToolActions.onToolActivated(toolClass, player, toolData, plrInfo, isReleased)
     end))
 
     maid:GiveTask(NetworkUtil.onServerEvent(ON_ROLEPLAY_BIO_CHANGE, function(plr : Player, descType : CustomizationUtil.DescType, descName : string)
