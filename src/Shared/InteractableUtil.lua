@@ -28,6 +28,8 @@ export type InteractableData = {
 --constants
 local SOUND_NAME = "SFX"
 
+local INTERACT_TRIGGERED_ATTRIBUTE_KEY = "Triggered"
+
 --remotes
 local UPDATE_PLAYER_BACKPACK = "UpdatePlayerBackpack"
 
@@ -661,8 +663,15 @@ function Interactable.InteractNonSwitch(model : Model, plr : Player)
             print("2?")
             NetworkUtil.invokeServer(ON_ITEM_OPTIONS_OPENED, model)
         end
+    else  --default
+        if RunService:IsClient() then
+            NetworkUtil.fireServer(ON_INTERACT, model)
+        else
+            model:SetAttribute(INTERACT_TRIGGERED_ATTRIBUTE_KEY, plr.UserId)
+            task.wait()
+            model:SetAttribute(INTERACT_TRIGGERED_ATTRIBUTE_KEY, nil)
+        end   
     end
-        
 end
 
 function Interactable.InteractOpening(model : Model,on : boolean)
@@ -813,6 +822,10 @@ function Interactable.InteractOpening(model : Model,on : boolean)
     elseif RunService:IsClient() then
         NetworkUtil.fireServer(ON_INTERACT, model)
     end
+end
+
+function Interactable.getTriggeredAttributeKey()
+    return INTERACT_TRIGGERED_ATTRIBUTE_KEY
 end
 
 function Interactable.init(maid : Maid)

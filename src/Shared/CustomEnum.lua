@@ -13,10 +13,19 @@ export type CustomEnumItem <E, N> = {
 	Value : number,
 	EnumType : E
 }
+type BezierQualityEnum = CustomEnum<"BezierQuality">
+export type BezierQuality = CustomEnumItem<BezierQualityEnum, string>
+
 type DayEnum = CustomEnum<"Day">
 export type Day = CustomEnumItem<DayEnum, string>
 
 export type CustomEnums = {
+
+	BezierQuality : 	{		
+		Low : CustomEnumItem <BezierQualityEnum, "Low">,
+		Medium : CustomEnumItem <BezierQualityEnum, "Medium">,
+		High : CustomEnumItem <BezierQualityEnum, "High">,
+	} & BezierQualityEnum,
 
 	Day : 	{		
 		Sunday : CustomEnumItem <DayEnum, "Sunday">,
@@ -33,6 +42,37 @@ export type CustomEnums = {
 --remotes
 --local function
 
+
+local BezierQuality = {
+	Name = "BezierQuality" :: any,
+	GetEnumItems = function(self)
+		local t = {}
+		for _,v in pairs(self) do
+			if type(v) == "table" then 
+				 table.insert(t, v)  
+			end
+		end
+		return t
+	end,
+}
+
+BezierQuality.Low = {
+	Name = "Low" :: any,
+	Value = 1,
+	EnumType = BezierQuality
+}
+
+BezierQuality.Medium = {
+	Name = "Medium" :: any,
+	Value = 2,
+	EnumType = BezierQuality
+}
+
+BezierQuality.High = {
+	Name = "High" :: any,
+	Value = 3,
+	EnumType = BezierQuality
+}
 
 local Day = {
 	Name = "Day" :: any,
@@ -90,6 +130,7 @@ Day.Saturday = {
 }
 
 local CustomEnum = {	
+	BezierQuality = BezierQuality :: any,
 	Day = Day :: any,
 } :: CustomEnums
 

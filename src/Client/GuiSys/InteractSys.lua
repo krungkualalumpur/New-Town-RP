@@ -133,7 +133,7 @@ function createInteractByPrompt(
     maid : Maid, 
     proximityPrompt : ProximityPrompt, 
     interactNameTag : string, 
-    interactInputKey : string, 
+    interactInputKey : string,  
     interactCode : Enum.KeyCode | Enum.UserInputType, 
     currentInputKeyCodeState : ValueState<Enum.KeyCode | Enum.UserInputType>
 )
