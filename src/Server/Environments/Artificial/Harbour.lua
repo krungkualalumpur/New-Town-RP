@@ -115,7 +115,7 @@ local function spawnShip()
     local rawLeavingPoints = {}
     
     local paths = harbour:WaitForChild("ShipPaths"):GetChildren()
-    local path = paths[1] --paths[math.random(1, #paths)]
+    local path = paths[math.random(1, #paths)]
 
     local startNumAfterDock : number 
    
