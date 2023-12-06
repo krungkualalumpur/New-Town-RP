@@ -31,6 +31,7 @@ function ToolManager.init(maid : Maid)
                 CollectionService:AddTag(newTool, "Tool")
                 newTool:SetAttribute("Class", v:GetAttribute("Class"))
                 newTool:SetAttribute("DisplayTypeName", v:GetAttribute("DisplayTypeName"))
+                newTool:SetAttribute("OnRelease", v:GetAttribute("OnRelease"))
             end
         end
     end

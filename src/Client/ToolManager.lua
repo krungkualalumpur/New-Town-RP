@@ -35,21 +35,20 @@ raycastParams.FilterType = Enum.RaycastFilterType.Include
 raycastParams.FilterDescendantsInstances = {workspace:WaitForChild("Assets"):GetChildren()}
 --local functions
 function PlaySound(id, parent, volumeOptional: number ?)
-	task.spawn(function()
-		local s = Instance.new("Sound")
+    local s = Instance.new("Sound")
 
-		s.Name = "Sound"
-		s.SoundId = id
-		s.Volume = volumeOptional or 1
-        s.RollOffMaxDistance = 350
-		s.Looped = false
-		s.Parent = parent or Player:FindFirstChild("PlayerGui")
-		s:Play()
-		task.spawn(function() 
-            s.Ended:Wait()
-		    s:Destroy()
-        end)
-	end)
+    s.Name = "Sound"
+    s.SoundId = id
+    s.Volume = volumeOptional or 1
+    s.RollOffMaxDistance = 350
+    s.Looped = false
+    s.Parent = parent or Player:FindFirstChild("PlayerGui")
+    s:Play()
+    task.spawn(function() 
+        s.Ended:Wait()
+        s:Destroy()
+    end)
+    return s
 end
  
 local function onCharAdded(char : Model)

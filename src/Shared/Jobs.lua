@@ -32,7 +32,7 @@ local jobsList : {[number] : JobData} = {
     },
     [4] = {
         Name = "Barber",
-        ImageId = 12329088417
+        ImageId = 12329088417 
     },
     [5] = {
         Name = "Cashier",
@@ -45,7 +45,11 @@ local jobsList : {[number] : JobData} = {
     [7] = {
         Name = "Portworker",
         ImageId = 3040311268
-    }
+    },
+    [8] = {
+        Name = "Chef",
+        ImageId = 15554154385
+    },
 }
 --references
 local JobTriggers = workspace:WaitForChild("Assets"):WaitForChild("JobTriggers")

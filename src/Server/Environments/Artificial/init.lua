@@ -8,6 +8,7 @@ local Lighting = game:GetService("Lighting")
 --packages
 local Maid = require(ReplicatedStorage:WaitForChild("Packages"):WaitForChild("Maid"))
 --modules
+local Buildings = require(ServerScriptService:WaitForChild("Server"):WaitForChild("Environments"):WaitForChild("Artificial"):WaitForChild("Buildings"))
 local Elevator = require(ServerScriptService:WaitForChild("Server"):WaitForChild("Environments"):WaitForChild("Artificial"):WaitForChild("Elevator"))
 local Seat = require(ServerScriptService:WaitForChild("Server"):WaitForChild("Environments"):WaitForChild("Artificial"):WaitForChild("Seat"))
 local Minigame = require(ServerScriptService:WaitForChild("Server"):WaitForChild("Environments"):WaitForChild("Artificial"):WaitForChild("Minigame"))
@@ -105,6 +106,7 @@ end
 --class
 return {
     init = function(maid)
+        Buildings.init(maid)
         Objects.init(maid)
         Elevator.init(maid)
         Seat.init(maid)

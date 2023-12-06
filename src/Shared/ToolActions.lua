@@ -35,8 +35,11 @@ local function playSound(soundId : number, onLoop : boolean, parent : Instance ?
     if sound.Parent then
         sound:Play()
     end
-    sound.Ended:Wait()
-    sound:Destroy()
+    task.spawn(function()
+        sound.Ended:Wait()
+        sound:Destroy()
+    end)
+    return sound
 end
 --class
 local ActionLists = {
@@ -123,13 +126,6 @@ local ActionLists = {
             task.wait(0.6)
             water.Enabled = false
           
-        end
-    },
-
-    {
-        ToolClass = "Miscs",
-        Activated = function()
-            
         end
     },
 
@@ -281,6 +277,7 @@ local ActionLists = {
             local character = player.Character or player.CharacterAdded:Wait()
             local toolInst : Tool
 
+            print("testPencil", IsReleased)
             for _,v in pairs(character:GetChildren()) do
                 if v:IsA("Tool") and v.Name == toolData.Name then
                     toolInst = v
@@ -301,7 +298,59 @@ local ActionLists = {
                 end]]
             end
         end
-    }
+    },
+
+    {
+        ToolClass = "Emitter",
+        Activated = function(player : Player, toolData : BackpackUtil.ToolData<nil>, plrInfo : any, IsReleased : boolean ?)
+            local emitterSoundName = "EmitterSound"
+            
+            local character = player.Character or player.CharacterAdded:Wait()
+            local toolInst : Tool
+
+            for _,v in pairs(character:GetChildren()) do
+                if v:IsA("Tool") and v.Name == toolData.Name then
+                    toolInst = v
+                    break
+                end
+            end
+
+            if toolInst then
+                print("test1 " , IsReleased, toolData)
+                for _,v in pairs(toolInst:GetDescendants()) do
+                    if v:IsA("ParticleEmitter") then
+                        if not IsReleased then
+                            v.Enabled = true
+                        elseif IsReleased == true then
+                            v.Enabled = false
+                        end
+                    end
+                end
+                local toolModel = toolInst:FindFirstChild(toolInst.Name) :: Model ?
+                if toolModel and toolModel:IsA("Model") then
+                    if not IsReleased then
+                        local sound = playSound(9120560245, true, toolInst:FindFirstChild(toolInst.Name))
+                        sound.Name =  emitterSoundName
+                        sound.Parent = toolModel.PrimaryPart
+                    elseif IsReleased == true then
+                        for _,v in pairs(toolInst:GetDescendants()) do
+                            if v:IsA("Sound") and v.Name == emitterSoundName then
+                                v:Destroy()
+                            end
+                        end
+                    end
+                end
+            end
+        end
+    },
+    
+    {
+        ToolClass = "Miscs",
+        Activated = function()
+            
+        end
+    },
+
 }
 --references
 --local functions
@@ -311,23 +360,25 @@ local ToolActions = {}
 function ToolActions.onToolActivated(toolClass : string, player : Player, toolData : BackpackUtil.ToolData<nil>, plrInfo : any, isReleased : boolean ?)
     if RunService:IsServer() then
         local actionInfo = ToolActions.getActionInfo(toolClass)
+        print(toolData, " Test1 ?")
         actionInfo.Activated(player, toolData, plrInfo, isReleased)
+        print(toolData, " Test2 ?")
         if toolData.OnRelease and ((isReleased == nil) or (isReleased == false)) then
             NetworkUtil.fireClient(ON_TOOL_ACTIVATED, player, toolClass, player, toolData, nil, false)
         --elseif toolData.OnRelease and (isReleased == true) then
             --NetworkUtil.fireClient(ON_TOOL_ACTIVATED, player, toolClass, player, toolData, nil, true)
-            --print("Terawangg")
+            print("Terawangg")
         end
     else
         if (toolData.OnRelease == true) then
-            --print("Onrelease property true")
+            print("Onrelease property true")
             if isReleased == nil then
                 NetworkUtil.fireServer(ON_TOOL_ACTIVATED, toolClass, player, toolData, nil, false)
             end
             if (isReleased == nil) or (isReleased == false) then
                 local conn
                 conn = game:GetService("UserInputService").InputEnded:Connect(function(input : InputObject, gpe : boolean)
-                    --print(input.UserInputType, input.UserInputType == Enum.UserInputType.MouseButton1)
+                    print(input.UserInputType, input.UserInputType == Enum.UserInputType.MouseButton1)
                     if input.UserInputType == Enum.UserInputType.MouseButton1 then
                         --print("Libit")
                         NetworkUtil.fireServer(ON_TOOL_ACTIVATED, toolClass, player, toolData, nil, true)
@@ -336,6 +387,7 @@ function ToolActions.onToolActivated(toolClass : string, player : Player, toolDa
                 end)
             end
         elseif (toolData.OnRelease == false) then
+            print("belong")
             NetworkUtil.fireServer(ON_TOOL_ACTIVATED, toolClass, player, toolData, plrInfo)
         end
     end
