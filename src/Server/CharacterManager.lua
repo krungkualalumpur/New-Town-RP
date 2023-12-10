@@ -9,6 +9,7 @@ local NetworkUtil = require(ReplicatedStorage:WaitForChild("Packages"):WaitForCh
 --modules
 local Jobs = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Jobs"))
 
+local BackpackUtil = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("BackpackUtil"))
 local CustomizationUtil = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("CustomizationUtil"))
 local CustomizationList = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("CustomizationUtil"):WaitForChild("CustomizationList"))
 --types
@@ -121,6 +122,32 @@ local function characterAdded(char : Model)
             paralyzeCharacter(char)
         end))
     end
+
+    charMaid:GiveTask(char.ChildAdded:Connect(function(child : Instance)
+        if child:IsA("Tool") then
+            local rawTool = BackpackUtil.getToolFromName(child.Name)
+            assert(rawTool)
+            local toolData = BackpackUtil.getData(rawTool, false)
+            print(toolData)
+            if toolData.Class == "Meat" then
+                local _maid = Maid.new()
+
+                local meatModel = child:FindFirstChild(child.Name) :: Model
+                local meatPripart = meatModel.PrimaryPart :: MeshPart
+                if meatPripart then
+                    _maid:GiveTask(meatPripart.Touched:Connect(function(hit)
+                        if hit:FindFirstChildWhichIsA("Fire") then 
+                            meatPripart.TextureID = "rbxassetid://" .. tostring(661123557)
+                        end
+                    end))
+                end
+
+                _maid:GiveTask(child.Destroying:Connect(function()
+                    _maid:Destroy()
+                end))
+            end
+        end
+    end))
 
     charMaid:GiveTask(char.Destroying:Connect(function()
         charMaid:Destroy()

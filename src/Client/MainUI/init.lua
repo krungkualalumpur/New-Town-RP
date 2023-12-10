@@ -54,7 +54,7 @@ type AnimationInfo = {
 type Fuse = ColdFusion.Fuse
 type State<T> = ColdFusion.State<T>
 type ValueState<T> = ColdFusion.ValueState<T>
-type CanBeState<T> = ColdFusion.State<T>
+type CanBeState<T> = ColdFusion.CanBeState<T>
 --constants
 local BACKGROUND_COLOR = Color3.fromRGB(90,90,90)
 local PRIMARY_COLOR = Color3.fromRGB(255,255,255)
@@ -76,6 +76,7 @@ local DELETE_CHARACTER_SLOT = "DeleteCharacterSlot"
 
 local GET_PLAYER_VEHICLES = "GetPlayerVehicles"
 local ON_JOB_CHANGE = "OnJobChange"
+local ON_ITEM_THROW = "OnItemThrow"
 
 local ON_ROLEPLAY_BIO_CHANGE = "OnRoleplayBioChange"
 
@@ -218,7 +219,7 @@ function getImageButton(
     maid : Maid,
     ImageId : number,
     activatedFn : () -> (),
-    buttonName : string,
+    buttonName : CanBeState<string>,
     order : number,
     textAnimated : boolean
 )
@@ -436,6 +437,9 @@ return function(
                 maid,
                 "INTERACT" ,
                 function()
+                    if not RunService:IsRunning() then
+                        return
+                    end
                     for _,v in pairs(backpack:Get()) do
                         if v.IsEquipped then
                             local toolModel = BackpackUtil.getToolFromName(v.Name)
@@ -468,6 +472,45 @@ return function(
             }),
             _bind(getButton(
                 maid,
+                "THROW" ,
+                function()
+                    if not RunService:IsRunning() then
+                        return
+                    end
+                    for _,v in pairs(backpack:Get()) do
+                        if v.IsEquipped then
+                            local toolModel = BackpackUtil.getToolFromName(v.Name)
+                            if toolModel then
+                                --local toolData = BackpackUtil.getData(toolModel, false)
+                                --ToolActions.onToolActivated(toolData.Class, game.Players.LocalPlayer, BackpackUtil.getData(toolModel, true))
+                                local toolData = BackpackUtil.getData(toolModel, false)
+                                NetworkUtil.fireServer(ON_ITEM_THROW, toolData)
+                            end
+                            break
+                        end
+                    end  
+                end,
+                4
+            ))({
+                Children = {
+                    _new("UIListLayout")({
+                        VerticalAlignment = Enum.VerticalAlignment.Bottom,
+                        HorizontalAlignment = Enum.HorizontalAlignment.Right
+                    }),
+                    _new("TextLabel")({
+                        BackgroundColor3 = SECONDARY_COLOR,
+                        BackgroundTransparency = 0.5,
+                        AutomaticSize = Enum.AutomaticSize.XY,
+                        TextSize = 8,
+                        Font = Enum.Font.Gotham,
+                        Text = if KeyboardEnabled then "F" elseif TouchEnabled then "Touch" elseif GamepadEnabled then "B" else nil,
+                        TextColor3 = PRIMARY_COLOR
+                    }),
+
+                }
+            }),
+            _bind(getButton(
+                maid,
                 "X" ,
                 function()
                     for k,v in pairs(backpack:Get()) do
@@ -478,7 +521,7 @@ return function(
                     end  
                    
                 end,
-                4
+                5
             ))({
                 BackgroundColor3 = Color3.fromRGB(255,10,10),
                 Size = UDim2.fromScale(1, 0.05),
@@ -582,6 +625,10 @@ return function(
         }
     })
 
+    local backpackText = _Value("← Backpack")
+    local roleplayText = _Value("← Roleplay Actions")
+    local customizationText = _Value("← Outfit")
+
     local mainOptions =  _new("Frame")({
         LayoutOrder = 0,
         BackgroundTransparency = 1,
@@ -594,18 +641,25 @@ return function(
                 Padding = PADDING_SIZE,
                 VerticalAlignment = Enum.VerticalAlignment.Center
             }),   
+
             getImageButton(maid, 2815418737, function()
                 UIStatus:Set(if UIStatus:Get() ~= "Backpack" then "Backpack" else nil)
-            end, "← Backpack", 2, true),
+                backpackText:Set("")
+                roleplayText:Set("")
+                customizationText:Set("")
+            end, backpackText, 2, true),
             getImageButton(maid, 11955884948, function()
                 UIStatus:Set(if UIStatus:Get() ~= "Roleplay" then "Roleplay" else nil)
-                
-            end, "← Roleplay Actions", 3, true),
+                backpackText:Set("")
+                roleplayText:Set("")
+                customizationText:Set("")
+            end, roleplayText, 3, true),
             getImageButton(maid, 13285102351, function()
                 UIStatus:Set(if UIStatus:Get() ~= "Customization" then "Customization" else nil)
-            end, "← Outfit", 1, true)
-            --getImageButton(maid, 227600967),
-
+                backpackText:Set("")
+                roleplayText:Set("")
+                customizationText:Set("")
+            end, customizationText, 1, true)
         }
     }) :: Frame
 

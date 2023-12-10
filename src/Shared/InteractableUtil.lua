@@ -173,6 +173,10 @@ function Interactable.InteractToolGiver(plrInfo : any,  model : Model, player : 
             end
         end
         NetworkUtil.fireClient(UPDATE_PLAYER_BACKPACK, plrInfo.Player,  plrInfo:GetBackpack(true, true))
+
+        if model:GetAttribute("DeleteAfterInteract") == true then
+            model:Destroy()
+        end
     --else
         --NetworkUtil.fireServer(ON_TOOL_INTERACT, model)
     end

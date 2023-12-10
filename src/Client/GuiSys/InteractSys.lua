@@ -140,7 +140,7 @@ function createInteractByPrompt(
     
     local instancePointer = proximityPrompt:FindFirstChild("InstancePointer") :: ObjectValue    
 
-    proximityPrompt.Triggered:Connect(function()
+    maid:GiveTask(proximityPrompt.Triggered:Connect(function()
         local inst = instancePointer.Value
         if (inst) then
             if  (inst:HasTag(interactNameTag)) and inst:IsA("Model") then
@@ -149,7 +149,7 @@ function createInteractByPrompt(
             end
         end
         return 
-    end)
+    end))
    
     if interactCode.EnumType == Enum.KeyCode then
         for _,v: Model in pairs(CollectionService:GetTagged(interactNameTag)) do

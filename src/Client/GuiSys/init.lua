@@ -288,11 +288,16 @@ function guiSys.new()
     end))
 
     
-    maid:GiveTask(onItemCartSpawn:Connect(function(selectedItems : {[number] : BackpackUtil.ToolData<boolean>})
+    maid:GiveTask(onItemCartSpawn:Connect(function(selectedItems : {[number] : BackpackUtil.ToolData<boolean>}, cartSpawnedState : ValueState<boolean>)
         MainUIStatus:Set(nil)
 
-        NetworkUtil.invokeServer(ON_ITEM_CART_SPAWN, selectedItems)
-        print("test 123")
+        local itemCart =  NetworkUtil.invokeServer(ON_ITEM_CART_SPAWN, selectedItems)
+        if itemCart then
+            cartSpawnedState:Set(true)
+        else
+            cartSpawnedState:Set(false)
+        end
+        print(itemCart)
     end))
     
     maid:GiveTask(onJobChange:Connect(function(job)
@@ -678,7 +683,6 @@ function guiSys.new()
         )
 
         for _,v in pairs(button.Parent.Parent.Parent:GetDescendants()) do
-            print(v)
             if v:IsA("TextButton") and v.Text == "Despawn" then
                 v.Text = "Spawn"
             end

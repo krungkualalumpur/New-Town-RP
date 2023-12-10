@@ -79,6 +79,9 @@ export type PlayerManager = {
     DeleteCharacterSlot : (PlayerManager, k : number) -> {[number] : CharacterData},
 
     GetItemsCart : (PlayerManager, selectedItems : {[number] : BackpackUtil.ToolData<boolean>}, cf : CFrame) -> (),
+    RemoveExistingItemsCart : (PlayerManager) -> (),
+
+    ThrowItem : (PlayerManager, ToolData<nil>) -> nil,
 
     Destroy : (PlayerManager) -> (),
 

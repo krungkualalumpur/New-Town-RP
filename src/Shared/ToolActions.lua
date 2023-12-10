@@ -316,7 +316,6 @@ local ActionLists = {
             end
 
             if toolInst then
-                print("test1 " , IsReleased, toolData)
                 for _,v in pairs(toolInst:GetDescendants()) do
                     if v:IsA("ParticleEmitter") then
                         if not IsReleased then
@@ -329,7 +328,7 @@ local ActionLists = {
                 local toolModel = toolInst:FindFirstChild(toolInst.Name) :: Model ?
                 if toolModel and toolModel:IsA("Model") then
                     if not IsReleased then
-                        local sound = playSound(9120560245, true, toolInst:FindFirstChild(toolInst.Name))
+                        local sound = playSound(9114437231, true, toolInst:FindFirstChild(toolInst.Name))
                         sound.Name =  emitterSoundName
                         sound.Parent = toolModel.PrimaryPart
                     elseif IsReleased == true then

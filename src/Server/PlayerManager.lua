@@ -43,7 +43,7 @@ export type PlayerManager = ManagerTypes.PlayerManager
 export type ABType = ManagerTypes.ABType
 --constants
 local MAX_TOOLS_COUNT = 10
-local MAX_VEHICLES_COUNT = 5
+local MAX_VEHICLES_COUNT = 10
 local MAX_CHARACTER_SLOT = 3
 
 local SAVE_DATA_INTERVAL = 60
@@ -77,6 +77,7 @@ local SAVE_CHARACTER_SLOT = "SaveCharacterSlot"
 local LOAD_CHARACTER_SLOT = "LoadCharacterSlot"
 local DELETE_CHARACTER_SLOT = "DeleteCharacterSlot"
 
+local GET_ITEM_CART = "GetItemCart"
 local ON_ITEM_CART_SPAWN = "OnItemCartSpawn"
 
 local ON_ROLEPLAY_BIO_CHANGE = "OnRoleplayBioChange"
@@ -86,6 +87,8 @@ local ON_CAMERA_SHAKE = "OnCameraShake"
 local ON_NOTIF_CHOICE_INIT = "OnNotifChoiceInit"
 
 local ON_JOB_CHANGE = "OnJobChange"
+
+local ON_ITEM_THROW = "OnItemThrow"
 
 --variables
 local Registry = {}
@@ -234,7 +237,9 @@ function PlayerManager.new(player : Player, maid : Maid ?)
             self:AddVehicle("Motorcycle", true)
             self:AddVehicle("Bajaj", true)
             self:AddVehicle("Taxi", true)
-        
+            self:AddVehicle("Pickup", true)
+            self:AddVehicle("Ambulance", true)
+
             self:SetData(self:GetData(), false)
         end
     end)) 
@@ -689,6 +694,65 @@ function PlayerManager:DeleteCharacterSlot(characterDataKey : number)
     return self.CharacterSaves
 end
 
+function PlayerManager:ThrowItem(toolData : ToolData<nil>)
+    local rawTool = BackpackUtil.getToolFromName(toolData.Name)
+    local plr = self.Player
+    local char =  plr.Character
+
+    if rawTool and char and char.PrimaryPart then
+        local pos = char.PrimaryPart.Position + char.PrimaryPart.CFrame.LookVector*5 -- temporary
+        local raycastResult = workspace:Raycast(pos, Vector3.new(0,-100,0), raycastParams)
+    
+        if not raycastResult then NotificationUtil.Notify(self.Player, "Place not suitable to throw the item"); return end
+    
+        local tool = rawTool:Clone() :: Tool
+        if self._Maid.ThrownTool1 == nil then
+            self._Maid.ThrownTool1 = tool
+        elseif self._Maid.ThrownTool2 == nil then
+            self._Maid.ThrownTool2 = tool
+        elseif self._Maid.ThrownTool3 == nil then
+            self._Maid.ThrownTool3 = tool
+        elseif self._Maid.ThrownTool4 == nil then
+            self._Maid.ThrownTool4 = tool
+        else
+            NotificationUtil.Notify(self.Player, "Cooling down, please wait!")
+            tool:Destroy()
+        end
+
+        tool:PivotTo(CFrame.new(raycastResult.Position + Vector3.new(0, tool:GetExtentsSize().Y*0.5, 0))*(char.PrimaryPart.CFrame - char.PrimaryPart.CFrame.Position))
+        tool.Parent = workspace:WaitForChild("Assets")
+        tool:SetAttribute("DeleteAfterInteract", true)
+    
+        for _,v in pairs(tool:GetDescendants()) do
+            if v:IsA("BasePart") then
+                v.Anchored = true
+            end
+        end
+
+        for k,v in pairs(self.Backpack) do
+            if (v.Name == toolData.Name) and (v.IsEquipped) then
+                self:DeleteBackpack(k)
+                break
+            end
+        end
+
+        task.spawn(function()
+            task.wait(15)
+            if self._Maid.ThrownTool1 then
+                self._Maid.ThrownTool1 = nil
+            elseif self._Maid.ThrownTool2 then
+                self._Maid.ThrownTool2 = nil
+            elseif self._Maid.ThrownTool3 then
+                self._Maid.ThrownTool3 = nil
+            elseif self._Maid.ThrownTool4 then
+                self._Maid.ThrownTool4 = nil
+            end
+        end)
+
+    end
+    return
+end
+
 function PlayerManager:GetItemsCart(selectedItems : {[number] : BackpackUtil.ToolData<boolean>}, cf : CFrame)
     if #selectedItems > 5 then
         NotificationUtil.Notify(self.Player, "You an only have maximum 5 amount of items in the cart!")
@@ -696,6 +760,7 @@ function PlayerManager:GetItemsCart(selectedItems : {[number] : BackpackUtil.Too
     end
     
     local char = self.Player.Character or self.Player.CharacterAdded:Wait()
+    assert(char.PrimaryPart)
     local cart = ReplicatedStorage:WaitForChild("Assets"):WaitForChild("Tools"):WaitForChild("RoleplayTools"):WaitForChild("Cart"):Clone() :: Model
     local zone = cart:FindFirstChild("Zone") :: BasePart ?
     local itemsDisplayParent = cart:FindFirstChild("Items") :: Folder ?
@@ -707,7 +772,7 @@ function PlayerManager:GetItemsCart(selectedItems : {[number] : BackpackUtil.Too
 
     if not raycastResult then NotificationUtil.Notify(self.Player, "Place not suitable to put the cart"); return end
 
-    cart:PivotTo(CFrame.new(raycastResult.Position + Vector3.new(0, cart:GetExtentsSize().Y*0.5, 0)))
+    cart:PivotTo(CFrame.new(raycastResult.Position + Vector3.new(0, cart:GetExtentsSize().Y*0.5, 0))*(char.PrimaryPart.CFrame - char.PrimaryPart.CFrame.Position))
     cart.Parent = workspace:WaitForChild("Assets")
     
     for _,v in pairs(selectedItems) do
@@ -770,6 +835,10 @@ function PlayerManager:GetItemsCart(selectedItems : {[number] : BackpackUtil.Too
     cart:SetAttribute("Class", "ItemOptionsUI")
 
     return 
+end
+
+function PlayerManager:RemoveExistingItemsCart()
+    self._Maid.ItemsCart = nil
 end
 
 function PlayerManager:Destroy()
@@ -1069,9 +1138,18 @@ function PlayerManager.init(maid : Maid)
 
     NetworkUtil.onServerInvoke(ON_ITEM_CART_SPAWN, function(plr : Player, selectedItems : {[number] : BackpackUtil.ToolData<boolean>}, cf : CFrame)
         local plrManager = PlayerManager.get(plr)
-        plrManager:GetItemsCart(selectedItems, cf)
-        --print(plrManager, plrManager.GetItemsCart)
-        return nil 
+        if not plrManager._Maid.ItemsCart then
+            plrManager:GetItemsCart(selectedItems, cf)
+        else
+            plrManager:RemoveExistingItemsCart()
+        end
+        print(plrManager._Maid.ItemsCart)
+        return plrManager._Maid.ItemsCart
+    end)
+
+    NetworkUtil.onServerInvoke(GET_ITEM_CART, function(plr : Player)
+        local plrManager = PlayerManager.get(plr)
+        return plrManager._Maid.ItemsCart
     end)
 
     --maid:GiveTask(NetworkUtil.onServerEvent(ON_TOOL_ACTIVATED, function(plr : Player, toolClass : string, foodInst : Instance, toolData : BackpackUtil.ToolData<nil>)
@@ -1101,6 +1179,12 @@ function PlayerManager.init(maid : Maid)
         else
             Jobs.setJob(plr, nil)
         end
+    end))
+
+    maid:GiveTask(NetworkUtil.onServerEvent(ON_ITEM_THROW, function(plr : Player, toolData : ToolData<nil>)
+        local plrManager = PlayerManager.get(plr)
+        assert(plrManager)
+        plrManager:ThrowItem(toolData)
     end))
 
 end

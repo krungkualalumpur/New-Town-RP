@@ -56,14 +56,14 @@ local function getImageButton(
                 BackgroundTransparency = 1,
                 BackgroundColor3 = BACKGROUND_COLOR,
                 Size = UDim2.fromScale(1, 0.3),
-                Position = UDim2.fromScale(0.25, 1.2),
+                Position = UDim2.fromScale(0, 1.2),
                 Font = Enum.Font.Gotham,
                 Text = buttonName,
                 TextScaled = true,
                 TextColor3 = PRIMARY_COLOR,
                 TextStrokeColor3 = SECONDARY_COLOR,
                 TextStrokeTransparency = 0.5,
-                TextXAlignment = Enum.TextXAlignment.Left
+                TextXAlignment = Enum.TextXAlignment.Center
             })
         },
         Events = {
@@ -101,8 +101,8 @@ return function(
     end
 
     local out = _new("Frame")({
-       -- Position = UDim2.fromScale(0, 0.85),
-        Size = UDim2.fromScale(1, 0.08),
+        Position = UDim2.fromScale(0, 0.05),
+        Size = UDim2.fromScale(1, 0.065),
         BackgroundTransparency = 1,
         Children = {
             _new("UIPadding")({

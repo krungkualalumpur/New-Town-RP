@@ -27,11 +27,13 @@ function ToolManager.init(maid : Maid)
         for k, child in pairs(v:GetDescendants()) do
             if child:GetAttribute("IsTool") and not BackpackUtil.getToolFromName(child.Name) then
                 local newTool = child:Clone()
-                newTool.Parent = ToolCollections
-                CollectionService:AddTag(newTool, "Tool")
                 newTool:SetAttribute("Class", v:GetAttribute("Class"))
                 newTool:SetAttribute("DisplayTypeName", v:GetAttribute("DisplayTypeName"))
                 newTool:SetAttribute("OnRelease", v:GetAttribute("OnRelease"))
+                newTool.Parent = ToolCollections
+                CollectionService:AddTag(newTool, "Tool")
+               
+                print(newTool:GetAttribute"DisplayTypeName", v:GetAttribute("DisplayTypeName"), v)
             end
         end
     end

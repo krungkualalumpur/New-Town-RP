@@ -7,6 +7,7 @@ local RunService = game:GetService("RunService")
 local Maid = require(ReplicatedStorage:WaitForChild("Packages"):WaitForChild("Maid"))
 local ColdFusion = require(ReplicatedStorage:WaitForChild("Packages"):WaitForChild("ColdFusion8"))
 local Signal = require(ReplicatedStorage:WaitForChild("Packages"):WaitForChild("Signal"))
+local NetworkUtil = require(ReplicatedStorage:WaitForChild("Packages"):WaitForChild("NetworkUtil"))
 --modules
 local BackpackUtil = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("BackpackUtil"))
 local ExitButton = require(ReplicatedStorage:WaitForChild("Client"):WaitForChild("ExitButton"))
@@ -40,15 +41,18 @@ local TEST_COLOR = Color3.fromRGB(255,0,0)
 local PADDING_SIZE = UDim.new(0,10)
 
 local TEXT_SIZE = 15
+
+--remotes
+local GET_ITEM_CART = "GetItemCart"
 --variables
 --references
 --local functions
 local function getButton(
     maid : Maid,
     order : number,
-    text : string,
+    text : CanBeState<string>,
     fn : () -> (),
-    color : Color3 ?
+    color :  CanBeState<Color3> ?
 )
     local _fuse = ColdFusion.fuse(maid)
     local _new = _fuse.new
@@ -333,6 +337,8 @@ return function(
     local _Computed = _fuse.Computed
     local _Value = _fuse.Value
 
+    local cartSpawned : ValueState<boolean> = _Value( if NetworkUtil.invokeServer(GET_ITEM_CART) then true else false)
+    
     local selectedItems : ValueState<{[number] : BackpackUtil.ToolData<nil>}> = _Value({})
 
     local selectedCategory = _Value("Job")
@@ -528,9 +534,12 @@ return function(
             _new("TextLabel")({
                 LayoutOrder = 1,
                 BackgroundColor3 = BACKGROUND_COLOR,
-                Size = UDim2.fromScale(1, 0.05),
+                Size = UDim2.fromScale(1, 0.07),
                 Font = Enum.Font.Gotham,
-                Text = "Select items to be put into the cart",
+                RichText = true,
+                Text = _Computed(function(tbl : {})
+                    return ("Select items to be put into the cart. %s"):format(if #tbl < 1 then "\n<b>(You currently do not have items in your backpack)</b>" else "")
+                end, backpack),
                 TextScaled = true,
                 TextWrapped = true,
                 TextColor3 = TEXT_COLOR,
@@ -580,9 +589,15 @@ return function(
                     _new("UIListLayout")({
                         HorizontalAlignment = Enum.HorizontalAlignment.Center
                     }),
-                    _bind(getButton(maid, 3,"Spawn Item Cart", function()
-                        onItemCartSpawn:Fire(selectedItems:Get())
-                    end, SELECT_COLOR))({
+                    _bind(getButton(maid, 3,
+                    _Computed(function(bool : boolean)
+                        gerobakFrameContent.Visible = not bool
+                        return if bool then "Despawn cart" else "Spawn cart"
+                    end, cartSpawned), function()
+                        onItemCartSpawn:Fire(selectedItems:Get(), cartSpawned)
+                    end, _Computed(function(bool : boolean) 
+                        return if not bool then SELECT_COLOR else RED_COLOR
+                    end, cartSpawned)))({
                         Size = UDim2.fromScale(0.25, 1)
                     })
                 }

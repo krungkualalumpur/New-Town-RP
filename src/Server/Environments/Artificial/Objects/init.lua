@@ -122,6 +122,39 @@ function Objects.init(maid : Maid)
             else
                 setVault(object)
             end
+        elseif object:GetAttribute("Class") == "Balance" then
+            local detector = object:FindFirstChild("Detector")
+            assert(detector, "No scale detector added!")
+            
+            maid:GiveTask(detector.Touched:Connect(function(hit : BasePart)
+                local character = hit.Parent    
+                local humanoid = if character then character:FindFirstChild("Humanoid") else nil
+                local totalMass = 0
+
+                if character and humanoid then
+                    for _,v in pairs(character:GetDescendants()) do
+                        if v:IsA("BasePart") then
+                            totalMass += v.Mass
+                        end
+                    end
+                end
+
+                for _,v in pairs(object:GetDescendants()) do
+                    if v:IsA("TextLabel") then
+                        v.Text = string.format("%.4d", totalMass)
+                    end
+                end
+            end))
+
+            maid:GiveTask(detector.TouchEnded:Connect(function(hit : BasePart)
+        
+                for _,v in pairs(object:GetDescendants()) do
+                    if v:IsA("TextLabel") then
+                        v.Text = string.format("%.4d", 0)
+                    end
+                end
+                
+            end))
         end
     end
 end

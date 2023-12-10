@@ -7,10 +7,12 @@ local TweenService = game:GetService("TweenService")
 --packages
 local Maid = require(ReplicatedStorage:WaitForChild("Packages"):WaitForChild("Maid"))
 local NetworkUtil = require(ReplicatedStorage:WaitForChild("Packages"):WaitForChild("NetworkUtil"))
+local Signal = require(ReplicatedStorage:WaitForChild("Packages"):WaitForChild("Signal"))
 --modules
 local InputHandler = require(ReplicatedStorage:WaitForChild("Client"):WaitForChild("InputHandler"))
 local MidasEventTree = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("MidasEventTree"))
 local MidasStateTree = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("MidasStateTree"))
+local VehicleControl = require(ReplicatedStorage:WaitForChild("Client"):WaitForChild("GuiSys"):WaitForChild("VehicleControl"))
 --types
 type Maid = Maid.Maid
 --constants
@@ -22,10 +24,29 @@ local ON_CAMERA_SHAKE = "OnCameraShake"
 local ON_ANIMATION_SET = "OnAnimationSet"
 local ON_RAW_ANIMATION_SET = "OnRawAnimationSet"
 local GET_CATALOG_FROM_CATALOG_INFO = "GetCatalogFromCatalogInfo"
+local ON_VEHICLE_CONTROL_EVENT = "OnVehicleControlEvent"
 --variables
 --references
 local Player = Players.LocalPlayer
 --local functions
+function PlaySound(id, parent, volumeOptional: number ?, maxDist : number ?)
+    local s = Instance.new("Sound")
+
+    s.Name = "Sound"
+    s.SoundId = "rbxassetid://" .. tostring(id)
+    s.Volume = volumeOptional or 1
+    s.RollOffMaxDistance = maxDist or 150
+    s.Looped = false
+    s.Parent = parent
+    s:Play()
+    task.spawn(function() 
+        s.Ended:Wait()
+        s:Destroy()
+    end)
+    return s
+end
+
+
 local function playAnimationByRawId(char : Model, id : number)
     local maid = Maid.new()
     local charHumanoid = char:WaitForChild("Humanoid") :: Humanoid
@@ -188,12 +209,52 @@ local function onCharacterAdded(char : Model)
         end
     end))
 
+    local vehicleControlMaid = _maid:GiveTask(Maid.new())
     _maid:GiveTask(humanoid:GetPropertyChangedSignal("SeatPart"):Connect(function()
         local seat = humanoid.SeatPart
         if seat and seat:IsDescendantOf(workspace:WaitForChild("Assets"):WaitForChild("Temporaries"):WaitForChild("Vehicles")) then
+            local vehicleModel = seat.Parent
+            assert(vehicleModel)
+            if vehicleModel:GetAttribute("Class") ~= "Vehicle" then
+                return
+            end
+
             Player.CameraMaxZoomDistance = 18
+
+            local hornSignal = vehicleControlMaid:GiveTask(Signal.new())
+            local headlightSignal = vehicleControlMaid:GiveTask(Signal.new())
+            local leftSignal = vehicleControlMaid:GiveTask(Signal.new())
+            local rightSignal = vehicleControlMaid:GiveTask(Signal.new())
+
+            local vehicleControl = VehicleControl(
+                vehicleControlMaid,
+                
+                hornSignal,
+                headlightSignal,
+                leftSignal,
+                rightSignal
+            )
+
+            vehicleControl.Parent = Player:WaitForChild("PlayerGui"):WaitForChild("ScreenGui")
+
+            vehicleControlMaid:GiveTask(hornSignal:Connect(function()
+                NetworkUtil.fireServer(ON_VEHICLE_CONTROL_EVENT, vehicleModel, "Horn")
+            end))
+
+            vehicleControlMaid:GiveTask(headlightSignal:Connect(function()
+                NetworkUtil.fireServer(ON_VEHICLE_CONTROL_EVENT, vehicleModel, "Headlight")
+            end))
+            
+            vehicleControlMaid:GiveTask(leftSignal:Connect(function()
+                NetworkUtil.fireServer(ON_VEHICLE_CONTROL_EVENT, vehicleModel, "LeftSignal")
+            end))
+            
+            vehicleControlMaid:GiveTask(rightSignal:Connect(function()
+                NetworkUtil.fireServer(ON_VEHICLE_CONTROL_EVENT, vehicleModel, "RightSignal")
+            end))
         else
             Player.CameraMaxZoomDistance = 8
+            vehicleControlMaid:DoCleaning()
         end
     end))
 
