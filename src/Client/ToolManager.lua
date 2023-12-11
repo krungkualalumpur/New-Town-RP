@@ -17,7 +17,7 @@ local Fishes = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Fi
 --types
 type Maid = Maid.Maid
 --constants
-local WRITING_MAX_DISTANCE = 10
+local WRITING_MAX_DISTANCE = 20
 local TOOL_IS_WRITING_KEY = "IsWriting"
 local WRITING_MAX_PTS = 50
 --remotes

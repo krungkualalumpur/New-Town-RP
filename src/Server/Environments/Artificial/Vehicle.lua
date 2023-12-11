@@ -38,7 +38,7 @@ local SpawnedCarsFolder = workspace:FindFirstChild("Assets"):WaitForChild("Tempo
 local function playSound(soundId : number, target : Instance, isLoop : boolean, maxHeardDistance : number ?)
     local _maid = Maid.new()
 
-    local sound = Instance.new("Sound")
+    local sound = _maid:GiveTask(Instance.new("Sound"))
     sound.Looped = isLoop
     sound.RollOffMaxDistance = maxHeardDistance or 20
     sound.Parent = target
@@ -435,7 +435,7 @@ function Vehicle.init(maid : Maid)
             if vehicleModel.PrimaryPart:FindFirstChild("HornSound") then
                 return  
             end
-            local sound = playSound(200530606, vehicleModel.PrimaryPart, false)
+            local sound = playSound(vehicleModel:GetAttribute("HornSound") or 200530606, vehicleModel.PrimaryPart, false, 50)
             sound.Name = "HornSound"
         elseif eventName == "Headlight" then
             vehicleModel:SetAttribute(isHeadlightAttribute, if vehicleModel:GetAttribute(isHeadlightAttribute) == true then nil else true)

@@ -239,6 +239,7 @@ function PlayerManager.new(player : Player, maid : Maid ?)
             self:AddVehicle("Taxi", true)
             self:AddVehicle("Pickup", true)
             self:AddVehicle("Ambulance", true)
+            self:AddVehicle("Police", true)
 
             self:SetData(self:GetData(), false)
         end
@@ -736,17 +737,33 @@ function PlayerManager:ThrowItem(toolData : ToolData<nil>)
             end
         end
 
-        task.spawn(function()
-            task.wait(15)
-            if self._Maid.ThrownTool1 then
-                self._Maid.ThrownTool1 = nil
-            elseif self._Maid.ThrownTool2 then
-                self._Maid.ThrownTool2 = nil
-            elseif self._Maid.ThrownTool3 then
-                self._Maid.ThrownTool3 = nil
-            elseif self._Maid.ThrownTool4 then
-                self._Maid.ThrownTool4 = nil
+        local toolCoolDownTime = 25
+        local coolDownTime = 0
+        local t = tick() 
+        local conn
+        conn = RunService.Stepped:Connect(function()
+            if self._Maid == nil then
+                conn:Disconnect()
+                return
             end
+            if tick() - t >= 1 then
+                t = tick()
+                coolDownTime += 1
+
+                if coolDownTime >= toolCoolDownTime then
+                    conn:Disconnect()
+
+                    if self._Maid.ThrownTool1 == tool then
+                        self._Maid.ThrownTool1 = nil
+                    elseif self._Maid.ThrownTool2 == tool then
+                        self._Maid.ThrownTool2 = nil
+                    elseif self._Maid.ThrownTool3 == tool then
+                        self._Maid.ThrownTool3 = nil
+                    elseif self._Maid.ThrownTool4 == tool then
+                        self._Maid.ThrownTool4 = nil
+                    end
+                end
+            end 
         end)
 
     end

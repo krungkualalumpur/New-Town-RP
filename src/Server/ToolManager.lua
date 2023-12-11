@@ -36,6 +36,16 @@ function ToolManager.init(maid : Maid)
                 print(newTool:GetAttribute"DisplayTypeName", v:GetAttribute("DisplayTypeName"), v)
             end
         end
+        
+        --set parents to replicated storage
+        if v:IsDescendantOf(workspace) then
+            local newTool = v:Clone()
+            newTool:SetAttribute("Class", v:GetAttribute("Class"))
+            newTool:SetAttribute("DisplayTypeName", v:GetAttribute("DisplayTypeName"))
+            newTool:SetAttribute("OnRelease", v:GetAttribute("OnRelease"))
+            newTool.Parent = ToolCollections
+            CollectionService:AddTag(newTool, "Tool")
+        end
     end
 
     maid:GiveTask(NetworkUtil.onServerEvent(ON_WRITING_FINISHED, function(plr : Player, pts : {Vector3})
