@@ -359,14 +359,11 @@ local ToolActions = {}
 function ToolActions.onToolActivated(toolClass : string, player : Player, toolData : BackpackUtil.ToolData<nil>, plrInfo : any, isReleased : boolean ?)
     if RunService:IsServer() then
         local actionInfo = ToolActions.getActionInfo(toolClass)
-        print(toolData, " Test1 ?")
         actionInfo.Activated(player, toolData, plrInfo, isReleased)
-        print(toolData, " Test2 ?")
         if toolData.OnRelease and ((isReleased == nil) or (isReleased == false)) then
             NetworkUtil.fireClient(ON_TOOL_ACTIVATED, player, toolClass, player, toolData, nil, false)
         --elseif toolData.OnRelease and (isReleased == true) then
             --NetworkUtil.fireClient(ON_TOOL_ACTIVATED, player, toolClass, player, toolData, nil, true)
-            print("Terawangg")
         end
     else
         if (toolData.OnRelease == true) then
@@ -386,7 +383,6 @@ function ToolActions.onToolActivated(toolClass : string, player : Player, toolDa
                 end)
             end
         elseif (toolData.OnRelease == false) then
-            print("belong")
             NetworkUtil.fireServer(ON_TOOL_ACTIVATED, toolClass, player, toolData, plrInfo)
         end
     end

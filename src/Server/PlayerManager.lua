@@ -239,7 +239,9 @@ function PlayerManager.new(player : Player, maid : Maid ?)
             self:AddVehicle("Taxi", true)
             self:AddVehicle("Pickup", true)
             self:AddVehicle("Ambulance", true)
+            self:AddVehicle("SWAT Car", true)
             self:AddVehicle("Police", true)
+            self:AddVehicle("Firetruck", true)
 
             self:SetData(self:GetData(), false)
         end

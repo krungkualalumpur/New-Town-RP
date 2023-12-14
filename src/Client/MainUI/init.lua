@@ -578,8 +578,6 @@ return function(
                 Size = UDim2.fromScale(1, 0.1),
                 Parent = onEquipFrame
             })
-
-            print("sangaat")
         end  
         return ""
     end, backpack)
@@ -610,15 +608,24 @@ return function(
             }),
             _new("Frame")({
                 BackgroundTransparency = 1,
-                Size = UDim2.fromScale(0.15, 0.1),
+                Size = UDim2.fromScale(1, 1),
                 Children = {
                     _new("TextLabel")({
                         BackgroundTransparency = 1,
-                        Size = UDim2.fromScale(1, 1),
+                        Size = UDim2.fromScale(10, 1),
                         Text = date,
                         TextScaled = true,
+                        TextSize = 100,
                         TextColor3 = TEXT_COLOR,
-                        TextStrokeTransparency = 0.5
+                        TextStrokeTransparency = 0.5,
+                        TextXAlignment = Enum.TextXAlignment.Left,
+                        TextYAlignment = Enum.TextYAlignment.Bottom,
+                        Children = {
+                            _new("UITextSizeConstraint")({
+                                MinTextSize = 20,
+                                MaxTextSize = 100
+                            })
+                        }
                     })
                 }
             })
@@ -641,7 +648,10 @@ return function(
                 Padding = PADDING_SIZE,
                 VerticalAlignment = Enum.VerticalAlignment.Center
             }),   
-
+            _new("Frame")({
+                BackgroundTransparency = 1,
+                Size = UDim2.fromScale(1, 0.12)
+            }),
             getImageButton(maid, 2815418737, function()
                 UIStatus:Set(if UIStatus:Get() ~= "Backpack" then "Backpack" else nil)
                 backpackText:Set("")
@@ -659,7 +669,11 @@ return function(
                 backpackText:Set("")
                 roleplayText:Set("")
                 customizationText:Set("")
-            end, customizationText, 1, true)
+            end, customizationText, 1, true),
+            _bind(dateFrame)({
+                LayoutOrder = 4,
+                Size = UDim2.fromScale(2, 0.05)
+            })
         }
     }) :: Frame
 
@@ -681,7 +695,7 @@ return function(
                 SortOrder = Enum.SortOrder.LayoutOrder,
                 VerticalAlignment = Enum.VerticalAlignment.Center
             }),
-            dateFrame,
+            --dateFrame,
             mainOptions,
 
         }

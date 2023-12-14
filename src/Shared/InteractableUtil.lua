@@ -12,6 +12,8 @@ local NetworkUtil = require(ReplicatedStorage:WaitForChild("Packages"):WaitForCh
 --modules
 local ItemUtil = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("ItemUtil"))
 local BackpackUtil = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("BackpackUtil"))
+local CustomizationUtil = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("CustomizationUtil"))
+
 local ToolActions = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("ToolActions"))
 
 local Zone = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Zone"))
@@ -43,10 +45,10 @@ local ON_NOTIFICATION = "OnNotification"
 --references
 --variables
 --local functions
-local function playSound(soundId : number, onLoop : boolean, parent : Instance ?, volume : number ?)
+local function playSound(soundId : number, onLoop : boolean, parent : Instance ?, volume : number ?, maxDistance : number ?)
     local sound = Instance.new("Sound")
     sound.Name = SOUND_NAME
-    sound.RollOffMaxDistance = 30
+    sound.RollOffMaxDistance = maxDistance or 30
     sound.Volume = volume or 1
     sound.SoundId = "rbxassetid://" .. tostring(soundId)
     sound.Parent = parent or (if RunService:IsClient() then Players.LocalPlayer else nil)
@@ -58,6 +60,7 @@ local function playSound(soundId : number, onLoop : boolean, parent : Instance ?
         sound.Ended:Wait()
         sound:Destroy()
     end)
+    return sound
 end
 
 local function adjustModel(model : Model, fn : (part : BasePart) -> (), soundId : number ?, onLoop : boolean ?)
@@ -266,9 +269,9 @@ function Interactable.InteractSwitch(model : Model)
             assert(circuitModel, "No circuit model detected!")
             local lampSwitchPart = model:FindFirstChild(SwitchPartName) :: BasePart?
 
-            for _,lampModel in pairs(circuitModel:GetChildren()) do
-                if CollectionService:HasTag(lampModel, "Lamp") then
-                    for _, light in pairs(lampModel:GetDescendants()) do
+            for _,childModel in pairs(circuitModel:GetChildren()) do
+                if CollectionService:HasTag(childModel, "Lamp") then
+                    for _, light in pairs(childModel:GetDescendants()) do
                         if light:IsA("Light") then
                             light.Enabled = true
                             local neonPart = light.Parent :: BasePart ?
@@ -277,6 +280,8 @@ function Interactable.InteractSwitch(model : Model)
                             end
                         end
                     end
+                elseif CollectionService:HasTag(childModel, "Door") then
+                    task.spawn(function() Interactable.InteractOpening(childModel :: Model, true) end)
                 end
             end
             if lampSwitchPart then
@@ -296,9 +301,9 @@ function Interactable.InteractSwitch(model : Model)
             assert(circuitModel, "No circuit model detected!")
             local lampSwitchPart = model:FindFirstChild(SwitchPartName) :: BasePart ?
 
-            for _,lampModel in pairs(circuitModel:GetChildren()) do
-                if CollectionService:HasTag(lampModel, "Lamp") then
-                    for _, light in pairs(lampModel:GetDescendants()) do
+            for _,childModel in pairs(circuitModel:GetChildren()) do
+                if CollectionService:HasTag(childModel, "Lamp") then
+                    for _, light in pairs(childModel:GetDescendants()) do
                         if light:IsA("Light") then
                             light.Enabled = false
                             local neonPart = light.Parent :: BasePart ?
@@ -307,6 +312,8 @@ function Interactable.InteractSwitch(model : Model)
                             end
                         end
                     end
+                elseif CollectionService:HasTag(childModel, "Door") then
+                    task.spawn(function() Interactable.InteractOpening(childModel :: Model, false) end)
                 end
             end
             if lampSwitchPart then
@@ -385,15 +392,80 @@ function Interactable.InteractSwitch(model : Model)
         end
     elseif data.Class == "Stove" then
         if data.IsSwitch then
+            local _maid = Maid.new()
+
             for _,v in pairs(model:GetDescendants()) do
                 if v:IsA("BasePart") and v.Name == "Igniter" then
                     local fire = v:FindFirstChild("Fire") :: Fire ?
                     if fire then
+                        local function onExplode()
+                            local sourcePart = Instance.new("Part")
+                            sourcePart.Name = "FireSource"
+                            sourcePart.Anchored = true
+                            sourcePart.Position = v.Position
+                            sourcePart.CanCollide = false
+                            sourcePart.Transparency = 1
+                            sourcePart.Parent = workspace:WaitForChild("Assets"):WaitForChild("Temporaries")
+
+                            local exp = Instance.new("Explosion")
+                            exp.BlastRadius = 0
+                            exp.BlastPressure = 0
+                            exp.Position = v.Position
+                            exp.Parent = sourcePart
+                            local smoke = Instance.new"Smoke" 
+                            smoke.RiseVelocity = 80
+                            smoke.Size = 10
+                            smoke.Color = Color3.new(0.231373, 0.231373, 0.231373)
+                            smoke.Parent = sourcePart
+                            local fire = Instance.new"Fire" 
+                            fire.Size = 100
+                            fire.Parent = sourcePart
+
+                            playSound(5801257793, false, v, 3, 65)
+                            if not v:IsDescendantOf(workspace:WaitForChild("Assets"):WaitForChild("Houses")) then
+                                playSound(9125557781, true, sourcePart, 1.5, 65)
+                            end
+                            task.wait(50)
+                            fire.Enabled = false
+                            smoke.Enabled = false
+                            
+                            local updatedData = Interactable.getData(model)
+                            if updatedData.IsSwitch then
+                                Interactable.InteractSwitch(model)
+                            end
+
+                            task.wait(15)
+                            exp:Destroy()
+                            smoke:Destroy()
+                            fire:Destroy() 
+                            sourcePart:Destroy()
+                        end
                         fire.Enabled = true
                         playSound(9061999173, true, v, 0.08)
+
+                        _maid:GiveTask(fire:GetPropertyChangedSignal("Enabled"):Connect(function()
+                            if fire.Enabled == false then
+                                _maid:Destroy()
+                            end
+                        end))
+
+                        local burnT = 0
+                        local t = tick()
+                        _maid:GiveTask(RunService.Stepped:Connect(function()
+                            if tick() - t >= 1 then
+                                t = tick()
+                                burnT += 1
+                                --print(burnT, " : final countdown dududuuuudu")
+                                if burnT >= 60 then
+                                    _maid:Destroy()
+                                    onExplode()
+                                end
+                            end
+                        end))
                     end
                 end
             end
+
         else
             for _,v in pairs(model:GetDescendants()) do
                 if v:IsA("BasePart") and v.Name == "Igniter" then
@@ -410,181 +482,6 @@ function Interactable.InteractSwitch(model : Model)
             end
         end
     end
-
-    --[[if data.IsSwitch then
-        if data.Class == "Blind" then
-            local curtainFabric = model:FindFirstChild("CurtainFabric") :: Model?
-            if curtainFabric then 
-                adjustModel(curtainFabric, function(part : BasePart)
-                    switchTransparency(part, true)
-                end, 3657933537)
-            end
-        elseif data.Class == "Water" then
-            adjustModel(model, function(part : BasePart)
-                if part:GetAttribute(IsWaterAttributeKey) ~= nil then
-                    part.Transparency = 0.5
-                end
-                if part:GetAttribute(IsParticleAttributeKey) ~= nil then
-                    local particleEmitter = part:FindFirstChild("ParticleEmitter") :: ParticleEmitter ?
-                    if particleEmitter then
-                        particleEmitter.Enabled = true
-                    end
-                end
-            end, 2218767018, true)
-        elseif data.Class == "Circuit" then
-            local SwitchPartName = "SwitchPart"
-            if RunService:IsClient() then
-                NetworkUtil.fireServer(ON_INTERACT, model)
-                return
-            end
-
-            local circuitModel = if model.Parent and model.Parent.Parent and model.Parent.Parent:GetAttribute("IsCircuitModel") then model.Parent.Parent else nil
-            assert(circuitModel, "No circuit model detected!")
-            local lampSwitchPart = model:FindFirstChild(SwitchPartName) :: BasePart?
-
-            for _,lampModel in pairs(circuitModel:GetChildren()) do
-                if CollectionService:HasTag(lampModel, "Lamp") then
-                    for _, light in pairs(lampModel:GetDescendants()) do
-                        if light:IsA("Light") then
-                            light.Enabled = true
-                            local neonPart = light.Parent :: BasePart ?
-                            if neonPart then
-                                neonPart.Material = Enum.Material.Neon
-                            end
-                        end
-                    end
-                end
-            end
-            if lampSwitchPart then
-                local cf = lampSwitchPart.CFrame
-                lampSwitchPart.CFrame = (cf - cf.Position)*CFrame.Angles(-50,0,0) + cf.Position
-
-                playSound(9125620381, false,  lampSwitchPart)
-            end
-        elseif data.Class == "Television" then
-            if RunService:IsClient() then
-                NetworkUtil.fireServer(ON_INTERACT, model)
-                return
-            end
-
-            local screenPart = model:FindFirstChild("ScreenPart") :: BasePart
-
-            local TVgui = Instance.new("SurfaceGui") :: SurfaceGui
-            TVgui.Name = "TelevisionGui"
-            TVgui.Face = Enum.NormalId.Right
-            TVgui.Parent = screenPart
-
-            local UIListLayout = Instance.new("UIListLayout")
-            UIListLayout.Parent = TVgui
-
-            local textLabel = Instance.new("TextLabel")
-            textLabel.BackgroundTransparency = 0
-            textLabel.BackgroundColor3 = Color3.fromRGB(255,255,255)
-            textLabel.Size = UDim2.fromScale(1, 1)
-            textLabel.TextSize = 40
-            textLabel.TextYAlignment = Enum.TextYAlignment.Center
-            textLabel.RichText = true
-            textLabel.TextWrapped = true
-            textLabel.Parent = TVgui 
-
-            local _maid = Maid.new()
-            local _fuse =  ColdFusion.fuse(_maid)
-            local _new = _fuse.new
-            local _bind = _fuse.bind
-
-            local _Computed = _fuse.Computed
-
-            local currentTextState = TelevisionChannel.getCurrentTextStateByChannelId(1)
-          
-            textLabel.Text = tostring(TelevisionChannel.getTextByTextState(1, currentTextState.Value))
-            _maid:GiveTask(currentTextState.Changed:Connect(function()
-                local text = TelevisionChannel. getTextByTextState(1, currentTextState.Value)
-                if textLabel.Parent then
-                    local intTextState = currentTextState.Value
-                    for i = 1, #text do
-                        if currentTextState.Value == intTextState then
-                            task.wait()
-                            textLabel.Text = string.sub(text, 1, i)
-                        end
-                    end
-                end
-            end))
-
-            _maid:GiveTask(TVgui.Destroying:Connect(function()
-                _maid:Destroy()
-            end))
-        elseif data.Class == "Stove" then
-
-        end
-
-    else
-
-        if data.Class == "Blind" then
-            local curtainFabric = model:FindFirstChild("CurtainFabric") :: Model?
-            if curtainFabric then 
-                adjustModel(curtainFabric, function(part : BasePart)
-                    switchTransparency(part, false)
-                end, 3657935906)
-            end
-        elseif data.Class == "Water" then
-            adjustModel(model, function(part : BasePart)
-                if part:GetAttribute(IsWaterAttributeKey) ~= nil then
-                    part.Transparency = 1
-                end
-                if part:GetAttribute(IsParticleAttributeKey) ~= nil then
-                    local particleEmitter = part:FindFirstChild("ParticleEmitter") :: ParticleEmitter ?
-                    if particleEmitter then
-                        particleEmitter.Enabled = false
-                    end
-                end
-            end)
-        elseif data.Class == "Circuit" then
-            local SwitchPartName = "SwitchPart"
-            if RunService:IsClient() then
-                NetworkUtil.fireServer(ON_INTERACT, model)
-                return
-            end
-
-            local circuitModel = if model.Parent and model.Parent.Parent and model.Parent.Parent:GetAttribute("IsCircuitModel") then model.Parent.Parent else nil
-            assert(circuitModel, "No circuit model detected!")
-            local lampSwitchPart = model:FindFirstChild(SwitchPartName) :: BasePart ?
-
-            for _,lampModel in pairs(circuitModel:GetChildren()) do
-                if CollectionService:HasTag(lampModel, "Lamp") then
-                    for _, light in pairs(lampModel:GetDescendants()) do
-                        if light:IsA("Light") then
-                            light.Enabled = false
-                            local neonPart = light.Parent :: BasePart ?
-                            if neonPart then
-                                neonPart.Material = Enum.Material.SmoothPlastic
-                            end
-                        end
-                    end
-                end
-            end
-            if lampSwitchPart then
-                local cf = lampSwitchPart.CFrame
-                lampSwitchPart.CFrame = (cf - cf.Position)*CFrame.Angles(50,0,0) + cf.Position
-
-                playSound(9125620381, false,  lampSwitchPart)
-            end
-        elseif data.Class == "Television" then
-            if RunService:IsClient() then
-                NetworkUtil.fireServer(ON_INTERACT, model)
-                return
-            end
-
-            local screenPart = model:FindFirstChild("ScreenPart") :: BasePart
-
-            local TVgui = screenPart:FindFirstChild("TelevisionGui")
-
-            if TVgui then
-                TVgui:Destroy()
-            end
-        elseif data.Class == "Stove" then
-
-        end
-    end]]
 end
 
 function Interactable.InteractNonSwitch(model : Model, plr : Player)
@@ -629,6 +526,8 @@ function Interactable.InteractNonSwitch(model : Model, plr : Player)
                     if idNum then
                         CustomeReplacement(character, "Pants", idNum)
                     end
+                elseif v:GetAttribute("Accessory") then
+                    CustomizationUtil.Customize(plr, v:GetAttribute("Accessory"), Enum.AvatarItemType.Asset)
                 end
             end
         else
@@ -687,7 +586,8 @@ function Interactable.InteractOpening(model : Model,on : boolean)
 
         if hingeConstraint  then --if it's a hinges opening
             local doorModel = model:FindFirstChild("Model")
-            if (hingeConstraint.TargetAngle == 0) and doorModel then
+            if --[[(hingeConstraint.TargetAngle == 0) and]] doorModel and (doorModel:GetAttribute("IsOpened") == nil) then
+                doorModel:SetAttribute("IsOpened", true)
                 for _,v in pairs(doorModel:GetDescendants()) do
                     if v:IsA("BasePart") then
                         v.CanCollide = false
@@ -697,8 +597,9 @@ function Interactable.InteractOpening(model : Model,on : boolean)
                 hingeConstraint.ServoMaxTorque = math.huge
                 hingeConstraint.TargetAngle = 90
                 playSound(833871080, false, pivot)
-                task.wait(5)
-               
+
+            elseif doorModel and (doorModel:GetAttribute("IsOpened") == true) then
+
                 playSound(7038967181, false, pivot)
                 hingeConstraint.TargetAngle = 0
 
@@ -709,6 +610,8 @@ function Interactable.InteractOpening(model : Model,on : boolean)
                         v.Anchored = true
                     end
                 end
+
+                doorModel:SetAttribute("IsOpened", nil)
             end
         elseif slides then --if it's a slides opening
             local right = slides:FindFirstChild("Right") :: BasePart

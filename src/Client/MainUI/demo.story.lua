@@ -71,7 +71,7 @@ return function(target : CoreGui)
         MainUIStatus,
 
         _Value({}),
-        _Value(game.Lighting.TimeOfDay),
+        _Value("Sundus, " .. game.Lighting.TimeOfDay),
         onBackpackEquip,
         onBackpackDelete,
         onVehicleSpawn,

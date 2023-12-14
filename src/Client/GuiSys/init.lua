@@ -261,7 +261,7 @@ function guiSys.new()
     )
    
     maid:GiveTask(game.Lighting.Changed:Connect(function()
-        date:Set(string.format("%s\n%s", getCurrentDay().Name, NumberUtil.NumberToClock(game.Lighting.ClockTime*60*60, false)))
+        date:Set(string.format("%s, %s", getCurrentDay().Name, NumberUtil.NumberToClock(game.Lighting.ClockTime*60*60, false)))
     end))
 
     maid:GiveTask(nameCustomizationOnClick:Connect(function(descType, text)

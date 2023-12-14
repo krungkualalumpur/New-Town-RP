@@ -161,6 +161,14 @@ function mapHUD.new(
     IntDest : Vector3 ?,
     intText : string ?
 )
+  
+    local buildings = workspace:WaitForChild("Assets"):WaitForChild("Buildings"):GetChildren()
+    for _,v in pairs(workspace:WaitForChild("Assets"):WaitForChild("Shops"):GetChildren()) do
+        if v:IsA("Model") then
+            table.insert(buildings, v)
+        end
+    end
+
     local fuse = ColdFusion.fuse(maid)
 
     local _new = fuse.new
@@ -176,6 +184,7 @@ function mapHUD.new(
     local roadsModel = maid:GiveTask(workspace:WaitForChild("Assets"):WaitForChild("Roads"):Clone())
     for _,v in pairs(roadsModel:GetChildren()) do
         if v:IsA("BasePart") then
+            v.Color = PRIMARY_COLOR
             v.Material = Enum.Material.SmoothPlastic
             v.Transparency = 0.8
         end
@@ -194,7 +203,7 @@ function mapHUD.new(
 
     --buildings
     local buildingsModel = _new("Model")({}) --maid:GiveTask(workspace:WaitForChild("Assets"):WaitForChild("Buildings"):Clone())
-    for _,v in pairs(workspace:WaitForChild("Assets"):WaitForChild("Buildings"):GetChildren()) do
+    for _,v in pairs(buildings) do
         if v:IsA("Model") then
             local columnsModel = v:FindFirstChild("Columns") :: Model?
             local cf, size = nil, nil 
@@ -299,7 +308,35 @@ function mapHUD.new(
             })
         }
     })) :: ImageLabel
-    
+
+    for _,v in pairs(buildings) do
+        local iconImage = v:GetAttribute("MapIcon")
+        if v:IsA("Model") and iconImage then
+            local pointFX = destIcon:Clone()
+            pointFX:ClearAllChildren()
+            _bind(pointFX)({
+                Size = UDim2.fromScale(0.08, 0.08),
+                Image = "rbxassetid://" .. tostring(iconImage),
+            })
+            local cf, _ = v:GetBoundingBox()
+            maid:GiveTask(RunService.Stepped:Connect(function()
+                local intViewportPos, isOnSight = camera:WorldToViewportPoint(cf.Position)
+
+                pointFX.Visible = isOnSight
+
+                if pointFX.Visible then
+                    local x = intViewportPos.X*out.AbsoluteSize.X  
+                    local y =  intViewportPos.Y*out.AbsoluteSize.Y   
+                    pointFX.Position = UDim2.fromOffset( 
+                        math.clamp(x, 0, out.AbsoluteSize.X), 
+                        math.clamp(y, 0, out.AbsoluteSize.Y)   
+                    )      
+                end
+            end))
+            pointFX.Parent = out
+        end
+    end
+
 
     _Computed(function(cf : CFrame, destination : Vector3 ?)
         visualFolder:ClearAllChildren()

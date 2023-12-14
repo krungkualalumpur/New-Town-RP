@@ -111,7 +111,6 @@ function Vehicle.init(maid : Maid)
             VectorForce.Attachment0 = attachment0
             VectorForce.Force = Vector3.new(0,0,0)
 
-            
             _maid:GiveTask(vehicleSeat:GetPropertyChangedSignal("Throttle"):Connect(function()
                 if vehicleModel:GetAttribute("Class") == BOAT_CLASS_KEY then
                     local hum = vehicleSeat.Occupant
@@ -170,17 +169,20 @@ function Vehicle.init(maid : Maid)
                     if seat and wheels then
                         for _,v in pairs(wheels:GetDescendants()) do
                             if v:IsA("HingeConstraint") and v.ActuatorType == Enum.ActuatorType.Motor then
-                                v.MotorMaxTorque = 1--999999999999
+                                --v.MotorMaxTorque = 1--999999999999
                                 v.AngularVelocity = seat.Throttle*convertionKpHtoVelocity((speedLimit)*(if math.sign(seat.Throttle) == 1 then 1 else 0.5))
                                 local accDir = vehicleModel.PrimaryPart.CFrame:VectorToObjectSpace(vehicleModel.PrimaryPart.AssemblyLinearVelocity).Z
-                                task.spawn(function() task.wait(1); v.MotorMaxTorque = 1--[[550000000]]; end)
+                                --task.spawn(function() task.wait(1); v.MotorMaxTorque = 1--[[550000000]]; end)
                                 if seat.Throttle ~= 0 then
+                                    v.MotorMaxTorque = 1--999999999999
                                     v.MotorMaxAcceleration = if math.sign(accDir*seat.Throttle) == 1 then 60 else 25
                                     if math.sign(accDir*seat.Throttle) == 1 then
                                         v.AngularVelocity = 0
                                     end
                                 else
-                                    v.MotorMaxAcceleration = 1
+                                    v.MotorMaxTorque = 999999999999
+                                    v.MotorMaxAcceleration = 0
+                                    v.AngularVelocity = 0
                                 end
                             end
                         end
@@ -360,6 +362,19 @@ function Vehicle.init(maid : Maid)
 
                 elseif vehicleModel:GetAttribute("Class") == CAR_CLASS_KEY then
                     local occupantMaid = _maid:GiveTask(Maid.new())
+                    
+                    local seat = vehicleModel:FindFirstChild("VehicleSeat") :: VehicleSeat ?
+                    local wheels = vehicleModel:FindFirstChild("Wheels") :: Model ?
+
+                    if seat and wheels then
+                        for _,v in pairs(wheels:GetDescendants()) do
+                            if v:IsA("HingeConstraint") and v.ActuatorType == Enum.ActuatorType.Motor then
+                                v.MotorMaxTorque = 999999999999
+                                v.MotorMaxAcceleration = 0
+                                v.AngularVelocity = 0                            
+                            end
+                        end
+                    end
 
                     _maid:GiveTask(vehicleSeat:GetPropertyChangedSignal("Occupant"):Connect(function()
                         occupantMaid:DoCleaning()
@@ -377,10 +392,12 @@ function Vehicle.init(maid : Maid)
                                     sound.PlaybackSpeed = 1 + math.sqrt(vehicleModel.PrimaryPart.AssemblyLinearVelocity.Magnitude)/4
                                 end))
                             end)
+                        else
+                            vehicleSeat.AssemblyLinearVelocity = Vector3.new()
                         end
                     end)) 
 
-                    local vectorMaxForce = 20000
+                    local vectorMaxForce = vehicleModel:GetAttribute("Power") or 20000
                     _maid:GiveTask(RunService.Stepped:Connect(function()
                         local seat = vehicleModel:FindFirstChild("VehicleSeat") :: VehicleSeat
 
