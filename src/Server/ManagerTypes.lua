@@ -30,7 +30,7 @@ export type PlayerData = {
         Bio : string
     },
     Backpack : {[number] : string},
-    Vehicles : {[number] : string},
+    Vehicles : {[number] : VehicleData},
     Character : CustomizationUtil.CharacterData,
     CharacterSaves : {
         [number] : CustomizationUtil.CharacterData

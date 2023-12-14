@@ -243,6 +243,7 @@ function PlayerManager.new(player : Player, maid : Maid ?)
             self:AddVehicle("Police", true)
             self:AddVehicle("Firetruck", true)
 
+            --character loading
             self:SetData(self:GetData(), false)
         end
     end)) 
@@ -585,7 +586,7 @@ function PlayerManager:GetData()
     
 
     for _,v in pairs(self.Vehicles) do
-        table.insert(plrData.Vehicles, v.Name)
+        table.insert(plrData.Vehicles, v)
     end
    -- plrData.Character.AvatarType = CustomizationUtil.getCharacterInfo(char).AvatarType :: any
 
@@ -602,19 +603,9 @@ function PlayerManager:SetData(plrData : ManagerTypes.PlayerData, isYield : bool
         end
     end
 
-    local lockedVehiclesCount = 0
-    for _,v in pairs(self.Vehicles) do
-        if v.DestroyLocked == true then
-            lockedVehiclesCount += 1
-        end
-    end 
-
-    --print(plrData.Vehicles, self.Vehicles, lockedVehiclesCount, " LOcked vehicles count?")
     table.clear(self.Vehicles)
-    --print(self.Vehicles)
     for k,v in pairs(plrData.Vehicles) do
-        self:AddVehicle(v, if k <= lockedVehiclesCount then true else false) --hacky way to set vehicle's destroy locked properteh
-       -- print(k, v)
+        self:AddVehicle(v.Name, v.DestroyLocked) 
     end
     --print(self.Vehicles)
 

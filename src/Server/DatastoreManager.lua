@@ -22,7 +22,7 @@ type PlayerSaveData = {
 }
 --constants
 local DATA_ATTEMPT_COUNT = 10
-local CURRENT_GAME_VERSION = "v1.4"
+local CURRENT_GAME_VERSION = "v1.5"
 --variables
 local gameData1 = DataStoreService:GetDataStore("GameData9")
 --module
@@ -95,7 +95,10 @@ function DatastoreManager.load(player: Player, plrInfo: ManagerTypes.PlayerManag
 	print("Loading: " , data, "Current Game Version : ", CURRENT_GAME_VERSION)
 	if convertedData and convertedData.PlayerData then
 		local s, e = pcall(function() plrInfo:SetData(convertedData.PlayerData, true) end)
-		if not s and e then
+		if (not s and e) or (CURRENT_GAME_VERSION ~= convertedData.GameVersion) then
+			if (CURRENT_GAME_VERSION ~= convertedData.GameVersion) then
+				e = "Game version already updated!" :: any
+			end
 			warn("Error upon loading player data: " .. tostring(e))
 			plrInfo.onLoadingComplete:Fire(false)
 		end
