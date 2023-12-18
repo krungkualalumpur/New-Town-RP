@@ -43,7 +43,7 @@ export type PlayerManager = ManagerTypes.PlayerManager
 export type ABType = ManagerTypes.ABType
 --constants
 local MAX_TOOLS_COUNT = 10
-local MAX_VEHICLES_COUNT = 10
+local MAX_VEHICLES_COUNT = 25
 local MAX_CHARACTER_SLOT = 3
 
 local SAVE_DATA_INTERVAL = 60
