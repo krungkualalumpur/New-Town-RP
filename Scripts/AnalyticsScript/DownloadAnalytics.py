@@ -24,7 +24,8 @@ PLAYFAB_DATE_FORMAT_WITH_FRACTION_NO_TZ = '%Y-%m-%d %H:%M:%S.%f'
 CREDENTIAL_USERNAME = os.path.abspath("") + "Midas"
 TREE_ENCODING_PATH = "midas.cache"
 
-
+TITLE_ID = "F303E"
+DEV_SECRET_KEY = "8MWPBTO9AOFZUUZUJT4EEDRGWU54D874KN33B51653U68K1SKZ"
 TENANT_ID = "bec4273e-68ea-4d20-93da-5d86069f8215"
 CLIENT_ID = "fbd92855-43b2-4fad-82bb-cd7555ff6e2e"
 CLIENT_SECRET = "lXE8Q~fTCBQdJOGys5thfALUlkXbXnfsvbz-5aQD"
@@ -42,7 +43,7 @@ def queryFunc(query=DEFAULT_QUERY):
     kqClient = KustoClient(kcsb)
 
     sys.stdout = open(os.devnull, 'w')
-    response = kqClient.execute("F303E", query)
+    response = kqClient.execute(TITLE_ID, query)
     sys.stdout = sys.__stdout__
 
     # Response processing
@@ -202,7 +203,7 @@ def query_user_data_list(user_join_floor: datetime, join_window_in_days: int, us
             | take user_limit
             ;
             let users_by_event_count = all_users
-            | where FullName_Namespace == "title.F303E"
+            | where FullName_Namespace == "title.{TITLE_ID}"
             | summarize EventCount=count() by PlayFabUserId
             ;
             users_by_join_datetime
@@ -213,11 +214,11 @@ def query_user_data_list(user_join_floor: datetime, join_window_in_days: int, us
 		return queryFunc(query)
 
 def get_auth_config():
-	title_id = keyring.get_password("title_id", CREDENTIAL_USERNAME)
-	dev_secret_key = keyring.get_password("dev_secret_key", CREDENTIAL_USERNAME)
-	client_id = keyring.get_password("client_id", CREDENTIAL_USERNAME)
-	client_secret = keyring.get_password("client_secret", CREDENTIAL_USERNAME)
-	tenant_id = keyring.get_password("tenant_id", CREDENTIAL_USERNAME)
+	title_id = TITLE_ID
+	dev_secret_key = DEV_SECRET_KEY
+	client_id = CLIENT_ID
+	client_secret = CLIENT_SECRET
+	tenant_id = TENANT_ID
 	cookie = keyring.get_password("cookie", CREDENTIAL_USERNAME)
 
 	if not title_id:
@@ -286,7 +287,7 @@ let session_list = ['events.all']
 ;
 let all_events = ['events.all']
 | where Timestamp > only_events_after
-| where FullName_Namespace  == "title.F303E"
+| where FullName_Namespace  == "title.{TITLE_ID}"
 | project-rename PlayFabUserId=EntityLineage_master_player_account
 | where PlayFabUserId in (playfab_user_ids)
 | project-rename EventName=FullName_Name
@@ -401,7 +402,7 @@ def get_tree_encoding() -> dict:
 	encoding_file = open(TREE_ENCODING_PATH, "r")
 	config = json.loads(encoding_file.read())
 	return config
-print("Test")
+
 def download_all_event_data(
     user_join_floor: str , 
     join_window_in_days: int, 
