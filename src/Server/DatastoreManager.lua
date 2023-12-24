@@ -22,7 +22,7 @@ type PlayerSaveData = {
 }
 --constants
 local DATA_ATTEMPT_COUNT = 10
-local CURRENT_GAME_VERSION = "v1.5"
+local CURRENT_GAME_VERSION = "v1.6"
 --variables
 local gameData1 = DataStoreService:GetDataStore("GameData")
 --module

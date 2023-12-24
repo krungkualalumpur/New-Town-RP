@@ -13,9 +13,9 @@ local Maid = require(ReplicatedStorage:WaitForChild("Packages"):WaitForChild("Ma
 local NetworkUtil = require(ReplicatedStorage:WaitForChild("Packages"):WaitForChild("NetworkUtil"))
 local Signal = require(ReplicatedStorage:WaitForChild("Packages"):WaitForChild("Signal"))
 
-local Midas = require(ReplicatedStorage:WaitForChild("Packages"):WaitForChild("Midas"))
-local MidasEventTree = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("MidasEventTree"))
-local MidasStateTree = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("MidasStateTree"))
+local Analytics = require(ServerScriptService:WaitForChild("Server"):WaitForChild("Analytics"))
+--local MidasEventTree = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("MidasEventTree"))
+--local MidasStateTree = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("MidasStateTree"))
 --modules
 local InteractableUtil = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("InteractableUtil"))
 local ItemUtil = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("ItemUtil"))
@@ -90,6 +90,7 @@ local ON_JOB_CHANGE = "OnJobChange"
 
 local ON_ITEM_THROW = "OnItemThrow"
 
+local USER_INTERVAL_UPDATE = "UserIntervalUpdate"
 --variables
 local Registry = {}
 --references
@@ -220,6 +221,8 @@ function PlayerManager.new(player : Player, maid : Maid ?)
     self.Vehicles = {}
     self.ChatCount = 0
     self.CharacterSaves = {}
+    self.Framerate = nil
+    self.FirstVisitTimestamp = DateTime.now().UnixTimestamp
 
     self.isLoaded = false
 
@@ -260,6 +263,20 @@ function PlayerManager.new(player : Player, maid : Maid ?)
         end
     end))
 
+    --testing only
+    --[[self._Maid:GiveTask(RunService.Stepped:Connect(function()
+        if (tick() - intTick) >= 1 then
+            local currentTimeStamp = DateTime.now().UnixTimestamp
+            local is_retained_on_d0 = if self then (if self.FirstVisitTimestamp and (currentTimeStamp - self.FirstVisitTimestamp) <= 60*60*24*1 then true else false) else false
+            local is_retained_on_d1 = if self then (if self.FirstVisitTimestamp and (((currentTimeStamp - self.FirstVisitTimestamp) >= 60*60*24*1) and (currentTimeStamp - self.FirstVisitTimestamp <= 60*60*24*(1 + 1))) then true else false) else false
+            local is_retained_on_d7 = if self then (if self.FirstVisitTimestamp and (((currentTimeStamp - self.FirstVisitTimestamp) >= 60*60*24*7) and (currentTimeStamp - self.FirstVisitTimestamp <= 60*60*24*(7 + 1))) then true else false) else false
+            local is_retained_on_d14 = if self then (if self.FirstVisitTimestamp and (((currentTimeStamp - self.FirstVisitTimestamp) >= 60*60*24*14) and (currentTimeStamp - self.FirstVisitTimestamp <= 60*60*24*(14 + 1))) then true else false) else false
+            local is_retained_on_d28 = if self then (if self.FirstVisitTimestamp and (((currentTimeStamp - self.FirstVisitTimestamp) >= 60*60*24*28) and (currentTimeStamp - self.FirstVisitTimestamp <= 60*60*24*(28 + 1))) then true else false) else false
+        
+            print(self.FirstVisitTimestamp, " : first visit time stapmp\n", "d0: ", tostring(is_retained_on_d0) .. "\n", "d1: " .. tostring(is_retained_on_d1) .. "\n", "d7: " .. tostring(is_retained_on_d7))
+        end
+    end))]]
+
     --self:SetData(self:GetData(), false)
     --hacky way to store character info
     self._Maid.CharacterModel = player.Character
@@ -284,7 +301,7 @@ function PlayerManager.new(player : Player, maid : Maid ?)
     end))
 
     --analytics
-    MidasStateTree.Gameplay.BackpackAdded.Value(player, function()
+    --[[MidasStateTree.Gameplay.BackpackAdded.Value(player, function()
         return #self.Backpack
     end)
 
@@ -314,7 +331,7 @@ function PlayerManager.new(player : Player, maid : Maid ?)
 
     MidasStateTree.Gameplay.AvatarSaved.Value(player, function()
         return #self.CharacterSaves 
-    end)
+    end)]]
 
    --[[ MidasStateTree.Others.ABValue(player, function()
         return string.byte("B")
@@ -340,6 +357,8 @@ function PlayerManager:InsertToBackpack(tool : Instance)
     local toolData : BackpackUtil.ToolData<boolean> = BackpackUtil.getData(tool, false) :: any
     toolData.IsEquipped = false
     table.insert(self.Backpack, toolData)
+ 
+    Analytics.updateDataTable(self.Player, "User", "Gameplay", self)
     return true
 end
 
@@ -424,7 +443,7 @@ function PlayerManager:SetBackpackEquip(isEquip : boolean, toolKey : number)
 
     NetworkUtil.fireClient(UPDATE_PLAYER_BACKPACK, self.Player, self:GetBackpack(true, true))
 
-
+    Analytics.updateDataTable(self.Player, "User", "Gameplay", self)
     return
 end
 
@@ -436,6 +455,7 @@ function PlayerManager:DeleteBackpack(toolKey : number)
 
     NetworkUtil.fireClient(UPDATE_PLAYER_BACKPACK, plr, self:GetBackpack(true, true))
 
+    Analytics.updateDataTable(self.Player, "User", "Gameplay", self)
     return
 end
 
@@ -454,6 +474,7 @@ function PlayerManager:AddVehicle(vehicleName : string, isLocked : boolean)
     local vehicleData : VehicleData = newVehicleData("Vehicle", vehicleClass, false, vehicleName, self.Player.UserId, isLocked) -- ItemUtil.getData(ItemUtil.getItemFromName(vehicleName), true) :: any
    -- print(vehicleData.DestroyLocked, vehicleData.Name, " Why u not lock ah/?!?!", isLocked)
     table.insert(self.Vehicles, vehicleData)
+    Analytics.updateDataTable(self.Player, "User", "Gameplay", self)
     return true
 end
 
@@ -526,6 +547,7 @@ function PlayerManager:SpawnVehicle(key : number, isSpawned : boolean, vehicleNa
         self._Maid.CurrentSpawnedVehicle = nil
     end
 
+    Analytics.updateDataTable(self.Player, "User", "Gameplay", self)
     return 
 end
 
@@ -533,6 +555,8 @@ function PlayerManager:DeleteVehicle(key : number)
     self:SpawnVehicle(key, false)
 
     table.remove(self.Vehicles, key)
+
+    Analytics.updateDataTable(self.Player, "User", "Gameplay", self)
     return
 end
 
@@ -556,6 +580,7 @@ function PlayerManager:GetData()
     plrData.RoleplayBios.Bio = self.RoleplayBios.Bio
     --print(self, " banyak buanget", self.CharacterSaves)
     plrData.Backpack = {};
+    plrData.FirstVisitTimestamp = self.FirstVisitTimestamp
     plrData.Character = characterData;
     plrData.CharacterSaves = table.clone(self.CharacterSaves)
     plrData.Vehicles = {};
@@ -658,6 +683,8 @@ function PlayerManager:SetData(plrData : ManagerTypes.PlayerData, isYield : bool
     if not self.isLoaded then
         self.onLoadingComplete:Fire(true)
     end
+
+    self.FirstVisitTimestamp = plrData.FirstVisitTimestamp or DateTime.now().UnixTimestamp
     return true
 end
 
@@ -672,7 +699,7 @@ function PlayerManager:SaveCharacterSlot(characterData : CustomizationUtil.Chara
         table.insert(self.CharacterSaves,  characterData or table.clone(CustomizationUtil.GetInfoFromCharacter(char)))
     end
 
-    MidasEventTree.Gameplay.AvatarSaved.Value(self.Player)
+   -- MidasEventTree.Gameplay.AvatarSaved.Value(self.Player)
     return self.CharacterSaves
 end
 
@@ -1012,7 +1039,7 @@ function PlayerManager.init(maid : Maid)
                 end 
             end 
         end]]
-        MidasEventTree.Gameplay.EquipTool.Value(plr)
+       -- MidasEventTree.Gameplay.EquipTool.Value(plr)
 
         return nil
     end)
@@ -1022,7 +1049,7 @@ function PlayerManager.init(maid : Maid)
 
         NotificationUtil.Notify(plr, "You deleted " .. toolName)
 
-        MidasEventTree.Gameplay.BackpackDeleted.Value(plr)
+       -- MidasEventTree.Gameplay.BackpackDeleted.Value(plr)
         return nil
     end)
 
@@ -1040,7 +1067,7 @@ function PlayerManager.init(maid : Maid)
 
         NetworkUtil.fireClient(UPDATE_PLAYER_BACKPACK, plr, plrInfo:GetBackpack(true, true))
 
-        MidasEventTree.Gameplay.BackpackAdded.Value(plr)
+        --MidasEventTree.Gameplay.BackpackAdded.Value(plr)
         
         return nil
     end)
@@ -1060,7 +1087,7 @@ function PlayerManager.init(maid : Maid)
         if success then
             NotificationUtil.Notify(plr, "You got " .. vehicleName ..", you can spawn it at the parking lot at the nearest vehicle spawner.")
         end
-        MidasEventTree.Gameplay.VehiclesAdded.Value(plr)
+        --MidasEventTree.Gameplay.VehiclesAdded.Value(plr)
         return nil
     end)
     
@@ -1069,7 +1096,7 @@ function PlayerManager.init(maid : Maid)
 
         plrInfo:DeleteVehicle(key)
 
-        MidasEventTree.Gameplay.VehiclesDeleted.Value(plr) 
+        --MidasEventTree.Gameplay.VehiclesDeleted.Value(plr) 
         return nil
     end)
 
@@ -1086,6 +1113,9 @@ function PlayerManager.init(maid : Maid)
 
 
     NetworkUtil.onServerInvoke(ON_CUSTOMIZE_CHAR, function(plr : Player, customizationId : number, itemType : Enum.AvatarItemType)
+        local plrInfo = PlayerManager.get(plr)
+        assert(plrInfo)
+
         local info , infoType = nil, Enum.InfoType.Asset
 
         local s,e = pcall(function() info = MarketplaceService:GetProductInfo(customizationId, infoType) end)
@@ -1112,7 +1142,9 @@ function PlayerManager.init(maid : Maid)
         end
 
         CustomizationUtil.Customize(plr, customizationId, itemType) 
-        MidasEventTree.Gameplay.CustomizeAvatar.Value(plr)
+
+        Analytics.updateDataTable(plr, "User", "Customization", plrInfo)
+        --MidasEventTree.Gameplay.CustomizeAvatar.Value(plr)
         return nil
     end)
 
@@ -1180,7 +1212,7 @@ function PlayerManager.init(maid : Maid)
         end
         plrManager:SetData(plrData, false)
 
-        MidasEventTree.Gameplay.CustomizeAvatar.Value(plr)
+        --MidasEventTree.Gameplay.CustomizeAvatar.Value(plr)
     end))
 
     maid:GiveTask(NetworkUtil.onServerEvent(ON_JOB_CHANGE, function(plr : Player, jobData : Jobs.JobData)
@@ -1195,6 +1227,15 @@ function PlayerManager.init(maid : Maid)
         local plrManager = PlayerManager.get(plr)
         assert(plrManager)
         plrManager:ThrowItem(toolData)
+    end))
+
+    maid:GiveTask(NetworkUtil.onServerEvent(USER_INTERVAL_UPDATE, function(plr : Player, fps : number)
+        local plrManager = PlayerManager.get(plr)
+        assert(plrManager)
+        plrManager.Framerate = fps
+        Analytics.updateDataTable(plr, "Server", "Population", plrManager)
+        Analytics.updateDataTable(plr, "Server", "Performance", plrManager)
+        Analytics.updateDataTable(plr, "User", "Map", plrManager)
     end))
 
 end

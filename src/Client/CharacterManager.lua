@@ -10,8 +10,8 @@ local NetworkUtil = require(ReplicatedStorage:WaitForChild("Packages"):WaitForCh
 local Signal = require(ReplicatedStorage:WaitForChild("Packages"):WaitForChild("Signal"))
 --modules
 local InputHandler = require(ReplicatedStorage:WaitForChild("Client"):WaitForChild("InputHandler"))
-local MidasEventTree = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("MidasEventTree"))
-local MidasStateTree = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("MidasStateTree"))
+--local MidasEventTree = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("MidasEventTree"))
+--local MidasStateTree = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("MidasStateTree"))
 local VehicleControl = require(ReplicatedStorage:WaitForChild("Client"):WaitForChild("GuiSys"):WaitForChild("VehicleControl"))
 --types
 type Maid = Maid.Maid
@@ -290,9 +290,9 @@ local function onCharacterAdded(char : Model)
         char:SetAttribute("IsSprinting", false)
     end 
 
-    MidasStateTree.Others.ABValue(Player, function()
-        return string.byte(abValue)
-    end)
+    --MidasStateTree.Others.ABValue(Player, function()
+    --    return string.byte(abValue)
+    --end)
     --[[if game:GetService("UserInputService").KeyboardEnabled then
         char:SetAttribute("IsSprinting", false)
     else

@@ -3,6 +3,7 @@
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local CollectionService = game:GetService("CollectionService")
 local ServerScriptService = game:GetService("ServerScriptService")
+local RunService = game:GetService("RunService")
 --packages
 local Midas = require(ReplicatedStorage:WaitForChild("Packages"):WaitForChild("Midas"))
 local Maid = require(ReplicatedStorage:WaitForChild("Packages"):WaitForChild("Maid"))
@@ -16,6 +17,7 @@ local ToolManager = require(ServerScriptService:WaitForChild("Server"):WaitForCh
 local Roleplay = require(ServerScriptService:WaitForChild("Server"):WaitForChild("Roleplay"))
 local MarketplaceManager = require(ServerScriptService:WaitForChild("Server"):WaitForChild("MarketplaceManager"))
 local DateSys = require(ServerScriptService:WaitForChild("Server"):WaitForChild("DateSys"))
+local Analytics = require(ServerScriptService:WaitForChild("Server"):WaitForChild("Analytics"))
 
 local InteractableUtil = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("InteractableUtil"))
 local NotificationUtil = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("NotificationUtil"))
@@ -24,12 +26,14 @@ local MarketplaceUtil = require(ReplicatedStorage:WaitForChild("Shared"):WaitFor
 local TelevisionChannel = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("TelevisionChannel"))
 --types
 --constants
-local TITLE_ID = "F303E"
-local DEV_SECRET_KEY = "8MWPBTO9AOFZUUZUJT4EEDRGWU54D874KN33B51653U68K1SKZ"
 --references
-local maid = Maid.new()
 --variables
+--local function
 --script
+local maid = Maid.new()
+
+Analytics.init(maid)
+
 DateSys.init(maid)
 
 Environments.init(maid)
@@ -48,6 +52,10 @@ ToolManager.init(maid)
 Roleplay.init(maid)
 task.spawn(function() MarketplaceManager.init(maid) end)
 
-
+--analytics setup
 --Midas.init(TITLE_ID, DEV_SECRET_KEY)
+
+
+--Midas.init(maid)
+--Midas.ProjectId = "F303E"
 

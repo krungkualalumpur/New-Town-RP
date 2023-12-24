@@ -7,12 +7,12 @@ from adal import AuthenticationContext
 from pandas import DataFrame
 from pandas import Timestamp
 from datetime import datetime
-#import midas.playfab as playfab
-#import midas.data_encoder as data_encoder
+import midas.playfab as playfab
+import midas.data_encoder as data_encoder
 import keyring
 import json
 import math
-#from midas.playfab import PlayFabClient
+from midas.playfab import PlayFabClient
 CLUSTER = "https://insights.playfab.com"
 
 DEFAULT_QUERY ="['events.all'] | limit 100"
@@ -32,8 +32,8 @@ CLIENT_SECRET = "lXE8Q~fTCBQdJOGys5thfALUlkXbXnfsvbz-5aQD"
 
 def queryFunc(query=DEFAULT_QUERY):
     print("executing query")
-    context = AuthenticationContext("https://login.microsoftonline.com/" + TENANT_ID)
-    token_response = context.acquire_token_with_client_credentials("https://help.kusto.windows.net", CLIENT_ID, CLIENT_SECRET)
+    context = AuthenticationContext("https://login.microsoftonline.com/" + TENANT_ID); 	print("executing query2")
+    token_response = context.acquire_token_with_client_credentials("https://help.kusto.windows.net", CLIENT_ID, CLIENT_SECRET); 	print("executing query3")
     token = None
     if token_response:
         if token_response['accessToken']:
@@ -41,9 +41,9 @@ def queryFunc(query=DEFAULT_QUERY):
 
     kcsb = KustoConnectionStringBuilder.with_aad_application_token_authentication(CLUSTER, token)
     kqClient = KustoClient(kcsb)
-
+	
     sys.stdout = open(os.devnull, 'w')
-    response = kqClient.execute(TITLE_ID, query)
+    response = kqClient.execute(TITLE_ID, query); 	print("executing query7")
     sys.stdout = sys.__stdout__
 
     # Response processing
@@ -185,40 +185,40 @@ def get_playfab_str_from_datetime(datetime: datetime) -> str:
 	return datetime.strftime(PLAYFAB_DATE_FORMAT)
 
 def query_user_data_list(user_join_floor: datetime, join_window_in_days: int, user_limit=100000):
-		query = f"""let filter_users_who_joined_before= datetime("{get_playfab_str_from_datetime(user_join_floor)}");
-            let join_window_in_days = {join_window_in_days};
-            let user_limit = {user_limit+1};
-            let filter_users_who_joined_after = datetime_add("day", join_window_in_days, filter_users_who_joined_before);
-            let all_users = materialize(
-            ['events.all']
-            | where Timestamp  > filter_users_who_joined_before
-            | project-rename PlayFabUserId=EntityLineage_master_player_account
-            );
-            let users_by_join_datetime = all_users
-            | where FullName_Name == "player_added_title"
-            | where Timestamp < filter_users_who_joined_after
-            | summarize JoinTimestamp = min(Timestamp) by PlayFabUserId
-            | where JoinTimestamp > filter_users_who_joined_before
-            | order by rand()
-            | take user_limit
-            ;
-            let users_by_event_count = all_users
-            | where FullName_Namespace == "title.{TITLE_ID}"
-            | summarize EventCount=count() by PlayFabUserId
-            ;
-            users_by_join_datetime
-            | join kind=inner users_by_event_count on PlayFabUserId
-            | project-away PlayFabUserId1
-            | sort by EventCount
-        """
-		return queryFunc(query)
+	query = f"""let filter_users_who_joined_before= datetime("{get_playfab_str_from_datetime(user_join_floor)}");
+		let join_window_in_days = {join_window_in_days};
+		let user_limit = {user_limit+1};
+		let filter_users_who_joined_after = datetime_add("day", join_window_in_days, filter_users_who_joined_before);
+		let all_users = materialize(
+		['events.all']
+		| where Timestamp  > filter_users_who_joined_before
+		| project-rename PlayFabUserId=EntityLineage_master_player_account
+		);
+		let users_by_join_datetime = all_users
+		| where FullName_Name == "player_added_title"
+		| where Timestamp < filter_users_who_joined_after
+		| summarize JoinTimestamp = min(Timestamp) by PlayFabUserId
+		| where JoinTimestamp > filter_users_who_joined_before
+		| order by rand()
+		| take user_limit
+		;
+		let users_by_event_count = all_users
+		| where FullName_Namespace == "title.{TITLE_ID}"
+		| summarize EventCount=count() by PlayFabUserId
+		;
+		users_by_join_datetime
+		| join kind=inner users_by_event_count on PlayFabUserId
+		| project-away PlayFabUserId1
+		| sort by EventCount
+	"""
+	return queryFunc(query)
 
 def get_auth_config():
-	title_id = TITLE_ID
-	dev_secret_key = DEV_SECRET_KEY
-	client_id = CLIENT_ID
-	client_secret = CLIENT_SECRET
-	tenant_id = TENANT_ID
+	title_id = keyring.get_password("title_id", CREDENTIAL_USERNAME)
+	dev_secret_key = keyring.get_password("dev_secret_key", CREDENTIAL_USERNAME)
+	client_id = keyring.get_password("client_id", CREDENTIAL_USERNAME)
+	client_secret = keyring.get_password("client_secret", CREDENTIAL_USERNAME)
+	tenant_id = keyring.get_password("tenant_id", CREDENTIAL_USERNAME)
 	cookie = keyring.get_password("cookie", CREDENTIAL_USERNAME)
 
 	if not title_id:
@@ -226,7 +226,7 @@ def get_auth_config():
 
 	if not dev_secret_key:
 		dev_secret_key = ""
-
+	
 	if not client_id:
 		client_id = ""
 		
@@ -275,45 +275,45 @@ def update_based_on_success(
 	return event_limit, fail_delay
 
 def query_events_from_user_data(playfab_user_ids: list[str], user_join_floor: datetime):
-		query = f"""let playfab_user_ids = dynamic({json.dumps(playfab_user_ids)});
-let only_events_after = datetime("{get_playfab_str_from_datetime(user_join_floor)}");
-let session_list = ['events.all']
-| where FullName_Name == "player_logged_in"
-| project-keep Timestamp, EventId, EntityLineage_master_player_account
-| project-rename SessionId=EventId,PlayFabUserId=EntityLineage_master_player_account
-| where PlayFabUserId in (playfab_user_ids)
-| sort by Timestamp
-// | join kind=inner users_by_event_count on PlayFabUserId
-;
-let all_events = ['events.all']
-| where Timestamp > only_events_after
-| where FullName_Namespace  == "title.{TITLE_ID}"
-| project-rename PlayFabUserId=EntityLineage_master_player_account
-| where PlayFabUserId in (playfab_user_ids)
-| project-rename EventName=FullName_Name
-| project-keep EventData, Timestamp, PlayFabUserId, EventName, EventId
-;
-let session_events = all_events
-| join kind=fullouter  (
-    session_list
-    | project-rename SessionTimestamp=Timestamp
-) on PlayFabUserId
-| project-away PlayFabUserId1
-| extend Time = todouble(todouble(datetime_diff("millisecond", Timestamp, SessionTimestamp))/todouble(1000))
-| extend EventSessionId = strcat(EventId, Time)
-| where Time >= 0.0
-;
-let final_events = session_events
-| join kind=inner  (
-    session_events 
-    | summarize min(Time) by EventId
-    | extend EventSessionId = strcat(EventId, min_Time)
-) on EventSessionId
-| project-keep Timestamp, Time, SessionId, EventData, EventName, PlayFabUserId, EventId
-;
-final_events
-"""
-		return queryFunc(query)
+	query = f"""let playfab_user_ids = dynamic({json.dumps(playfab_user_ids)});
+	let only_events_after = datetime("{get_playfab_str_from_datetime(user_join_floor)}");
+	let session_list = ['events.all']
+	| where FullName_Name == "player_logged_in"
+	| project-keep Timestamp, EventId, EntityLineage_master_player_account
+	| project-rename SessionId=EventId,PlayFabUserId=EntityLineage_master_player_account
+	| where PlayFabUserId in (playfab_user_ids)
+	| sort by Timestamp
+	// | join kind=inner users_by_event_count on PlayFabUserId
+	;
+	let all_events = ['events.all']
+	| where Timestamp > only_events_after
+	| where FullName_Namespace  == "title.{TITLE_ID}"
+	| project-rename PlayFabUserId=EntityLineage_master_player_account
+	| where PlayFabUserId in (playfab_user_ids)
+	| project-rename EventName=FullName_Name
+	| project-keep EventData, Timestamp, PlayFabUserId, EventName, EventId
+	;
+	let session_events = all_events
+	| join kind=fullouter  (
+		session_list
+		| project-rename SessionTimestamp=Timestamp
+	) on PlayFabUserId
+	| project-away PlayFabUserId1
+	| extend Time = todouble(todouble(datetime_diff("millisecond", Timestamp, SessionTimestamp))/todouble(1000))
+	| extend EventSessionId = strcat(EventId, Time)
+	| where Time >= 0.0
+	;
+	let final_events = session_events
+	| join kind=inner  (
+		session_events 
+		| summarize min(Time) by EventId
+		| extend EventSessionId = strcat(EventId, min_Time)
+	) on EventSessionId
+	| project-keep Timestamp, Time, SessionId, EventData, EventName, PlayFabUserId, EventId
+	;
+	final_events
+	"""
+	return queryFunc(query)
 
 def recursively_query_events(
     user_data_list, 
@@ -410,39 +410,42 @@ def download_all_event_data(
     max_event_list_length=20000, 
     update_increment=2500
 ):
-		user_join_floor_datetime = None
-		if type(user_join_floor) == str:
-			user_join_floor_datetime = get_datetime_from_playfab_str(user_join_floor)
-		else:
-			assert type(user_join_floor) == datetime
-			user_join_floor_datetime = user_join_floor
-		user_data_list = query_user_data_list(user_join_floor_datetime, join_window_in_days, user_limit)
+	print("spirit1")
 
-		total_event_count = 0 ; print(user_data_list, " what?")
-		for user_data in user_data_list:
-			total_event_count += user_data["EventCount"]
-		day_or_days = "days"
-		if join_window_in_days == 1:
-			day_or_days = "day"
-		if len(user_data_list) < user_limit:
-			print(f"{len(user_data_list)} users joined in the {join_window_in_days} {day_or_days} after {user_join_floor_datetime}\n")
-		else:
-			print(f"querying a randomized list of {len(user_data_list)} users who joined in the {join_window_in_days} {day_or_days} after {user_join_floor_datetime}\n")
+	user_join_floor_datetime = None
+	if type(user_join_floor) == str:
+		user_join_floor_datetime = get_datetime_from_playfab_str(user_join_floor)
+	else:
+		assert type(user_join_floor) == datetime
+		user_join_floor_datetime = user_join_floor
 
-		event_data_list = recursively_query_events(
-			user_data_list=user_data_list, 
-			event_limit=max_event_list_length, 
-			fail_delay=5, 
-			original_list_limit=max_event_list_length, 
-			event_update_increment=update_increment, 
-			delay_update_increment=5,
-			user_join_floor=user_join_floor_datetime,
-			total_events=total_event_count,
-			start_tick= time.time()
-		)
+	user_data_list = query_user_data_list(user_join_floor_datetime, join_window_in_days, user_limit)
 
-		print(f"\nreturning {len(event_data_list)} events from {len(user_data_list)} users")
-		return event_data_list
+	total_event_count = 0
+	for user_data in user_data_list:
+		total_event_count += user_data["EventCount"]
+	day_or_days = "days"
+	if join_window_in_days == 1:
+		day_or_days = "day"
+	if len(user_data_list) < user_limit:
+		print(f"{len(user_data_list)} users joined in the {join_window_in_days} {day_or_days} after {user_join_floor_datetime}\n")
+	else:
+		print(f"querying a randomized list of {len(user_data_list)} users who joined in the {join_window_in_days} {day_or_days} after {user_join_floor_datetime}\n")
+
+	event_data_list = recursively_query_events(
+		user_data_list=user_data_list, 
+		event_limit=max_event_list_length, 
+		fail_delay=5, 
+		original_list_limit=max_event_list_length, 
+		event_update_increment=update_increment, 
+		delay_update_increment=5,
+		user_join_floor=user_join_floor_datetime,
+		total_events=total_event_count,
+		start_tick= time.time()
+	)
+
+	print(f"\nreturning {len(event_data_list)} events from {len(user_data_list)} users")
+	return event_data_list
 
 def download(json_path: str, download_start_data: str, download_window: int, user_limit: int, is_raw: bool):
     abs_json_path = os.path.abspath(json_path)
@@ -453,12 +456,12 @@ def download(json_path: str, download_start_data: str, download_window: int, use
     pf_auth_config = auth_config["playfab"]
     aad_auth_config = auth_config["aad"]
 
-    #pf_client = PlayFabClient(
-   #     client_id = aad_auth_config["client_id"],
-    #    client_secret = aad_auth_config["client_secret"],
-    #    tenant_id = aad_auth_config["tenant_id"],
-    #    title_id = pf_auth_config["title_id"]
-   # )
+    pf_client = PlayFabClient(
+        client_id = CLIENT_ID,
+        client_secret = CLIENT_SECRET,
+        tenant_id = TENANT_ID,
+        title_id = TITLE_ID
+    )
     df = DataFrame(download_all_event_data(
         user_join_floor= get_datetime_from_playfab_str(download_start_data),
         join_window_in_days=download_window,

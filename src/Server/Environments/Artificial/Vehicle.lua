@@ -16,8 +16,8 @@ local NotificationUtil = require(ReplicatedStorage:WaitForChild("Shared"):WaitFo
 local PlayerManager = require(ServerScriptService:WaitForChild("Server"):WaitForChild("PlayerManager"))
 local AnimationUtil = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("AnimationUtil"))
 
-local MidasEventTree = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("MidasEventTree"))
-local MidasStateTree = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("MidasStateTree"))
+--local MidasEventTree = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("MidasEventTree"))
+--local MidasStateTree = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("MidasStateTree"))
 --types
 type Maid = Maid.Maid
 --constants
@@ -440,7 +440,7 @@ function Vehicle.init(maid : Maid)
             NotificationUtil.Notify(plr, "You despawned " .. tostring(plrInfo.Vehicles[key].Name))
         end
 
-        MidasEventTree.Gameplay.EquipVehicle.Value(plr)
+        --MidasEventTree.Gameplay.EquipVehicle.Value(plr)
 
         return plrInfo.Vehicles
     end)

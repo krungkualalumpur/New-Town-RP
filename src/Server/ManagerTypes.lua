@@ -35,7 +35,8 @@ export type PlayerData = {
     CharacterSaves : {
         [number] : CustomizationUtil.CharacterData
     },
-    ChatCount : number
+    ChatCount : number,
+    FirstVisitTimestamp : number
 }
 
 export type PlayerManager = {
@@ -53,6 +54,8 @@ export type PlayerManager = {
         [number] : CustomizationUtil.CharacterData
     },
     ChatCount : number,
+    FirstVisitTimestamp : number,
+    Framerate : number ?,
     
     isLoaded : boolean,
 
