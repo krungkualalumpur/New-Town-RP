@@ -636,6 +636,8 @@ return function(
     local roleplayText = _Value("← Roleplay Actions")
     local customizationText = _Value("← Outfit")
 
+    local alertColor = _Value(Color3.fromRGB(255,50,50))
+
     local mainOptions =  _new("Frame")({
         LayoutOrder = 0,
         BackgroundTransparency = 1,
@@ -652,12 +654,39 @@ return function(
                 BackgroundTransparency = 1,
                 Size = UDim2.fromScale(1, 0.12)
             }),
-            getImageButton(maid, 2815418737, function()
+           _bind(getImageButton(maid, 2815418737, function()
                 UIStatus:Set(if UIStatus:Get() ~= "Backpack" then "Backpack" else nil)
                 backpackText:Set("")
                 roleplayText:Set("")
                 customizationText:Set("")
-            end, backpackText, 2, true),
+            end, backpackText, 2, true))({
+                Children = {
+                    _new("TextLabel")({
+                        BackgroundTransparency = _Computed(function(backpackList : {[number] : ToolData})
+                            task.spawn(function()
+                                alertColor:Set(PRIMARY_COLOR)
+                                task.wait(0.1)
+                                alertColor:Set(SECONDARY_COLOR)
+                            end)
+                            return 0.1
+                        end, backpack),
+                        BackgroundColor3 = alertColor:Tween(0.1),
+                        Position = UDim2.fromScale(0.7, 0.7),
+                        Size = UDim2.fromScale(0.4, 0.4),
+                        RichText = true,
+                        TextColor3 = TEXT_COLOR,
+                        Text = _Computed(function(backpackList : {[number] : ToolData})
+                            return "<b>" .. #backpackList .. "</b>"
+                        end, backpack),
+                        TextScaled = true,
+                        Children = {
+                            _new("UICorner")({
+                                CornerRadius = UDim.new(1,0)
+                            })
+                        }
+                    })
+                }
+            }),
             getImageButton(maid, 11955884948, function()
                 UIStatus:Set(if UIStatus:Get() ~= "Roleplay" then "Roleplay" else nil)
                 backpackText:Set("")
@@ -677,6 +706,10 @@ return function(
         }
     }) :: Frame
 
+    --[[local secondaryOptions = _new("Frame")({
+        Size = UDim2.fromScale(0.7, 1),
+
+    })]]
     local out = _new("Frame")({
         Name = "MainUI",
         Parent = target,
@@ -697,7 +730,7 @@ return function(
             }),
             --dateFrame,
             mainOptions,
-
+            --secondaryOptions
         }
     }) :: Frame
 

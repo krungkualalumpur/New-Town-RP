@@ -2,13 +2,12 @@
 --services
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
+local Players = game:GetService("Players")
 --packages
 local Maid = require(ReplicatedStorage:WaitForChild("Packages"):WaitForChild("Maid"))
 local ColdFusion = require(ReplicatedStorage:WaitForChild("Packages"):WaitForChild("ColdFusion8"))
 local Signal = require(ReplicatedStorage:WaitForChild("Packages"):WaitForChild("Signal"))
 --modules
-local FeedbackUI = require(ReplicatedStorage:WaitForChild("Client"):WaitForChild("MainUI"):WaitForChild("FeedbackUI"))
-local ExitButton = require(ReplicatedStorage:WaitForChild("Client"):WaitForChild("ExitButton"))
 --types
 type Maid = Maid.Maid
 type Signal = Signal.Signal
@@ -21,8 +20,11 @@ local SECONDARY_COLOR = Color3.fromRGB(42, 42, 42)
 local TERTIARY_COLOR = Color3.fromRGB(70,70,70)
 
 local TEXT_COLOR = Color3.fromRGB(255,255,255)
+
+local MAX_FEEDBACK_LETTER = 100
 --variables
 --references
+local Player = Players.LocalPlayer
 --local functions
 
 function getButton(
@@ -48,7 +50,6 @@ function getButton(
         BackgroundColor3 = color or TERTIARY_COLOR,
         Size = UDim2.fromScale(0.25, 1),
         AutomaticSize = Enum.AutomaticSize.X,
-        TextXAlignment = Enum.TextXAlignment.Center,
         RichText = true,
         AutoButtonColor = true,
         Font = Enum.Font.Gotham,
@@ -66,6 +67,7 @@ function getButton(
                 activatedFn()
             end
         },
+        TextXAlignment = Enum.TextXAlignment.Center,
         TextYAlignment = Enum.TextYAlignment.Center,
     })
 
@@ -130,11 +132,8 @@ end
 --class
 return function(
     maid : Maid,
-    onSprintClick : Signal,
 
-    sprintState : ColdFusion.State<boolean>,
-
-    onFeedbackSend : Signal
+    OnFeedbackSend : Signal
 )
     local _fuse = ColdFusion.fuse(maid)
     local _new = _fuse.new
@@ -145,80 +144,91 @@ return function(
     local _Value = _fuse.Value
     local _Computed = _fuse.Computed
 
-    local isExitButtonVisible = _Value(true)
-    
-    local function getExitButton(ui : GuiObject)
-        local exitButton = ExitButton.new(
-            ui :: GuiObject, 
-            isExitButtonVisible,
-            function()
-                ui.Parent = nil
-                return nil 
-            end
-        ) 
-        exitButton.Instance.Parent = ui
-    end
-    
-    local sprintButton 
-
-    if game:GetService("UserInputService").KeyboardEnabled then
-        sprintButton = getImageButton(maid, _Computed(function(isSprinting : boolean)
-            return if isSprinting then 9525535512 else 9525534183 
-        end, sprintState), function()
-                onSprintClick:Fire()
-        end, _Computed(function(isSprinting : boolean)
-            return if isSprinting then "Running" else "Walking" 
-        end, sprintState), 1)  
-    end
-
-    local feedbackUI = FeedbackUI(
-        maid,
-        onFeedbackSend
-    )
-
-    getExitButton(feedbackUI)
-
-    local feedBackScreenGui = _new("ScreenGui")({
-        Parent = if RunService:IsRunning() then game.Players.LocalPlayer.PlayerGui else game:GetService("CoreGui")
+    local feedbackText = _Value("")
+     
+    local textBox =  _new("TextBox")({
+        Size = UDim2.fromScale(0.95, 0.6),
+        Font = Enum.Font.GothamBold,
+        PlaceholderText = "Your feedback means alot for the growth of this city!",
+        TextColor3 = SECONDARY_COLOR,
+        TextScaled = true,
+        Children = {
+            _new("UITextSizeConstraint")({
+                MaxTextSize = 20,
+                MinTextSize = 5
+            })
+        },
     })
 
-    local feedbackButton = getButton(maid, "Leave a feedback", function()
-        feedbackUI.Parent = feedBackScreenGui 
-        print(feedbackUI, feedbackUI.Parent)
-        return
-    end, 2, Color3.fromRGB(50,200,50))
-
-    local out = _new("Frame")({
-        Position = UDim2.fromScale(0, 0.05),
-        Size = UDim2.fromScale(1, 0.065),
-        BackgroundTransparency = 1,
+    local out : Frame 
+    
+    out = _new("Frame")({
+        BackgroundColor3 = BACKGROUND_COLOR,
+        AnchorPoint = Vector2.new(0.5,0.5),
+        Position = UDim2.fromScale(0.5, 0.5),
+        Size = UDim2.fromScale(0.5, 0.5),
         Children = {
+            _new("UICorner")({
+                CornerRadius = UDim.new(0.025,0)
+            }),
             _new("UIPadding")({
                 PaddingTop = PADDING_SIZE,
                 PaddingBottom = PADDING_SIZE,
                 PaddingLeft = PADDING_SIZE,
                 PaddingRight = PADDING_SIZE
             }),
+
             _new("UIListLayout")({
-                Padding = PADDING_SIZE,
+                FillDirection = Enum.FillDirection.Vertical,
                 SortOrder = Enum.SortOrder.LayoutOrder,
-                FillDirection = Enum.FillDirection.Horizontal,
+                Padding = PADDING_SIZE,
                 HorizontalAlignment = Enum.HorizontalAlignment.Center
             }),
-             
-            sprintButton,
-            feedbackButton
-            --[[_new("ImageButton")({
-                BackgroundTransparency = 0.5,
-                AutoButtonColor = 1,
-                Image = "rbxassetid://9525535512" , 
-                Size = UDim2.fromScale(1, 1),
+
+            _new("TextLabel")({
+                BackgroundTransparency = 1, 
+                Size = UDim2.fromScale(1, 0.15),
+                Font = Enum.Font.GothamBold,
+                Text = "Feedback",
+                TextColor3 = PRIMARY_COLOR,
+                TextScaled = true,
                 Children = {
-                    _new("UICorner")({}),
-                    _new("UIAspectRatioConstraint")({})
+                    _new("UITextSizeConstraint")({
+                        MaxTextSize = 35,
+                        MinTextSize = 5
+                    })
                 }
-            })]]
+            }),
+
+            _bind(textBox)({
+                Events = {
+                    Changed = function()
+                        feedbackText:Set(textBox.Text:sub(1, MAX_FEEDBACK_LETTER))
+                        textBox.Text = feedbackText:Get()
+                        --textBox.Text = textBox.Text:sub(1, 100)
+                        return
+                    end
+                }
+            }),
+
+            _new("TextLabel")({
+                BackgroundTransparency = 1,
+                Size = UDim2.fromScale(1, 0.05),
+                Text = _Computed(function(text : string)
+                    return ("%d/%d"):format(#text , MAX_FEEDBACK_LETTER)
+                end, feedbackText),
+                TextColor3 = TEXT_COLOR,
+                TextXAlignment = Enum.TextXAlignment.Right
+            }),
+
+            _bind(getButton(maid, "Send Feedback", function()
+                OnFeedbackSend:Fire(textBox.Text)
+                out.Parent = nil
+            end, 1))({
+                Size = UDim2.fromScale(0.5, 0.12)
+            })
         }
-    })
+        
+    }) :: Frame
     return out
 end

@@ -28,6 +28,7 @@ def download_raw(database: str, collection: str) -> str:
     with open(json_path, "r", encoding='utf-8') as json_file:
         content = json_file.read()
         for line in content.splitlines():
+            print(line, " : data")
             entry = json.loads(line)
             if not "iteration" in entry:
                 entry["iteration"] = 0
@@ -49,7 +50,7 @@ def download_raw(database: str, collection: str) -> str:
             data.append(entry)
 
     with open(json_path, "w") as json_write_file:
-        json_write_file.write(json.dumps(data, indent=5))
+        json_write_file.write(json.dumps(data, indent=10))
 
     return json_path
 
@@ -59,20 +60,28 @@ json_path = "Analytics/file.json"
 path = os.path.abspath("Analytics/bin/mongoexport.exe")
 
 project = "Analytics"
+
 database1 = "server"
 database1collection1 = "performance"
 database1collection2 = "population"
 
 database2 = "user"
-database2collection1 = "customization"
-database2collection2 = "gameplay"
-database2collection3 = "map"
-database2collection4 = "session"
+database2collection1 = "map"
+database2collection2 = "session"
+
+database3 = "events"
+database3collection1 = "backpack"
+database3collection2 = "customization"
+database3collection3 = "vehicles"
+database3collection4 = "miscs"
 
 download_raw(database1, database1collection1)
 download_raw(database1, database1collection2)
 
 download_raw(database2, database2collection1)
 download_raw(database2, database2collection2)
-download_raw(database2, database2collection3)
-download_raw(database2, database2collection4)
+
+download_raw(database3, database3collection1)
+download_raw(database3, database3collection2)
+download_raw(database3, database3collection3)
+download_raw(database3, database3collection4)

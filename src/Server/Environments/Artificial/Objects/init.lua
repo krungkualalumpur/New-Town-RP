@@ -155,6 +155,56 @@ function Objects.init(maid : Maid)
                 end
                 
             end))
+        elseif object:GetAttribute("Class") == "BlinkingNeon" then
+            if object:IsA("BasePart") then
+                object.Material = Enum.Material.Metal
+                local blinkingTime = object:GetAttribute("BlinkingTime") :: number or 0.1
+                local blinkColor = object:GetAttribute("BlinkColor") :: boolean
+
+                local colorOrder = 1
+
+                local t = tick()
+                maid:GiveTask(RunService.Stepped:Connect(function()
+                    if tick() - t > blinkingTime then
+                        t = tick()
+                        if not blinkColor then
+                            if object.Material == Enum.Material.Neon then
+                                object.Material = Enum.Material.Metal 
+                            else
+                                object.Material = Enum.Material.Neon
+                            end
+                        else
+                            local color = if colorOrder == 1 then 
+                                BrickColor.White() elseif  colorOrder == 2 then 
+                                BrickColor.Green() elseif colorOrder == 3 then
+                                BrickColor.Blue() else nil
+
+                            if color == nil then
+                                colorOrder = 0
+                                color = BrickColor.Red()
+                            end
+                            object.Material = Enum.Material.Neon
+                            object.BrickColor = color
+                            colorOrder += 1
+                        end
+                    end
+                end))
+            end
+        elseif object:GetAttribute("Class") == "TextDisplay" then
+            if object:GetAttribute("DisplayType") == "Slide" then
+                for _,v in pairs(object:GetDescendants()) do
+                    if v:IsA("GuiObject") then
+                        local i = v.Size.X.Scale
+                        maid:GiveTask(RunService.Stepped:Connect(function()
+                            v.Position = UDim2.new(i, 0, 0,0)
+                            i -= 0.015
+                            if i <= -v.Size.X.Scale then
+                                i = v.Size.X.Scale
+                            end
+                        end))
+                    end
+                end
+            end
         end
     end
 end

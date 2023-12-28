@@ -98,6 +98,8 @@ local ON_CHARACTER_APPEARANCE_RESET = "OnCharacterAppearanceReset"
 local ON_NOTIF_CHOICE_INIT = "OnNotifChoiceInit"
 
 local ON_JOB_CHANGE = "OnJobChange"
+
+local SEND_FEEDBACK = "SendFeedback"
 --variables
 local Player = Players.LocalPlayer
 --references
@@ -312,6 +314,7 @@ function guiSys.new()
 
     do
         local charMaid = maid:GiveTask(Maid.new()) 
+        local onFeedbackSend = maid:GiveTask(Signal.new())
 
         local onSprintClick = maid:GiveTask(Signal.new())
         local sprintState = _Value(false)
@@ -329,7 +332,8 @@ function guiSys.new()
             maid, 
             onSprintClick,
 
-            sprintState
+            sprintState,
+            onFeedbackSend
         )
         sideOptionsUI.Parent = target
         
@@ -340,6 +344,11 @@ function guiSys.new()
             if char then
                 char:SetAttribute("IsSprinting", not char:GetAttribute("IsSprinting"))
             end
+        end))
+
+        maid:GiveTask(onFeedbackSend:Connect(function(feedbackText : string)
+            print("Feedback sent!")
+            NetworkUtil.fireServer(SEND_FEEDBACK, feedbackText)
         end))
 
         maid:GiveTask(Player.CharacterAdded:Connect(onCharAdded))
@@ -414,12 +423,12 @@ function guiSys.new()
 
         local list 
         if inst:GetAttribute(LIST_TYPE_ATTRIBUTE) == "Vehicle" then
-            local plrIsVIP = MarketplaceService:UserOwnsGamePassAsync(Player.UserId, MarketplaceUtil.getGamePassIdByName("VIP Feature"))
+            --[[local plrIsVIP = MarketplaceService:UserOwnsGamePassAsync(Player.UserId, MarketplaceUtil.getGamePassIdByName("VIP Feature"))
             if not plrIsVIP then 
                 MarketplaceService:PromptGamePassPurchase(Player, MarketplaceUtil.getGamePassIdByName("VIP Feature"))
                 _maid:Destroy()
                 return nil 
-            end
+            end]]
             
             local currentVehicleList = NetworkUtil.invokeServer(GET_PLAYER_VEHICLES)
             vehicleList:Set(currentVehicleList)

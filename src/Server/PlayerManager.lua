@@ -12,8 +12,8 @@ local CollectionService = game:GetService("CollectionService")
 local Maid = require(ReplicatedStorage:WaitForChild("Packages"):WaitForChild("Maid"))
 local NetworkUtil = require(ReplicatedStorage:WaitForChild("Packages"):WaitForChild("NetworkUtil"))
 local Signal = require(ReplicatedStorage:WaitForChild("Packages"):WaitForChild("Signal"))
+local Midas = require(ReplicatedStorage:WaitForChild("Packages"):WaitForChild("Midas"))
 
-local Analytics = require(ServerScriptService:WaitForChild("Server"):WaitForChild("Analytics"))
 --local MidasEventTree = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("MidasEventTree"))
 --local MidasStateTree = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("MidasStateTree"))
 --modules
@@ -30,6 +30,7 @@ local Jobs = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Jobs
 local DatastoreManager = require(ServerScriptService:WaitForChild("Server"):WaitForChild("DatastoreManager"))
 local MarketplaceManager = require(ServerScriptService:WaitForChild("Server"):WaitForChild("MarketplaceManager"))
 local ManagerTypes = require(ServerScriptService:WaitForChild("Server"):WaitForChild("ManagerTypes"))
+local Analytics = require(ServerScriptService:WaitForChild("Server"):WaitForChild("Analytics"))
 --types
 type Maid = Maid.Maid
 type Signal = Signal.Signal
@@ -91,6 +92,8 @@ local ON_JOB_CHANGE = "OnJobChange"
 local ON_ITEM_THROW = "OnItemThrow"
 
 local USER_INTERVAL_UPDATE = "UserIntervalUpdate"
+
+local SEND_FEEDBACK = "SendFeedback"
 --variables
 local Registry = {}
 --references
@@ -100,6 +103,11 @@ local raycastParams = RaycastParams.new()
 raycastParams.FilterType = Enum.RaycastFilterType.Include
 raycastParams.FilterDescendantsInstances = workspace:WaitForChild("Assets"):GetChildren()
 --local functions
+local function generateSessionId(userId : number)
+    local currentTimeStamp = DateTime.now().UnixTimestamp
+    return tostring(math.round(currentTimeStamp)) .. tostring(userId)
+end
+
 local function newVehicleData(
     itemType : ItemUtil.ItemType,
     class : string,
@@ -210,6 +218,8 @@ local PlayerManager : PlayerManager = {} :: any
 PlayerManager.__index = PlayerManager
 
 function PlayerManager.new(player : Player, maid : Maid ?)
+    local currentSessionId = generateSessionId(player.UserId)
+
     local self : PlayerManager = setmetatable({}, PlayerManager) :: any
     self.Player = player
     self._Maid = maid or Maid.new()
@@ -222,7 +232,6 @@ function PlayerManager.new(player : Player, maid : Maid ?)
     self.ChatCount = 0
     self.CharacterSaves = {}
     self.Framerate = nil
-    self.FirstVisitTimestamp = DateTime.now().UnixTimestamp
 
     self.isLoaded = false
 
@@ -231,6 +240,9 @@ function PlayerManager.new(player : Player, maid : Maid ?)
     self.ABValue = "B"
 
     Registry[player] = self
+    
+    local dataStoreManager = DatastoreManager.new(self.Player, self)
+
     MarketplaceManager.newPlayer(self._Maid, player)
 
     self._Maid:GiveTask(self.onLoadingComplete:Connect(function(characterLoadSuccess : boolean)
@@ -251,31 +263,40 @@ function PlayerManager.new(player : Player, maid : Maid ?)
         end
     end)) 
 
-    DatastoreManager.load(player, self)
+    dataStoreManager:LoadSave()
+    
 
     --saving
     local intTick = tick()
     self._Maid:GiveTask(RunService.Stepped:Connect(function()
         if (tick() - intTick) >= SAVE_DATA_INTERVAL then
             intTick = tick()
-            DatastoreManager.save(player, self)
-
+            dataStoreManager:Save()            
         end
     end))
 
     --testing only
-    --[[self._Maid:GiveTask(RunService.Stepped:Connect(function()
-        if (tick() - intTick) >= 1 then
-            local currentTimeStamp = DateTime.now().UnixTimestamp
-            local is_retained_on_d0 = if self then (if self.FirstVisitTimestamp and (currentTimeStamp - self.FirstVisitTimestamp) <= 60*60*24*1 then true else false) else false
-            local is_retained_on_d1 = if self then (if self.FirstVisitTimestamp and (((currentTimeStamp - self.FirstVisitTimestamp) >= 60*60*24*1) and (currentTimeStamp - self.FirstVisitTimestamp <= 60*60*24*(1 + 1))) then true else false) else false
-            local is_retained_on_d7 = if self then (if self.FirstVisitTimestamp and (((currentTimeStamp - self.FirstVisitTimestamp) >= 60*60*24*7) and (currentTimeStamp - self.FirstVisitTimestamp <= 60*60*24*(7 + 1))) then true else false) else false
-            local is_retained_on_d14 = if self then (if self.FirstVisitTimestamp and (((currentTimeStamp - self.FirstVisitTimestamp) >= 60*60*24*14) and (currentTimeStamp - self.FirstVisitTimestamp <= 60*60*24*(14 + 1))) then true else false) else false
-            local is_retained_on_d28 = if self then (if self.FirstVisitTimestamp and (((currentTimeStamp - self.FirstVisitTimestamp) >= 60*60*24*28) and (currentTimeStamp - self.FirstVisitTimestamp <= 60*60*24*(28 + 1))) then true else false) else false
-        
-            print(self.FirstVisitTimestamp, " : first visit time stapmp\n", "d0: ", tostring(is_retained_on_d0) .. "\n", "d1: " .. tostring(is_retained_on_d1) .. "\n", "d7: " .. tostring(is_retained_on_d7))
-        end
-    end))]]
+    if RunService:IsStudio() then
+        local testTick = tick()
+        self._Maid:GiveTask(RunService.Stepped:Connect(function()
+            if (tick() - testTick) >= 1 then
+                local firstSession = dataStoreManager.SessionIds[1]
+                local firstSessionQuitTime = firstSession.QuitTime
+                local currentSession = dataStoreManager.CurrentSessionData
+                testTick = tick()
+                local currentTimeStamp = DateTime.now().UnixTimestamp
+                local is_retained_on_d0 = if self then (if firstSession ~= currentSession and firstSessionQuitTime and (currentTimeStamp - firstSessionQuitTime) <= 60*60*24*1 then true else false) else false
+                local is_retained_on_d1 = if self then (if firstSession ~= currentSession and firstSessionQuitTime and (((currentTimeStamp - firstSessionQuitTime) >= 60*60*24*1) and  (currentTimeStamp - firstSessionQuitTime <= 60*60*24*(1 + 1))) then true else false) else false
+                local is_retained_on_d7 = if self then (if firstSession ~= currentSession and firstSessionQuitTime and (((currentTimeStamp - firstSessionQuitTime) >= 60*60*24*7) and (currentTimeStamp - firstSessionQuitTime <= 60*60*24*(7 + 1))) then true else false) else false
+                local is_retained_on_d14 = if self then (if firstSession ~= currentSession and firstSessionQuitTime and (((currentTimeStamp - firstSessionQuitTime) >= 60*60*24*14) and (currentTimeStamp - firstSessionQuitTime <= 60*60*24*(14 + 1))) then true else false) else false
+                local is_retained_on_d28 = if self then (if firstSession ~= currentSession and firstSessionQuitTime and (((currentTimeStamp - firstSessionQuitTime) >= 60*60*24*28) and (currentTimeStamp - firstSessionQuitTime <= 60*60*24*(28 + 1))) then true else false) else false
+            
+                
+                print(firstSessionQuitTime, " : first visit time stapmp\n", "d0: ", tostring(is_retained_on_d0) .. "\n", "d1: " .. tostring(is_retained_on_d1) .. "\n", "d7: " .. tostring(is_retained_on_d7))
+                print("Session ID: ", dataStoreManager.SessionIds)
+            end
+        end))
+    end
 
     --self:SetData(self:GetData(), false)
     --hacky way to store character info
@@ -285,6 +306,8 @@ function PlayerManager.new(player : Player, maid : Maid ?)
         self._Maid.CharacterModel = char
         --self:SetData(self:GetData(), false) -- refreshing the character (overriden by the other refershing char one)
     end))
+
+    player:SetAttribute("SessionId", currentSessionId)
 
     --setting leaderstats
     local leaderstats = Instance.new"Folder"
@@ -298,6 +321,10 @@ function PlayerManager.new(player : Player, maid : Maid ?)
 
     self._Maid:GiveTask(self.Player.Chatted:Connect(function(str : string)
         self:SetChatCount(self.ChatCount + 1)
+
+        Analytics.updateDataTable(self.Player, "Events", "Miscs", self, function()
+            return "Player_Chatted", str
+        end)
     end))
 
     --analytics
@@ -358,7 +385,13 @@ function PlayerManager:InsertToBackpack(tool : Instance)
     toolData.IsEquipped = false
     table.insert(self.Backpack, toolData)
  
-    Analytics.updateDataTable(self.Player, "User", "Gameplay", self)
+    Analytics.updateDataTable(
+        self.Player, 
+        "Events", 
+        "Backpack", 
+        self,  
+        function() return "Backpack_Insertion", toolData.Name end
+    )
     return true
 end
 
@@ -443,11 +476,19 @@ function PlayerManager:SetBackpackEquip(isEquip : boolean, toolKey : number)
 
     NetworkUtil.fireClient(UPDATE_PLAYER_BACKPACK, self.Player, self:GetBackpack(true, true))
 
-    Analytics.updateDataTable(self.Player, "User", "Gameplay", self)
+    Analytics.updateDataTable(
+        self.Player, 
+        "Events", 
+        "Backpack", 
+        self,  
+        function() return "Backpack_Equip", toolData.Name end
+    )
     return
 end
 
 function PlayerManager:DeleteBackpack(toolKey : number)
+    local toolName = self.Backpack[toolKey].Name
+    
     local plr = self.Player    
     self:SetBackpackEquip(false, toolKey)
 
@@ -455,7 +496,13 @@ function PlayerManager:DeleteBackpack(toolKey : number)
 
     NetworkUtil.fireClient(UPDATE_PLAYER_BACKPACK, plr, self:GetBackpack(true, true))
 
-    Analytics.updateDataTable(self.Player, "User", "Gameplay", self)
+    Analytics.updateDataTable(
+        self.Player, 
+        "Events", 
+        "Backpack", 
+        self,  
+        function() return "Backpack_Delete", toolName end
+    )
     return
 end
 
@@ -474,7 +521,16 @@ function PlayerManager:AddVehicle(vehicleName : string, isLocked : boolean)
     local vehicleData : VehicleData = newVehicleData("Vehicle", vehicleClass, false, vehicleName, self.Player.UserId, isLocked) -- ItemUtil.getData(ItemUtil.getItemFromName(vehicleName), true) :: any
    -- print(vehicleData.DestroyLocked, vehicleData.Name, " Why u not lock ah/?!?!", isLocked)
     table.insert(self.Vehicles, vehicleData)
-    Analytics.updateDataTable(self.Player, "User", "Gameplay", self)
+    
+    if not isLocked then
+        Analytics.updateDataTable(
+            self.Player, 
+            "Events", 
+            "Vehicles", 
+            self,  
+            function() return "Vehicle_Added", vehicleData.Name end
+        )
+    end
     return true
 end
 
@@ -538,25 +594,39 @@ function PlayerManager:SpawnVehicle(key : number, isSpawned : boolean, vehicleNa
 
          local parts = workspace:GetPartBoundsInBox(cf, vehicleModel:GetExtentsSize(), overlapParams)
          if #parts > 0 then
-             self:SpawnVehicle(key, false)
-             NotificationUtil.Notify(self.Player, "Can not spawn vehicles inside a building!")
-             return
+            --self:SpawnVehicle(key, false)
+            --NotificationUtil.Notify(self.Player, "Can not spawn vehicles inside a building!")
+            --return
          end
  
     else
         self._Maid.CurrentSpawnedVehicle = nil
     end
 
-    Analytics.updateDataTable(self.Player, "User", "Gameplay", self)
+    Analytics.updateDataTable(
+        self.Player, 
+        "Events", 
+        "Vehicles", 
+        self,  
+        function() return "Vehicle_Spawned", vehicleInfo.Name end
+    )
     return 
 end
 
 function PlayerManager:DeleteVehicle(key : number)
+    local vehicleName = self.Vehicles[key].Name
+
     self:SpawnVehicle(key, false)
 
     table.remove(self.Vehicles, key)
 
-    Analytics.updateDataTable(self.Player, "User", "Gameplay", self)
+    Analytics.updateDataTable(
+        self.Player, 
+        "Events", 
+        "Vehicles", 
+        self,  
+        function() return "Vehicle_Delete", vehicleName end
+    )
     return
 end
 
@@ -575,12 +645,13 @@ function PlayerManager:GetData()
 
     local plrData : ManagerTypes.PlayerData = {} :: any
     
+    local currentTimeStamp = DateTime.now().UnixTimestamp
+
     plrData.RoleplayBios = {} :: any
     plrData.RoleplayBios.Name = self.RoleplayBios.Name
     plrData.RoleplayBios.Bio = self.RoleplayBios.Bio
     --print(self, " banyak buanget", self.CharacterSaves)
     plrData.Backpack = {};
-    plrData.FirstVisitTimestamp = self.FirstVisitTimestamp
     plrData.Character = characterData;
     plrData.CharacterSaves = table.clone(self.CharacterSaves)
     plrData.Vehicles = {};
@@ -684,7 +755,6 @@ function PlayerManager:SetData(plrData : ManagerTypes.PlayerData, isYield : bool
         self.onLoadingComplete:Fire(true)
     end
 
-    self.FirstVisitTimestamp = plrData.FirstVisitTimestamp or DateTime.now().UnixTimestamp
     return true
 end
 
@@ -951,18 +1021,35 @@ function PlayerManager.init(maid : Maid)
 
         _maid:GiveTask(plr.CharacterAdded:Connect(onCharAdded))
 
-        ChoiceActions.requestEvent(plr, "Default", "Welcome to the New Town", "Try our new outfit catalog feature and immerse yourself in this tropical city. The playground is yours.", true)
-            
+        Analytics.updateDataTable(plr, "User", "Session", plrInfo)
+
+        ChoiceActions.requestEvent(plr, "Default", "Welcome to the New Town", "Try our new outfit catalog feature and immerse yourself in this tropical city. The playground is yours.", true)            
        --NetworkUtil.invokeClient(ON_NOTIF_CHOICE_INIT, plr, "msg : string", true, "Test")
     end
 
     local function onPlayerRemove(plr : Player)
         local plrInfo = PlayerManager.get(plr)
-
         if plrInfo and not plr:GetAttribute("IsSaving") then
+            local datastoreManager = DatastoreManager.get(plr)
             plr:SetAttribute("IsSaving", true) 
-            DatastoreManager.save(plr, plrInfo)
+
+            datastoreManager.CurrentSessionData.QuitTime = DateTime.now().UnixTimestamp
+
+            Analytics.updateDataTable(plr, "User", "Session", plrInfo)
+
+            local s, e = pcall(function()
+                local session = Midas:GetDataSet("User")
+                session:Post(50, 400, 1, false)    
+            end)
+
+            if not s and e then
+                warn(e)
+            end
+
+            --datastoreManager:Save()
  
+            print("Saving & Destroying" , plr.Name , "'s data")
+            datastoreManager:Destroy()
             plrInfo:Destroy()
         end
     end
@@ -1143,7 +1230,14 @@ function PlayerManager.init(maid : Maid)
 
         CustomizationUtil.Customize(plr, customizationId, itemType) 
 
-        Analytics.updateDataTable(plr, "User", "Customization", plrInfo)
+        Analytics.updateDataTable(
+            plr, 
+            "Events", 
+            "Customization", 
+            plrInfo,  
+            function() return "Character_Customize", itemType.Name end
+        )
+
         --MidasEventTree.Gameplay.CustomizeAvatar.Value(plr)
         return nil
     end)
@@ -1185,7 +1279,11 @@ function PlayerManager.init(maid : Maid)
         else
             plrManager:RemoveExistingItemsCart()
         end
-        print(plrManager._Maid.ItemsCart)
+        --print(plrManager._Maid.ItemsCart)
+        local plrInfo = PlayerManager.get(plr)
+        Analytics.updateDataTable(plr, "Events", "Backpack", plrInfo, function()
+            return "Spawn_Item_Cart"
+        end)
         return plrManager._Maid.ItemsCart
     end)
 
@@ -1221,6 +1319,10 @@ function PlayerManager.init(maid : Maid)
         else
             Jobs.setJob(plr, nil)
         end
+        local plrInfo = PlayerManager.get(plr)
+        Analytics.updateDataTable(plr, "Events", "Customization", plrInfo, function()
+            return "Job_Customize", jobData.Name
+        end)
     end))
 
     maid:GiveTask(NetworkUtil.onServerEvent(ON_ITEM_THROW, function(plr : Player, toolData : ToolData<nil>)
@@ -1238,6 +1340,27 @@ function PlayerManager.init(maid : Maid)
         Analytics.updateDataTable(plr, "User", "Map", plrManager)
     end))
 
+    maid:GiveTask(NetworkUtil.onServerEvent(SEND_FEEDBACK, function(plr : Player, feedback : string)
+        local feedbackSentKey = "SentFeedback"
+        local alreadySentFeedback = plr:GetAttribute(feedbackSentKey)
+
+        if not alreadySentFeedback then
+            plr:SetAttribute(feedbackSentKey, true)
+
+            local plrManager = PlayerManager.get(plr)
+
+            Analytics.updateDataTable(plr, "Events", "Miscs", plrManager, function()
+                return "Player_Feedback", feedback
+            end)
+        else
+            NotificationUtil.Notify(plr, "Fail to send: you already sent a feedback!")
+        end
+
+
+       
+
+        return
+    end))
 end
 
 return PlayerManager
