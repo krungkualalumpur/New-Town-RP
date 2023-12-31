@@ -50,7 +50,7 @@ return function(target : CoreGui)
         )
     })
 
-    local onBackpackEquip = maid:GiveTask(Signal.new())
+    local onBackpackAdd = maid:GiveTask(Signal.new())
     local onBackpackDelete = maid:GiveTask(Signal.new())
     local onVehicleSpawn = maid:GiveTask(Signal.new())
     local onVehicleDelete = maid:GiveTask(Signal.new())
@@ -72,7 +72,7 @@ return function(target : CoreGui)
 
         _Value({}),
         _Value("Sundus, " .. game.Lighting.TimeOfDay),
-        onBackpackEquip,
+        onBackpackAdd,
         onBackpackDelete,
         onVehicleSpawn,
         onVehicleDelete,
@@ -87,8 +87,8 @@ return function(target : CoreGui)
         target
     )
 
-    maid:GiveTask(onBackpackEquip:Connect(function()
-        print("Equip")
+    maid:GiveTask(onBackpackAdd:Connect(function()
+        print("Add")
     end))
 
     maid:GiveTask(onBackpackDelete:Connect(function()

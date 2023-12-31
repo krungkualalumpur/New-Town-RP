@@ -11,10 +11,11 @@ local Zone = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Zone
 --types
 type Maid = Maid.Maid
 --constants
-local LOAD_OF_DISTANCE = 60
+local LOAD_OF_DISTANCE = 70
 
 local ZONE_TAG = "RenderZone"
 local LOD_TAG = "LODItem"
+local ADAPTIVE_LOD_TAG = "AdaptiveLODItem"
 --variables
 --references
 local Player = Players.LocalPlayer
@@ -116,20 +117,57 @@ function optimizationSys.init(maid : Maid)
 
     --load of distance
     local lodItems = {} 
-    
+    local adaptiveLODItems = {}
+
     for _,LODinst in pairs(CollectionService:GetTagged(LOD_TAG)) do
-        local objectValue = Instance.new("ObjectValue")
-        objectValue.Name = "Pointer"
-        objectValue.Value = LODinst.Parent  
-        objectValue.Parent = LODinst
+        local parentPointerValue = Instance.new("ObjectValue")
+        parentPointerValue.Name = "ParentPointer"
+        parentPointerValue.Value = LODinst.Parent  
+        parentPointerValue.Parent = LODinst
         table.insert(lodItems, LODinst)
+    end
+
+    for _, adaptiveLODInst in pairs(CollectionService:GetTagged(ADAPTIVE_LOD_TAG)) do
+        local cf, size
+        if adaptiveLODInst:IsA("Model") then
+            cf, size = adaptiveLODInst:GetBoundingBox()
+        elseif adaptiveLODInst:IsA("BasePart") then
+            cf, size = adaptiveLODInst.CFrame, adaptiveLODInst.Size
+        else
+            warn(adaptiveLODInst.Name, " is not a model nor a basepart for LOD!")
+        end
+
+        local distanceRenderPart = Instance.new("Part") 
+        distanceRenderPart.Material = if adaptiveLODInst:IsA("BasePart") then adaptiveLODInst.Material elseif adaptiveLODInst:IsA("Model") then (if adaptiveLODInst.PrimaryPart then adaptiveLODInst.PrimaryPart.Material else distanceRenderPart.Material) else distanceRenderPart.Material 
+        distanceRenderPart.Name = adaptiveLODInst.Name
+        distanceRenderPart.CFrame, distanceRenderPart.Size = cf, size
+        distanceRenderPart.Transparency = if adaptiveLODInst:IsA("BasePart") then adaptiveLODInst.Transparency elseif adaptiveLODInst:IsA("Model") then (if adaptiveLODInst.PrimaryPart then adaptiveLODInst.PrimaryPart.Transparency else distanceRenderPart.Transparency) else distanceRenderPart.Transparency 
+        distanceRenderPart.Reflectance = if adaptiveLODInst:IsA("BasePart") then adaptiveLODInst.Reflectance elseif adaptiveLODInst:IsA("Model") then (if adaptiveLODInst.PrimaryPart then adaptiveLODInst.PrimaryPart.Reflectance else distanceRenderPart.Reflectance) else distanceRenderPart.Reflectance 
+        distanceRenderPart.Anchored = true
+        distanceRenderPart.TopSurface = Enum.SurfaceType.Smooth
+        distanceRenderPart.BottomSurface = Enum.SurfaceType.Smooth
+        distanceRenderPart.CanCollide = false
+        distanceRenderPart.Color = if adaptiveLODInst:IsA("BasePart") then adaptiveLODInst.Color elseif adaptiveLODInst:IsA("Model") then (if adaptiveLODInst.PrimaryPart then adaptiveLODInst.PrimaryPart.Color else distanceRenderPart.Color) else distanceRenderPart.Color 
+        distanceRenderPart.Parent = nil
+
+        local parentPointerValue = Instance.new("ObjectValue")
+        parentPointerValue.Name = "ParentPointer"
+        parentPointerValue.Value = adaptiveLODInst.Parent  
+        parentPointerValue.Parent = adaptiveLODInst
+
+        local distanceRenderPointerValue = Instance.new("ObjectValue")
+        distanceRenderPointerValue.Name = "DistanceRenderPartPointer"
+        distanceRenderPointerValue.Value = distanceRenderPart
+        distanceRenderPointerValue.Parent = adaptiveLODInst
+
+        table.insert(adaptiveLODItems, adaptiveLODInst)
     end
     
     maid:GiveTask(RunService.Stepped:Connect(function()
         local camera = workspace.CurrentCamera :: Camera
 
         for _,LODinst in pairs(lodItems) do
-            local pointer = LODinst:FindFirstChild("Pointer") :: ObjectValue
+            local pointer = LODinst:FindFirstChild("ParentPointer") :: ObjectValue
             local cf, size
             if LODinst:IsA("Model") then
                 cf, size = LODinst:GetBoundingBox()
@@ -142,12 +180,39 @@ function optimizationSys.init(maid : Maid)
                 local currentDist = (cf.Position - camera.CFrame.Position).Magnitude - (math.max(size.X, size.Y, size.Z)*0.5)
                 currentDist = math.clamp(currentDist, 0, math.huge)
 
-                if currentDist >= LOAD_OF_DISTANCE then
+                if currentDist >= ((LODinst:GetAttribute("RadiusAmplifier") or 1)*LOAD_OF_DISTANCE) then
                     LODinst.Parent = nil
                 else
                     LODinst.Parent = pointer.Value
                 end
 
+            end
+        end
+
+        for _,adaptiveLODinst in pairs(adaptiveLODItems) do
+            local parentPointer = adaptiveLODinst:FindFirstChild("ParentPointer") :: ObjectValue
+            local distanceRenderPartPointer = adaptiveLODinst:FindFirstChild("DistanceRenderPartPointer") :: ObjectValue
+
+            assert(distanceRenderPartPointer and distanceRenderPartPointer.Value, ("No distance render part detected for a part named %s!"):format(adaptiveLODinst.Name))
+            local cf, size
+            if adaptiveLODinst:IsA("Model") then
+                cf, size = adaptiveLODinst:GetBoundingBox()
+            elseif adaptiveLODinst:IsA("BasePart") then
+                cf, size = adaptiveLODinst.CFrame, adaptiveLODinst.Size
+            else
+                warn(adaptiveLODinst.Name, " is not a model nor a basepart for LOD!")
+            end
+            if cf and size and camera then
+                local currentDist = (cf.Position - camera.CFrame.Position).Magnitude - (math.max(size.X, size.Y, size.Z)*0.5)
+                currentDist = math.clamp(currentDist, 0, math.huge)
+
+                if currentDist >= ((adaptiveLODinst:GetAttribute("RadiusAmplifier") or 1)*LOAD_OF_DISTANCE) then
+                    adaptiveLODinst.Parent = nil
+                    distanceRenderPartPointer.Value.Parent = parentPointer.Value
+                else
+                    distanceRenderPartPointer.Value.Parent = nil
+                    adaptiveLODinst.Parent = parentPointer.Value
+                end
             end
         end
     end))

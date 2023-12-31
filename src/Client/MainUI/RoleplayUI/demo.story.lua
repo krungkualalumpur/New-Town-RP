@@ -49,6 +49,7 @@ return function(target : CoreGui)
 
     local onAnimClick = maid:GiveTask(Signal.new())
     local onItemCartSpawn = maid:GiveTask(Signal.new())
+    local onJobChange = maid:GiveTask(Signal.new())
 
     local backpack : ValueState<{BackpackUtil.ToolData<boolean>}> = _Value({
         BackpackUtil.newData("Jamu", "Consumption") :: any,
@@ -65,6 +66,8 @@ return function(target : CoreGui)
         onAnimClick,
         onItemCartSpawn,
 
+
+        onJobChange,
         backpack,
         Jobs.getJobs(),
         _Value("test" :: string ?)

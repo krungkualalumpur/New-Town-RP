@@ -70,7 +70,7 @@ return function(target : CoreGui)
         local function getRandomNum()
             return math.random(1, 120)
         end
-        
+         
         return getItemInfo(
             if rand1 == 1 then "ha" else "hi", 
             string.format("%s%s%s", string.char(getRandomNum()), string.char(getRandomNum()), string.char(getRandomNum()))
@@ -150,7 +150,6 @@ return function(target : CoreGui)
     local onVehicleDelete = maid:GiveTask(Signal.new())
     local backpackUI = BackpackUI(
         maid, 
-        {"ha", "hi", "hu", "he"},
         items,
         onEquip, 
         onDelete,

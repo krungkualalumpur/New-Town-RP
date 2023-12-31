@@ -208,6 +208,16 @@ local function getVehicleSpawnPlot(partZones : Instance)
     return emptySpawnZone
 end
 
+local function setToolEquip(inst : Tool, char : Model)
+    
+    --set collision
+    for _,v in pairs(inst:GetDescendants()) do
+        if v:IsA("BasePart") and char.PrimaryPart then
+            v.CollisionGroup = char.PrimaryPart.CollisionGroup
+        end
+    end
+end
+
 local function getRandomAB() : ABType
     local rand = math.random(0, 1)
     return if rand == 0 then "A" else "B" 
@@ -384,7 +394,7 @@ function PlayerManager:InsertToBackpack(tool : Instance)
     local toolData : BackpackUtil.ToolData<boolean> = BackpackUtil.getData(tool, false) :: any
     toolData.IsEquipped = false
     table.insert(self.Backpack, toolData)
- 
+
     Analytics.updateDataTable(
         self.Player, 
         "Events", 
@@ -392,6 +402,21 @@ function PlayerManager:InsertToBackpack(tool : Instance)
         self,  
         function() return "Backpack_Insertion", toolData.Name end
     )
+
+    local toolCloned = BackpackUtil.createTool(tool:Clone()) :: Tool
+    toolCloned.Parent = self.Player.Backpack
+
+    toolCloned:SetAttribute("ToolKey", table.find(self.Backpack, toolData))
+
+    local plr = self.Player
+    local _maid = Maid.new()
+        --func for the tool upon it being activated
+    _maid:GiveTask(toolCloned.Activated:Connect(function()
+        local character = plr.Character or plr.CharacterAdded:Wait()
+        if character then    
+            ToolActions.onToolActivated(toolData.Class, plr, BackpackUtil.getData(tool, true))
+        end
+    end))
     return true
 end
 
@@ -435,7 +460,7 @@ function PlayerManager:SetBackpackEquip(isEquip : boolean, toolKey : number)
             end
         end
 
-        local tool = BackpackUtil.getToolFromName(toolData.Name)
+        --[[local tool = BackpackUtil.getToolFromName(toolData.Name)
         if tool then
             if toolData.IsEquipped then
                 local equippedTool = BackpackUtil.createTool(tool) :: Tool
@@ -465,10 +490,11 @@ function PlayerManager:SetBackpackEquip(isEquip : boolean, toolKey : number)
                     _maid:Destroy()
                 end))
             end 
-        end 
+        end ]]
     else
+        
         for _, tool in pairs(character:GetChildren()) do
-            if tool:IsA("Tool") and (tool.Name == toolData.Name) then
+            if tool:IsA("Tool") and (tool.Name == toolData.Name) and (tool:GetAttribute("ToolKey") == toolKey) then
                 tool:Destroy()
             end
         end
@@ -1000,12 +1026,28 @@ function PlayerManager.init(maid : Maid)
             char:PivotTo(spawnPart.CFrame + Vector3.new(0,5,0))
         end
 
+        --character added
         charMaid:GiveTask(char.ChildAdded:Connect(function(inst : Instance)
             --print(inst:IsA("BasePart"), inst.Name == "Head", inst)
             if inst:IsA("BasePart") and inst.Name == "Head" then
                 CustomizationUtil.setDesc(player, "PlayerName", player:GetAttribute("PlayerName") or player.Name)
                 CustomizationUtil.setDesc(player, "PlayerBio", player:GetAttribute("PlayerBio") or "")
                 Jobs.setJob(player, Jobs.getJob(player))
+            end
+        end))
+
+        --tool update
+        charMaid:GiveTask(char.ChildAdded:Connect(function(inst : Instance)
+            plrInfo:SetBackpackEquip(true, inst:GetAttribute("ToolKey"))
+            if inst:IsA("Tool") then
+                NetworkUtil.fireClient(UPDATE_PLAYER_BACKPACK, player, plrInfo:GetBackpack(true, true))
+                setToolEquip(inst :: Tool, char)
+            end
+        end))
+        charMaid:GiveTask(char.ChildRemoved:Connect(function(inst : Instance)
+            plrInfo:SetBackpackEquip(false, inst:GetAttribute("ToolKey"))
+            if inst:IsA("Tool") then
+                NetworkUtil.fireClient(UPDATE_PLAYER_BACKPACK, player, plrInfo:GetBackpack(true, true))
             end
         end))
     end 
@@ -1030,8 +1072,9 @@ function PlayerManager.init(maid : Maid)
     local function onPlayerRemove(plr : Player)
         local plrInfo = PlayerManager.get(plr)
         if plrInfo and not plr:GetAttribute("IsSaving") then
-            local datastoreManager = DatastoreManager.get(plr)
             plr:SetAttribute("IsSaving", true) 
+
+            local datastoreManager = DatastoreManager.get(plr)
 
             datastoreManager.CurrentSessionData.QuitTime = DateTime.now().UnixTimestamp
 
@@ -1044,11 +1087,15 @@ function PlayerManager.init(maid : Maid)
 
             if not s and e then
                 warn(e)
+                Analytics.updateDataTable(plr, "Debugs", "Error", plrInfo, function()
+                    return e
+                end)
             end
 
             --datastoreManager:Save()
  
             print("Saving & Destroying" , plr.Name , "'s data")
+            datastoreManager:Save()
             datastoreManager:Destroy()
             plrInfo:Destroy()
         end

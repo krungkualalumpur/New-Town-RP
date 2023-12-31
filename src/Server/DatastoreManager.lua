@@ -203,9 +203,6 @@ function DatastoreManager:LoadSave()
 end
 
 function DatastoreManager:Destroy()
-	self.CurrentSessionData.QuitTime = DateTime.now().UnixTimestamp
-	self:Save()
-
 	Registry[self.Player] = nil
 
 	local t : any = self

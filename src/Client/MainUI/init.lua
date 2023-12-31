@@ -346,7 +346,7 @@ return function(
     vehiclesList : ValueState<{[number] : VehicleData}>,
     date : ValueState<string>,
 
-    backpackOnEquip : Signal,
+    backpackOnAdd : Signal,
     backpackOnDelete : Signal,
     onVehicleSpawn : Signal,
     onVehicleDelete : Signal,
@@ -380,7 +380,7 @@ return function(
     local onEquipFrame = _new("Frame")({
         LayoutOrder = 1, 
         Parent = target,
-        AnchorPoint = Vector2.new(0.5,0),
+        AnchorPoint = Vector2.new(0.5,0.05),
         Visible = _Computed(function(items : {[number] : ToolData})
             local isVisible = false
             for _,v in pairs(items) do
@@ -390,7 +390,7 @@ return function(
             end
             return isVisible
         end, backpack),
-        Position = UDim2.fromScale(0.5, 0),
+        Position = UDim2.fromScale(0.9, 0),
         BackgroundTransparency = 1,
         BackgroundColor3 = Color3.fromRGB(10,200,10),
         Size = UDim2.fromScale(0.1, 1),
@@ -407,7 +407,7 @@ return function(
                 SortOrder = Enum.SortOrder.LayoutOrder,
                 Padding = PADDING_SIZE
             }),
-            _new("TextLabel")({
+            --[[_new("TextLabel")({
                 LayoutOrder = 1,
                 BackgroundTransparency = 1,
                 Size = UDim2.fromScale(1, 0.1),
@@ -431,7 +431,7 @@ return function(
                         MaxTextSize = 25
                     })
                 }
-            }),
+            }),]]
           
             _bind(getButton(
                 maid,
@@ -453,7 +453,14 @@ return function(
                 end,
                 3
             ))({
+                AutomaticSize = Enum.AutomaticSize.None,
+                Size = UDim2.fromScale(1.5, 0.15),
                 Children = {
+                    _new("UIStroke")({
+                        Color = PRIMARY_COLOR,
+                        ApplyStrokeMode = Enum.ApplyStrokeMode.Border,
+                        Thickness = 1
+                    }),
                     _new("UIListLayout")({
                         VerticalAlignment = Enum.VerticalAlignment.Bottom,
                         HorizontalAlignment = Enum.HorizontalAlignment.Right
@@ -462,7 +469,7 @@ return function(
                         BackgroundColor3 = SECONDARY_COLOR,
                         BackgroundTransparency = 0.5,
                         AutomaticSize = Enum.AutomaticSize.XY,
-                        TextSize = 8,
+                        TextSize = 16,
                         Font = Enum.Font.Gotham,
                         Text = if KeyboardEnabled then "L Click" elseif TouchEnabled then "Touch" elseif GamepadEnabled then "A" else nil,
                         TextColor3 = PRIMARY_COLOR
@@ -492,7 +499,14 @@ return function(
                 end,
                 4
             ))({
+                AutomaticSize = Enum.AutomaticSize.None,
+                Size = UDim2.fromScale(1.5, 0.15),
                 Children = {
+                    _new("UIStroke")({
+                        Color = PRIMARY_COLOR,
+                        ApplyStrokeMode = Enum.ApplyStrokeMode.Border,
+                        Thickness = 1
+                    }),
                     _new("UIListLayout")({
                         VerticalAlignment = Enum.VerticalAlignment.Bottom,
                         HorizontalAlignment = Enum.HorizontalAlignment.Right
@@ -501,7 +515,7 @@ return function(
                         BackgroundColor3 = SECONDARY_COLOR,
                         BackgroundTransparency = 0.5,
                         AutomaticSize = Enum.AutomaticSize.XY,
-                        TextSize = 8,
+                        TextSize = 18,
                         Font = Enum.Font.Gotham,
                         Text = if KeyboardEnabled then "F" elseif TouchEnabled then "Touch" elseif GamepadEnabled then "B" else nil,
                         TextColor3 = PRIMARY_COLOR
@@ -509,7 +523,7 @@ return function(
 
                 }
             }),
-            _bind(getButton(
+            --[[_bind(getButton(
                 maid,
                 "X" ,
                 function()
@@ -526,7 +540,7 @@ return function(
                 BackgroundColor3 = Color3.fromRGB(255,10,10),
                 Size = UDim2.fromScale(1, 0.05),
                 TextColor3 = PRIMARY_COLOR
-            })
+            })]]
             --[[_new("TextButton")({
                 LayoutOrder = 3,
                 AutoButtonColor = true,
@@ -553,11 +567,11 @@ return function(
                         --ToolActions.onToolActivated(, foodInst, player, toolData)
                     end
                 }
-            })]],
+            })]]
         }
     })
 
-    local val =  _Computed(function(backpackList : {[number] : ToolData})
+    --[[local val =  _Computed(function(backpackList : {[number] : ToolData})
         viewportMaid:DoCleaning()
         local object 
         
@@ -584,7 +598,7 @@ return function(
 
     _new("StringValue")({
         Value = val
-    })
+    })]]
 
     
     local dateFrame = _new("Frame")({
@@ -632,9 +646,9 @@ return function(
         }
     })
 
-    local backpackText = _Value("← Backpack")
+    local backpackText = _Value("← Tools")
     local roleplayText = _Value("← Roleplay Actions")
-    local customizationText = _Value("← Outfit")
+    local customizationText = _Value("← Avatar")
 
     local alertColor = _Value(Color3.fromRGB(255,50,50))
 
@@ -661,7 +675,7 @@ return function(
                 customizationText:Set("")
             end, backpackText, 2, true))({
                 Children = {
-                    _new("TextLabel")({
+                    --[[_new("TextLabel")({
                         BackgroundTransparency = _Computed(function(backpackList : {[number] : ToolData})
                             task.spawn(function()
                                 alertColor:Set(PRIMARY_COLOR)
@@ -684,7 +698,7 @@ return function(
                                 CornerRadius = UDim.new(1,0)
                             })
                         }
-                    })
+                    })]]
                 }
             }),
             getImageButton(maid, 11955884948, function()
@@ -772,11 +786,11 @@ return function(
 
         mainOptions.Visible = (status == nil) 
         if status == "Backpack" then
-            local onBackpackButtonEquipClickSignal = statusMaid:GiveTask(Signal.new())
+            local onBackpackButtonAddClickSignal = statusMaid:GiveTask(Signal.new())
             local onBackpackButtonDeleteClickSignal = statusMaid:GiveTask(Signal.new())
 
-            statusMaid:GiveTask(onBackpackButtonEquipClickSignal:Connect(function(toolKey : number, toolName : string ?)
-                backpackOnEquip:Fire(toolKey, toolName)
+            statusMaid:GiveTask(onBackpackButtonAddClickSignal:Connect(function(toolData : ToolData)
+                backpackOnAdd:Fire(toolData)
                
             end))
             statusMaid:GiveTask(onBackpackButtonDeleteClickSignal:Connect(function(toolKey : number, toolName : string)
@@ -785,10 +799,9 @@ return function(
 
             local backpackUI = BackpackUI(
                 statusMaid,
-                BackpackUtil.getAllItemClasses(),
                 backpack,
 
-                onBackpackButtonEquipClickSignal,
+                onBackpackButtonAddClickSignal,
                 onBackpackButtonDeleteClickSignal,
 
                 vehiclesList,

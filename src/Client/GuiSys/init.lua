@@ -223,7 +223,7 @@ function guiSys.new()
     local vehicleList = _Value({}) 
     local date = _Value(string.format("%s\n%s", getCurrentDay().Name, NumberUtil.NumberToClock(game.Lighting.ClockTime, false)))
 
-    local backpackOnEquip = maid:GiveTask(Signal.new())
+    local backpackOnAdd = maid:GiveTask(Signal.new())
     local backpackOnDelete = maid:GiveTask(Signal.new())
     local onNotify = maid:GiveTask(Signal.new())
     
@@ -248,7 +248,7 @@ function guiSys.new()
 
         vehicleList,
         date,
-        backpackOnEquip,
+        backpackOnAdd,
         backpackOnDelete,
         onVehicleSpawn,
         onVehicleDelete,
@@ -270,11 +270,10 @@ function guiSys.new()
         CustomizationUtil.setDesc(Player, descType, text)
     end))
 
-    maid:GiveTask(backpackOnEquip:Connect(function(toolKey : number, toolName : string ?)
+    maid:GiveTask(backpackOnAdd:Connect(function(toolData : BackpackUtil.ToolData<boolean>)
         NetworkUtil.invokeServer(
-            EQUIP_BACKPACK,
-            toolKey,
-            toolName
+            ADD_BACKPACK,
+            toolData.Name
         )
     end))
     maid:GiveTask(backpackOnDelete:Connect(function(toolKey : number, toolName : string)
@@ -717,7 +716,7 @@ function guiSys.new()
     end))
 
     --setting default backpack to untrue it 
-    game:GetService("StarterGui"):SetCoreGuiEnabled(Enum.CoreGuiType.Backpack,false)
+    --game:GetService("StarterGui"):SetCoreGuiEnabled(Enum.CoreGuiType.Backpack,false)
 
     return self 
 end

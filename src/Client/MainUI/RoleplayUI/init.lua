@@ -337,7 +337,7 @@ return function(
     local _Computed = _fuse.Computed
     local _Value = _fuse.Value
 
-    local cartSpawned : ValueState<boolean> = _Value( if NetworkUtil.invokeServer(GET_ITEM_CART) then true else false)
+    local cartSpawned : ValueState<boolean> = _Value(  if RunService:IsRunning() then if NetworkUtil.invokeServer(GET_ITEM_CART) then true else false else false)
     
     local selectedItems : ValueState<{[number] : BackpackUtil.ToolData<nil>}> = _Value({})
 
@@ -349,7 +349,7 @@ return function(
         BackgroundColor3 = BACKGROUND_COLOR,
         BackgroundTransparency = 1,
         Position = UDim2.fromScale(0,0),
-        Size = UDim2.fromScale(0.88,0.8), 
+        Size = UDim2.fromScale(0.88,1), 
         Children = {
             _new("UIPadding")({
                 PaddingBottom = PADDING_SIZE,
@@ -366,14 +366,12 @@ return function(
         }
     })
 
-    local animationFrame = _new("ScrollingFrame")({
+    local animationFrame = _new("Frame")({
         LayoutOrder = 2,
         Name = "AnimationFrame",
         Visible = _Computed(function(category : string) 
             return category == "Basic Animation" 
         end, selectedCategory),
-        AutomaticCanvasSize = Enum.AutomaticSize.Y,
-        CanvasSize = UDim2.new(),
         BackgroundTransparency = 0.5,
         BackgroundColor3 = BACKGROUND_COLOR,
         Position = UDim2.fromScale(0,0),
@@ -664,7 +662,7 @@ return function(
         BackgroundColor3 = BACKGROUND_COLOR,
         BackgroundTransparency = 1,
         Position = UDim2.fromScale(0,0),
-        Size = UDim2.fromScale(0.88,0.8), 
+        Size = UDim2.fromScale(0.88,1), 
         Children = {
             _new("UIPadding")({
                 PaddingBottom = PADDING_SIZE,
@@ -734,7 +732,7 @@ return function(
         Name = "ContentFrame",
         BackgroundTransparency = 1,
         Position = UDim2.fromScale(0,0),
-        Size = UDim2.fromScale(0.5,1), 
+        Size = UDim2.fromScale(0.5,0.75), 
         Children = {
             _new("UIListLayout")({
                 SortOrder = Enum.SortOrder.LayoutOrder,
@@ -747,7 +745,6 @@ return function(
         }
     })
     
-
     local out = _new("Frame")({
         BackgroundTransparency = 1,
         Size = UDim2.fromScale(1, 1),
@@ -761,6 +758,7 @@ return function(
             _new("UIListLayout")({
                 FillDirection = Enum.FillDirection.Horizontal,
                 SortOrder = Enum.SortOrder.LayoutOrder,
+                VerticalAlignment = Enum.VerticalAlignment.Center
             }),
             _new("Frame")({
                 Name = "Buffer",

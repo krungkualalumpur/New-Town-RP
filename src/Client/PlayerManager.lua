@@ -31,7 +31,7 @@ function PlayerManager.init(maid : Maid)
         fps -= 1
     end))
 
-    local t = tick() + (intervalTime - 1)
+    local t = tick() - (intervalTime - 1)
     maid:GiveTask(RunService.RenderStepped:Connect(function()
         if tick() - t > intervalTime then
             t = tick()

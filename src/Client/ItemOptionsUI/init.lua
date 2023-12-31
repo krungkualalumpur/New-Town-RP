@@ -326,7 +326,8 @@ return function(
         end, currentOptInfo),
         BackgroundTransparency = 0.8,
         BackgroundColor3 = TERTIARY_COLOR,
-        Size = UDim2.fromScale(0.35, 0.45),
+        Position = UDim2.fromScale(0, 0.24),
+        Size = UDim2.fromScale(1, 0.5),
         Children = {
             _new("UIPadding")({
                 PaddingTop = PADDING_SIZE,
@@ -379,7 +380,14 @@ return function(
             )
         }
     })
-    selectedInfoFrame.Parent = out
+    local selectedInfoParent = _new("Frame")({
+        BackgroundTransparency = 1,
+        Size = UDim2.fromScale(0.35, 1),
+        Children = {
+            selectedInfoFrame
+        }
+    })
+    selectedInfoParent.Parent = out
 
     local onListSelected = maid:GiveTask(Signal.new())
 

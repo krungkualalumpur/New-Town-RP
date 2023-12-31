@@ -105,11 +105,11 @@ function Analytics.init(maid : Maid)
     sessionDataTable:AddColumn("timestamp", "Date", false)
     sessionDataTable:AddColumn("user_id", "Int64", false)
     sessionDataTable:AddColumn("is_premium", "Boolean", false)
-    sessionDataTable:AddColumn("is_retained_on_d0", "Boolean", false)
-    sessionDataTable:AddColumn("is_retained_on_d1", "Boolean", false)
-    sessionDataTable:AddColumn("is_retained_on_d7", "Boolean", false)
-    sessionDataTable:AddColumn("is_retained_on_d14", "Boolean", false)
-    sessionDataTable:AddColumn("is_retained_on_d28", "Boolean", false)
+    sessionDataTable:AddColumn("is_retained_on_d0", "Boolean", true)
+    sessionDataTable:AddColumn("is_retained_on_d1", "Boolean", true)
+    sessionDataTable:AddColumn("is_retained_on_d7", "Boolean", true)
+    sessionDataTable:AddColumn("is_retained_on_d14", "Boolean", true)
+    sessionDataTable:AddColumn("is_retained_on_d28", "Boolean", true)
     sessionDataTable:AddColumn("play_duration", "Int64", true)
     sessionDataTable:AddColumn("duration_after_joined", "Int64", true)
     --[[local gameplayDataTable = userDataSet:CreateDataTable("Gameplay", "gameplay")
@@ -173,6 +173,15 @@ function Analytics.init(maid : Maid)
     miscsDataTable:AddColumn("pos_z", "Double", true)
     miscsDataTable:AddColumn("event_name", "String", false)
     miscsDataTable:AddColumn("content", "String", true)
+
+
+    local debugsDataSet = Midas:CreateDataSet("Debugs", "debugs")
+    local errorDataTable = debugsDataSet:CreateDataTable("Error", "error")
+    errorDataTable:AddColumn("server_id", "String", false)
+    errorDataTable:AddColumn("user_id", "Int64", false)
+    errorDataTable:AddColumn("session_id", "String", false)
+    errorDataTable:AddColumn("timestamp", "Date", false)
+    errorDataTable:AddColumn("error_content", "Date", false)
 
     Midas:Automate(RunService:IsStudio())   
 end
@@ -263,16 +272,16 @@ function Analytics.updateDataTable(plr : Player, dataSetName : string, dataTable
                 user_id = plr.UserId,
                 is_premium = (plr.MembershipType == Enum.MembershipType.Premium),
 
-                is_retained_on_d0 = if plrInfo then (if firstSession ~= currentSession and firstSessionQuitTime and (currentTimeStamp - firstSessionQuitTime) <= 60*60*24*1 then true else false) else false,
-                is_retained_on_d1 = if plrInfo then (if firstSession ~= currentSession and firstSessionQuitTime and (((currentTimeStamp - firstSessionQuitTime) >= 60*60*24*1) and  (currentTimeStamp - firstSessionQuitTime <= 60*60*24*(1 + 1))) then true else false) else false,
-                is_retained_on_d7 = if plrInfo then (if firstSession ~= currentSession and firstSessionQuitTime and (((currentTimeStamp - firstSessionQuitTime) >= 60*60*24*7) and (currentTimeStamp - firstSessionQuitTime <= 60*60*24*(7 + 1))) then true else false) else false,
-                is_retained_on_d14 = if plrInfo then (if firstSession ~= currentSession and firstSessionQuitTime and (((currentTimeStamp - firstSessionQuitTime) >= 60*60*24*14) and (currentTimeStamp - firstSessionQuitTime <= 60*60*24*(14 + 1))) then true else false) else false,
-                is_retained_on_d28 = if plrInfo then (if firstSession ~= currentSession and firstSessionQuitTime and (((currentTimeStamp - firstSessionQuitTime) >= 60*60*24*28) and (currentTimeStamp - firstSessionQuitTime <= 60*60*24*(28 + 1))) then true else false) else false,
+                is_retained_on_d0 = if plrInfo then (if firstSession ~= currentSession and firstSessionQuitTime and (currentTimeStamp - firstSessionQuitTime) <= 60*60*24*1 then true elseif (currentTimeStamp - firstSessionQuitTime) > 60*60*24*1 then false else nil) else nil,
+                is_retained_on_d1 = if plrInfo then (if firstSession ~= currentSession and firstSessionQuitTime and (((currentTimeStamp - firstSessionQuitTime) >= 60*60*24*1) and  (currentTimeStamp - firstSessionQuitTime <= 60*60*24*(1 + 1))) then true elseif (currentTimeStamp - firstSessionQuitTime) > 60*60*24*(1 + 1) then false else nil) else nil,
+                is_retained_on_d7 = if plrInfo then (if firstSession ~= currentSession and firstSessionQuitTime and (((currentTimeStamp - firstSessionQuitTime) >= 60*60*24*7) and (currentTimeStamp - firstSessionQuitTime <= 60*60*24*(7 + 1))) then true elseif (currentTimeStamp - firstSessionQuitTime) > 60*60*24*(7 + 1) then false else nil) else nil,
+                is_retained_on_d14 = if plrInfo then (if firstSession ~= currentSession and firstSessionQuitTime and (((currentTimeStamp - firstSessionQuitTime) >= 60*60*24*14) and (currentTimeStamp - firstSessionQuitTime <= 60*60*24*(14 + 1))) then true elseif (currentTimeStamp - firstSessionQuitTime) > 60*60*24*(14 + 1) then false else nil) else nil,
+                is_retained_on_d28 = if plrInfo then (if firstSession ~= currentSession and firstSessionQuitTime and (((currentTimeStamp - firstSessionQuitTime) >= 60*60*24*28) and (currentTimeStamp - firstSessionQuitTime <= 60*60*24*(28 + 1))) then true elseif (currentTimeStamp - firstSessionQuitTime) > 60*60*24*(28 + 1) then false else nil) else nil,
             
                 play_duration = play_duration,
                 duration_after_joined = duration_after_joined
-            })
-            print(duration_after_joined, " : after joined dur", play_duration, " : play dur")
+            }) 
+            --print(duration_after_joined, " : after joined dur", play_duration, " : play dur")
         end
 
         --[[elseif dataTableName == "Gameplay" then
@@ -372,7 +381,18 @@ function Analytics.updateDataTable(plr : Player, dataSetName : string, dataTable
                 content = content
             })
         end
-       
+    elseif dataSetName == "Debugs" then
+        if dataTableName == "Error" then
+            local content = addParamsFn()
+            dataTable:AddRow({
+                server_id = game.JobId,
+                session_id = tostring(math.round(currentTimeStamp)) .. tostring(plr.UserId),
+                timestamp = DateTime.now(),
+                user_id = plr.UserId,
+               
+                error_content = content
+            })
+        end
     end
     --print(Midas:GetDataSets(), " datasets!")
 end

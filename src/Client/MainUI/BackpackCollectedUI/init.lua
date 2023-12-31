@@ -3,7 +3,6 @@
 local BadgeService = game:GetService("BadgeService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService= game:GetService("RunService")
-local CollectionService = game:GetService("CollectionService")
 --packages
 local Maid = require(ReplicatedStorage:WaitForChild("Packages"):WaitForChild("Maid"))
 local ColdFusion = require(ReplicatedStorage:WaitForChild("Packages"):WaitForChild("ColdFusion8"))
@@ -67,6 +66,8 @@ local function getButton(
         Size = UDim2.fromScale(1, 0.5),
         Font = Enum.Font.Gotham,
         Text = text,
+        TextScaled = true,
+        TextWrapped = true,
         TextStrokeTransparency = 0.5,
         TextColor3 = PRIMARY_COLOR,
 
@@ -88,7 +89,8 @@ local function getItemButton(
     maid : Maid, 
     key : number,
     itemInfo: ToolData,
-    onBackpackButtonAddClickSignal : Signal
+    onBackpackButtonEquipClickSignal : Signal,
+    onBackpackButtonDeleteClickSignal : Signal
 )
 
     local _fuse = ColdFusion.fuse(maid)
@@ -107,7 +109,6 @@ local function getItemButton(
         toolModel = toolModel:Clone()
     end
 
-
     if not game:GetService("RunService"):IsRunning() then
         if not toolModel then
             local part = _new("Part")({
@@ -125,13 +126,6 @@ local function getItemButton(
     end
 
     if toolModel then
-         
-        for _,v in pairs(toolModel:GetDescendants()) do
-            if v:IsA("Script") or v:IsA("ModuleScript") or v:IsA("LocalScript") then
-                v:Destroy() 
-            end
-        end
-
         if toolModel:IsA("BasePart") then
             viewportVisualZoom *= toolModel.Size.Magnitude
         elseif toolModel:IsA("Model") then
@@ -162,19 +156,19 @@ local function getItemButton(
             getButton(
                 maid, 
                 1,
-                "Get",
+                if not itemInfo.IsEquipped then "Equip" else "Unequip",
                 function()
-                    onBackpackButtonAddClickSignal:Fire(itemInfo)
+                    onBackpackButtonEquipClickSignal:Fire(key, if not itemInfo.IsEquipped then itemInfo.Name else nil)
                 end
             ),
-            --[[getButton(
+            getButton(
                 maid, 
                 2,
                 "Delete",
                 function()
                     onBackpackButtonDeleteClickSignal:Fire(key, itemInfo.Name)
                 end
-            )]]
+            )
             --getButton(maid, text, fn)
         }
     })
@@ -253,7 +247,8 @@ local function getItemTypeFrame(
     Items : State<{
         [number] : ToolData & {Key : number}
     }>,
-    onBackpackButtonAddClickSignal : Signal
+    onBackpackButtonEquipClickSignal : Signal,
+    onBackpackButtonDeleteClickSignal : Signal
 )
     local _fuse = ColdFusion.fuse(maid)
     local _new = _fuse.new
@@ -333,7 +328,8 @@ local function getItemTypeFrame(
             pairMaid,
             v.Key,  
             v,
-            onBackpackButtonAddClickSignal
+            onBackpackButtonEquipClickSignal,
+            onBackpackButtonDeleteClickSignal
         )
         
         itemButton.Parent = itemFrameList
@@ -387,17 +383,11 @@ local function getSelectButton(maid : Maid, order : number, text : string, isSel
 
     return out
 end
---class
-return function(
+
+local function getViewport(
     maid : Maid,
-    itemsOwned : ValueState<{[number] : ToolData}>,
 
-    onBackpackButtonAddClickSignal : Signal,
-    onBackpackButtonDeleteClickSignal : Signal,
-
-    vehicleList : ValueState<{[number] : VehicleData}>,
-    onVehicleSpawn : Signal,
-    onVehicleDelete : Signal
+    objectToTrack : Instance
 )
     local _fuse = ColdFusion.fuse(maid)
     local _new = _fuse.new
@@ -408,214 +398,112 @@ return function(
     local _Computed = _fuse.Computed
     local _Value = _fuse.Value
 
-    local itemTypes = BackpackUtil.getAllItemClasses()
-
-    local isVisible = _Value(true) --fixing the wierd state not working thing by attaching it to the properties table for the sake of updating the equip
-    
-    local selectedPage = _Value("Items")
-    
-    local header = _new("Frame")({
-        Name = "Header",
-        BackgroundColor3 = BACKGROUND_COLOR,
-        Size = UDim2.fromScale(1, 0.1),
-        Children = {
-            _new("UIListLayout")({
-                SortOrder = Enum.SortOrder.LayoutOrder,
-                FillDirection = Enum.FillDirection.Horizontal,
-                Padding = PADDING_SIZE,
-
-            }),
-            getSelectButton(maid, 1, "Items", _Computed(function(page)
-                return page == "Items"
-            end, selectedPage),function()
-                selectedPage:Set("Items")
-            end),
-            getSelectButton(maid, 2, "Vehicles", _Computed(function(page)
-                return page == "Vehicles"
-            end, selectedPage),function()
-                selectedPage:Set("Vehicles")
-            end),
-        }
+    local currentCam = _new("Camera")({
+        CFrame = if objectToTrack:IsA("Model") and objectToTrack.PrimaryPart then 
+            CFrame.lookAt(objectToTrack.PrimaryPart.Position + objectToTrack.PrimaryPart.CFrame.LookVector*objectToTrack:GetExtentsSize().Magnitude, objectToTrack.PrimaryPart.Position)
+        elseif objectToTrack:IsA("BasePart") then
+            CFrame.lookAt(objectToTrack.Position + objectToTrack.CFrame.LookVector*objectToTrack.Size.Magnitude, objectToTrack.Position)
+        else
+            nil
     })
-    
-    local backpackContentFrame = _new("ScrollingFrame")({
-        Name = "ContentFrame",
-        Visible = _Computed(function(page : string)
-           return page == "Items" 
-        end, selectedPage),
-        AutomaticCanvasSize = Enum.AutomaticSize.Y,
-        CanvasSize = UDim2.new(),
-        BackgroundColor3 = BACKGROUND_COLOR,
-        BackgroundTransparency = 0.74,
-        Position = UDim2.fromScale(0,0),
-        Size = UDim2.fromScale(1,0.8),
-        Children = {
-            _new("UICorner")({
-                CornerRadius = UDim.new(1,0)
-            }),
-            _new("UIListLayout")({
-                SortOrder = Enum.SortOrder.LayoutOrder,
-                Padding = PADDING_SIZE
-            }),
-            --[[_new("TextLabel")({
-                BackgroundTransparency = 1,
-                Size = UDim2.fromScale(1, 0.06),
-                RichText = true,
-                TextScaled = true,
-                Font = Enum.Font.Gotham,
-                Text = "<b>Backpack</b>",
-                TextColor3 = PRIMARY_COLOR,
-                TextStrokeTransparency = 0.5
-            }) ]]
-        }
-    }) :: GuiObject
 
-    local function getButtonInfo(
-        signal : Signal,
-        buttonName : string
-    )
-        return 
-            {
-                Signal = signal,
-                ButtonName = buttonName
-            }
+    local out = _new("ViewportFrame")({
+        BackgroundColor3 = BACKGROUND_COLOR,
+        CurrentCamera = currentCam,
+        Children = {
+            _new("UICorner")({}),
+            _new("UIStroke")({
+                Thickness = 1.5,
+                Color = BACKGROUND_COLOR
+            }),
+            _new("UIAspectRatioConstraint")({}),
         
-    end
-    local options = {
-        getButtonInfo(onVehicleSpawn, "Spawn"),
-        getButtonInfo(onVehicleDelete, "Delete")
-    }
-    local vehicleNamesList = _Computed(function(list : {[number] : VehicleData})
-        local namesList = {}
-        for _,v in pairs(list) do
-            table.insert(namesList, v.Name)
-        end
-        print(namesList, " dirikoee")
-        return namesList
-    end, vehicleList)
-    local vehiclesContentFrame = _bind(ListUI(maid, "", vehicleNamesList, _Value(UDim2.new()), _Computed(function(page : string)
-        return page == "Vehicles" 
-    end, selectedPage), options))({
-        Size = UDim2.fromScale(1, 0.8)
-    })
-    
-    if RunService:IsRunning() then   
-        task.spawn(function()
-            task.wait(0.5)
-            do --init
-                local contentFrame = vehiclesContentFrame:WaitForChild("ContentFrame") :: Frame
-                for k,v in pairs(contentFrame:GetChildren()) do
-                    if v:IsA("Frame") then
-                        for k2, v2 in pairs(vehicleList:Get()) do
-                            if k2 == v.LayoutOrder then
-                                local spawnButton = v:WaitForChild("SubOptions"):WaitForChild("SpawnButton") :: TextButton
-                                spawnButton.Text = if v2.IsSpawned then "Despawn" else "Spawn"
-                                print(v2)
-                                if v2.DestroyLocked == true then
-                                    local deleteButton = v:WaitForChild("SubOptions"):WaitForChild("DeleteButton") :: TextButton
-                                    deleteButton.Visible = false
-                                end
-                            end
-                        end
-                    end
-                end
-            end
-        end)
-    end
-    local contentFrame = _new("Frame")({
-        Name = "ContentFrame",
-        Visible = isVisible,
-        BackgroundColor3 = BACKGROUND_COLOR,
-        BackgroundTransparency = 1,
-        Position = UDim2.fromScale(0,0),
-        Size = UDim2.fromScale(0.3,1),
-        Children = {
-            _new("UICorner")({
-                CornerRadius = UDim.new(1,0)
-            }),
-            _new("UIListLayout")({
-                SortOrder = Enum.SortOrder.LayoutOrder,
-                Padding = PADDING_SIZE
-            }),
-            --[[_new("TextLabel")({
-                BackgroundTransparency = 1,
-                Size = UDim2.fromScale(1, 0.06),
-                RichText = true,
-                TextScaled = true,
-                Font = Enum.Font.Gotham,
-                Text = "<b>Backpack</b>",
-                TextColor3 = PRIMARY_COLOR,
-                TextStrokeTransparency = 0.5
-            }) ]]
-            header,
-            backpackContentFrame,
-            vehiclesContentFrame
+            currentCam,
+            
+            _new("WorldModel")({
+                Children = {
+                    objectToTrack
+                }
+            })
         }
-    }) :: GuiObject
+    })
+    return out
+end
 
-    for k,typeName in pairs(itemTypes) do
-        local itemsFiltered = _Computed(function(items : {[number] : ToolData})
-            local allItems = CollectionService:GetTagged("Tool")
-            local allItemsData = {}
-            for _,v in pairs(allItems) do
-                if not v:GetAttribute("DescendantsAreTools") then
-                    local toolData : ToolData = BackpackUtil.getData(v, true) :: any
-                    local toolAlreadyCollected = false
-                    for _,v in pairs(allItemsData) do
-                        if v.Name == toolData.Name then  
-                            toolAlreadyCollected = true
-                            break
-                        end
-                    end
-                    if not toolAlreadyCollected then
-                        table.insert(allItemsData, toolData)
-                    end
-                end
-            end
-            local filteredItemsByTypes = {}
-            for k,itemInfo : ToolData in pairs(allItemsData) do
-                if itemInfo.Class == typeName then
-                    local modifiedItemInfo : ToolData & {Key : number} = itemInfo :: any
-                    modifiedItemInfo.Key = k
-                    table.insert(filteredItemsByTypes, modifiedItemInfo)
-                end
-            end
-            return filteredItemsByTypes
-        end, itemsOwned, isVisible)
 
-        local itemTypeFrame = getItemTypeFrame(
-            maid, 
-            typeName, 
-            itemsFiltered,
-            onBackpackButtonAddClickSignal
-        )
-        itemTypeFrame.Parent = backpackContentFrame
-    end
+--class
+return function(
+    maid : Maid
+)
+    local _fuse = ColdFusion.fuse(maid)
+    local _new = _fuse.new
+    local _import = _fuse.import
+    local _bind = _fuse.bind
+    local _clone = _fuse.clone
+
+    local _Computed = _fuse.Computed
+    local _Value = _fuse.Value
+
+    local content = _new("Frame")({
+        Name = "Content",
+        BackgroundTransparency = 0.9,
+        Size = UDim2.fromScale(0.6, 1),
+        Children = {
+            _new("UIListLayout")({
+                Padding = PADDING_SIZE,
+                FillDirection = Enum.FillDirection.Horizontal
+            }),
+            _bind(getViewport(maid, ReplicatedStorage.Assets.Tools.Items.Book:Clone()))({
+                BackgroundTransparency = 0,
+                Size = UDim2.new(1,0,1,0),
+               
+            }),
+            _bind(getViewport(maid, ReplicatedStorage.Assets.Tools.Items.Book:Clone()))({
+                BackgroundTransparency = 0,
+                Size = UDim2.new(1,0,1,0),
+                
+            }),
+            _bind(getViewport(maid, ReplicatedStorage.Assets.Tools.Items.Book:Clone()))({
+                BackgroundTransparency = 0,
+                Size = UDim2.new(1,0,1,0),
+               
+            }),
+        }
+    })
 
     local out = _new("Frame")({
         BackgroundTransparency = 1,
         Size = UDim2.fromScale(1, 1),
+        
         Children = {
             _new("UIPadding")({
-                PaddingBottom = PADDING_SIZE,
-                PaddingTop = PADDING_SIZE,
-                PaddingLeft = PADDING_SIZE,
-                PaddingRight = PADDING_SIZE
+                PaddingTop = UDim.new(0.025,0),
+                PaddingBottom = UDim.new(0.025,0),
+                PaddingLeft = UDim.new(0.025,0),
+                PaddingRight = UDim.new(0.025,0)
             }),
             _new("UIListLayout")({
-                FillDirection = Enum.FillDirection.Horizontal,
-                VerticalAlignment = Enum.VerticalAlignment.Bottom,
                 SortOrder = Enum.SortOrder.LayoutOrder,
+                HorizontalAlignment = Enum.HorizontalAlignment.Center,
+                VerticalAlignment = Enum.VerticalAlignment.Bottom
             }),
+            
             _new("Frame")({
-                LayoutOrder = 0,
                 BackgroundTransparency = 1,
-                Size = UDim2.fromScale(0.035, 1)
-            }),
-            contentFrame        
+                Size = UDim2.fromScale(1, 0.1),
+                Children = ({
+                    _new("UIListLayout")({
+                        SortOrder = Enum.SortOrder.LayoutOrder,
+                        HorizontalAlignment = Enum.HorizontalAlignment.Right,
+                        VerticalAlignment = Enum.VerticalAlignment.Bottom
+                    }),
+                    content,
+                  
+                })
+            })
+            
         }
-    }) :: Frame
-
+    })
 
 
     return out

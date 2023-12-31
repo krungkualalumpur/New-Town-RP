@@ -117,7 +117,7 @@ function BackpackUtil.getAllItemClasses()
         local className = toolModel:GetAttribute("DisplayTypeName") or toolModel:GetAttribute("Class")
         if className then
             if not table.find(classes, className) then
-                table.insert(classes, className) 
+                table.insert(classes, className)
             end
         end 
     end
