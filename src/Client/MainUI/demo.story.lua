@@ -57,11 +57,22 @@ return function(target : CoreGui)
     local onJobChange = maid:GiveTask(Signal.new())
     local onNotify = maid:GiveTask(Signal.new())
 
+    local isOwnHouse = _Value(false)
+    local isOwnVehicle = _Value(false)
+
+    local houseIsLocked = _Value(true)
+    local vehicleIsLocked = _Value(true)
+
     local nameOnCustomize = maid:GiveTask(Signal.new())
 
     local onItemCartSpawn = maid:GiveTask(Signal.new())
 
     local onCharReset = maid:GiveTask(Signal.new())
+
+    local onHouseLocked = maid:GiveTask(Signal.new())
+    local onVehicleLocked = maid:GiveTask(Signal.new())
+
+    local onHouseClaim = maid:GiveTask(Signal.new())
 
     MainUI(
         maid,
@@ -72,10 +83,20 @@ return function(target : CoreGui)
 
         _Value({}),
         _Value("Sundus, " .. game.Lighting.TimeOfDay),
+        isOwnHouse,
+        isOwnVehicle,
+        houseIsLocked,
+        vehicleIsLocked,
+
         onBackpackAdd,
         onBackpackDelete,
         onVehicleSpawn,
         onVehicleDelete,
+ 
+        onHouseLocked,
+        onVehicleLocked,
+
+        onHouseClaim,
 
         onNotify,
 

@@ -168,6 +168,12 @@ function mapHUD.new(
             table.insert(buildings, v)
         end
     end
+    for _,v in pairs(workspace:WaitForChild("Assets"):WaitForChild("Houses"):GetChildren()) do
+        if v:IsA("Model") then
+            table.insert(buildings, v)
+        end
+    end
+
 
     local fuse = ColdFusion.fuse(maid)
 
@@ -262,8 +268,8 @@ function mapHUD.new(
 
     local out = _new("Frame")({
         Visible = isVisible,
-        Position = UDim2.fromScale(0.01, 0.75),
-        Size = UDim2.fromScale(0.22, 0.22),
+        Position = UDim2.fromScale(0.01, 0.78),
+        Size = UDim2.fromScale(0.21, 0.21),
         BackgroundTransparency = 0.75,
         BackgroundColor3 = SECONDARY_COLOR,
         Children = {

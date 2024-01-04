@@ -164,6 +164,15 @@ function Analytics.init(maid : Maid)
     vehiclesDataTable:AddColumn("event_name", "String", false)
     vehiclesDataTable:AddColumn("vehicles", "Array", true)
     vehiclesDataTable:AddColumn("item_name", "String", true)
+    local housesDataTable = eventsDataSet:CreateDataTable("Houses", "houses")
+    housesDataTable:AddColumn("server_id", "String", false)
+    housesDataTable:AddColumn("user_id", "Int64", false)
+    housesDataTable:AddColumn("session_id", "String", false)
+    housesDataTable:AddColumn("timestamp", "Date", false)
+    housesDataTable:AddColumn("pos_x", "Double", true)
+    housesDataTable:AddColumn("pos_z", "Double", true)
+    housesDataTable:AddColumn("event_name", "String", true)
+    housesDataTable:AddColumn("house_name", "String", true)
     local miscsDataTable = eventsDataSet:CreateDataTable("Miscs", "miscs")
     miscsDataTable:AddColumn("server_id", "String", false)
     miscsDataTable:AddColumn("user_id", "Int64", false)
@@ -363,6 +372,23 @@ function Analytics.updateDataTable(plr : Player, dataSetName : string, dataTable
                 event_name = eventName,
                 vehicles = if plrData then plrData.Vehicles else {},
                 item_name = itemAddedName
+            })
+        elseif dataTableName == "Houses" then
+            local char = plr.Character or plr.CharacterAdded:Wait()
+            local charPrimaryPart = char:WaitForChild("HumanoidRootPart") :: BasePart
+            
+            local eventName, houseName = addParamsFn()
+
+            dataTable:AddRow({
+                server_id = game.JobId,
+                session_id = tostring(math.round(currentTimeStamp)) .. tostring(plr.UserId),
+                timestamp = DateTime.now(),
+                user_id = plr.UserId,
+                pos_x = charPrimaryPart.Position.X,
+                pos_z = charPrimaryPart.Position.Z,
+                
+                event_name = eventName,
+                house_name = houseName
             })
         elseif dataTableName == "Miscs" then
             local char = plr.Character or plr.CharacterAdded:Wait()

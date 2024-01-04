@@ -31,7 +31,10 @@ function ToolManager.init(maid : Maid)
                 newTool:SetAttribute("DisplayTypeName", v:GetAttribute("DisplayTypeName"))
                 newTool:SetAttribute("OnRelease", v:GetAttribute("OnRelease"))
                 newTool.Parent = ToolCollections
-                CollectionService:AddTag(newTool, "Tool")               
+                CollectionService:AddTag(newTool, "Tool")      
+                --if child.Name == "Part" then
+                --    print(child)         
+                --end
             end
         end
         

@@ -19,6 +19,7 @@ local RoleplayUI = require(ReplicatedStorage:WaitForChild("Client"):WaitForChild
 local NewCustomizationUI = require(ReplicatedStorage:WaitForChild("Client"):WaitForChild("MainUI"):WaitForChild("NewCustomizationUI"))
 local CustomizationUI = require(ReplicatedStorage:WaitForChild("Client"):WaitForChild("MainUI"):WaitForChild("CustomizationUI"))
 local ItemOptionsUI = require(ReplicatedStorage:WaitForChild("Client"):WaitForChild("ItemOptionsUI"))
+local HouseUI = require(ReplicatedStorage:WaitForChild("Client"):WaitForChild("MainUI"):WaitForChild("HouseUI"))
 local LoadingFrame = require(ReplicatedStorage:WaitForChild("Client"):WaitForChild("LoadingFrame"))
 
 local ExitButton = require(ReplicatedStorage:WaitForChild("Client"):WaitForChild("ExitButton"))
@@ -38,7 +39,7 @@ local ToolActions = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChil
 type Maid = Maid.Maid
 type Signal = Signal.Signal
 
-export type UIStatus = "Backpack" | "Roleplay" | "Customization" | nil
+export type UIStatus = "Backpack" | "Roleplay" | "Customization" | "House" | nil
 type ToolData = BackpackUtil.ToolData<boolean>
 export type VehicleData = ItemUtil.ItemInfo & {
     Key : string,
@@ -63,7 +64,7 @@ local TERTIARY_COLOR = Color3.fromRGB(70,70,70)
 
 local TEXT_COLOR = Color3.fromRGB(255,255,255)
 
-local PADDING_SIZE = UDim.new(0,10)
+local PADDING_SIZE = UDim.new(0.01,0)
 
 local DAY_VALUE_KEY = "DayValue"
 --remotes
@@ -85,6 +86,7 @@ local GET_CATALOG_FROM_CATALOG_INFO = "GetCatalogFromCatalogInfo"
 --variables
 --references
 local Player = Players.LocalPlayer
+local HousesFolder = workspace:WaitForChild("Assets"):WaitForChild("Houses")
 --local functions
 local function getItemInfo(
     class : string,
@@ -217,7 +219,7 @@ end
 
 function getImageButton(
     maid : Maid,
-    ImageId : number,
+    ImageId : CanBeState<number>,
     activatedFn : () -> (),
     buttonName : CanBeState<string>,
     order : number,
@@ -234,6 +236,8 @@ function getImageButton(
 
     local imageTextPos = _Value(UDim2.fromScale(1.2, 0.5))
     local imageTextTransp = _Value(0.5)
+
+    local ImageIdImported = _import(ImageId, ImageId)
 
     local interval = 1.8
     local imageText = _new("TextLabel")({
@@ -266,6 +270,8 @@ function getImageButton(
                 animState = if animState == "Back" then "Forth" else "Back"
             end
         end))
+    else
+        imageTextPos:Set(UDim2.fromScale(0.25, 0.8))
     end
 
     local button = _new("ImageButton")({
@@ -273,9 +279,11 @@ function getImageButton(
         LayoutOrder = order,
         BackgroundColor3 = TERTIARY_COLOR,
         BackgroundTransparency = 0,
-        Size = UDim2.fromScale(0.5, 0.1),
+        Size = UDim2.fromScale(0.3, 0.08),
         AutoButtonColor = true,
-        Image = "rbxassetid://" .. tostring(ImageId),
+        Image = _Computed(function(imageId : number)
+            return "rbxassetid://" .. tostring(imageId)
+        end, ImageIdImported) ,
         Children = {
            
             _new("UICorner")({}),
@@ -345,11 +353,21 @@ return function(
     UIStatus : ValueState<UIStatus>,
     vehiclesList : ValueState<{[number] : VehicleData}>,
     date : ValueState<string>,
+    isOwnHouse : ValueState <boolean>,
+    isOwnVehicle : ValueState <boolean>,
+    isHouseLocked : ValueState<boolean>,
+    isVehicleLocked : ValueState<boolean>,
 
     backpackOnAdd : Signal,
     backpackOnDelete : Signal,
     onVehicleSpawn : Signal,
     onVehicleDelete : Signal,
+
+    onHouseLocked : Signal,
+    onVehicleLocked : Signal,
+
+    onHouseClaim : Signal,
+
     onNotify : Signal,
 
     onItemCartSpawn : Signal,
@@ -376,6 +394,111 @@ return function(
     local viewportMaid = maid:GiveTask(Maid.new())
     local statusMaid = maid:GiveTask(Maid.new())
 
+    local ownershipFrame = _new("Frame")({
+        Parent = target,
+        AnchorPoint = Vector2.new(0.5,1),
+        BackgroundTransparency = 1,
+        Position = UDim2.fromScale(0.9, 0.6),
+        Size = UDim2.fromScale(0.1, 0.25),
+        Children = {
+            _new("UIListLayout")({
+                Padding = UDim.new(0.1, 0), 
+                SortOrder = Enum.SortOrder.LayoutOrder
+            }),
+            _new("Frame")({
+                BackgroundColor3 = TEXT_COLOR,
+                BackgroundTransparency = 1,
+                Size = UDim2.fromScale(1, 0.5),
+                Visible = isOwnHouse,
+                Children = {
+                    _new("UIListLayout")({
+                        Padding = UDim.new(0.1, 0), 
+                        SortOrder = Enum.SortOrder.LayoutOrder
+                    }),
+                    _new("TextLabel")({
+                        LayoutOrder = 1,
+                        BackgroundTransparency = 1,
+                        Size = UDim2.fromScale(1, 0.1),
+                        Font = Enum.Font.Gotham,
+                        Text = "House",
+                        TextColor3 = TEXT_COLOR,
+                    }),
+                    _new("Frame")({
+                        LayoutOrder = 2,
+                        BackgroundColor3 = TEXT_COLOR,
+                        BackgroundTransparency = 1,
+                        Size = UDim2.fromScale(1, 0.5),
+                        Children = {
+                            _new("UIGridLayout")({
+                                FillDirection = Enum.FillDirection.Horizontal,
+                                CellPadding = UDim2.fromOffset(5, 5),
+                                CellSize = UDim2.fromScale(0.4, 1),
+                                HorizontalAlignment = Enum.HorizontalAlignment.Center
+                            }),
+                            getImageButton(
+                                maid, 
+                                _Computed(function(isLocked : boolean) 
+                                    return if isLocked then 15117261700 else 10695825676
+                                end, isHouseLocked), 
+                                function()
+                                    onHouseLocked:Fire()
+                                end, 
+                                "", 
+                                1, 
+                                false
+                            )
+                        }
+                    })
+                }
+            }),
+           _new("Frame")({
+                BackgroundColor3 = TEXT_COLOR,
+                BackgroundTransparency = 1,
+                Size = UDim2.fromScale(1, 0.5),
+                Visible = isOwnVehicle,
+                Children = {
+                    _new("UIListLayout")({
+                        Padding = UDim.new(0.1, 0), 
+                        SortOrder = Enum.SortOrder.LayoutOrder
+                    }),
+                    _new("TextLabel")({
+                        LayoutOrder = 1,
+                        BackgroundTransparency = 1,
+                        Size = UDim2.fromScale(1, 0.1),
+                        Font = Enum.Font.Gotham,
+                        Text = "Vehicle",
+                        TextColor3 = TEXT_COLOR,
+                    }),
+                    _new("Frame")({
+                        LayoutOrder = 2,
+                        BackgroundColor3 = TEXT_COLOR,
+                        BackgroundTransparency = 1,
+                        Size = UDim2.fromScale(1, 0.5),
+                        Children = {
+                            _new("UIGridLayout")({
+                                FillDirection = Enum.FillDirection.Horizontal,
+                                CellPadding = UDim2.fromOffset(5, 5),
+                                CellSize = UDim2.fromScale(0.4, 1),
+                                HorizontalAlignment = Enum.HorizontalAlignment.Center
+                            }),
+                            getImageButton(
+                                maid, 
+                                _Computed(function(isLocked : boolean) 
+                                    return if isLocked then 15117261700 else 10695825676
+                                end, isVehicleLocked), 
+                                function()
+                                    onVehicleLocked:Fire()
+                                end, 
+                                "", 
+                                1, 
+                                false
+                            )
+                        }
+                    })
+                }
+            }),
+        }
+    })
 
     local onEquipFrame = _new("Frame")({
         LayoutOrder = 1, 
@@ -405,7 +528,7 @@ return function(
                 VerticalAlignment = Enum.VerticalAlignment.Bottom,
                 HorizontalAlignment = Enum.HorizontalAlignment.Center,
                 SortOrder = Enum.SortOrder.LayoutOrder,
-                Padding = PADDING_SIZE
+                Padding = UDim.new(0.025, 0), 
             }),
             --[[_new("TextLabel")({
                 LayoutOrder = 1,
@@ -646,33 +769,36 @@ return function(
         }
     })
 
-    local backpackText = _Value("← Tools")
-    local roleplayText = _Value("← Roleplay Actions")
+    local backpackText = _Value("← Tools & Vehicles")
+    local roleplayText = _Value("← Actions")
     local customizationText = _Value("← Avatar")
+    local houseText = _Value("← House")
 
     local alertColor = _Value(Color3.fromRGB(255,50,50))
 
     local mainOptions =  _new("Frame")({
         LayoutOrder = 0,
         BackgroundTransparency = 1,
-        Size = UDim2.fromScale(0.1, 1),
+        Size = UDim2.fromScale(0.1, 0.8),
         Position = UDim2.fromScale(0, 0),   
         Children = {
             _new("UIListLayout")({
                 FillDirection = Enum.FillDirection.Vertical,
                 SortOrder = Enum.SortOrder.LayoutOrder,
                 Padding = PADDING_SIZE,
-                VerticalAlignment = Enum.VerticalAlignment.Center
+                VerticalAlignment = Enum.VerticalAlignment.Top
             }),   
             _new("Frame")({
+                LayoutOrder = 0,
                 BackgroundTransparency = 1,
-                Size = UDim2.fromScale(1, 0.12)
+                Size = UDim2.fromScale(1, 0.415)
             }),
            _bind(getImageButton(maid, 2815418737, function()
                 UIStatus:Set(if UIStatus:Get() ~= "Backpack" then "Backpack" else nil)
                 backpackText:Set("")
                 roleplayText:Set("")
                 customizationText:Set("")
+                houseText:Set("")
             end, backpackText, 2, true))({
                 Children = {
                     --[[_new("TextLabel")({
@@ -706,15 +832,28 @@ return function(
                 backpackText:Set("")
                 roleplayText:Set("")
                 customizationText:Set("")
+                houseText:Set("")
             end, roleplayText, 3, true),
             getImageButton(maid, 13285102351, function()
                 UIStatus:Set(if UIStatus:Get() ~= "Customization" then "Customization" else nil)
                 backpackText:Set("")
                 roleplayText:Set("")
                 customizationText:Set("")
+                houseText:Set("")
             end, customizationText, 1, true),
             _bind(dateFrame)({
                 LayoutOrder = 4,
+                Size = UDim2.fromScale(2, 0.05)
+            }),
+            getImageButton(maid, 279461710, function()
+                UIStatus:Set(if UIStatus:Get() ~= "House" then "House" else nil)
+                backpackText:Set("")
+                roleplayText:Set("")
+                customizationText:Set("")
+                houseText:Set("")
+            end, houseText, 1, true),
+            _bind(dateFrame)({
+                LayoutOrder = 5,
                 Size = UDim2.fromScale(2, 0.05)
             })
         }
@@ -749,6 +888,7 @@ return function(
     }) :: Frame
 
     local isExitButtonVisible = _Value(true)
+    
     local function getExitButton(ui : GuiObject)
         local exitButton = ExitButton.new(
             ui:WaitForChild("ContentFrame") :: GuiObject, 
@@ -761,6 +901,40 @@ return function(
         ) 
         exitButton.Instance.Parent = ui:FindFirstChild("ContentFrame")
     end
+
+    local housesList = {}
+
+    if RunService:IsRunning() then
+        for _,house in pairs(HousesFolder:GetChildren()) do
+            local houseIndex = house:GetAttribute("Index")
+            if houseIndex then
+                housesList[houseIndex] = house 
+            end
+        end
+    end
+
+    local houseIndex = _Value(1)
+    local houseName = _Value("House 1")
+
+    
+    local function updateCamCf()
+        if RunService:IsRunning() then
+            local camera = workspace.CurrentCamera
+            camera.CameraType = Enum.CameraType.Scriptable
+
+            local index = houseIndex:Get()
+            local house = housesList[index] :: Model
+            local cf, size = house:GetBoundingBox()
+            camera.CFrame = CFrame.lookAt(cf.Position + cf.LookVector*size.Z*1.5 + cf.UpVector*size.Y*2, cf.Position)
+        end
+    end
+
+    _new("StringValue")({
+        Value = _Computed(function(index : number)
+            houseName:Set(if housesList[index] then housesList[index].Name else "")
+            return ""
+        end, houseIndex)
+    })
 
     local onCatalogTry = maid:GiveTask(Signal.new())
     local onCustomizeColor = maid:GiveTask(Signal.new())
@@ -776,6 +950,10 @@ return function(
 
     local onRPNameChange = maid:GiveTask(Signal.new())
     local onDescChange = maid:GiveTask(Signal.new())
+    
+    local onHouseNext = maid:GiveTask(Signal.new())
+    local onHousePrev = maid:GiveTask(Signal.new())
+    local onHouseBack = maid:GiveTask(Signal.new())
 
     local saveList = _Value({})
 
@@ -1109,6 +1287,21 @@ return function(
             }))
 
             saveList:Set(NetworkUtil.invokeServer(GET_CHARACTER_SLOT)) 
+        elseif status == "House" then            
+            local houseUI = HouseUI(
+                statusMaid, 
+                houseIndex, 
+                houseName, 
+                onHouseNext, 
+                onHousePrev,
+                onHouseClaim,
+                onHouseBack,
+                1,
+                #housesList
+            )
+            houseUI.Parent = target
+
+            updateCamCf()
         end
         return ""
     end, UIStatus)
@@ -1238,6 +1431,27 @@ return function(
         print("On Desc change :", inputted)
         NetworkUtil.fireServer(ON_ROLEPLAY_BIO_CHANGE, "PlayerBio", inputted)
     end))
+
+    if RunService:IsRunning() then
+        local camera = workspace.CurrentCamera
+        
+        maid:GiveTask(onHouseNext:Connect(function()
+            houseIndex:Set(houseIndex:Get() + 1) 
+
+            updateCamCf()
+        end))
+        maid:GiveTask(onHousePrev:Connect(function()
+            houseIndex:Set(houseIndex:Get() - 1)
+
+            updateCamCf()
+        end))
+
+        maid:GiveTask(onHouseBack:Connect(function()
+            camera.CameraType = Enum.CameraType.Custom
+            camera.CameraSubject = Players.LocalPlayer.Character:WaitForChild("Humanoid")
+            UIStatus:Set()
+        end))
+    end
 
     local strVal = _new("StringValue")({
         Value = strval  

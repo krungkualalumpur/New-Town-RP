@@ -499,29 +499,7 @@ return function(
         Size = UDim2.fromScale(1, 0.8)
     })
     
-    if RunService:IsRunning() then   
-        task.spawn(function()
-            task.wait(0.5)
-            do --init
-                local contentFrame = vehiclesContentFrame:WaitForChild("ContentFrame") :: Frame
-                for k,v in pairs(contentFrame:GetChildren()) do
-                    if v:IsA("Frame") then
-                        for k2, v2 in pairs(vehicleList:Get()) do
-                            if k2 == v.LayoutOrder then
-                                local spawnButton = v:WaitForChild("SubOptions"):WaitForChild("SpawnButton") :: TextButton
-                                spawnButton.Text = if v2.IsSpawned then "Despawn" else "Spawn"
-                                print(v2)
-                                if v2.DestroyLocked == true then
-                                    local deleteButton = v:WaitForChild("SubOptions"):WaitForChild("DeleteButton") :: TextButton
-                                    deleteButton.Visible = false
-                                end
-                            end
-                        end
-                    end
-                end
-            end
-        end)
-    end
+   
     local contentFrame = _new("Frame")({
         Name = "ContentFrame",
         Visible = isVisible,
@@ -616,7 +594,33 @@ return function(
         }
     }) :: Frame
 
-
+    if RunService:IsRunning() then   
+        task.spawn(function()
+            do --init
+                local contentFrame = vehiclesContentFrame:WaitForChild("ContentFrame") :: Frame
+                _bind(contentFrame)({
+                    Events = {
+                        ChildAdded = function(child : Instance)
+                            if child:IsA("Frame") then
+                                for k, vehicleData : VehicleData in pairs(vehicleList:Get()) do
+                                    if k == child.LayoutOrder then
+                                        local spawnButton = child:WaitForChild("SubOptions"):WaitForChild("SpawnButton") :: TextButton
+                                        spawnButton.Text = if vehicleData.IsSpawned then "Despawn" else "Spawn"
+                                        if vehicleData.DestroyLocked == true then
+                                            local deleteButton = child:WaitForChild("SubOptions"):WaitForChild("DeleteButton") :: TextButton
+                                            deleteButton.Visible = false
+                                        end
+                                    end
+                                end
+                            end
+                            
+                        end
+                    }
+                })
+               
+            end
+        end)
+    end
 
     return out
 end

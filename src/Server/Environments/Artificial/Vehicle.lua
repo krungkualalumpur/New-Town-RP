@@ -6,10 +6,12 @@ local CollectionService = game:GetService("CollectionService")
 local PhysicsService = game:GetService("PhysicsService")
 local RunService = game:GetService("RunService")
 local TweenService = game:GetService('TweenService')
+local Players = game:GetService("Players")
 --packages
 local Maid = require(ReplicatedStorage:WaitForChild("Packages"):WaitForChild("Maid"))
 local NetworkUtil = require(ReplicatedStorage:WaitForChild("Packages"):WaitForChild("NetworkUtil"))
 --modules
+local ManagerTypes = require(ServerScriptService:WaitForChild("Server"):WaitForChild("ManagerTypes"))
 local Zone = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Zone"))
 local ItemUtil = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("ItemUtil"))
 local NotificationUtil = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("NotificationUtil"))
@@ -20,6 +22,7 @@ local AnimationUtil = require(ReplicatedStorage:WaitForChild("Shared"):WaitForCh
 --local MidasStateTree = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("MidasStateTree"))
 --types
 type Maid = Maid.Maid
+type VehicleData = ManagerTypes.VehicleData
 --constants
 local VEHICLE_TAG = "Vehicle"
 
@@ -28,6 +31,7 @@ local CAR_CLASS_KEY = "Vehicle"
 
 --remotes
 local SPAWN_VEHICLE = "SpawnVehicle"
+local KEY_VALUE_NAME = "KeyValue"
 
 local ON_VEHICLE_CONTROL_EVENT = "OnVehicleControlEvent"
 --variables
@@ -75,6 +79,25 @@ end
 local function convertionKpHtoVelocity(KpH : number)
 	return (KpH)*1000*3.571/3600
 end
+
+local function getVehicleData(model : Instance) : VehicleData
+    local itemType : ItemUtil.ItemType =  ItemUtil.getItemTypeByName(model.Name) :: any
+
+    local keyValue = model:FindFirstChild(KEY_VALUE_NAME) :: StringValue ?
+    
+    local key = if keyValue then keyValue.Value else nil
+
+    return {
+        Type = itemType,
+        Class = model:GetAttribute("Class"),
+        IsSpawned = model:IsDescendantOf(SpawnedCarsFolder),
+        Name = model.Name,
+        Key = key or "",
+        OwnerId = model:GetAttribute("OwnerId"),
+        DestroyLocked = model:GetAttribute("DestroyLocked")
+    }
+end
+
 --class
 local Vehicle = {}
 
@@ -121,7 +144,7 @@ function Vehicle.init(maid : Maid)
                         end
                         
                         local char = hum.Parent
-                        local plr = if char then game:GetService("Players"):GetPlayerFromCharacter(char) :: Player else nil 
+                        local plr = if char then Players:GetPlayerFromCharacter(char) :: Player else nil 
                         if char and plr and (vehicleSeat.Throttle ~= 0) then
                             local rowAnim = 15341401436
                             local isPlayingTheAnim = false
@@ -378,6 +401,23 @@ function Vehicle.init(maid : Maid)
 
                     _maid:GiveTask(vehicleSeat:GetPropertyChangedSignal("Occupant"):Connect(function()
                         occupantMaid:DoCleaning()
+
+                        --detecting lock
+                        local humanoid = vehicleSeat.Occupant
+                        local plr = if humanoid and humanoid.Parent then Players:GetPlayerFromCharacter(humanoid.Parent) else nil
+                        local vehicleData = getVehicleData(vehicleModel)
+                        if humanoid and vehicleModel:GetAttribute("isLocked") and plr.UserId ~= vehicleData.OwnerId then
+                            local seatWeld = vehicleSeat:FindFirstChild("SeatWeld")
+                            local char = humanoid.Parent
+                            humanoid.Sit = false
+                            if seatWeld then
+                                game:GetService("Debris"):AddItem(seatWeld,0)
+                            end
+                            if char then
+                                char:PivotTo(char.PrimaryPart.CFrame - char.PrimaryPart.CFrame.LookVector*5) --FIX DIS!
+                            end 
+                            return
+                        end
                         
                         if vehicleSeat.Occupant then
                             playSound(912961304, vehicleModel.PrimaryPart, false)
@@ -452,7 +492,7 @@ function Vehicle.init(maid : Maid)
             if vehicleModel.PrimaryPart:FindFirstChild("HornSound") then
                 return  
             end
-            local sound = playSound(vehicleModel:GetAttribute("HornSound") or 200530606, vehicleModel.PrimaryPart, false, 50)
+            local sound = playSound(vehicleModel:GetAttribute("HornSound") or 200530606, vehicleModel.PrimaryPart, false, 70)
             sound.Name = "HornSound"
         elseif eventName == "Headlight" then
             vehicleModel:SetAttribute(isHeadlightAttribute, if vehicleModel:GetAttribute(isHeadlightAttribute) == true then nil else true)

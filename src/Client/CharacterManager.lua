@@ -10,15 +10,24 @@ local NetworkUtil = require(ReplicatedStorage:WaitForChild("Packages"):WaitForCh
 local Signal = require(ReplicatedStorage:WaitForChild("Packages"):WaitForChild("Signal"))
 --modules
 local InputHandler = require(ReplicatedStorage:WaitForChild("Client"):WaitForChild("InputHandler"))
+local ItemUtil = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("ItemUtil"))
 --local MidasEventTree = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("MidasEventTree"))
 --local MidasStateTree = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("MidasStateTree"))
 local VehicleControl = require(ReplicatedStorage:WaitForChild("Client"):WaitForChild("GuiSys"):WaitForChild("VehicleControl"))
 --types
 type Maid = Maid.Maid
+
+export type VehicleData = ItemUtil.ItemInfo & {
+    Key : string,
+    IsSpawned : boolean,
+    OwnerId : number,
+    DestroyLocked : boolean
+}
 --constants
 local WALK_SPEED = 10
 local FIELD_OF_VIEW = 70
 local CAM_SHAKE_TIME = 0.16
+local KEY_VALUE_NAME = "KeyValue"
 --remotes
 local ON_CAMERA_SHAKE = "OnCameraShake"
 local ON_ANIMATION_SET = "OnAnimationSet"
@@ -28,6 +37,7 @@ local ON_VEHICLE_CONTROL_EVENT = "OnVehicleControlEvent"
 --variables
 --references
 local Player = Players.LocalPlayer
+local SpawnedVehiclesParent = workspace:WaitForChild("Assets"):WaitForChild("Temporaries"):WaitForChild("Vehicles")
 --local functions
 function PlaySound(id, parent, volumeOptional: number ?, maxDist : number ?)
     local s = Instance.new("Sound")
@@ -144,6 +154,24 @@ local function camSprinting(on : boolean)
     end
 end
 
+local function getVehicleData(model : Instance) : VehicleData
+    local itemType : ItemUtil.ItemType =  ItemUtil.getItemTypeByName(model.Name) :: any
+
+    local keyValue = model:FindFirstChild(KEY_VALUE_NAME) :: StringValue ?
+    
+    local key = if keyValue then keyValue.Value else nil
+
+    return {
+        Type = itemType,
+        Class = model:GetAttribute("Class"),
+        IsSpawned = model:IsDescendantOf(SpawnedVehiclesParent),
+        Name = model.Name,
+        Key = key or "",
+        OwnerId = model:GetAttribute("OwnerId"),
+        DestroyLocked = model:GetAttribute("DestroyLocked")
+    }
+end
+
 --local function sprintSetup()   
     --local _maid = maid:GiveTask(Maid.new())
 
@@ -215,7 +243,11 @@ local function onCharacterAdded(char : Model)
         if seat and seat:IsDescendantOf(workspace:WaitForChild("Assets"):WaitForChild("Temporaries"):WaitForChild("Vehicles")) then
             local vehicleModel = seat.Parent
             assert(vehicleModel)
+            local vehicleData = getVehicleData(vehicleModel)
             if vehicleModel:GetAttribute("Class") ~= "Vehicle" then
+                return
+            end
+            if vehicleModel:GetAttribute("isLocked") --[[and vehicleData.OwnerId ~= Player.UserId]] then
                 return
             end
 

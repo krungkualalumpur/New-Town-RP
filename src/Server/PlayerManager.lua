@@ -53,6 +53,8 @@ local SAVE_DATA_INTERVAL = 60
 local CHAT_COUNT_VALUE_NAME = "Chat Count"
 local KEY_VALUE_NAME = "KeyValue"
 local KEY_VALUE_ATTRIBUTE = "KeyValue"
+
+local SOUND_NAME = "SFX"
 --remotes
 local ON_INTERACT = "On_Interact"
 local ON_TOOL_INTERACT = "On_Tool_Interact"
@@ -93,6 +95,8 @@ local ON_ITEM_THROW = "OnItemThrow"
 
 local USER_INTERVAL_UPDATE = "UserIntervalUpdate"
 
+local ON_VEHICLE_LOCKED = "OnVehicleLocked"
+
 local SEND_FEEDBACK = "SendFeedback"
 --variables
 local Registry = {}
@@ -106,6 +110,24 @@ raycastParams.FilterDescendantsInstances = workspace:WaitForChild("Assets"):GetC
 local function generateSessionId(userId : number)
     local currentTimeStamp = DateTime.now().UnixTimestamp
     return tostring(math.round(currentTimeStamp)) .. tostring(userId)
+end
+
+local function playSound(soundId : number, onLoop : boolean, parent : Instance ?, volume : number ?, maxDistance : number ?)
+    local sound = Instance.new("Sound")
+    sound.Name = SOUND_NAME
+    sound.RollOffMaxDistance = maxDistance or 30
+    sound.Volume = volume or 1
+    sound.SoundId = "rbxassetid://" .. tostring(soundId)
+    sound.Parent = parent or (if RunService:IsClient() then Players.LocalPlayer else nil)
+    sound.Looped = onLoop
+    if sound.Parent then
+        sound:Play()
+    end
+    task.spawn(function()
+        sound.Ended:Wait()
+        sound:Destroy()
+    end)
+    return sound
 end
 
 local function newVehicleData(
@@ -206,6 +228,13 @@ local function getVehicleSpawnPlot(partZones : Instance)
     end
 
     return emptySpawnZone
+end
+
+local function lockVehicle(vehicleModel : Model, lock : boolean)
+    local vehicleData = getVehicleData(vehicleModel)
+    vehicleModel:SetAttribute("isLocked", lock)
+
+    playSound(138111999, false, vehicleModel.PrimaryPart, nil, 75)
 end
 
 local function setToolEquip(inst : Tool, char : Model)
@@ -624,7 +653,8 @@ function PlayerManager:SpawnVehicle(key : number, isSpawned : boolean, vehicleNa
             --NotificationUtil.Notify(self.Player, "Can not spawn vehicles inside a building!")
             --return
          end
- 
+
+        lockVehicle(vehicleModel, false)
     else
         self._Maid.CurrentSpawnedVehicle = nil
     end
@@ -1403,11 +1433,27 @@ function PlayerManager.init(maid : Maid)
             NotificationUtil.Notify(plr, "Fail to send: you already sent a feedback!")
         end
 
-
-       
-
         return
     end))
+
+    NetworkUtil.onServerInvoke(ON_VEHICLE_LOCKED, function(plr : Player, lock : boolean)
+        local plrInfo = PlayerManager.get(plr)
+        local spawnedVehicleData : VehicleData ? 
+
+        for _,vehicleData in pairs(plrInfo.Vehicles) do
+            if vehicleData.IsSpawned then
+                spawnedVehicleData = vehicleData
+                break
+            end
+        end
+        
+        assert(spawnedVehicleData, "No vehicle data detected!")
+        local vehicleModel = getVehicleModelByKey(plr, spawnedVehicleData.Key)
+        
+        lockVehicle(vehicleModel, lock)
+
+        return vehicleModel:GetAttribute("isLocked")
+    end)
 end
 
 return PlayerManager

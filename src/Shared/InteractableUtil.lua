@@ -112,27 +112,32 @@ end
 
 function Interactable.Interact(model : Model, player : Player, plrInfo : any)
     --if model.PrimaryPart then
-        if CollectionService:HasTag(model, "Door") or CollectionService:HasTag(model, "Window") then
-            Interactable.InteractOpening(model,true)
-        end 
+    local ownerId = model:GetAttribute("OwnerId")
+    if ownerId ~= nil and player.UserId ~= ownerId then
+        return
+    end
 
-        
-        if CollectionService:HasTag(model, "Tool") then
-            if RunService:IsClient() then
-                Interactable.onClientToolInteract(model)
-            else
-                if plrInfo then
-                    Interactable.InteractToolGiver(plrInfo, model, player)
-                end
+    if CollectionService:HasTag(model, "Door") or CollectionService:HasTag(model, "Window") then
+        Interactable.InteractOpening(model,true, player)
+    end 
+
+    
+    if CollectionService:HasTag(model, "Tool") then
+        if RunService:IsClient() then
+            Interactable.onClientToolInteract(model)
+        else
+            if plrInfo then
+                Interactable.InteractToolGiver(plrInfo, model, player)
             end
         end
+    end
 
-        local interactableData = Interactable.getData(model)
-        if (interactableData.Class) and (interactableData.IsSwitch ~= nil) then
-            Interactable.InteractSwitch(model)
-        elseif (interactableData.Class) and interactableData.IsSwitch == nil then
-            Interactable.InteractNonSwitch(model, player)
-        end
+    local interactableData = Interactable.getData(model)
+    if (interactableData.Class) and (interactableData.IsSwitch ~= nil) then
+        Interactable.InteractSwitch(model, player)
+    elseif (interactableData.Class) and interactableData.IsSwitch == nil then
+        Interactable.InteractNonSwitch(model, player)
+    end
 
         
         --just for fun :P
@@ -191,7 +196,7 @@ function Interactable.onClientToolInteract(model : Model)
     NetworkUtil.fireServer(ON_TOOL_INTERACT, model)
 end
 
-function Interactable.InteractSwitch(model : Model)
+function Interactable.InteractSwitch(model : Model, player : Player)
     local IsWaterAttributeKey = "IsWater"
     local IsParticleAttributeKey = "IsParticle"
 
@@ -238,12 +243,12 @@ function Interactable.InteractSwitch(model : Model)
                     part.Transparency = 0.5
                 end
                 if part:GetAttribute(IsParticleAttributeKey) ~= nil then
-                    local particleEmitter = part:FindFirstChild("ParticleEmitter") :: ParticleEmitter ?
+                    local particleEmitter = part:FindFirstChildWhichIsA("ParticleEmitter") :: ParticleEmitter ?
                     if particleEmitter then
                         particleEmitter.Enabled = true
                     end
                 end
-            end, 2218767018, true)
+            end, model:GetAttribute("WaterSound") or 2218767018, true)
         else
             adjustModel(model, function(part : BasePart)
                 if part:GetAttribute(IsWaterAttributeKey) ~= nil then
@@ -281,7 +286,7 @@ function Interactable.InteractSwitch(model : Model)
                         end
                     end
                 elseif CollectionService:HasTag(childModel, "Door") then
-                    task.spawn(function() Interactable.InteractOpening(childModel :: Model, true) end)
+                    task.spawn(function() Interactable.InteractOpening(childModel :: Model, true, player) end)
                 end
             end
             if lampSwitchPart then
@@ -313,7 +318,7 @@ function Interactable.InteractSwitch(model : Model)
                         end
                     end
                 elseif CollectionService:HasTag(childModel, "Door") then
-                    task.spawn(function() Interactable.InteractOpening(childModel :: Model, false) end)
+                    task.spawn(function() Interactable.InteractOpening(childModel :: Model, false, player) end)
                 end
             end
             if lampSwitchPart then
@@ -431,7 +436,7 @@ function Interactable.InteractSwitch(model : Model)
                             
                             local updatedData = Interactable.getData(model)
                             if updatedData.IsSwitch then
-                                Interactable.InteractSwitch(model)
+                                Interactable.InteractSwitch(model, player)
                             end
 
                             task.wait(15)
@@ -465,7 +470,7 @@ function Interactable.InteractSwitch(model : Model)
                     end
                 end
             end
-
+            
         else
             for _,v in pairs(model:GetDescendants()) do
                 if v:IsA("BasePart") and v.Name == "Igniter" then
@@ -563,9 +568,32 @@ function Interactable.InteractNonSwitch(model : Model, plr : Player)
                 NetworkUtil.invokeClient(ON_OPTIONS_OPENED, plr, model.Name, model)
             end
         else
-            print("2?")
             NetworkUtil.invokeServer(ON_ITEM_OPTIONS_OPENED, model)
         end
+    elseif data.Class == "Claim" then
+        local claimerPointer = model:FindFirstChild("ClaimerPointer") :: ObjectValue ?
+        assert(claimerPointer)
+
+        if RunService:IsClient() then
+            NetworkUtil.fireServer(ON_INTERACT, model)
+        else
+            if claimerPointer.Value == plr then
+                claimerPointer.Value = nil
+            else
+                claimerPointer.Value = plr
+            end
+        end
+        
+        --[[local house = if model.Parent then model.Parent.Parent else nil
+        if house and house:IsA("Model") then
+            if RunService:IsClient() then
+                NetworkUtil.fireServer(ON_INTERACT, model)
+            else
+                local Houses = require(ServerScriptService:WaitForChild("Server"):WaitForChild("Environments"):WaitForChild("Artificial"):WaitForChild("Houses"))
+                Houses.claim(house, plr)
+            end
+           
+        end]]
     else  --default
         if RunService:IsClient() then
             NetworkUtil.fireServer(ON_INTERACT, model)
@@ -577,8 +605,10 @@ function Interactable.InteractNonSwitch(model : Model, plr : Player)
     end
 end
 
-function Interactable.InteractOpening(model : Model,on : boolean)
+function Interactable.InteractOpening(model : Model,on : boolean, player : Player ?)
     if RunService:IsServer() then
+
+
         local pivot = model:FindFirstChild("Pivot")
         local hingeConstraint = if pivot then pivot:FindFirstChild("HingeConstraint") :: HingeConstraint else nil
 
@@ -743,6 +773,13 @@ function Interactable.init(maid : Maid)
         if detectionZone then
             table.insert(slidingDoorsZone, detectionZone)
         end
+
+        --anchoring
+        for _,doorPart in pairs(v:GetDescendants()) do
+            if doorPart:IsA("BasePart") then
+                doorPart.Anchored = true
+            end
+        end
     end
 
     local zone = maid:GiveTask(Zone.new(slidingDoorsZone))
@@ -750,7 +787,7 @@ function Interactable.init(maid : Maid)
     maid:GiveTask(zone.playerEntered:Connect(function(plr : Player, zonePart : BasePart)
        -- print(plr.Name, "Entered")
         local model = zonePart.Parent :: Model
-        Interactable.InteractOpening(model, true)
+        Interactable.InteractOpening(model, true, plr)
         return
     end))
     maid:GiveTask(zone.playerExited:Connect(function(plr : Player, zonePart : BasePart)
@@ -767,11 +804,30 @@ function Interactable.init(maid : Maid)
 
         if not hasOtherPeople then
             local model = zonePart.Parent :: Model
-            Interactable.InteractOpening(model, false)
+            Interactable.InteractOpening(model, false, plr)
         end
         return
     end))
         
+    local claims = {}
+    for _,v in pairs(CollectionService:GetTagged("Interactable")) do
+        local data = Interactable.getData(v)
+        if data.Class == "Claim" then
+            table.insert(claims, v)
+        end
+    end
+    for _,v in pairs(CollectionService:GetTagged("ClickInteractable")) do
+        local data = Interactable.getData(v)
+        if data.Class == "Claim" then
+            table.insert(claims, v)
+        end
+    end
+
+    for _,v in pairs(claims) do
+        local playerPointer = Instance.new("ObjectValue")
+        playerPointer.Name = "ClaimerPointer"
+        playerPointer.Parent = v
+    end
  
     NetworkUtil.onServerInvoke(ON_OPTIONS_OPENED, function(plr : Player)
         

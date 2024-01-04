@@ -99,6 +99,10 @@ local ON_NOTIF_CHOICE_INIT = "OnNotifChoiceInit"
 
 local ON_JOB_CHANGE = "OnJobChange"
 
+local ON_HOUSE_CLAIMED = "OnHouseClaimed"
+local ON_HOUSE_LOCKED = "OnHouseLocked"
+local ON_VEHICLE_LOCKED = "OnVehicleLocked"
+
 local SEND_FEEDBACK = "SendFeedback"
 --variables
 local Player = Players.LocalPlayer
@@ -233,12 +237,24 @@ function guiSys.new()
     local onJobChange = maid:GiveTask(Signal.new())
     local onVehicleSpawn = maid:GiveTask(Signal.new())
     local onVehicleDelete = maid:GiveTask(Signal.new())
+
+    local onHouseLocked = maid:GiveTask(Signal.new())
+    local onVehicleLocked = maid:GiveTask(Signal.new())
+    local onHouseClaim =  maid:GiveTask(Signal.new())
+
     table.insert(buttonlistsInfo, getListButtonInfo(onVehicleSpawn, "Spawn"))
     table.insert(buttonlistsInfo, getListButtonInfo(onVehicleDelete, "Delete"))
 
     local onCharacterReset = maid:GiveTask(Signal.new())
 
     local MainUIStatus : ValueState<MainUI.UIStatus> = _Value(nil) :: any
+
+    local isOwnHouse = _Value(false)
+    local isOwnVehicle = _Value(false)
+
+    local houseIsLocked = _Value(true)
+    local vehicleIsLocked = _Value(true)
+
 
     self.MainUI = MainUI(
         maid,
@@ -248,10 +264,18 @@ function guiSys.new()
 
         vehicleList,
         date,
+        isOwnHouse,
+        isOwnVehicle,
+        houseIsLocked,
+        vehicleIsLocked,
+
         backpackOnAdd,
         backpackOnDelete,
         onVehicleSpawn,
         onVehicleDelete,
+        onHouseLocked,
+        onVehicleLocked,
+        onHouseClaim,
         onNotify,
 
         onItemCartSpawn,
@@ -303,6 +327,18 @@ function guiSys.new()
     
     maid:GiveTask(onJobChange:Connect(function(job)
         NetworkUtil.fireServer(ON_JOB_CHANGE, job)
+    end))
+
+    maid:GiveTask(onHouseLocked:Connect(function()
+        local lock = houseIsLocked:Get()
+        local currentLockState =  NetworkUtil.invokeServer(ON_HOUSE_LOCKED, not lock)
+        houseIsLocked:Set(currentLockState)
+    end))
+
+    maid:GiveTask(onVehicleLocked:Connect(function()
+        local lock = vehicleIsLocked:Get()
+        local currentLockState = NetworkUtil.invokeServer(ON_VEHICLE_LOCKED, not lock)
+        vehicleIsLocked:Set(currentLockState)
     end))
 
     self.NotificationUI = NotificationUI(
@@ -395,6 +431,15 @@ function guiSys.new()
     local onItemGet = maid:GiveTask(Signal.new())
 
     local isExitButtonVisible = _Value(true)
+
+    maid:GiveTask(NetworkUtil.onClientEvent(ON_HOUSE_CLAIMED, function(house : Model ?)
+        if house then
+            isOwnHouse:Set(true)
+            houseIsLocked:Set(true)
+        else
+            isOwnHouse:Set(false)
+        end
+    end))
 
     NetworkUtil.onClientInvoke(ON_OPTIONS_OPENED, function(
         listName : string,
@@ -501,8 +546,11 @@ function guiSys.new()
             local vehicleData = vehicles[key] 
             if vehicleData and vehicleData.IsSpawned then
                 button.Text = "Despawn"
+                isOwnVehicle:Set(true)
+                vehicleIsLocked:Set(false)
             else
                 button.Text = "Spawn"
+                isOwnVehicle:Set(false)
             end
             --print(vehicles)
         end))
@@ -699,8 +747,11 @@ function guiSys.new()
         local vehicleData = vehicles[key] 
         if vehicleData and vehicleData.IsSpawned then
             button.Text = "Despawn"
+            isOwnVehicle:Set(true)
+            vehicleIsLocked:Set(false)
         else
             button.Text = "Spawn"
+            isOwnVehicle:Set(false)
         end
         --print(vehicles)
     end))
@@ -713,6 +764,24 @@ function guiSys.new()
         local vehicles = NetworkUtil.invokeServer(GET_PLAYER_VEHICLES)
         vehicleList:Set(vehicles)
         --print(vehicles, " dun dun dun?")
+    end))
+
+    maid:GiveTask(onHouseClaim:Connect(function(onBack : Signal, houseIndex : number)
+        local houses = workspace:WaitForChild("Assets"):WaitForChild("Houses")
+
+        for _, house in pairs(houses:GetChildren()) do
+            local currentHouseIndex = house:GetAttribute("Index")
+            local claimsModel = house:FindFirstChild("Claims")
+            local claimButton = if claimsModel then claimsModel:FindFirstChild("ClaimButton") else nil
+            local claimerPointer = if claimButton then claimButton:FindFirstChild("ClaimerPointer") else nil
+
+            if (currentHouseIndex == houseIndex) and (claimerPointer) and (claimerPointer.Value) then
+                self:Notify(("House already owned by %s"):format(claimerPointer.Value.Name))
+                return
+            end
+        end
+        onBack:Fire()
+        NetworkUtil.fireServer(ON_HOUSE_CLAIMED, houseIndex)
     end))
 
     --setting default backpack to untrue it 

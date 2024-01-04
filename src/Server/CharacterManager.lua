@@ -15,7 +15,7 @@ local CustomizationList = require(ReplicatedStorage:WaitForChild("Shared"):WaitF
 --types
 type Maid = Maid.Maid
 --constants
-local WALK_SPEED = 6
+local WALK_SPEED = 10
 
 --remotes
 local CATALOG_FOLDER_NAME = "CatalogFolder"
