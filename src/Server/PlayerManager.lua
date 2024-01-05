@@ -98,6 +98,8 @@ local USER_INTERVAL_UPDATE = "UserIntervalUpdate"
 local ON_VEHICLE_LOCKED = "OnVehicleLocked"
 
 local SEND_FEEDBACK = "SendFeedback"
+
+local ON_GAME_LOADING_COMPLETE = "OnGameLoadingComplete"
 --variables
 local Registry = {}
 --references
@@ -1433,6 +1435,14 @@ function PlayerManager.init(maid : Maid)
             NotificationUtil.Notify(plr, "Fail to send: you already sent a feedback!")
         end
 
+        return
+    end))
+
+    maid:GiveTask(NetworkUtil.onServerEvent(ON_GAME_LOADING_COMPLETE, function(plr : Player)
+        local plrInfo = PlayerManager.get(plr)
+        Analytics.updateDataTable(plr, "Events", "Miscs", plrInfo, function()
+            return "Client_Loaded_Success"
+        end)
         return
     end))
 

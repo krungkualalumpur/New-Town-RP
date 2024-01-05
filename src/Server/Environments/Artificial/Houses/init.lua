@@ -267,7 +267,7 @@ function House.init(maid : Maid)
                 end
                 local char = plr.Character or plr.CharacterAdded:Wait()
                 local cf, size = house:GetBoundingBox()
-                char:PivotTo(cf + cf.LookVector*size.Z)
+                char:PivotTo(cf + cf.LookVector*size.Z*0.5)
                 break
             end
         end

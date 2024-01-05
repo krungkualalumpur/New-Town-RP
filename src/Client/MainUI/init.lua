@@ -924,8 +924,13 @@ return function(
 
             local index = houseIndex:Get()
             local house = housesList[index] :: Model
-            local cf, size = house:GetBoundingBox()
-            camera.CFrame = CFrame.lookAt(cf.Position + cf.LookVector*size.Z*1.5 + cf.UpVector*size.Y*2, cf.Position)
+            local cf, size 
+            if house.PrimaryPart then
+                cf, size = house.PrimaryPart.CFrame, house.PrimaryPart.Size
+            else    
+                cf, size = house:GetBoundingBox()
+            end
+            camera.CFrame = CFrame.lookAt(cf.Position + cf.LookVector*size.Z*0.65 + cf.UpVector*size.Y*0.5, cf.Position)
         end
     end
 
