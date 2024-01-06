@@ -148,7 +148,7 @@ function optimizationSys.init(maid : Maid)
         distanceRenderPart.BottomSurface = Enum.SurfaceType.Smooth
         distanceRenderPart.CanCollide = false
         distanceRenderPart.Color = if adaptiveLODInst:IsA("BasePart") then adaptiveLODInst.Color elseif adaptiveLODInst:IsA("Model") then (if adaptiveLODInst.PrimaryPart then adaptiveLODInst.PrimaryPart.Color else distanceRenderPart.Color) else distanceRenderPart.Color 
-        distanceRenderPart.Parent = nil
+        distanceRenderPart.Parent = workspace
 
         local parentPointerValue = Instance.new("ObjectValue")
         parentPointerValue.Name = "ParentPointer"
@@ -159,6 +159,8 @@ function optimizationSys.init(maid : Maid)
         distanceRenderPointerValue.Name = "DistanceRenderPartPointer"
         distanceRenderPointerValue.Value = distanceRenderPart
         distanceRenderPointerValue.Parent = adaptiveLODInst
+
+    
 
         table.insert(adaptiveLODItems, adaptiveLODInst)
     end
@@ -193,7 +195,8 @@ function optimizationSys.init(maid : Maid)
             local parentPointer = adaptiveLODinst:FindFirstChild("ParentPointer") :: ObjectValue
             local distanceRenderPartPointer = adaptiveLODinst:FindFirstChild("DistanceRenderPartPointer") :: ObjectValue
 
-            assert(distanceRenderPartPointer and distanceRenderPartPointer.Value, ("No distance render part detected for a part named %s!"):format(adaptiveLODinst.Name))
+            assert(distanceRenderPartPointer, ("No distance render POINTER detected for a part named %s!"):format(adaptiveLODinst.Name))
+            assert(distanceRenderPartPointer.Value, ("No distance render part detected for a part named %s!"):format(adaptiveLODinst.Name))
             local cf, size
             if adaptiveLODinst:IsA("Model") then
                 cf, size = adaptiveLODinst:GetBoundingBox()

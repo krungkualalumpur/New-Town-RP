@@ -222,8 +222,7 @@ return function(
             }),
 
             _bind(getButton(maid, "Send Feedback", function()
-                OnFeedbackSend:Fire(textBox.Text)
-                out.Parent = nil
+                OnFeedbackSend:Fire(textBox.Text, out)
             end, 1))({
                 Size = UDim2.fromScale(0.5, 0.12)
             })

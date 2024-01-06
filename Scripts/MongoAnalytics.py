@@ -73,7 +73,8 @@ database3 = "events"
 database3collection1 = "backpack"
 database3collection2 = "customization"
 database3collection3 = "vehicles"
-database3collection4 = "miscs"
+database3collection4 = "houses"
+database3collection5 = "miscs"
 
 download_raw(database1, database1collection1)
 download_raw(database1, database1collection2)
@@ -85,3 +86,4 @@ download_raw(database3, database3collection1)
 download_raw(database3, database3collection2)
 download_raw(database3, database3collection3)
 download_raw(database3, database3collection4)
+download_raw(database3, database3collection5)

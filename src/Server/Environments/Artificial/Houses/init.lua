@@ -223,13 +223,15 @@ function House.init(maid : Maid)
             local ownerMaid = maid:GiveTask(Maid.new())
             maid:GiveTask(playerPointer.Changed:Connect(function()
                 ownerMaid:DoCleaning()
-                local plr = playerPointer.Value
+                local plr = playerPointer.Value :: Player?
                 updateHouseOwnership(plr)
                 if plr then
                     ownerMaid:GiveTask(plr.Changed:Connect(function()
-                        print("player quitted, house to nil")
-                        ownerMaid:Destroy()
-                        playerPointer.Value = nil
+                        if plr.Parent == nil then
+                            print("player quitted, house to nil")
+                            ownerMaid:Destroy()
+                            playerPointer.Value = nil
+                        end
                     end))
                 end
             end))

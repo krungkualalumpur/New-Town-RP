@@ -223,7 +223,8 @@ function guiSys.new()
     self._Maid = maid
     self.NotificationStatus = _Value(nil :: string ?)
 
-    local backpack = _Value(NetworkUtil.invokeServer(GET_PLAYER_BACKPACK))
+    local backpack = _Value({})
+    task.spawn(function() backpack:Set(NetworkUtil.invokeServer(GET_PLAYER_BACKPACK)) end)
     local vehicleList = _Value({}) 
     local date = _Value(string.format("%s\n%s", getCurrentDay().Name, NumberUtil.NumberToClock(game.Lighting.ClockTime, false)))
 
@@ -254,7 +255,6 @@ function guiSys.new()
 
     local houseIsLocked = _Value(true)
     local vehicleIsLocked = _Value(true)
-
 
     self.MainUI = MainUI(
         maid,
@@ -346,7 +346,6 @@ function guiSys.new()
         self.NotificationStatus
     )
 
-
     do
         local charMaid = maid:GiveTask(Maid.new()) 
         local onFeedbackSend = maid:GiveTask(Signal.new())
@@ -381,9 +380,14 @@ function guiSys.new()
             end
         end))
 
-        maid:GiveTask(onFeedbackSend:Connect(function(feedbackText : string)
-            print("Feedback sent!")
+        maid:GiveTask(onFeedbackSend:Connect(function(feedbackText : string, feedbackGui : GuiObject)
+            if not feedbackText:find("%a") then
+                self:Notify("This feedback is not readable")
+                return
+            end
             NetworkUtil.fireServer(SEND_FEEDBACK, feedbackText)
+            feedbackGui.Parent = nil
+            self:Notify("Feedback sent. Thank you for the feedback!")
         end))
 
         maid:GiveTask(Player.CharacterAdded:Connect(onCharAdded))

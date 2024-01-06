@@ -4,6 +4,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local ServerScriptService = game:GetService("ServerScriptService")
 local RunService = game:GetService("RunService")
 local HttpService = game:GetService("HttpService")
+local UserInputService = game:GetService("UserInputService") :: UserInputService
 local Players = game:GetService("Players")
 --packages
 local Maid = require(ReplicatedStorage:WaitForChild("Packages"):WaitForChild("Maid"))
@@ -112,6 +113,7 @@ function Analytics.init(maid : Maid)
     sessionDataTable:AddColumn("is_retained_on_d28", "Boolean", true)
     sessionDataTable:AddColumn("play_duration", "Int64", true)
     sessionDataTable:AddColumn("duration_after_joined", "Int64", true)
+    sessionDataTable:AddColumn("device", "String", true)
     --[[local gameplayDataTable = userDataSet:CreateDataTable("Gameplay", "gameplay")
     gameplayDataTable:AddColumn("server_id", "String", false)
     gameplayDataTable:AddColumn("user_id", "Int64", false)
@@ -196,6 +198,7 @@ function Analytics.init(maid : Maid)
 end
 
 function Analytics.updateDataTable(plr : Player, dataSetName : string, dataTableName : string, plrInfo : PlayerManager ?, addParamsFn : (() -> ... any )?)
+    if RunService:IsStudio() then return end
     assert((dataSetName ~= "Events") or (dataSetName == "Events" and addParamsFn), "Events must have event params passed within it!")
   
     local currentTimeStamp = plr:GetAttribute("JoinedTimestamp") or DateTime.now().UnixTimestamp
@@ -273,6 +276,7 @@ function Analytics.updateDataTable(plr : Player, dataSetName : string, dataTable
 
             local duration_after_joined = DateTime.now().UnixTimestamp - currentSession.JoinTime
             local play_duration = if currentSession.QuitTime then (currentSession.QuitTime - currentSession.JoinTime) else nil
+            local device = if UserInputService.TouchEnabled then "Mobile" elseif UserInputService.KeyboardEnabled and UserInputService.MouseEnabled then "Computer" elseif UserInputService.GamepadEnabled then "Console" else nil
 
             dataTable:AddRow({
                 server_id = game.JobId,
@@ -288,7 +292,8 @@ function Analytics.updateDataTable(plr : Player, dataSetName : string, dataTable
                 is_retained_on_d28 = if plrInfo then (if firstSession ~= currentSession and firstSessionQuitTime and (((currentTimeStamp - firstSessionQuitTime) >= 60*60*24*28) and (currentTimeStamp - firstSessionQuitTime <= 60*60*24*(28 + 1))) then true elseif (currentTimeStamp - firstSessionQuitTime) > 60*60*24*(28 + 1) then false else nil) else nil,
             
                 play_duration = play_duration,
-                duration_after_joined = duration_after_joined
+                duration_after_joined = duration_after_joined,
+                device = device
             }) 
             --print(duration_after_joined, " : after joined dur", play_duration, " : play dur")
         end
