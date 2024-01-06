@@ -254,6 +254,39 @@ local function getRandomAB() : ABType
     return if rand == 0 then "A" else "B" 
 end
 
+local function backpackRefresh(char : Model, backpack : {[number] : BackpackUtil.ToolData<any>}, plrInfo : ManagerTypes.PlayerManager)
+    local plr = Players:GetPlayerFromCharacter(char)
+    assert(plr, " Player not found upon refreshing tool!")
+    for _,v in pairs(char:GetChildren()) do
+        if v:IsA("Tool") then
+            v:Destroy()
+        end
+    end
+    for _,v in pairs(plr:WaitForChild("Backpack"):GetChildren()) do
+        if v:IsA("Tool") then
+            v:Destroy()
+        end
+    end
+
+    for key,toolData in pairs(backpack) do
+        local toolVanilla = BackpackUtil.getToolFromName(toolData.Name)
+        assert(toolVanilla, "Tool not found!")
+        local clonedTool = BackpackUtil.createTool(toolVanilla) :: Tool
+        clonedTool:SetAttribute("ToolKey", key)
+        clonedTool.Parent = if toolData.IsEquipped then char else plr.Backpack
+
+        setToolEquip(clonedTool, char)
+
+        local _maid = Maid.new()
+        _maid:GiveTask(clonedTool.Activated:Connect(function()
+            local character = plr.Character or plr.CharacterAdded:Wait()
+            if character then    
+                ToolActions.onToolActivated(toolData.Class, plr, BackpackUtil.getData(toolVanilla, true), plrInfo)
+            end
+        end))
+    end
+end
+
 --class
 local PlayerManager : PlayerManager = {} :: any
 PlayerManager.__index = PlayerManager
@@ -434,20 +467,10 @@ function PlayerManager:InsertToBackpack(tool : Instance)
         function() return "Backpack_Insertion", toolData.Name end
     )
 
-    local toolCloned = BackpackUtil.createTool(tool:Clone()) :: Tool
-    toolCloned.Parent = self.Player.Backpack
-
-    toolCloned:SetAttribute("ToolKey", table.find(self.Backpack, toolData))
-
-    local plr = self.Player
-    local _maid = Maid.new()
-        --func for the tool upon it being activated
-    _maid:GiveTask(toolCloned.Activated:Connect(function()
-        local character = plr.Character or plr.CharacterAdded:Wait()
-        if character then    
-            ToolActions.onToolActivated(toolData.Class, plr, BackpackUtil.getData(tool, true))
-        end
-    end))
+    local char = self.Player.Character
+    if char then
+        backpackRefresh(char, self.Backpack, self)
+    end
     return true
 end
 
@@ -560,6 +583,11 @@ function PlayerManager:DeleteBackpack(toolKey : number)
         self,  
         function() return "Backpack_Delete", toolName end
     )
+
+    local char = self.Player.Character
+    if char then
+        backpackRefresh(char, self.Backpack, self)
+    end
     return
 end
 
@@ -1070,18 +1098,28 @@ function PlayerManager.init(maid : Maid)
 
         --tool update
         charMaid:GiveTask(char.ChildAdded:Connect(function(inst : Instance)
-            plrInfo:SetBackpackEquip(true, inst:GetAttribute("ToolKey"))
-            if inst:IsA("Tool") then
-                NetworkUtil.fireClient(UPDATE_PLAYER_BACKPACK, player, plrInfo:GetBackpack(true, true))
-                setToolEquip(inst :: Tool, char)
+            if inst:GetAttribute("ToolKey") then
+                print(plrInfo.Backpack, inst:GetAttribute("ToolKey"), " kok bisa not found yo.?")
+                plrInfo:SetBackpackEquip(true, inst:GetAttribute("ToolKey"))
+                if inst:IsA("Tool") then
+                    NetworkUtil.fireClient(UPDATE_PLAYER_BACKPACK, player, plrInfo:GetBackpack(true, true))
+                    setToolEquip(inst :: Tool, char)
+                end
+            else
+                inst:Destroy()
             end
         end))
+
         charMaid:GiveTask(char.ChildRemoved:Connect(function(inst : Instance)
-            plrInfo:SetBackpackEquip(false, inst:GetAttribute("ToolKey"))
-            if inst:IsA("Tool") then
-                NetworkUtil.fireClient(UPDATE_PLAYER_BACKPACK, player, plrInfo:GetBackpack(true, true))
+            if char.Parent then
+                plrInfo:SetBackpackEquip(false, inst:GetAttribute("ToolKey"))
+                if inst:IsA("Tool") then
+                    NetworkUtil.fireClient(UPDATE_PLAYER_BACKPACK, player, plrInfo:GetBackpack(true, true))
+                end
             end
         end))
+
+        backpackRefresh(char, plrInfo.Backpack, plrInfo)
     end 
     
     local function onPlayerAdded(plr : Player)
@@ -1464,6 +1502,12 @@ function PlayerManager.init(maid : Maid)
 
         return vehicleModel:GetAttribute("isLocked")
     end)
+
+    NetworkUtil.getRemoteFunction(GET_PLAYER_VEHICLES)
+    NetworkUtil.getRemoteEvent(ON_INTERACT)
+    NetworkUtil.getRemoteEvent(ON_GAME_LOADING_COMPLETE)
+    NetworkUtil.getRemoteEvent(ON_JOB_CHANGE)
+
 end
 
 return PlayerManager

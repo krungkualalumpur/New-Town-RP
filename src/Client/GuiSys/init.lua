@@ -771,21 +771,24 @@ function guiSys.new()
     end))
 
     maid:GiveTask(onHouseClaim:Connect(function(onBack : Signal, houseIndex : number)
+        print("on house claimed 1")
         local houses = workspace:WaitForChild("Assets"):WaitForChild("Houses")
-
         for _, house in pairs(houses:GetChildren()) do
             local currentHouseIndex = house:GetAttribute("Index")
+            local ownerPointer = house:FindFirstChild("OwnerPointer") :: ObjectValue ?
+            
             local claimsModel = house:FindFirstChild("Claims")
             local claimButton = if claimsModel then claimsModel:FindFirstChild("ClaimButton") else nil
-            local claimerPointer = if claimButton then claimButton:FindFirstChild("ClaimerPointer") else nil
+            local claimerPointer = if claimButton then claimButton:FindFirstChild("OwnerPointer") else nil
 
-            if (currentHouseIndex == houseIndex) and (claimerPointer) and (claimerPointer.Value) then
-                self:Notify(("House already owned by %s"):format(claimerPointer.Value.Name))
+            if (currentHouseIndex == houseIndex) and (ownerPointer) and (ownerPointer.Value) then
+                self:Notify(("House already owned by %s"):format(ownerPointer.Value.Name))
                 return
             end
         end
         onBack:Fire()
         NetworkUtil.fireServer(ON_HOUSE_CLAIMED, houseIndex)
+        print("on house claimed, index: ", houseIndex)
     end))
 
     --setting default backpack to untrue it 

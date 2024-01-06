@@ -196,25 +196,27 @@ function optimizationSys.init(maid : Maid)
             local distanceRenderPartPointer = adaptiveLODinst:FindFirstChild("DistanceRenderPartPointer") :: ObjectValue
 
             assert(distanceRenderPartPointer, ("No distance render POINTER detected for a part named %s!"):format(adaptiveLODinst.Name))
-            assert(distanceRenderPartPointer.Value, ("No distance render part detected for a part named %s!"):format(adaptiveLODinst.Name))
-            local cf, size
-            if adaptiveLODinst:IsA("Model") then
-                cf, size = adaptiveLODinst:GetBoundingBox()
-            elseif adaptiveLODinst:IsA("BasePart") then
-                cf, size = adaptiveLODinst.CFrame, adaptiveLODinst.Size
-            else
-                warn(adaptiveLODinst.Name, " is not a model nor a basepart for LOD!")
-            end
-            if cf and size and camera then
-                local currentDist = (cf.Position - camera.CFrame.Position).Magnitude - (math.max(size.X, size.Y, size.Z)*0.5)
-                currentDist = math.clamp(currentDist, 0, math.huge)
-
-                if currentDist >= ((adaptiveLODinst:GetAttribute("RadiusAmplifier") or 1)*LOAD_OF_DISTANCE) then
-                    adaptiveLODinst.Parent = nil
-                    distanceRenderPartPointer.Value.Parent = parentPointer.Value
+            if distanceRenderPartPointer.Value then
+                --assert(distanceRenderPartPointer.Value, ("No distance render part detected for a part named %s!"):format(adaptiveLODinst.Name))
+                local cf, size
+                if adaptiveLODinst:IsA("Model") then
+                    cf, size = adaptiveLODinst:GetBoundingBox()
+                elseif adaptiveLODinst:IsA("BasePart") then
+                    cf, size = adaptiveLODinst.CFrame, adaptiveLODinst.Size
                 else
-                    distanceRenderPartPointer.Value.Parent = nil
-                    adaptiveLODinst.Parent = parentPointer.Value
+                    warn(adaptiveLODinst.Name, " is not a model nor a basepart for LOD!")
+                end
+                if cf and size and camera then
+                    local currentDist = (cf.Position - camera.CFrame.Position).Magnitude - (math.max(size.X, size.Y, size.Z)*0.5)
+                    currentDist = math.clamp(currentDist, 0, math.huge)
+
+                    if currentDist >= ((adaptiveLODinst:GetAttribute("RadiusAmplifier") or 1)*LOAD_OF_DISTANCE) then
+                        adaptiveLODinst.Parent = nil
+                        distanceRenderPartPointer.Value.Parent = parentPointer.Value
+                    else
+                        distanceRenderPartPointer.Value.Parent = nil
+                        adaptiveLODinst.Parent = parentPointer.Value
+                    end
                 end
             end
         end

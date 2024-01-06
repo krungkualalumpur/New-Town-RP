@@ -399,6 +399,7 @@ return function(
     onVehicleSpawn : Signal,
     onVehicleDelete : Signal
 )
+    
     local _fuse = ColdFusion.fuse(maid)
     local _new = _fuse.new
     local _import = _fuse.import
@@ -407,6 +408,8 @@ return function(
 
     local _Computed = _fuse.Computed
     local _Value = _fuse.Value
+    
+    itemsOwned = _Value(itemsOwned:Get())
 
     local itemTypes = BackpackUtil.getAllItemClasses()
 

@@ -28,7 +28,6 @@ def download_raw(database: str, collection: str) -> str:
     with open(json_path, "r", encoding='utf-8') as json_file:
         content = json_file.read()
         for line in content.splitlines():
-            print(line, " : data")
             entry = json.loads(line)
             if not "iteration" in entry:
                 entry["iteration"] = 0

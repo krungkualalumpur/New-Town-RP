@@ -198,7 +198,6 @@ function Analytics.init(maid : Maid)
 end
 
 function Analytics.updateDataTable(plr : Player, dataSetName : string, dataTableName : string, plrInfo : PlayerManager ?, addParamsFn : (() -> ... any )?)
-    if RunService:IsStudio() then return end
     assert((dataSetName ~= "Events") or (dataSetName == "Events" and addParamsFn), "Events must have event params passed within it!")
   
     local currentTimeStamp = plr:GetAttribute("JoinedTimestamp") or DateTime.now().UnixTimestamp
@@ -278,6 +277,8 @@ function Analytics.updateDataTable(plr : Player, dataSetName : string, dataTable
             local play_duration = if currentSession.QuitTime then (currentSession.QuitTime - currentSession.JoinTime) else nil
             local device = if UserInputService.TouchEnabled then "Mobile" elseif UserInputService.KeyboardEnabled and UserInputService.MouseEnabled then "Computer" elseif UserInputService.GamepadEnabled then "Console" else nil
 
+            print(firstSession ~= currentSession, currentTimeStamp, firstSessionQuitTime, " debug")
+
             dataTable:AddRow({
                 server_id = game.JobId,
                 session_id = tostring(math.round(currentTimeStamp)) .. tostring(plr.UserId),
@@ -285,11 +286,11 @@ function Analytics.updateDataTable(plr : Player, dataSetName : string, dataTable
                 user_id = plr.UserId,
                 is_premium = (plr.MembershipType == Enum.MembershipType.Premium),
 
-                is_retained_on_d0 = if plrInfo then (if firstSession ~= currentSession and firstSessionQuitTime and (currentTimeStamp - firstSessionQuitTime) <= 60*60*24*1 then true elseif (currentTimeStamp - firstSessionQuitTime) > 60*60*24*1 then false else nil) else nil,
-                is_retained_on_d1 = if plrInfo then (if firstSession ~= currentSession and firstSessionQuitTime and (((currentTimeStamp - firstSessionQuitTime) >= 60*60*24*1) and  (currentTimeStamp - firstSessionQuitTime <= 60*60*24*(1 + 1))) then true elseif (currentTimeStamp - firstSessionQuitTime) > 60*60*24*(1 + 1) then false else nil) else nil,
-                is_retained_on_d7 = if plrInfo then (if firstSession ~= currentSession and firstSessionQuitTime and (((currentTimeStamp - firstSessionQuitTime) >= 60*60*24*7) and (currentTimeStamp - firstSessionQuitTime <= 60*60*24*(7 + 1))) then true elseif (currentTimeStamp - firstSessionQuitTime) > 60*60*24*(7 + 1) then false else nil) else nil,
-                is_retained_on_d14 = if plrInfo then (if firstSession ~= currentSession and firstSessionQuitTime and (((currentTimeStamp - firstSessionQuitTime) >= 60*60*24*14) and (currentTimeStamp - firstSessionQuitTime <= 60*60*24*(14 + 1))) then true elseif (currentTimeStamp - firstSessionQuitTime) > 60*60*24*(14 + 1) then false else nil) else nil,
-                is_retained_on_d28 = if plrInfo then (if firstSession ~= currentSession and firstSessionQuitTime and (((currentTimeStamp - firstSessionQuitTime) >= 60*60*24*28) and (currentTimeStamp - firstSessionQuitTime <= 60*60*24*(28 + 1))) then true elseif (currentTimeStamp - firstSessionQuitTime) > 60*60*24*(28 + 1) then false else nil) else nil,
+                is_retained_on_d0 = if plrInfo then (if (firstSession ~= currentSession) and (currentTimeStamp) and (firstSessionQuitTime) and (currentTimeStamp - firstSessionQuitTime) <= 60*60*24*1 then true elseif (currentTimeStamp - firstSessionQuitTime) > 60*60*24*1 then false else nil) else nil,
+                is_retained_on_d1 = if plrInfo then (if firstSession ~= currentSession and (currentTimeStamp)  and (firstSessionQuitTime) and (((currentTimeStamp - firstSessionQuitTime) >= 60*60*24*1) and  (currentTimeStamp - firstSessionQuitTime <= 60*60*24*(1 + 1))) then true elseif (currentTimeStamp - firstSessionQuitTime) > 60*60*24*(1 + 1) then false else nil) else nil,
+                is_retained_on_d7 = if plrInfo then (if firstSession ~= currentSession and (currentTimeStamp)  and (firstSessionQuitTime) and (((currentTimeStamp - firstSessionQuitTime) >= 60*60*24*7) and (currentTimeStamp - firstSessionQuitTime <= 60*60*24*(7 + 1))) then true elseif (currentTimeStamp - firstSessionQuitTime) > 60*60*24*(7 + 1) then false else nil) else nil,
+                is_retained_on_d14 = if plrInfo then (if firstSession ~= currentSession and (currentTimeStamp)  and (firstSessionQuitTime) and (((currentTimeStamp - firstSessionQuitTime) >= 60*60*24*14) and (currentTimeStamp - firstSessionQuitTime <= 60*60*24*(14 + 1))) then true elseif (currentTimeStamp - firstSessionQuitTime) > 60*60*24*(14 + 1) then false else nil) else nil,
+                is_retained_on_d28 = if plrInfo then (if firstSession ~= currentSession and (currentTimeStamp)  and (firstSessionQuitTime) and (((currentTimeStamp - firstSessionQuitTime) >= 60*60*24*28) and (currentTimeStamp - firstSessionQuitTime <= 60*60*24*(28 + 1))) then true elseif (currentTimeStamp - firstSessionQuitTime) > 60*60*24*(28 + 1) then false else nil) else nil,
             
                 play_duration = play_duration,
                 duration_after_joined = duration_after_joined,

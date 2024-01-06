@@ -49,7 +49,7 @@ local House = {}
 function House.claim(house : Model, player : Player ?) : false ?
     local ownerPointer = house:FindFirstChild("OwnerPointer")
     if ownerPointer then
-
+        print(ownerPointer.Value, " on claim fn 1", player)
         if ownerPointer.Value ~= nil and ownerPointer.Value == player then
             local claimsModel = house:FindFirstChild("Claims")
             local claimButton = if claimsModel then claimsModel:FindFirstChild("ClaimButton") :: Model ? else nil
@@ -85,6 +85,7 @@ function House.claim(house : Model, player : Player ?) : false ?
                 end
             end
         end
+        print(ownerPointer.Value, " on claim fn 2", player)
 
         local prevOwner = ownerPointer.Value
         if player == nil and prevOwner then
@@ -102,6 +103,8 @@ function House.claim(house : Model, player : Player ?) : false ?
             )
         end
         ownerPointer.Value = player
+
+        print(ownerPointer.Value, " on claim fn 3", player)
     end
     return
 end
@@ -263,13 +266,16 @@ function House.init(maid : Maid)
         for _, house in pairs(houses:GetChildren()) do
             local currentHouseIndex = house:GetAttribute("Index")
             if currentHouseIndex == houseIndex then
+                print("House_Claim1")
                 local msg = House.claim(house, plr)
                 if msg == false then
                     return
                 end
+                print("House_Claim2")
                 local char = plr.Character or plr.CharacterAdded:Wait()
                 local cf, size = house:GetBoundingBox()
                 char:PivotTo(cf + cf.LookVector*size.Z*0.5)
+                print("House_Claim3")
                 break
             end
         end

@@ -249,6 +249,7 @@ return function(
                         HorizontalAlignment = Enum.HorizontalAlignment.Center
                     }),
                     _bind(getButton(maid, "Claim", function()
+                        print("Claim fires")
                         onClaim:Fire(onBack, houseIndex:Get()) 
                      end, 2, TERTIARY_COLOR))({
                          Size = UDim2.fromScale(0.2, 1)
