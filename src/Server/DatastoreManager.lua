@@ -49,7 +49,7 @@ export type DatastoreManager = {
 }
 --constants
 local DATA_ATTEMPT_COUNT = 10
-local CURRENT_GAME_VERSION = "v1.96"
+local CURRENT_GAME_VERSION = "v1.972"
 --variables
 local gameData1 = DataStoreService:GetDataStore("GameData")
 local Registry = {}

@@ -331,6 +331,7 @@ function PlayerManager.new(player : Player, maid : Maid ?)
             self:AddVehicle("SWAT Car", true)
             self:AddVehicle("Police", true)
             self:AddVehicle("Firetruck", true)
+            self:AddVehicle("Avalon", true)
 
             --character loading
             self:SetData(self:GetData(), false)
@@ -378,6 +379,10 @@ function PlayerManager.new(player : Player, maid : Maid ?)
 
     self._Maid:GiveTask(self.Player.CharacterAdded:Connect(function(char : Model)
         self._Maid.CharacterModel = char
+
+        local humanoid = char:WaitForChild("Humanoid") :: Humanoid
+        --print(humanoid, humanoid:IsDescendantOf(game), humanoid:IsDescendantOf(workspace))
+        humanoid:ApplyDescription(Instance.new("HumanoidDescription"))
         --self:SetData(self:GetData(), false) -- refreshing the character (overriden by the other refershing char one)
     end))
 
@@ -503,6 +508,9 @@ function PlayerManager:SetBackpackEquip(isEquip : boolean, toolKey : number)
     local character = plr.Character or plr.CharacterAdded:Wait()
 
     local toolData = self.Backpack[toolKey] 
+    if toolData == nil then
+        return
+    end
     assert(toolData, "Tool data not found in player's backpack!")
  
     toolData.IsEquipped = isEquip
@@ -791,7 +799,6 @@ function PlayerManager:SetData(plrData : ManagerTypes.PlayerData, isYield : bool
     end
     --print(self.Vehicles)
 
-    local char = self.Player.Character or self.Player.CharacterAdded:Wait()
     --[[if not plrData.Character.hasDefaultAccessories then
         for _,v in pairs(char:GetChildren()) do
             if v:IsA("Accessory") then    
@@ -801,18 +808,21 @@ function PlayerManager:SetData(plrData : ManagerTypes.PlayerData, isYield : bool
     end]]
     self.CharacterSaves = plrData.CharacterSaves
 
-    if isYield then
-        if not char:IsDescendantOf(workspace) then
-            char.AncestryChanged:Wait()
-        end
-        CustomizationUtil.SetInfoFromCharacter(char, plrData.Character)
-    else
-        task.spawn(function() 
+    local char = self.Player.Character or self.Player.CharacterAdded:Wait() :: Model
+    if char then
+        if isYield then
             if not char:IsDescendantOf(workspace) then
                 char.AncestryChanged:Wait()
             end
-            CustomizationUtil.SetInfoFromCharacter(char, plrData.Character) 
-        end)
+            CustomizationUtil.SetInfoFromCharacter(char, plrData.Character)
+        else
+            task.spawn(function() 
+                if not char:IsDescendantOf(workspace) then
+                    char.AncestryChanged:Wait()
+                end
+                CustomizationUtil.SetInfoFromCharacter(char, plrData.Character) 
+            end)
+        end
     end
 
    --[[ for _,v in pairs(plrData.Character.Accessories) do
@@ -1078,6 +1088,7 @@ function PlayerManager.init(maid : Maid)
             end
         end))
 
+
         --spawn area
         local plrInfo = PlayerManager.get(player)
         local spawnPart = CharacterSpawnLocations:WaitForChild("Spawn2") :: BasePart
@@ -1096,30 +1107,36 @@ function PlayerManager.init(maid : Maid)
             end
         end))
 
+       
         --tool update
         charMaid:GiveTask(char.ChildAdded:Connect(function(inst : Instance)
-            if inst:GetAttribute("ToolKey") then
-                print(plrInfo.Backpack, inst:GetAttribute("ToolKey"), " kok bisa not found yo.?")
-                plrInfo:SetBackpackEquip(true, inst:GetAttribute("ToolKey"))
-                if inst:IsA("Tool") then
-                    NetworkUtil.fireClient(UPDATE_PLAYER_BACKPACK, player, plrInfo:GetBackpack(true, true))
-                    setToolEquip(inst :: Tool, char)
-                end
-            else
+            local toolKey = inst:GetAttribute("ToolKey")
+            if inst:GetAttribute("ToolKey") and plrInfo.Backpack[toolKey] and inst:IsA("Tool") then
+                --print(plrInfo.Backpack, inst:GetAttribute("ToolKey"), " kok bisa not found yo.?")
+                plrInfo:SetBackpackEquip(true, toolKey)
+                NetworkUtil.fireClient(UPDATE_PLAYER_BACKPACK, player, plrInfo:GetBackpack(true, true))
+                setToolEquip(inst :: Tool, char)
+            elseif inst:IsA("Tool") then
                 inst:Destroy()
             end
         end))
 
+
         charMaid:GiveTask(char.ChildRemoved:Connect(function(inst : Instance)
             if char.Parent then
-                plrInfo:SetBackpackEquip(false, inst:GetAttribute("ToolKey"))
-                if inst:IsA("Tool") then
+                local toolKey = inst:GetAttribute("ToolKey")
+                if inst:IsA("Tool") and toolKey then
+                    plrInfo:SetBackpackEquip(false, toolKey)
                     NetworkUtil.fireClient(UPDATE_PLAYER_BACKPACK, player, plrInfo:GetBackpack(true, true))
                 end
             end
         end))
 
+       
+        
         backpackRefresh(char, plrInfo.Backpack, plrInfo)
+
+   
     end 
     
     local function onPlayerAdded(plr : Player)

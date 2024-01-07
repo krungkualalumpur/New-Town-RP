@@ -7,6 +7,7 @@ local Maid = require(ReplicatedStorage:WaitForChild("Packages"):WaitForChild("Ma
 local NetworkUtil = require(ReplicatedStorage:WaitForChild("Packages"):WaitForChild("NetworkUtil"))
 --modules
 local Nature = require(ReplicatedStorage:WaitForChild("Client"):WaitForChild("Environment"):WaitForChild("Nature"))
+local Artificial = require(ReplicatedStorage:WaitForChild("Client"):WaitForChild("Environment"):WaitForChild("Artificial"))
 local Rain = require(ReplicatedStorage:WaitForChild("Client"):WaitForChild("Rain"))
 --types
 type Maid = Maid.Maid
@@ -29,6 +30,7 @@ end
 return {
     init = function(maid : Maid)
         Nature.init(maid)
+        Artificial.init(maid)
 
         ----
         Rain:SetCollisionMode(

@@ -33,6 +33,8 @@ local NumberUtil = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild
 local CustomizationUtil = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("CustomizationUtil"))
 local CustomizationList = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("CustomizationUtil"):WaitForChild("CustomizationList"))
 
+local InputHandler = require(ReplicatedStorage:WaitForChild("Client"):WaitForChild("InputHandler"))
+
 local ToolActions = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("ToolActions"))
 
 --types
@@ -500,6 +502,25 @@ return function(
         }
     })
 
+    local function onThrow()
+        if not RunService:IsRunning() then
+            return
+        end
+        for _,v in pairs(backpack:Get()) do
+            if v.IsEquipped then
+                local toolModel = BackpackUtil.getToolFromName(v.Name)
+                if toolModel then
+                    --local toolData = BackpackUtil.getData(toolModel, false)
+                    --ToolActions.onToolActivated(toolData.Class, game.Players.LocalPlayer, BackpackUtil.getData(toolModel, true))
+                    local toolData = BackpackUtil.getData(toolModel, false)
+                    NetworkUtil.fireServer(ON_ITEM_THROW, toolData)
+                end
+                break
+            end
+        end  
+    end
+    
+
     local onEquipFrame = _new("Frame")({
         LayoutOrder = 1, 
         Parent = target,
@@ -603,23 +624,7 @@ return function(
             _bind(getButton(
                 maid,
                 "THROW" ,
-                function()
-                    if not RunService:IsRunning() then
-                        return
-                    end
-                    for _,v in pairs(backpack:Get()) do
-                        if v.IsEquipped then
-                            local toolModel = BackpackUtil.getToolFromName(v.Name)
-                            if toolModel then
-                                --local toolData = BackpackUtil.getData(toolModel, false)
-                                --ToolActions.onToolActivated(toolData.Class, game.Players.LocalPlayer, BackpackUtil.getData(toolModel, true))
-                                local toolData = BackpackUtil.getData(toolModel, false)
-                                NetworkUtil.fireServer(ON_ITEM_THROW, toolData)
-                            end
-                            break
-                        end
-                    end  
-                end,
+                onThrow,
                 4
             ))({
                 AutomaticSize = Enum.AutomaticSize.None,
@@ -694,6 +699,15 @@ return function(
         }
     })
 
+    if RunService:IsRunning() then
+        InputHandler:Map("ThrowItemConsole", "Keyboard", {Enum.KeyCode.F}, "Press", onThrow, function()
+
+        end)
+        InputHandler:Map("ThrowItemPC", "Console", {Enum.KeyCode.ButtonB}, "Press", onThrow, function()
+
+        end)
+       
+    end
     --[[local val =  _Computed(function(backpackList : {[number] : ToolData})
         viewportMaid:DoCleaning()
         local object 

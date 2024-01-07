@@ -636,7 +636,8 @@ local function processingHumanoidDescById(id : number, passedItemType : Enum.Ava
  
             humanoidDesc:SetAccessories(accessories, true)
             --humanoid:ApplyDescription(cleanHumanoidDesc)
-            humanoid:ApplyDescription(humanoidDesc)
+            local s, e = pcall(function() humanoid:ApplyDescription(humanoidDesc) end)
+            if not s then warn(("Customization warning: %s"):format(e)) end
         elseif passedInfoType == Enum.InfoType.Bundle and passedInfo then
             --[[local function getHumanoidDescriptionBundle(bundleId)
                 local function getOutfitId()

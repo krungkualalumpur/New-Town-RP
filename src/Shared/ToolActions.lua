@@ -146,7 +146,7 @@ local ActionLists = {
                 local model = toolInst:FindFirstChild(toolInst.Name) :: Model ?
                 print(model, model and model.PrimaryPart)
                 if model and model.PrimaryPart then
-                    playSound(9117124777, false, model.PrimaryPart)
+                    playSound(model:GetAttribute("Sound") or 9117124777, false, model.PrimaryPart)
                 end
             end
         end
@@ -328,7 +328,7 @@ local ActionLists = {
                 local toolModel = toolInst:FindFirstChild(toolInst.Name) :: Model ?
                 if toolModel and toolModel:IsA("Model") then
                     if not IsReleased then
-                        local sound = playSound(9114437231, true, toolInst:FindFirstChild(toolInst.Name))
+                        local sound = playSound(toolModel:GetAttribute("Sound") or 9114437231, true, toolInst:FindFirstChild(toolInst.Name))
                         sound.Name =  emitterSoundName
                         sound.Parent = toolModel.PrimaryPart
                     elseif IsReleased == true then
@@ -342,13 +342,33 @@ local ActionLists = {
             end
         end
     },
-    
+    {
+        ToolClass = "TextDisplay",
+        Activated = function(player : Player, toolData : BackpackUtil.ToolData<nil>, plrInfo : any, IsReleased : boolean ?)
+            local character = player.Character or player.CharacterAdded:Wait()
+            local toolInst : Tool
+
+            for _,v in pairs(character:GetChildren()) do
+                if v:IsA("Tool") and v.Name == toolData.Name then
+                    toolInst = v
+                    break
+                end
+            end
+
+            if toolInst then
+                local toolModel = toolInst:FindFirstChild(toolInst.Name) :: Model ?
+                if toolModel then
+                    
+                end
+            end
+        end
+    },
     {
         ToolClass = "Miscs",
         Activated = function()
             
         end
-    },
+    }
 
 }
 --references

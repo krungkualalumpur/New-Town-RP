@@ -104,6 +104,8 @@ local ON_HOUSE_LOCKED = "OnHouseLocked"
 local ON_VEHICLE_LOCKED = "OnVehicleLocked"
 
 local SEND_FEEDBACK = "SendFeedback"
+local ON_GAME_LOADING_COMPLETE = "OnGameLoadingComplete"
+
 --variables
 local Player = Players.LocalPlayer
 --references
@@ -793,7 +795,7 @@ function guiSys.new()
 
     --setting default backpack to untrue it 
     --game:GetService("StarterGui"):SetCoreGuiEnabled(Enum.CoreGuiType.Backpack,false)
-
+    NetworkUtil.fireServer(ON_GAME_LOADING_COMPLETE)
     return self 
 end
 

@@ -48,7 +48,8 @@ local function getItemInfo(
     return {
         Class = class,
         Name = name,
-        IsEquipped = false
+        IsEquipped = false,
+        OnRelease = false
     }
 end
 --class

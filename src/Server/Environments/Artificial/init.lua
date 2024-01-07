@@ -5,9 +5,13 @@ local RunService = game:GetService("RunService")
 local ServerScriptService = game:GetService("ServerScriptService")
 local CollectionService = game:GetService("CollectionService")
 local Lighting = game:GetService("Lighting")
+local TextService = game:GetService("TextService")
 --packages
 local Maid = require(ReplicatedStorage:WaitForChild("Packages"):WaitForChild("Maid"))
+local NetworkUtil = require(ReplicatedStorage:WaitForChild("Packages"):WaitForChild("NetworkUtil"))
 --modules
+local BackpackUtil = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("BackpackUtil"))
+
 local Buildings = require(ServerScriptService:WaitForChild("Server"):WaitForChild("Environments"):WaitForChild("Artificial"):WaitForChild("Buildings"))
 local Houses = require(ServerScriptService:WaitForChild("Server"):WaitForChild("Environments"):WaitForChild("Artificial"):WaitForChild("Houses"))
 local Elevator = require(ServerScriptService:WaitForChild("Server"):WaitForChild("Environments"):WaitForChild("Artificial"):WaitForChild("Elevator"))
@@ -21,6 +25,8 @@ local FishingSys = require(ServerScriptService:WaitForChild("Server"):WaitForChi
 --types
 type Maid = Maid.Maid
 --constants
+--remotes
+local ON_TEXT_INPUT = "OnTextInput"
 --variables
 --references
 --local function
@@ -104,6 +110,44 @@ local function initNightLight(maid : Maid)
     end))
 end
 
+local function remotesInit(maid : Maid)
+    maid:GiveTask(NetworkUtil.onServerEvent(ON_TEXT_INPUT, function(plr: Player, text : string)
+        local char = plr.Character 
+        if char then
+            for _,tool in pairs(char:GetChildren()) do
+                if tool:IsA("Tool") then
+                    local toolModel = tool:WaitForChild(tool.Name)
+                    if toolModel then
+                        local toolData = BackpackUtil.getData(toolModel, false)
+                        print(toolData.Class)
+                        if toolData.Class == "TextDisplay" then
+                            local filteredText  = ""
+                            local filteredTextResult 
+                            local s, e =  pcall(function()
+                                filteredTextResult =  TextService:FilterStringAsync(text, plr.UserId)
+                            end)
+                            if not s then warn(e) end
+                            if filteredTextResult then
+                                local _s, _e = pcall(function() 
+                                    filteredText = filteredTextResult:GetNonChatStringForBroadcastAsync()
+                                end)
+                                if not _s then warn(_e) end
+                            end
+
+                            for _,v in pairs(toolModel:GetDescendants()) do
+                                if v:IsA("TextLabel") then
+                                    v.Text = filteredText
+                                end
+                            end
+                        end
+                    end
+                end
+            end
+        end
+        
+    end))
+end
+
 --class
 return {
     init = function(maid)
@@ -119,5 +163,7 @@ return {
         FishingSys.init(maid)
 
         initNightLight(maid)
+
+        remotesInit(maid)
     end
 }

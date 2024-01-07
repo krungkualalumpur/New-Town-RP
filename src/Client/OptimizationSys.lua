@@ -160,8 +160,6 @@ function optimizationSys.init(maid : Maid)
         distanceRenderPointerValue.Value = distanceRenderPart
         distanceRenderPointerValue.Parent = adaptiveLODInst
 
-    
-
         table.insert(adaptiveLODItems, adaptiveLODInst)
     end
     
@@ -217,6 +215,32 @@ function optimizationSys.init(maid : Maid)
                         distanceRenderPartPointer.Value.Parent = nil
                         adaptiveLODinst.Parent = parentPointer.Value
                     end
+                end
+            elseif not distanceRenderPartPointer:GetAttribute("IsProcessing") then
+                local cf, size
+                if adaptiveLODinst:IsA("Model") then
+                    cf, size = adaptiveLODinst:GetBoundingBox()
+                elseif adaptiveLODinst:IsA("BasePart") then
+                    cf, size = adaptiveLODinst.CFrame, adaptiveLODinst.Size
+                else
+                    warn(adaptiveLODinst.Name, " is not a model nor a basepart for LOD!")
+                end
+                if cf and size then
+                    distanceRenderPartPointer:SetAttribute("IsProcessing", true)
+                    local distanceRenderPart = Instance.new("Part") 
+                    distanceRenderPart.Material = if adaptiveLODinst:IsA("BasePart") then adaptiveLODinst.Material elseif adaptiveLODinst:IsA("Model") then (if adaptiveLODinst.PrimaryPart then adaptiveLODinst.PrimaryPart.Material else distanceRenderPart.Material) else distanceRenderPart.Material 
+                    distanceRenderPart.Name = adaptiveLODinst.Name
+                    distanceRenderPart.CFrame, distanceRenderPart.Size = cf, size
+                    distanceRenderPart.Transparency = if adaptiveLODinst:IsA("BasePart") then adaptiveLODinst.Transparency elseif adaptiveLODinst:IsA("Model") then (if adaptiveLODinst.PrimaryPart then adaptiveLODinst.PrimaryPart.Transparency else distanceRenderPart.Transparency) else distanceRenderPart.Transparency 
+                    distanceRenderPart.Reflectance = if adaptiveLODinst:IsA("BasePart") then adaptiveLODinst.Reflectance elseif adaptiveLODinst:IsA("Model") then (if adaptiveLODinst.PrimaryPart then adaptiveLODinst.PrimaryPart.Reflectance else distanceRenderPart.Reflectance) else distanceRenderPart.Reflectance 
+                    distanceRenderPart.Anchored = true
+                    distanceRenderPart.TopSurface = Enum.SurfaceType.Smooth
+                    distanceRenderPart.BottomSurface = Enum.SurfaceType.Smooth
+                    distanceRenderPart.CanCollide = false
+                    distanceRenderPart.Color = if adaptiveLODinst:IsA("BasePart") then adaptiveLODinst.Color elseif adaptiveLODinst:IsA("Model") then (if adaptiveLODinst.PrimaryPart then adaptiveLODinst.PrimaryPart.Color else distanceRenderPart.Color) else distanceRenderPart.Color 
+                    distanceRenderPart.Parent = parentPointer.Value
+                    distanceRenderPartPointer.Value = distanceRenderPart
+                    distanceRenderPartPointer:SetAttribute("IsProcessing", nil)
                 end
             end
         end

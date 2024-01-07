@@ -133,17 +133,23 @@ local function getItemButton(
         end
 
         if toolModel:IsA("BasePart") then
-            viewportVisualZoom *= toolModel.Size.Magnitude
+            viewportVisualZoom *= toolModel.Size.Magnitude*1.5
         elseif toolModel:IsA("Model") then
-            viewportVisualZoom *= toolModel:GetExtentsSize().Magnitude
+            viewportVisualZoom *= toolModel:GetExtentsSize().Magnitude*1
         end
     end
 
+    local cf, size 
+    if toolModel and toolModel:IsA("Model") then
+        cf, size = toolModel:GetBoundingBox()  
+    elseif toolModel and toolModel:IsA("BasePart") then 
+        cf, size = toolModel.CFrame, toolModel.Size
+    end
     local viewportCam = _new("Camera")({
         CFrame = if toolModel then (if toolModel:IsA("Model") and toolModel.PrimaryPart then 
-            CFrame.lookAt(toolModel.PrimaryPart.Position + toolModel.PrimaryPart.CFrame.LookVector/viewportVisualZoom + toolModel.PrimaryPart.CFrame.RightVector/viewportVisualZoom + toolModel.PrimaryPart.CFrame.UpVector/viewportVisualZoom, toolModel.PrimaryPart.Position) 
+            CFrame.lookAt(cf.Position + cf.LookVector*size.Z + cf.RightVector*size.X + cf.UpVector, cf.Position) 
         elseif toolModel:IsA("BasePart") then
-            CFrame.lookAt(toolModel.Position + toolModel.CFrame.LookVector/viewportVisualZoom + toolModel.CFrame.RightVector/viewportVisualZoom + toolModel.CFrame.UpVector/viewportVisualZoom, toolModel.Position) 
+            CFrame.lookAt(toolModel.Position + toolModel.CFrame.LookVector*size.Z + toolModel.CFrame.RightVector*size.X + toolModel.CFrame.UpVector, toolModel.Position) 
         else CFrame.new()) else nil
     })
 
@@ -441,13 +447,16 @@ return function(
         }
     })
     
+    local backpackUIListLayout =  _new("UIListLayout")({
+        SortOrder = Enum.SortOrder.LayoutOrder,
+        Padding = PADDING_SIZE
+    }) :: UIListLayout
     local backpackContentFrame = _new("ScrollingFrame")({
         Name = "ContentFrame",
         Visible = _Computed(function(page : string)
            return page == "Items" 
         end, selectedPage),
-        AutomaticCanvasSize = Enum.AutomaticSize.Y,
-        CanvasSize = UDim2.new(),
+        AutomaticCanvasSize = Enum.AutomaticSize.None,
         BackgroundColor3 = BACKGROUND_COLOR,
         BackgroundTransparency = 0.74,
         Position = UDim2.fromScale(0,0),
@@ -456,10 +465,7 @@ return function(
             _new("UICorner")({
                 CornerRadius = UDim.new(1,0)
             }),
-            _new("UIListLayout")({
-                SortOrder = Enum.SortOrder.LayoutOrder,
-                Padding = PADDING_SIZE
-            }),
+            backpackUIListLayout,
             --[[_new("TextLabel")({
                 BackgroundTransparency = 1,
                 Size = UDim2.fromScale(1, 0.06),
@@ -471,7 +477,15 @@ return function(
                 TextStrokeTransparency = 0.5
             }) ]]
         }
-    }) :: GuiObject
+    }) :: ScrollingFrame
+
+    _bind(backpackUIListLayout)({
+        Events = {
+            Changed = function()
+                backpackContentFrame.CanvasSize =  UDim2.new(0,0,0,backpackUIListLayout.AbsoluteContentSize.Y + PADDING_SIZE.Offset*2)
+            end
+        }
+    })
 
     local function getButtonInfo(
         signal : Signal,
@@ -493,7 +507,6 @@ return function(
         for _,v in pairs(list) do
             table.insert(namesList, v.Name)
         end
-        print(namesList, " dirikoee")
         return namesList
     end, vehicleList)
     local vehiclesContentFrame = _bind(ListUI(maid, "", vehicleNamesList, _Value(UDim2.new()), _Computed(function(page : string)
