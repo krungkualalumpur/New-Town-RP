@@ -326,12 +326,15 @@ function PlayerManager.new(player : Player, maid : Maid ?)
             self:AddVehicle("Motorcycle", true)
             self:AddVehicle("Bajaj", true)
             self:AddVehicle("Taxi", true)
+            self:AddVehicle("Muntjac", true)
+            self:AddVehicle("Avalon", true)
+            self:AddVehicle("Rav", true)
+            self:AddVehicle("Mersi", true)
             self:AddVehicle("Pickup", true)
             self:AddVehicle("Ambulance", true)
             self:AddVehicle("SWAT Car", true)
             self:AddVehicle("Police", true)
             self:AddVehicle("Firetruck", true)
-            self:AddVehicle("Avalon", true)
 
             --character loading
             self:SetData(self:GetData(), false)
@@ -380,9 +383,9 @@ function PlayerManager.new(player : Player, maid : Maid ?)
     self._Maid:GiveTask(self.Player.CharacterAdded:Connect(function(char : Model)
         self._Maid.CharacterModel = char
 
-        local humanoid = char:WaitForChild("Humanoid") :: Humanoid
+       -- local humanoid = char:WaitForChild("Humanoid") :: Humanoid
         --print(humanoid, humanoid:IsDescendantOf(game), humanoid:IsDescendantOf(workspace))
-        humanoid:ApplyDescription(Instance.new("HumanoidDescription"))
+        --humanoid:ApplyDescription(Instance.new("HumanoidDescription"))
         --self:SetData(self:GetData(), false) -- refreshing the character (overriden by the other refershing char one)
     end))
 
@@ -905,8 +908,8 @@ function PlayerManager:ThrowItem(toolData : ToolData<nil>)
             NotificationUtil.Notify(self.Player, "Cooling down, please wait!")
             tool:Destroy()
         end
-
-        tool:PivotTo(CFrame.new(raycastResult.Position + Vector3.new(0, tool:GetExtentsSize().Y*0.5, 0))*(char.PrimaryPart.CFrame - char.PrimaryPart.CFrame.Position))
+ 
+        tool:PivotTo(CFrame.new(raycastResult.Position + Vector3.new(0, (if tool:IsA("Model") then tool:GetExtentsSize().Y elseif tool:IsA("BasePart") then tool.Size.Y else 0)*0.5, 0))*(char.PrimaryPart.CFrame - char.PrimaryPart.CFrame.Position))
         tool.Parent = workspace:WaitForChild("Assets")
         tool:SetAttribute("DeleteAfterInteract", true)
     
@@ -1447,16 +1450,21 @@ function PlayerManager.init(maid : Maid)
         --MidasEventTree.Gameplay.CustomizeAvatar.Value(plr)
     end))
 
-    maid:GiveTask(NetworkUtil.onServerEvent(ON_JOB_CHANGE, function(plr : Player, jobData : Jobs.JobData)
-        if Jobs.getJob(plr) ~= jobData.Name then
-            Jobs.setJob(plr, jobData.Name)
+    maid:GiveTask(NetworkUtil.onServerEvent(ON_JOB_CHANGE, function(plr : Player, jobData : Jobs.JobData ?)
+        if jobData then
+            if Jobs.getJob(plr) ~= jobData.Name then
+                Jobs.setJob(plr, jobData.Name)
+            else
+                Jobs.setJob(plr, nil)
+            end
+            local plrInfo = PlayerManager.get(plr)
+            Analytics.updateDataTable(plr, "Events", "Customization", plrInfo, function()
+                return "Job_Customize", jobData.Name
+            end)
         else
-            Jobs.setJob(plr, nil)
+            Jobs.setJob(plr)
         end
-        local plrInfo = PlayerManager.get(plr)
-        Analytics.updateDataTable(plr, "Events", "Customization", plrInfo, function()
-            return "Job_Customize", jobData.Name
-        end)
+        
     end))
 
     maid:GiveTask(NetworkUtil.onServerEvent(ON_ITEM_THROW, function(plr : Player, toolData : ToolData<nil>)

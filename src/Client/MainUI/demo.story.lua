@@ -82,6 +82,7 @@ return function(target : CoreGui)
         MainUIStatus,
 
         _Value({}),
+        _Value(nil),
         _Value("Sundus, " .. game.Lighting.TimeOfDay),
         isOwnHouse,
         isOwnVehicle,

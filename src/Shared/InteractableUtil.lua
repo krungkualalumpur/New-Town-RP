@@ -396,6 +396,11 @@ function Interactable.InteractSwitch(model : Model, player : Player)
             end
         end
     elseif data.Class == "Stove" then
+        if RunService:IsClient() then
+            NetworkUtil.fireServer(ON_INTERACT, model)
+            return
+        end
+        
         if data.IsSwitch then
             local _maid = Maid.new()
 

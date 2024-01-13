@@ -96,56 +96,50 @@ return function(target : CoreGui)
     local onDelete = maid:GiveTask(Signal.new())
 
     local list = {
-        newVehicleData(
+        _Value(newVehicleData(
             "Vehicle",
             "Motorcycle",
             true,
             "Motorcycle",
             12121211,
             true
-        ),
-        newVehicleData(
+        )),
+        _Value(newVehicleData(
             "Vehicle",
             "Motorcycle",
-            true,
+            false,
             "Motorcycle",
             12121211,
             true
-        ),
-        newVehicleData(
+        )),
+        _Value(newVehicleData(
             "Vehicle",
             "Motorcycle",
-            true,
+            false,
             "Motorcycle",
             12121211,
             true
-        ),
-        newVehicleData(
+        )),
+        _Value(newVehicleData(
             "Vehicle",
             "Motorcycle",
-            true,
+            false,
             "Motorcycle",
             12121211,
             true
-        ),
-        newVehicleData(
-            "Vehicle",
-            "Motorcycle",
-            true,
-            "Motorcycle",
-            12121211,
-            true
-        ),
-        newVehicleData(
-            "Vehicle",
-            "Motorcycle",
-            true,
-            "Motorcycle",
-            12121211,
-            true
-        ),
+        )),
     }
-    local stateList : ColdFusion.ValueState<{[number] : VehicleData}> = _Value(list)
+    for i = 1, 15 do
+        table.insert(list,  _Value(newVehicleData(
+            "Vehicle",
+            "Motorcycle",
+            false,
+            "Motorcycle",
+            12121211,
+            true
+        )))
+    end
+    local stateList : {[number] : ColdFusion.ValueState<VehicleData ?>} = list :: any
 
     local onVehicleSpawn = maid:GiveTask(Signal.new())
     local onVehicleDelete = maid:GiveTask(Signal.new())

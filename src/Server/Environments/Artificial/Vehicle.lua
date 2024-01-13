@@ -437,7 +437,7 @@ function Vehicle.init(maid : Maid)
                         end
                     end)) 
 
-                    local vectorMaxForce = vehicleModel:GetAttribute("Power") or 20000
+                    local vectorMaxForce = vehicleModel:GetAttribute("Power") or 30000
                     _maid:GiveTask(RunService.Stepped:Connect(function()
                         local seat = vehicleModel:FindFirstChild("VehicleSeat") :: VehicleSeat
 
@@ -469,15 +469,29 @@ function Vehicle.init(maid : Maid)
     end)
 
 
-    NetworkUtil.onServerInvoke(SPAWN_VEHICLE, function(plr : Player, key : number, vehicleName : string, partZones : Instance ?)
+    NetworkUtil.onServerInvoke(SPAWN_VEHICLE, function(plr : Player, key : number ?, vehicleName : string?, partZones : Instance ?)
         local plrInfo = PlayerManager.get(plr)
        -- print(carSpawnZone.ItemIsInside(v, plr.Character.PrimaryPart), " is insoide or nahhh", v)
-        local existingVehicleData = plrInfo.Vehicles[key]
+        local existingVehicleData 
+        local defKey  
+        if key then 
+            existingVehicleData = plrInfo.Vehicles[key]
+            defKey = key
+        else
+            for k,v in pairs(plrInfo.Vehicles) do
+                if v.IsSpawned then
+                    defKey, existingVehicleData = k, v
+                    break
+                end
+            end
+        end
+        assert(defKey and existingVehicleData, "Unable to find the vehicle data!")
+
         if existingVehicleData and (existingVehicleData.IsSpawned == false) then
-            plrInfo:SpawnVehicle(key, true, vehicleName, partZones)
+            plrInfo:SpawnVehicle(defKey, true, vehicleName, partZones)
         elseif existingVehicleData and (existingVehicleData.IsSpawned == true) then
-            plrInfo:SpawnVehicle(key, false)
-            NotificationUtil.Notify(plr, "You despawned " .. tostring(plrInfo.Vehicles[key].Name))
+            plrInfo:SpawnVehicle(defKey, false)
+            NotificationUtil.Notify(plr, "You despawned " .. tostring(plrInfo.Vehicles[defKey].Name))
         end
 
         --MidasEventTree.Gameplay.EquipVehicle.Value(plr)

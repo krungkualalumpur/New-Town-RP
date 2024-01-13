@@ -57,10 +57,7 @@ function getButton(
         TextScaled = true,
         TextColor3 = TEXT_COLOR,
         Children = {
-            _new("UICorner")({}),
-            _new("UIAspectRatioConstraint")({
-                AspectRatio = 2
-            })
+            _new("UICorner")({})
         },
         Events = {
             Activated = function()
@@ -224,7 +221,8 @@ return function(
             _bind(getButton(maid, "Send Feedback", function()
                 OnFeedbackSend:Fire(textBox.Text, out)
             end, 1))({
-                Size = UDim2.fromScale(0.5, 0.12)
+                AutomaticSize = Enum.AutomaticSize.None,
+                Size = UDim2.fromScale(0.15, 0.7)
             })
         }
         

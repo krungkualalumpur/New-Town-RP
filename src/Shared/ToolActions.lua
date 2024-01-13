@@ -328,9 +328,11 @@ local ActionLists = {
                 local toolModel = toolInst:FindFirstChild(toolInst.Name) :: Model ?
                 if toolModel and toolModel:IsA("Model") then
                     if not IsReleased then
-                        local sound = playSound(toolModel:GetAttribute("Sound") or 9114437231, true, toolInst:FindFirstChild(toolInst.Name))
-                        sound.Name =  emitterSoundName
-                        sound.Parent = toolModel.PrimaryPart
+                        if toolModel.PrimaryPart and not toolModel.PrimaryPart:FindFirstChild(emitterSoundName) then
+                            local sound = playSound(toolModel:GetAttribute("Sound") or 9114437231, true, toolInst:FindFirstChild(toolInst.Name))
+                            sound.Name =  emitterSoundName
+                            sound.Parent = toolModel.PrimaryPart
+                        end
                     elseif IsReleased == true then
                         for _,v in pairs(toolInst:GetDescendants()) do
                             if v:IsA("Sound") and v.Name == emitterSoundName then
@@ -345,7 +347,14 @@ local ActionLists = {
     {
         ToolClass = "TextDisplay",
         Activated = function(player : Player, toolData : BackpackUtil.ToolData<nil>, plrInfo : any, IsReleased : boolean ?)
+        
+        end
+    },
+    {
+        ToolClass = "Sword",
+        Activated = function(player : Player, toolData : BackpackUtil.ToolData<nil>, plrInfo : any, IsReleased : boolean ?)
             local character = player.Character or player.CharacterAdded:Wait()
+
             local toolInst : Tool
 
             for _,v in pairs(character:GetChildren()) do
@@ -358,9 +367,15 @@ local ActionLists = {
             if toolInst then
                 local toolModel = toolInst:FindFirstChild(toolInst.Name) :: Model ?
                 if toolModel then
-                    
+                     
+                    playSound(11949128, false, toolModel.Parent)
+                    local anim = Instance.new("StringValue")
+                    anim.Name = "toolanim"
+                    anim.Value = "Slash"
+                    anim.Parent = toolInst
                 end
             end
+           
         end
     },
     {

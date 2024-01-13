@@ -270,14 +270,14 @@ function Analytics.updateDataTable(plr : Player, dataSetName : string, dataTable
         elseif dataTableName == "Session" then
             local dataStoreManager = DatastoreManager.get(plr)
             local firstSession = dataStoreManager.SessionIds[1]
-            local firstSessionQuitTime = firstSession.QuitTime
+            local firstSessionQuitTime = firstSession.JoinTime 
             local currentSession = dataStoreManager.CurrentSessionData
 
             local duration_after_joined = DateTime.now().UnixTimestamp - currentSession.JoinTime
             local play_duration = if currentSession.QuitTime then (currentSession.QuitTime - currentSession.JoinTime) else nil
             local device = if UserInputService.TouchEnabled then "Mobile" elseif UserInputService.KeyboardEnabled and UserInputService.MouseEnabled then "Computer" elseif UserInputService.GamepadEnabled then "Console" else nil
-
-            --print(firstSession ~= currentSession, currentTimeStamp, firstSessionQuitTime, " debug")
+            --print(firstSessionQuitTime, firstSession)
+            --print(firstSession ~= currentSession, currentTimeStamp, firstSessionQuitTime, " debug") 
 
             dataTable:AddRow({
                 server_id = game.JobId,

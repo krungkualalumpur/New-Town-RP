@@ -32,6 +32,7 @@ local BackpackUtil = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChi
 local CustomizationUtil = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("CustomizationUtil"))
 local MarketplaceUtil = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("MarketplaceUtil"))
 local ChoiceActions = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("ChoiceActions"))
+local Jobs = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Jobs"))
 
 local ItemOptionsUI = require(ReplicatedStorage:WaitForChild("Client"):WaitForChild("ItemOptionsUI"))
 local ListUI = require(ReplicatedStorage:WaitForChild("Client"):WaitForChild("ListUI"))
@@ -42,6 +43,7 @@ type Maid = Maid.Maid
 type Signal = Signal.Signal
 
 type OptInfo = ItemOptionsUI.OptInfo
+type JobData = Jobs.JobData
 
 type Fuse = ColdFusion.Fuse
 type State<T> = ColdFusion.State<T>
@@ -258,6 +260,8 @@ function guiSys.new()
     local houseIsLocked = _Value(true)
     local vehicleIsLocked = _Value(true)
 
+    local currentJob : ValueState<JobData ?>  = _Value(nil) :: any
+
     self.MainUI = MainUI(
         maid,
         backpack,
@@ -265,6 +269,7 @@ function guiSys.new()
         MainUIStatus,
 
         vehicleList,
+        currentJob,
         date,
         isOwnHouse,
         isOwnVehicle,
@@ -329,6 +334,7 @@ function guiSys.new()
     
     maid:GiveTask(onJobChange:Connect(function(job)
         NetworkUtil.fireServer(ON_JOB_CHANGE, job)
+        currentJob:Set(job)
     end))
 
     maid:GiveTask(onHouseLocked:Connect(function()
@@ -558,7 +564,6 @@ function guiSys.new()
                 button.Text = "Spawn"
                 isOwnVehicle:Set(false)
             end
-            --print(vehicles)
         end))
 
         _maid:GiveTask(RunService.Stepped:Connect(function()
@@ -631,6 +636,8 @@ function guiSys.new()
         local _maid = maid:GiveTask(Maid.new())
       
         maid:GiveTask(NetworkUtil.onClientEvent(ON_JOB_CHANGE, function(jobData)
+            currentJob:Set(jobData)
+           
             _maid:DoCleaning()
 
             local _fuse = ColdFusion.fuse(_maid)
@@ -737,28 +744,33 @@ function guiSys.new()
         --print(result:GetCurrentPage())
    -- end)
 
-   maid:GiveTask(onVehicleSpawn:Connect(function(key, val : string, button : TextButton)
+   maid:GiveTask(onVehicleSpawn:Connect(function(key, val : string)
         local vehicles : {[number] : VehicleData} = NetworkUtil.invokeServer(
             SPAWN_VEHICLE, 
             key,
             val
         )
 
-        for _,v in pairs(button.Parent.Parent.Parent:GetDescendants()) do
+        --[[for _,v in pairs(button.Parent.Parent.Parent:GetDescendants()) do
             if v:IsA("TextButton") and v.Text == "Despawn" then
                 v.Text = "Spawn"
             end
+        end]]
+        local hasSpawnedVehicle
+        for _,v in pairs(vehicles) do
+            if v.IsSpawned then
+                hasSpawnedVehicle = true
+                break
+            end
         end
 
-        local vehicleData = vehicles[key] 
-        if vehicleData and vehicleData.IsSpawned then
-            button.Text = "Despawn"
+        if hasSpawnedVehicle then
             isOwnVehicle:Set(true)
             vehicleIsLocked:Set(false)
         else
-            button.Text = "Spawn"
             isOwnVehicle:Set(false)
         end
+        vehicleList:Set(vehicles)
         --print(vehicles)
     end))
     maid:GiveTask(onVehicleDelete:Connect(function(key, val)

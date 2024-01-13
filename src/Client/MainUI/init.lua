@@ -204,7 +204,7 @@ function getButton(
         RichText = true,
         AutoButtonColor = true,
         Font = Enum.Font.Gotham,
-        Text = "\t<b>" .. buttonName .. "</b>\t",
+        Text = "<b>" .. buttonName .. "</b>",
         TextColor3 = TEXT_COLOR,
         Children = {
             _new("UICorner")({})
@@ -252,7 +252,7 @@ function getImageButton(
         Font = Enum.Font.GothamBold,
         Text = buttonName,
         TextColor3 = PRIMARY_COLOR,
-        TextSize = 25,
+        TextSize = 11,
         TextStrokeColor3 = SECONDARY_COLOR,
         TextTransparency = imageTextTransp:Tween(interval*0.9),
         TextStrokeTransparency = _Computed(function(transp : number)
@@ -354,6 +354,7 @@ return function(
     backpack : ValueState<{BackpackUtil.ToolData<boolean>}>,
     UIStatus : ValueState<UIStatus>,
     vehiclesList : ValueState<{[number] : VehicleData}>,
+    currentJob : ValueState<Jobs.JobData ?>,
     date : ValueState<string>,
     isOwnHouse : ValueState <boolean>,
     isOwnVehicle : ValueState <boolean>,
@@ -387,6 +388,35 @@ return function(
     
     local _Computed = _fuse.Computed
     local _Value = _fuse.Value
+
+    local function getNewVehiclesListVersion(maxNum : number ?) : {[number] : ValueState<VehicleData ?>}
+        local defMaxNum = maxNum or 50
+        local newVehicleListVersion = {}
+        for i = 1, defMaxNum do
+            table.insert(newVehicleListVersion, _Value(nil))
+        end
+        return newVehicleListVersion :: any
+    end
+
+    local newVehiclesListVersion = getNewVehiclesListVersion()
+    _new("StringValue")({
+        Value = _Computed(function(list : {[number] : VehicleData})
+            --[[for k, vehicleData in pairs(list) do
+                local dynamicVehicleData = newVehiclesListVersion[k]
+                if dynamicVehicleData then
+                    dynamicVehicleData:Set(vehicleData)
+                end
+                print(k, vehicleData, dynamicVehicleData, " seyy!")
+            end]]
+            for k, dynamicVehicleData in pairs(newVehiclesListVersion) do
+                local vehicleData = list[k]
+                dynamicVehicleData:Set(vehicleData)
+                
+            end
+
+            return ""
+        end, vehiclesList)
+    })
 
     local TouchEnabled      = UserInputService.TouchEnabled
     local KeyboardEnabled   = UserInputService.KeyboardEnabled
@@ -493,6 +523,16 @@ return function(
                                 end, 
                                 "", 
                                 1, 
+                                false
+                            ),
+                            getImageButton(
+                                maid, 
+                                11768918600, 
+                                function()
+                                    onVehicleSpawn:Fire()
+                                end, 
+                                "", 
+                                2, 
                                 false
                             )
                         }
@@ -783,10 +823,10 @@ return function(
         }
     })
 
-    local backpackText = _Value("← Tools & Vehicles")
-    local roleplayText = _Value("← Actions")
-    local customizationText = _Value("← Avatar")
-    local houseText = _Value("← House")
+    local backpackText = _Value("")
+    local roleplayText = _Value("")
+    local customizationText = _Value("")
+    local houseText = _Value("")
 
     local alertColor = _Value(Color3.fromRGB(255,50,50))
 
@@ -839,33 +879,68 @@ return function(
                             })
                         }
                     })]]
+                },
+                Events = {
+                    MouseEnter = function()
+                        backpackText:Set("← Tools & Vehicles")
+                    end,
+                    MouseLeave = function()
+                        backpackText:Set("")
+                    end
                 }
             }),
-            getImageButton(maid, 11955884948, function()
+            _bind(getImageButton(maid, 11955884948, function()
                 UIStatus:Set(if UIStatus:Get() ~= "Roleplay" then "Roleplay" else nil)
                 backpackText:Set("")
                 roleplayText:Set("")
                 customizationText:Set("")
                 houseText:Set("")
-            end, roleplayText, 3, true),
-            getImageButton(maid, 13285102351, function()
+            end, roleplayText, 3, true))({
+                Events = {
+                    MouseEnter = function()
+                        roleplayText:Set("← Actions")
+                    end,
+                    MouseLeave = function()
+                        roleplayText:Set("")
+                    end
+                }
+            }),
+            _bind(getImageButton(maid, 13285102351, function()
                 UIStatus:Set(if UIStatus:Get() ~= "Customization" then "Customization" else nil)
                 backpackText:Set("")
                 roleplayText:Set("")
                 customizationText:Set("")
                 houseText:Set("")
-            end, customizationText, 1, true),
+            end, customizationText, 1, true))({
+                Events = {
+                    MouseEnter = function()
+                        customizationText:Set("← Customization")
+                    end,
+                    MouseLeave = function()
+                        customizationText:Set("")
+                    end
+                }
+            }),
             _bind(dateFrame)({
                 LayoutOrder = 4,
-                Size = UDim2.fromScale(2, 0.05)
+                Size = UDim2.fromScale(2, 0.05),
             }),
-            getImageButton(maid, 279461710, function()
+            _bind(getImageButton(maid, 279461710, function()
                 UIStatus:Set(if UIStatus:Get() ~= "House" then "House" else nil)
                 backpackText:Set("")
                 roleplayText:Set("")
                 customizationText:Set("")
                 houseText:Set("")
-            end, houseText, 1, true),
+            end, houseText, 1, true))({
+                Events = {
+                    MouseEnter = function()
+                        houseText:Set("← House")
+                    end,
+                    MouseLeave = function()
+                        houseText:Set("")
+                    end
+                }
+            }),
             _bind(dateFrame)({
                 LayoutOrder = 5,
                 Size = UDim2.fromScale(2, 0.05)
@@ -873,10 +948,47 @@ return function(
         }
     }) :: Frame
 
-    --[[local secondaryOptions = _new("Frame")({
-        Size = UDim2.fromScale(0.7, 1),
-
-    })]]
+    local JobFrame = _new("Frame")({
+        BackgroundTransparency = 1,
+        Visible = _Computed(function(job : Jobs.JobData ?)
+            return if job ~= nil then true else false
+        end, currentJob),
+        AnchorPoint = Vector2.new(0.5,0.5),
+        Size = UDim2.fromScale(0.2, 0.05),
+        Position = UDim2.fromScale(0.5, 0.2),
+        Parent = target,
+        Children = {
+            _new("UIListLayout")({
+                FillDirection = Enum.FillDirection.Horizontal,
+                SortOrder = Enum.SortOrder.LayoutOrder,
+                VerticalAlignment = Enum.VerticalAlignment.Center,
+                HorizontalAlignment = Enum.HorizontalAlignment.Center,
+                Padding = PADDING_SIZE
+            }),
+            _bind(getButton(
+                maid, 
+                "Quit Job", 
+                function()
+                    onJobChange:Fire()
+                end, 
+                1
+            ))({
+                AutomaticSize = Enum.AutomaticSize.None,
+                TextWrapped = true,
+                Size = UDim2.fromScale(0.6, 1),
+                TextXAlignment = Enum.TextXAlignment.Center,
+                TextYAlignment = Enum.TextYAlignment.Center,
+                TextScaled = true,
+                Children = {
+                    _new("UIStroke")({
+                        Color = PRIMARY_COLOR,
+                        ApplyStrokeMode = Enum.ApplyStrokeMode.Border,
+                        Thickness = 1
+                    })
+                },
+            }),
+        }
+    })
     local out = _new("Frame")({
         Name = "MainUI",
         Parent = target,
@@ -1001,7 +1113,7 @@ return function(
                 onBackpackButtonAddClickSignal,
                 onBackpackButtonDeleteClickSignal,
 
-                vehiclesList,
+                newVehiclesListVersion,
 
                 onVehicleSpawn,
                 onVehicleDelete
