@@ -79,6 +79,7 @@ local GET_CHARACTER_SLOT = "GetCharacterSlot"
 local SAVE_CHARACTER_SLOT = "SaveCharacterSlot"
 local LOAD_CHARACTER_SLOT = "LoadCharacterSlot"
 local DELETE_CHARACTER_SLOT = "DeleteCharacterSlot"
+local GET_PLAYER_INFO = "GetPlayerInfo"
 
 local GET_ITEM_CART = "GetItemCart"
 local ON_ITEM_CART_SPAWN = "OnItemCartSpawn"
@@ -451,7 +452,27 @@ function PlayerManager.new(player : Player, maid : Maid ?)
      --       print(self:GetData())
      --   end
     --end)
+    task.spawn(function()
+        Analytics.updateDataTable(self.Player, "User", "Session", self, function()
+            
+            local ping = 0
+
+            local device = NetworkUtil.invokeClient(GET_PLAYER_INFO, self.Player, "Device")
+            local language = NetworkUtil.invokeClient(GET_PLAYER_INFO, self.Player, "Language")
+
+            local t = tick()
+            local screen_size = NetworkUtil.invokeClient(GET_PLAYER_INFO, self.Player, "ScreenSize")
+            local dt = tick() - t
+
+            self.PlayerOnDevice = device
+            self.PlayerLanguage = language
+            self.ScreenSize = screen_size
+
+            return device, language, screen_size, dt*1000
+        end)
+    end)
    
+
     return self
 end
 
@@ -1153,10 +1174,9 @@ function PlayerManager.init(maid : Maid)
 
         _maid:GiveTask(plr.CharacterAdded:Connect(onCharAdded))
 
-        Analytics.updateDataTable(plr, "User", "Session", plrInfo)
 
         ChoiceActions.requestEvent(plr, "Default", "Welcome to the New Town", "Try our new outfit catalog feature and immerse yourself in this tropical city. The playground is yours.", true)            
-       --NetworkUtil.invokeClient(ON_NOTIF_CHOICE_INIT, plr, "msg : string", true, "Test")
+        --NetworkUtil.invokeClient(ON_NOTIF_CHOICE_INIT, plr, "msg : string", true, "Test")
     end
 
     local function onPlayerRemove(plr : Player)
@@ -1168,7 +1188,9 @@ function PlayerManager.init(maid : Maid)
 
             datastoreManager.CurrentSessionData.QuitTime = DateTime.now().UnixTimestamp
 
-            Analytics.updateDataTable(plr, "User", "Session", plrInfo)
+            Analytics.updateDataTable(plr, "User", "Session", plrInfo, function()
+                return plrInfo.PlayerOnDevice, plrInfo.PlayerLanguage, plrInfo.ScreenSize
+            end)
 
             local s, e = pcall(function()
                 local session = Midas:GetDataSet("User")
@@ -1529,10 +1551,10 @@ function PlayerManager.init(maid : Maid)
     end)
 
     NetworkUtil.getRemoteFunction(GET_PLAYER_VEHICLES)
+    NetworkUtil.getRemoteFunction(GET_PLAYER_INFO)
     NetworkUtil.getRemoteEvent(ON_INTERACT)
     NetworkUtil.getRemoteEvent(ON_GAME_LOADING_COMPLETE)
     NetworkUtil.getRemoteEvent(ON_JOB_CHANGE)
-
 end
 
 return PlayerManager

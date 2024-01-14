@@ -107,6 +107,7 @@ local ON_VEHICLE_LOCKED = "OnVehicleLocked"
 
 local SEND_FEEDBACK = "SendFeedback"
 local ON_GAME_LOADING_COMPLETE = "OnGameLoadingComplete"
+local GET_PLAYER_INFO = "GetPlayerInfo"
 
 --variables
 local Player = Players.LocalPlayer
@@ -201,7 +202,7 @@ guiSys.__index = guiSys
 function guiSys.new()
     local maid = Maid.new()
 
-    local target = Player:WaitForChild("PlayerGui"):WaitForChild("ScreenGui")
+    local target = Player:WaitForChild("PlayerGui"):WaitForChild("ScreenGui") :: ScreenGui
 
     local _fuse = ColdFusion.fuse(maid)
     local _new = _fuse.new
@@ -211,6 +212,12 @@ function guiSys.new()
     
     local _Computed = _fuse.Computed
     local _Value = _fuse.Value
+ 
+    local device = if UserInputService.TouchEnabled then "Mobile" elseif UserInputService.KeyboardEnabled and UserInputService.MouseEnabled then "Computer" elseif UserInputService.GamepadEnabled then "Console" else nil
+    --recieve 
+    NetworkUtil.onClientInvoke(GET_PLAYER_INFO,  function(infoType : string)
+        return if infoType == "Device" then device elseif infoType == "Language" then game:GetService("LocalizationService").RobloxLocaleId elseif infoType == "ScreenSize" then Vector2.new(target.AbsoluteSize.X, target.AbsoluteSize.Y) else nil
+    end)
     
     local buttonlistsInfo = {}
 

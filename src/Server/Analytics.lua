@@ -114,6 +114,11 @@ function Analytics.init(maid : Maid)
     sessionDataTable:AddColumn("play_duration", "Int64", true)
     sessionDataTable:AddColumn("duration_after_joined", "Int64", true)
     sessionDataTable:AddColumn("device", "String", true)
+    sessionDataTable:AddColumn("language", "String", true)
+    sessionDataTable:AddColumn("account_age", "Int32", true)
+    sessionDataTable:AddColumn("screen_size", "String", true)
+    sessionDataTable:AddColumn("ping", "Int64", true)
+
     --[[local gameplayDataTable = userDataSet:CreateDataTable("Gameplay", "gameplay")
     gameplayDataTable:AddColumn("server_id", "String", false)
     gameplayDataTable:AddColumn("user_id", "Int64", false)
@@ -275,10 +280,11 @@ function Analytics.updateDataTable(plr : Player, dataSetName : string, dataTable
 
             local duration_after_joined = DateTime.now().UnixTimestamp - currentSession.JoinTime
             local play_duration = if currentSession.QuitTime then (currentSession.QuitTime - currentSession.JoinTime) else nil
-            local device = if UserInputService.TouchEnabled then "Mobile" elseif UserInputService.KeyboardEnabled and UserInputService.MouseEnabled then "Computer" elseif UserInputService.GamepadEnabled then "Console" else nil
             --print(firstSessionQuitTime, firstSession)
             --print(firstSession ~= currentSession, currentTimeStamp, firstSessionQuitTime, " debug") 
 
+            local device, language, screen_size : Vector2, ping = addParamsFn()
+            print(device, language, screen_size, " : device debug")
             dataTable:AddRow({
                 server_id = game.JobId,
                 session_id = tostring(math.round(currentTimeStamp)) .. tostring(plr.UserId),
@@ -294,7 +300,11 @@ function Analytics.updateDataTable(plr : Player, dataSetName : string, dataTable
             
                 play_duration = play_duration,
                 duration_after_joined = duration_after_joined,
-                device = device
+                device = device,
+                language = language,
+                account_age = plr.AccountAge,
+                screen_size = string.format("%dX%d", math.floor(screen_size.X/200)*200, math.floor(screen_size.Y/200)*200),
+                ping = ping
             }) 
             --print(duration_after_joined, " : after joined dur", play_duration, " : play dur")
         end

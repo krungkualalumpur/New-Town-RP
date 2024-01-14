@@ -231,7 +231,6 @@ function House.init(maid : Maid)
                 if plr then
                     ownerMaid:GiveTask(plr.Changed:Connect(function()
                         if plr.Parent == nil then
-                            print("player quitted, house to nil")
                             ownerMaid:Destroy()
                             playerPointer.Value = nil
                         end

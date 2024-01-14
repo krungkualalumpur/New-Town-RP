@@ -559,6 +559,25 @@ return function(
             end
         end  
     end
+
+    local function onDelete()
+        if not RunService:IsRunning() then
+            return
+        end
+
+        for k,v in pairs(backpack:Get()) do
+            if v.IsEquipped then
+                local toolModel = BackpackUtil.getToolFromName(v.Name)
+                if toolModel then
+                    --local toolData = BackpackUtil.getData(toolModel, false)
+                    --ToolActions.onToolActivated(toolData.Class, game.Players.LocalPlayer, BackpackUtil.getData(toolModel, true))
+                    local toolData = BackpackUtil.getData(toolModel, false)
+                    backpackOnDelete:Fire(k, toolData.Name)
+                end
+                break
+            end
+        end  
+    end
     
 
     local onEquipFrame = _new("Frame")({
@@ -691,6 +710,38 @@ return function(
 
                 }
             }),
+            _bind(getButton(
+                maid,
+                "X" ,
+                onDelete,
+                5
+            ))({
+                BackgroundColor3 = Color3.fromRGB(255,50,50),
+                AutomaticSize = Enum.AutomaticSize.None,
+                TextScaled = true,
+                Size = UDim2.fromScale(0.45, 0.05),
+                Children = {
+                    _new("UIStroke")({
+                        Color = PRIMARY_COLOR,
+                        ApplyStrokeMode = Enum.ApplyStrokeMode.Border,
+                        Thickness = 1
+                    }),
+                    _new("UIListLayout")({
+                        VerticalAlignment = Enum.VerticalAlignment.Bottom,
+                        HorizontalAlignment = Enum.HorizontalAlignment.Right
+                    }),
+                    _new("TextLabel")({
+                        BackgroundColor3 = SECONDARY_COLOR,
+                        BackgroundTransparency = 0.5,
+                        AutomaticSize = Enum.AutomaticSize.XY,
+                        TextSize = 18,
+                        Font = Enum.Font.Gotham,
+                        Text = if KeyboardEnabled then "X" elseif TouchEnabled then "Touch" elseif GamepadEnabled then "X" else nil,
+                        TextColor3 = PRIMARY_COLOR
+                    }),
+
+                }
+            }),
             --[[_bind(getButton(
                 maid,
                 "X" ,
@@ -744,6 +795,13 @@ return function(
 
         end)
         InputHandler:Map("ThrowItemPC", "Console", {Enum.KeyCode.ButtonB}, "Press", onThrow, function()
+
+        end)
+
+        InputHandler:Map("DeleteItemConsole", "Keyboard", {Enum.KeyCode.X}, "Press", onDelete, function()
+
+        end)
+        InputHandler:Map("DeleteItemPC", "Console", {Enum.KeyCode.ButtonX}, "Press", onDelete, function()
 
         end)
        

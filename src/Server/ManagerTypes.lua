@@ -54,6 +54,9 @@ export type PlayerManager = {
     },
     ChatCount : number,
     Framerate : number ?,
+    PlayerOnDevice : string,
+    PlayerLanguage : string,
+    ScreenSize : Vector2,
     
     isLoaded : boolean,
 

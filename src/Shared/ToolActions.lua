@@ -305,7 +305,9 @@ local ActionLists = {
         Activated = function(player : Player, toolData : BackpackUtil.ToolData<nil>, plrInfo : any, IsReleased : boolean ?)
             local emitterSoundName = "EmitterSound"
             
-            local character = player.Character or player.CharacterAdded:Wait()
+            local character = player.Character 
+            if character == nil then return end
+
             local toolInst : Tool
 
             for _,v in pairs(character:GetChildren()) do
@@ -329,9 +331,8 @@ local ActionLists = {
                 if toolModel and toolModel:IsA("Model") then
                     if not IsReleased then
                         if toolModel.PrimaryPart and not toolModel.PrimaryPart:FindFirstChild(emitterSoundName) then
-                            local sound = playSound(toolModel:GetAttribute("Sound") or 9114437231, true, toolInst:FindFirstChild(toolInst.Name))
+                            local sound = playSound(toolModel:GetAttribute("Sound") or 9114437231, true, toolModel.PrimaryPart)
                             sound.Name =  emitterSoundName
-                            sound.Parent = toolModel.PrimaryPart
                         end
                     elseif IsReleased == true then
                         for _,v in pairs(toolInst:GetDescendants()) do
@@ -353,7 +354,8 @@ local ActionLists = {
     {
         ToolClass = "Sword",
         Activated = function(player : Player, toolData : BackpackUtil.ToolData<nil>, plrInfo : any, IsReleased : boolean ?)
-            local character = player.Character or player.CharacterAdded:Wait()
+            local character = player.Character
+            if character == nil then return end
 
             local toolInst : Tool
 
@@ -402,7 +404,7 @@ function ToolActions.onToolActivated(toolClass : string, player : Player, toolDa
         end
     else
         if (toolData.OnRelease == true) then
-            print("Onrelease property true")
+            --print("Onrelease property true")
             if isReleased == nil then
                 NetworkUtil.fireServer(ON_TOOL_ACTIVATED, toolClass, player, toolData, nil, false)
             end

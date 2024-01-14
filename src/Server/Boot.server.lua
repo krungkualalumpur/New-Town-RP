@@ -32,6 +32,8 @@ local TelevisionChannel = require(ReplicatedStorage:WaitForChild("Shared"):WaitF
 --script
 local maid = Maid.new()
 
+InteractableUtil.init(maid) -- change init to interactable manager soon! (Wip!! but dont forget!!)
+
 Analytics.init(maid)
 
 DateSys.init(maid)
@@ -39,7 +41,6 @@ DateSys.init(maid)
 Environments.init(maid)
 EnvironmentSound.init(maid)
 
-InteractableUtil.init(maid) -- change init to interactable manager soon! (Wip!! but dont forget!!)
 
 NotificationUtil.init(maid)
 TelevisionChannel.init(maid)

@@ -500,7 +500,7 @@ function Vehicle.init(maid : Maid)
     end)
 
     maid:GiveTask(NetworkUtil.onServerEvent(ON_VEHICLE_CONTROL_EVENT, function(plr : Player, vehicleModel : Model, eventName : string)
-       print(eventName)
+        print(eventName, vehicleModel, " on_vehicle_control_event")
         if eventName == "Horn" then
             assert(vehicleModel.PrimaryPart)
             if vehicleModel.PrimaryPart:FindFirstChild("HornSound") then
