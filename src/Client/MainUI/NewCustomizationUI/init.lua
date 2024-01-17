@@ -775,8 +775,10 @@ local function getCategoryButton(
         })
     
 
-        _maid:GiveTask(out.Destroying:Connect(function()
-            _maid:Destroy() 
+        _maid:GiveTask(out.AncestryChanged:Connect(function()
+            if out.Parent == nil then
+                _maid:Destroy() 
+            end
         end))
 
         if out.Parent == nil then
@@ -1073,8 +1075,10 @@ local function getSlider(
         },  
     })
 
-    _maid:GiveTask(out.Destroying:Connect(function()
-        _maid:Destroy()
+    _maid:GiveTask(out.AncestryChanged:Connect(function()
+        if out.Parent == nil then
+            _maid:Destroy()
+        end
     end))
     
     return out
@@ -2415,8 +2419,10 @@ return function(
             Visible = true
         })
 
-        _maid:GiveTask(out.Destroying:Connect(function()
-            _maid:Destroy()
+        _maid:GiveTask(out.AncestryChanged:Connect(function()
+            if out.Parent == nil then
+                _maid:Destroy()
+            end
         end))
         return out
     end
@@ -3359,8 +3365,10 @@ return function(
                         end, currentSelectedButton)
                     })
 
-                    buttonMaid:GiveTask(catalogButton.Destroying:Connect(function()
-                        buttonMaid:Destroy()
+                    buttonMaid:GiveTask(catalogButton.AncestryChanged:Connect(function()
+                        if catalogButton.Parent == nil then
+                            buttonMaid:Destroy()
+                        end
                         return
                     end))
                 end
@@ -3939,8 +3947,10 @@ return function(
                                 currentSelectedButton:Set(nil)
                             end
                         end))
-                        buttonMaid:GiveTask(button.Destroying:Connect(function()
-                            buttonMaid:Destroy()
+                        buttonMaid:GiveTask(button.AncestryChanged:Connect(function()
+                            if button.Parent == nil then
+                                buttonMaid:Destroy()
+                            end
                         end))
         
                         _new("StringValue")({

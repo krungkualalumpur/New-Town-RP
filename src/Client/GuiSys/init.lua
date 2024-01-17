@@ -7,6 +7,7 @@ local Players = game:GetService("Players")
 local AvatarEditorService = game:GetService("AvatarEditorService")
 local TextChatService = game:GetService("TextChatService")
 local UserInputService = game:GetService("UserInputService")
+local StarterGui = game:GetService("StarterGui")
 
 --packages
 local Maid = require(ReplicatedStorage:WaitForChild("Packages"):WaitForChild("Maid"))
@@ -37,6 +38,7 @@ local Jobs = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Jobs
 local ItemOptionsUI = require(ReplicatedStorage:WaitForChild("Client"):WaitForChild("ItemOptionsUI"))
 local ListUI = require(ReplicatedStorage:WaitForChild("Client"):WaitForChild("ListUI"))
 local NotificationChoice = require(ReplicatedStorage:WaitForChild("Client"):WaitForChild("NotificationUI"):WaitForChild("NotificationChoice"))
+local NotificationChoiceTop = require(ReplicatedStorage:WaitForChild("Client"):WaitForChild("NotificationUI"):WaitForChild("NotificationChoiceTop"))
 
 --types
 type Maid = Maid.Maid
@@ -98,6 +100,7 @@ local DELETE_VEHICLE = "DeleteVehicle"
 
 local ON_CHARACTER_APPEARANCE_RESET = "OnCharacterAppearanceReset"
 local ON_NOTIF_CHOICE_INIT = "OnNotifChoiceInit"
+local ON_TOP_NOTIF_CHOICE = "OnTopNotifChoice"
 
 local ON_JOB_CHANGE = "OnJobChange"
 
@@ -217,6 +220,13 @@ function guiSys.new()
     --recieve 
     NetworkUtil.onClientInvoke(GET_PLAYER_INFO,  function(infoType : string)
         return if infoType == "Device" then device elseif infoType == "Language" then game:GetService("LocalizationService").RobloxLocaleId elseif infoType == "ScreenSize" then Vector2.new(target.AbsoluteSize.X, target.AbsoluteSize.Y) else nil
+    end)
+
+    --makes mobile version horizontal always
+    RunService.Heartbeat:Connect(function()
+        if UserInputService.TouchEnabled == true then
+            Player:WaitForChild("PlayerGui").ScreenOrientation = Enum.ScreenOrientation.LandscapeRight
+        end
     end)
     
     local buttonlistsInfo = {}
@@ -629,10 +639,12 @@ function guiSys.new()
         itemOptionsUI.Parent = target
 
         --managing player list
-        game:GetService("StarterGui"):SetCoreGuiEnabled(Enum.CoreGuiType.PlayerList, false)
-        maid.OnItemOptionsUIDestroy = itemOptionsUI.Destroying:Connect(function()
-            game:GetService("StarterGui"):SetCoreGuiEnabled(Enum.CoreGuiType.PlayerList, true)
-            maid.OnItemOptionsUIDestroy = nil
+        StarterGui:SetCoreGuiEnabled(Enum.CoreGuiType.PlayerList, false)
+        maid.OnItemOptionsUIDestroy = itemOptionsUI.AncestryChanged:Connect(function()
+            if itemOptionsUI.Parent == nil then
+                StarterGui:SetCoreGuiEnabled(Enum.CoreGuiType.PlayerList, true)
+                maid.OnItemOptionsUIDestroy = nil
+            end
         end)
 
         return nil
@@ -641,7 +653,7 @@ function guiSys.new()
     
     do
         local _maid = maid:GiveTask(Maid.new())
-      
+
         maid:GiveTask(NetworkUtil.onClientEvent(ON_JOB_CHANGE, function(jobData)
             currentJob:Set(jobData)
            
@@ -680,6 +692,9 @@ function guiSys.new()
     end
 
     local notifMaid = maid:GiveTask(Maid.new())
+
+    local onTopNotifConfirm = maid:GiveTask(Signal.new())
+
     NetworkUtil.onClientInvoke(ON_NOTIF_CHOICE_INIT, function(actionName : string, eventTitle : string, eventDesc : string, isConfirm : boolean)
         notifMaid:DoCleaning()
       
@@ -694,6 +709,31 @@ function guiSys.new()
         return nil
     end)
 
+    maid:GiveTask(NetworkUtil.onClientEvent(ON_TOP_NOTIF_CHOICE, function(topNotifText : string, callActionType : string, ...)
+        if callActionType == "Waypoint" then
+            notifMaid:DoCleaning()
+            local cf : CFrame = ...
+            assert(cf, "No CFrame detected!")
+            local randNum = math.random(1, 2)
+            local notifFrame = NotificationChoiceTop(notifMaid, topNotifText, onTopNotifConfirm, "Set waypoint", if randNum == 1 then "No thanks" else "Maybe later")
+            notifFrame.Parent = target
+            
+            local signalConn = notifMaid:GiveTask(onTopNotifConfirm:Connect(function(...)
+                mapUI.Destination:Set(cf.Position) 
+                mapUI.Text:Set("Waypoint set!")
+
+                NetworkUtil.fireServer(ON_TOP_NOTIF_CHOICE, callActionType, topNotifText)
+                task.wait(4)
+                mapUI.Text:Set()
+            end))
+
+            task.wait(30)
+            if notifFrame.Parent then
+                notifFrame:Destroy()
+                signalConn:Disconnect()
+            end
+        end
+    end))
 
     maid:GiveTask(onItemGet:Connect(function(inst : Instance)
         local optInfo : ItemOptionsUI.OptInfo ? = currentOptInfo:Get()
@@ -813,7 +853,9 @@ function guiSys.new()
     end))
 
     --setting default backpack to untrue it 
-    --game:GetService("StarterGui"):SetCoreGuiEnabled(Enum.CoreGuiType.Backpack,false)
+    --StarterGui:SetCoreGuiEnabled(Enum.CoreGuiType.Backpack,false)
+    --print(Player:WaitForChild("PlayerGui").ScreenOrientation, " : Screen Orientation")
+  
     NetworkUtil.fireServer(ON_GAME_LOADING_COMPLETE)
     return self 
 end

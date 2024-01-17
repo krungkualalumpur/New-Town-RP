@@ -153,8 +153,10 @@ local function getHorizontalSlider(
         },  
     })
 
-    _maid:GiveTask(out.Destroying:Connect(function()
-        _maid:Destroy()
+    _maid:GiveTask(out.AncestryChanged:Connect(function()
+        if out.Parent == nil then
+            _maid:Destroy()
+        end
     end))
     
     return out

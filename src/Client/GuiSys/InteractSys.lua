@@ -122,8 +122,10 @@ local function createInteract(maid : Maid, interactFrame : Frame, interactNameTa
                 InteractableUtil.Interact(inst :: Model, Player)                        
             end))
 
-            _maid:GiveTask(clickDetector.Destroying:Connect(function()
-                _maid:Destroy()
+            _maid:GiveTask(clickDetector.AncestryChanged:Connect(function()
+                if clickDetector.Parent == nil then
+                    _maid:Destroy()
+                end
             end))
         end
     end
@@ -204,8 +206,10 @@ function createInteractByPrompt(
                 InteractableUtil.Interact(inst :: Model, Player)                        
             end))
 
-            _maid:GiveTask(clickDetector.Destroying:Connect(function()
-                _maid:Destroy()
+            _maid:GiveTask(clickDetector.AncestryChanged:Connect(function()
+                if clickDetector.Parent == nil then
+                    _maid:Destroy()
+                end
             end))
         end
     end

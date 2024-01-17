@@ -1,12 +1,109 @@
 #packages
 import os
 import json
+import pandas
+from datetime import datetime 
 #constants
 MONGO_PASSWORD = "0ff3BrdCKJkqgSIs"
 #local functions
-def download_raw(database: str, collection: str) -> str:
+def create_session():
+    database = "user"
+    collection = "session"
+    json_path = "Analytics/output/session_ids.json"
+    
+    path = os.path.abspath("Analytics/bin/mongoexport.exe")
+
+    command_tags = [
+        path,
+        f"--uri mongodb+srv://aryoseno11:{MONGO_PASSWORD}@analytics.ueyx6uw.mongodb.net/{database}",
+        f"--collection {collection}",
+        f"--out {json_path}"
+    ]
+    command = " ".join(command_tags)
+    os.system(command)
+
+    session_data = []
+
+    values_to_pop = (
+        "_id", 
+        "event_name",
+        "ping",
+        "account_age",
+        "language",
+        "duration_after_joined",
+        "device",
+        "is_premium",
+        "screen_size",
+        "play_duration",
+        "is_retained_on_d0",
+        "is_retained_on_d1",
+        "is_retained_on_d7",
+        "is_retained_on_d14",
+        "is_retained_on_d28",
+    )
+
+    with open (json_path, "r", buffering= -1, encoding='utf-8' ) as file:
+        content = file.read()
+        for line in content.splitlines():
+
+            data = json.loads(line)
+            
+            sessionAlreadyExists = False
+            user_First_Session = True
+
+            for existing_data in session_data:
+                if data["session_id"] == existing_data["session_id"]:
+                    sessionAlreadyExists = True
+                    break
+                    
+            if not sessionAlreadyExists:
+                _id = data["_id"]
+                
+                timestamp = data["timestamp"] 
+                if (type(_id) == dict) and ("$oid" in _id):
+                    data["event_id"] = _id["$oid"] 
+                
+                if (type(timestamp) == dict) and ("$date" in timestamp):
+                    data["timestamp"] = timestamp["$date"]
+
+                if "_id" in data:
+                    data.pop("_id")
+                if "event_name" in data:
+                    data.pop("event_name")
+                
+                for val in values_to_pop:
+                    if val in data:
+                        data.pop(val)
+
+                data["IsFirstSession"] = user_First_Session
+
+                session_data.append(data)
+
+    for data in session_data:
+        for otherData in session_data:
+            if (data["user_id"] == otherData["user_id"]) and (data["session_id"] != otherData["session_id"]):
+                currentDataTimeStr : str = data["timestamp"]
+                otherDataTimeStr : str = otherData["timestamp"]
+                currentDataTime_object = datetime.strptime(currentDataTimeStr, f"%Y-%m-%dT%H:%M:%S{'.%f' if '.' in currentDataTimeStr else ''}Z")
+                otherDataTime_object = datetime.strptime(otherDataTimeStr, f"%Y-%m-%dT%H:%M:%S{'.%f' if '.' in otherDataTimeStr else ''}Z")
+
+                currentTimestamp = datetime.timestamp(currentDataTime_object)
+                otherTimestamp = datetime.timestamp(otherDataTime_object)
+
+                if currentTimestamp > otherTimestamp:
+                    data["IsFirstSession"] = False
+                    break
+
+
+    with open (json_path, "w") as file:
+        json_data = json.dumps(session_data, indent=10)
+        file.write(json_data)
+    
+    return session_data
+        
+
+def download_raw(database: str, collection: str):
     json_path = "Analytics/output/"+ database + "/" + collection + ".json"
-    print(json_path)
     #dir_path = get_dir_path(database, collection)
 
     #if not os.path.exists(dir_path):
@@ -75,6 +172,7 @@ database3collection3 = "vehicles"
 database3collection4 = "houses"
 database3collection5 = "miscs"
 
+create_session()
 download_raw(database1, database1collection1)
 download_raw(database1, database1collection2)
 

@@ -20,6 +20,7 @@ local NewCustomizationUI = require(ReplicatedStorage:WaitForChild("Client"):Wait
 local CustomizationUI = require(ReplicatedStorage:WaitForChild("Client"):WaitForChild("MainUI"):WaitForChild("CustomizationUI"))
 local ItemOptionsUI = require(ReplicatedStorage:WaitForChild("Client"):WaitForChild("ItemOptionsUI"))
 local HouseUI = require(ReplicatedStorage:WaitForChild("Client"):WaitForChild("MainUI"):WaitForChild("HouseUI"))
+local ColorWheel = require(ReplicatedStorage:WaitForChild("Client"):WaitForChild("ColorWheel"))
 local LoadingFrame = require(ReplicatedStorage:WaitForChild("Client"):WaitForChild("LoadingFrame"))
 
 local ExitButton = require(ReplicatedStorage:WaitForChild("Client"):WaitForChild("ExitButton"))
@@ -85,10 +86,15 @@ local ON_ROLEPLAY_BIO_CHANGE = "OnRoleplayBioChange"
 
 local ON_ANIMATION_SET = "OnAnimationSet"
 local GET_CATALOG_FROM_CATALOG_INFO = "GetCatalogFromCatalogInfo"
+
+local ON_HOUSE_CHANGE_COLOR = "OnHouseChangeColor"
+local ON_VEHICLE_CHANGE_COLOR = "OnVehicleChangeColor"
 --variables
 --references
 local Player = Players.LocalPlayer
 local HousesFolder = workspace:WaitForChild("Assets"):WaitForChild("Houses")
+local SpawnedCarsFolder = workspace:FindFirstChild("Assets"):WaitForChild("Temporaries"):WaitForChild("Vehicles")
+local houses = workspace:WaitForChild("Assets"):WaitForChild("Houses")
 --local functions
 local function getItemInfo(
     class : string,
@@ -147,7 +153,11 @@ local function playAnimation(char : Model, id : number)
             animationTrack:Stop()
             maid:Destroy()
         end
-        maid:GiveTask(char.Destroying:Connect(stopAnimation))
+        maid:GiveTask(char.AncestryChanged:Connect(function()
+            if char.Parent == nil then
+                stopAnimation()
+            end
+        end))
         maid:GiveTask(charHumanoid:GetPropertyChangedSignal("MoveDirection"):Connect(function()
             if charHumanoid.MoveDirection.Magnitude ~= 0 and not charHumanoid.Sit then
                 stopAnimation()
@@ -281,15 +291,18 @@ function getImageButton(
         LayoutOrder = order,
         BackgroundColor3 = TERTIARY_COLOR,
         BackgroundTransparency = 0,
-        Size = UDim2.fromScale(0.3, 0.08),
+        Size = UDim2.fromScale(0.5, 0.0815),
         AutoButtonColor = true,
         Image = _Computed(function(imageId : number)
             return "rbxassetid://" .. tostring(imageId)
         end, ImageIdImported) ,
         Children = {
-           
+            _new("UISizeConstraint")({
+                MaxSize = Vector2.new(40, 40),
+                MinSize = Vector2.new(0, 0),
+            }),
             _new("UICorner")({}),
-            _new("UIAspectRatioConstraint")({}),
+            --_new("UIAspectRatioConstraint")({}),
             imageText
         },
         Events = {
@@ -347,6 +360,43 @@ local function getViewport(
     return out
 end
 
+local function getVehicleData(model : Instance) : VehicleData
+    local itemType : ItemUtil.ItemType =  ItemUtil.getItemTypeByName(model.Name) :: any
+
+    local keyValue = model:FindFirstChild("KeyValue") :: StringValue ?
+    
+    local key = if keyValue then keyValue.Value else nil
+
+    return {
+        Type = itemType,
+        Class = model:GetAttribute("Class"),
+        IsSpawned = model:IsDescendantOf(SpawnedCarsFolder),
+        Name = model.Name,
+        Key = key or "",
+        OwnerId = model:GetAttribute("OwnerId"),
+        DestroyLocked = model:GetAttribute("DestroyLocked")
+    }
+end
+
+local function getVehicleFromPlayer(plr : Player) : Model ?
+    for _,vehicleModel in pairs(SpawnedCarsFolder:GetChildren()) do
+        local vehicleData = getVehicleData(vehicleModel)
+        if vehicleData.OwnerId == plr.UserId then
+            return vehicleModel
+        end
+    end
+    return nil
+end
+
+local function getHouseOfPlayer(plr : Player)
+    for _,house in pairs(houses:GetChildren()) do
+        local playerPointer = house:FindFirstChild("OwnerPointer")
+        if playerPointer and playerPointer.Value == plr then
+            return house
+        end
+    end
+    return false
+end
 --class
 return function(
     maid : Maid,
@@ -423,8 +473,15 @@ return function(
     local MouseEnabled      = UserInputService.MouseEnabled
     local GamepadEnabled    = UserInputService.GamepadEnabled
 
-    local viewportMaid = maid:GiveTask(Maid.new())
+    --local viewportMaid = maid:GiveTask(Maid.new())
+    local ownershipMaid = maid:GiveTask(Maid.new())
     local statusMaid = maid:GiveTask(Maid.new())
+
+    local houseColor = _Value(Color3.fromRGB())
+    local vehicleColor = _Value(Color3.fromRGB())
+
+    local onColorConfirm = maid:GiveTask(Signal.new())
+    local onBack = maid:GiveTask(Signal.new())
 
     local ownershipFrame = _new("Frame")({
         Parent = target,
@@ -441,7 +498,25 @@ return function(
                 BackgroundColor3 = TEXT_COLOR,
                 BackgroundTransparency = 1,
                 Size = UDim2.fromScale(1, 0.5),
-                Visible = isOwnHouse,
+                Visible = _Computed(function(isOwn : boolean)
+                    ownershipMaid:DoCleaning()
+                    
+                    local house = getHouseOfPlayer(Player)
+                    if house then
+                        local walls = house:FindFirstChild("Walls") 
+                        local paints = if walls then walls:FindFirstChild("Paints") else nil
+                
+                        if paints then
+                            for _,v in pairs(paints:GetDescendants()) do
+                                if v:IsA("BasePart") then
+                                    houseColor:Set(v.Color)
+                                    break
+                                end
+                            end
+                        end
+                    end
+                    return isOwn
+                end, isOwnHouse),
                 Children = {
                     _new("UIListLayout")({
                         Padding = UDim.new(0.1, 0), 
@@ -478,6 +553,31 @@ return function(
                                 "", 
                                 1, 
                                 false
+                            ),
+                            getImageButton(
+                                maid, 
+                                12334709462, 
+                                function()
+                                    ownershipMaid:DoCleaning()
+                                    local colorWheel = ColorWheel(
+                                        ownershipMaid,
+
+                                        houseColor,
+
+                                        onColorConfirm,
+                                        onBack,
+
+                                        "House Color",
+
+                                        function()
+                                            return "House"
+                                        end
+                                    )
+                                    colorWheel.Parent = target
+                                end, 
+                                "", 
+                                2, 
+                                false
                             )
                         }
                     })
@@ -487,7 +587,26 @@ return function(
                 BackgroundColor3 = TEXT_COLOR,
                 BackgroundTransparency = 1,
                 Size = UDim2.fromScale(1, 0.5),
-                Visible = isOwnVehicle,
+                Visible = _Computed(function(isOwn : boolean)
+                    ownershipMaid:DoCleaning()
+                    local vehicleModel = getVehicleFromPlayer(Player)
+                    if vehicleModel then
+                        local bodyModel = vehicleModel:FindFirstChild("Body")
+                        local internalBody = if bodyModel then bodyModel:FindFirstChild("Body") else nil
+                        local paints = if internalBody then internalBody:FindFirstChild("Paints") else nil
+
+                        if paints then
+                            for _,v in pairs(paints:GetDescendants()) do
+                                if v:IsA("BasePart") then
+                                    vehicleColor:Set(v.Color)
+                                    break
+                                end
+                            end
+                        end
+                    end
+                    
+                    return isOwn
+                end, isOwnVehicle),
                 Children = {
                     _new("UIListLayout")({
                         Padding = UDim.new(0.1, 0), 
@@ -534,6 +653,31 @@ return function(
                                 "", 
                                 2, 
                                 false
+                            ),
+                            getImageButton(
+                                maid, 
+                                12334709462, 
+                                function()
+                                    ownershipMaid:DoCleaning()
+                                    local colorWheel = ColorWheel(
+                                        ownershipMaid,
+
+                                        vehicleColor,
+
+                                        onColorConfirm,
+                                        onBack,
+
+                                        "Vehicle Color",
+
+                                        function()
+                                            return "Vehicle"
+                                        end
+                                    )
+                                    colorWheel.Parent = target
+                                end, 
+                                "", 
+                                3, 
+                                false
                             )
                         }
                     })
@@ -541,6 +685,17 @@ return function(
             }),
         }
     })
+
+    maid:GiveTask(onColorConfirm:Connect(function(confirmType : "House" | "Vehicle")
+        if confirmType == "House" then
+            NetworkUtil.invokeServer(ON_HOUSE_CHANGE_COLOR, houseColor:Get())
+        elseif confirmType == "Vehicle" then
+            NetworkUtil.invokeServer(ON_VEHICLE_CHANGE_COLOR, vehicleColor:Get())
+        end
+    end))
+    maid:GiveTask(onBack:Connect(function()
+        ownershipMaid:DoCleaning()
+    end))
 
     local function onThrow()
         if not RunService:IsRunning() then

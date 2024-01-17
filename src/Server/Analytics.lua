@@ -118,6 +118,7 @@ function Analytics.init(maid : Maid)
     sessionDataTable:AddColumn("account_age", "Int32", true)
     sessionDataTable:AddColumn("screen_size", "String", true)
     sessionDataTable:AddColumn("ping", "Int64", true)
+    sessionDataTable:AddColumn("event_name", "String", true)
 
     --[[local gameplayDataTable = userDataSet:CreateDataTable("Gameplay", "gameplay")
     gameplayDataTable:AddColumn("server_id", "String", false)
@@ -197,7 +198,7 @@ function Analytics.init(maid : Maid)
     errorDataTable:AddColumn("user_id", "Int64", false)
     errorDataTable:AddColumn("session_id", "String", false)
     errorDataTable:AddColumn("timestamp", "Date", false)
-    errorDataTable:AddColumn("error_content", "Date", false)
+    errorDataTable:AddColumn("error_content", "String", false)
 
     Midas:Automate(RunService:IsStudio())   
 end
@@ -283,8 +284,10 @@ function Analytics.updateDataTable(plr : Player, dataSetName : string, dataTable
             --print(firstSessionQuitTime, firstSession)
             --print(firstSession ~= currentSession, currentTimeStamp, firstSessionQuitTime, " debug") 
 
-            local device, language, screen_size : Vector2, ping = addParamsFn()
-            print(device, language, screen_size, " : device debug")
+            local device, language, screen_size : Vector2, ping, event_name = addParamsFn()
+
+            if RunService:IsStudio() then print(device, language, screen_size, " : device debug") end
+
             dataTable:AddRow({
                 server_id = game.JobId,
                 session_id = tostring(math.round(currentTimeStamp)) .. tostring(plr.UserId),
@@ -303,36 +306,12 @@ function Analytics.updateDataTable(plr : Player, dataSetName : string, dataTable
                 device = device,
                 language = language,
                 account_age = plr.AccountAge,
-                screen_size = string.format("%dX%d", math.floor(screen_size.X/200)*200, math.floor(screen_size.Y/200)*200),
-                ping = ping
-            }) 
+                screen_size = if screen_size then string.format("%dX%d", math.floor(screen_size.X/200)*200, math.floor(screen_size.Y/200)*200) else nil,
+                ping = ping,
+                event_name = event_name
+            })
             --print(duration_after_joined, " : after joined dur", play_duration, " : play dur")
         end
-
-        --[[elseif dataTableName == "Gameplay" then
-            local plrData = if plrInfo then plrInfo:GetData() else nil
-            dataTable:AddRow({
-                server_id = game.JobId,
-                session_id = tostring(math.round(currentTimeStamp)) .. tostring(plr.UserId),
-                user_id = plr.UserId,
-                timestamp = DateTime.now(),
-                backpack = if plrData then plrData.Backpack else {},
-                vehicles = if plrData then plrData.Vehicles else {},
-                pos_x = charPrimaryPart.Position.X,
-                pos_z = charPrimaryPart.Position.Z,
-            })
-        elseif dataTableName == "Customization" then
-            local plrData = if plrInfo then plrInfo:GetData() else nil
-            dataTable:AddRow({
-                server_id = game.JobId,
-                session_id = tostring(math.round(currentTimeStamp)) .. tostring(plr.UserId),
-                user_id = plr.UserId,
-                timestamp = DateTime.now(),
-                character = if plrData then plrData.Character else {},
-                pos_x = charPrimaryPart.Position.X,
-                pos_z = charPrimaryPart.Position.Z,
-            })
-        end]]
     elseif dataSetName == "Events" then
         local plrData = if plrInfo then plrInfo:GetData() else nil
 

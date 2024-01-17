@@ -72,7 +72,11 @@ local function playAnimationByRawId(char : Model, id : number)
         animationTrack:Stop()
         maid:Destroy()
     end
-    maid:GiveTask(char.Destroying:Connect(stopAnimation))
+    maid:GiveTask(char.AncestryChanged:Connect(function()
+        if char.Parent == nil then
+            stopAnimation()
+        end
+    end))
     maid:GiveTask(charHumanoid:GetPropertyChangedSignal("MoveDirection"):Connect(function()
         if charHumanoid.MoveDirection.Magnitude ~= 0 and not charHumanoid.Sit then
             stopAnimation()
@@ -101,7 +105,11 @@ local function playAnimation(char : Model, id : number)
             animationTrack:Stop()
             maid:Destroy()
         end
-        maid:GiveTask(char.Destroying:Connect(stopAnimation))
+        maid:GiveTask(char.AncestryChanged:Connect(function()
+            if char.Parent == nil then
+                stopAnimation()
+            end
+        end))
         maid:GiveTask(charHumanoid:GetPropertyChangedSignal("MoveDirection"):Connect(function()
             if charHumanoid.MoveDirection.Magnitude ~= 0 and not charHumanoid.Sit then
                 stopAnimation()
@@ -290,8 +298,10 @@ local function onCharacterAdded(char : Model)
         end
     end))
 
-    _maid:GiveTask(char.Destroying:Connect(function()
-        _maid:Destroy()
+    _maid:GiveTask(char.AncestryChanged:Connect(function()
+        if char.Parent == nil then
+            _maid:Destroy()
+        end
     end))
 
     

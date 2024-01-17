@@ -270,7 +270,12 @@ local ActionLists = {
             end
         end
     },
-
+    {
+        ToolClass = "Meat",
+        Activated = function()
+            return
+        end
+    },
     {
         ToolClass = "Pencil",
         Activated = function(player : Player, toolData : BackpackUtil.ToolData<nil>, plrInfo : any, IsReleased : boolean ?)

@@ -53,7 +53,11 @@ local function playAnimation(char : Model, id : number)
             animationTrack:Stop()
             maid:Destroy()
         end
-        maid:GiveTask(char.Destroying:Connect(stopAnimation))
+        maid:GiveTask(char.AncestryChanged:Connect(function()
+            if char.Parent == nil then
+                stopAnimation()
+            end
+        end))
         maid:GiveTask(charHumanoid:GetPropertyChangedSignal("MoveDirection"):Connect(function()
             if charHumanoid.MoveDirection.Magnitude ~= 0 and not charHumanoid.Sit then
                 stopAnimation()
@@ -142,15 +146,19 @@ local function characterAdded(char : Model)
                     end))
                 end
 
-                _maid:GiveTask(child.Destroying:Connect(function()
-                    _maid:Destroy()
+                _maid:GiveTask(child.AncestryChanged:Connect(function()
+                    if child.Parent == nil then
+                        _maid:Destroy()
+                    end
                 end))
             end
         end
     end))
 
-    charMaid:GiveTask(char.Destroying:Connect(function()
-        charMaid:Destroy()
+    charMaid:GiveTask(char.AncestryChanged:Connect(function()
+        if char.Parent == nil then
+            charMaid:Destroy()
+        end
     end))
 end
 
@@ -161,8 +169,10 @@ local function onPlayerAdded(plr : Player)
     local _maid = Maid.new()
     _maid:GiveTask(plr.CharacterAdded:Connect(characterAdded))
 
-    _maid:GiveTask(plr.Destroying:Connect(function()
-        _maid:Destroy()
+    _maid:GiveTask(plr.AncestryChanged:Connect(function()
+        if plr.Parent == nil then
+            _maid:Destroy()
+        end
     end))
 
    

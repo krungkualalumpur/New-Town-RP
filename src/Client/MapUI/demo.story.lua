@@ -32,6 +32,6 @@ return function(target)
     Cf:Set(CFrame.new(392.223, 50.068, -514.346)*CFrame.Angles(0, 1, 0) + Vector3.new(10,25,20)) 
  
     return function()
-        maid:Destroy()  
+        maid:Destroy()   
     end
 end

@@ -23,7 +23,7 @@ type Maid = Maid.Maid
 --local functions 
 local function initDayNightCycle(maid : Maid)
     
-    local sunriseStart = 5
+    local sunriseStart = 4.5
     local sunriseEnd = 8
 
     local sunsetStart = 17 
@@ -35,14 +35,14 @@ local function initDayNightCycle(maid : Maid)
         if clockTime > sunriseStart and clockTime < sunriseEnd then
             brightness = (sunriseEnd - sunriseStart) - (sunriseEnd - clockTime) 
         elseif clockTime > sunsetStart and clockTime < sunsetEnd then
-            brightness = (sunsetEnd - clockTime)
+            brightness = math.clamp((sunsetEnd - clockTime), 0.5, math.huge)
         end
 
         if clockTime >= sunriseEnd and clockTime <= sunsetStart then
-            brightness = 3
+            brightness = sunriseEnd - sunriseStart
         end
         if clockTime >= sunsetEnd or  clockTime <= sunriseStart then
-            brightness = 0
+            brightness = 0.5
         end
 
         return brightness

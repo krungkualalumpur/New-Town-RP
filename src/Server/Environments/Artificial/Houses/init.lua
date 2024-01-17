@@ -28,6 +28,8 @@ local MAXIMUM_INTERACT_DISTANCE = 20
 --remotes
 local ON_HOUSE_CLAIMED = "OnHouseClaimed"
 local ON_HOUSE_LOCKED = "OnHouseLocked"
+
+local ON_HOUSE_CHANGE_COLOR = "OnHouseChangeColor"
 --variables
 --references
 local houses = workspace:WaitForChild("Assets"):WaitForChild("Houses")
@@ -145,6 +147,9 @@ function House.init(maid : Maid)
                 local furnitures = house:FindFirstChild("Furnitures")
                 local lamps = house:FindFirstChild("Lamps")
                 local curtains = house:FindFirstChild("Curtains")
+                local walls = house:FindFirstChild("Walls")
+                local paints = if walls then walls:FindFirstChild("Paints") else nil
+
                 if doors then
                     for _,doorModel in pairs(doors:GetChildren()) do
                         if CollectionService:HasTag(doorModel, "Door") then
@@ -178,6 +183,17 @@ function House.init(maid : Maid)
                             curtain:SetAttribute("OwnerId", if plr then plr.UserId else -1) 
                         end
                     end
+                end
+                if paints then
+                    local intColorVal = Instance.new("Color3Value") :: Color3Value
+                    intColorVal.Name = "IntColorVal"
+                    for _,v in pairs(paints:GetDescendants()) do
+                        if v:IsA("BasePart") then
+                            intColorVal.Value = v.Color
+                            break
+                        end
+                    end
+                    intColorVal.Parent = house
                 end
                 
                 task.spawn(function()
@@ -235,6 +251,17 @@ function House.init(maid : Maid)
                             playerPointer.Value = nil
                         end
                     end))
+                else
+                    local intColorVal = house:FindFirstChild("IntColorVal") :: Color3Value
+                    local walls = house:FindFirstChild("Walls")
+                    local paints = walls:FindFirstChild("Paints")
+                    if intColorVal and intColorVal.Value and paints then
+                        for _,v in pairs(paints:GetDescendants()) do
+                            if v:IsA("BasePart") then
+                                v.Color = intColorVal.Value
+                            end
+                        end
+                    end
                 end
             end))
 
@@ -257,8 +284,27 @@ function House.init(maid : Maid)
 
     NetworkUtil.onServerInvoke(ON_HOUSE_LOCKED, function(plr : Player, lock : boolean) 
         local house = getHouseOfPlayer(plr)
-        House.lockHouse(house, lock)
-        return house:GetAttribute("isLocked")
+        if house then
+            House.lockHouse(house, lock)
+        end
+        return if house then house:GetAttribute("isLocked") else true
+    end)
+
+    NetworkUtil.onServerInvoke(ON_HOUSE_CHANGE_COLOR, function(plr : Player, color : Color3)
+        local house = getHouseOfPlayer(plr)
+
+        local walls = house:FindFirstChild("Walls") 
+        local paints = if walls then walls:FindFirstChild("Paints") else nil
+
+        if paints then
+            for _,v in pairs(paints:GetDescendants()) do
+                if v:IsA("BasePart") then
+                    v.Color = color
+                end
+            end
+        end
+
+        return nil
     end)
 
     maid:GiveTask(NetworkUtil.onServerEvent(ON_HOUSE_CLAIMED, function(plr : Player, houseIndex : number)

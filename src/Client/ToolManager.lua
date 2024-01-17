@@ -98,15 +98,19 @@ local function onCharAdded(char : Model)
                     end))
                 end
 
-                _maid:GiveTask(toolHeld.Destroying:Connect(function()
-                    _maid:Destroy()
+                _maid:GiveTask(toolHeld.AncestryChanged:Connect(function()
+                    if toolHeld.Parent == nil then
+                        _maid:Destroy()
+                    end
                 end))
             end
         end
     end))
 
-    _maid:GiveTask(char.Destroying:Connect(function()
-        _maid:Destroy()
+    _maid:GiveTask(char.AncestryChanged:Connect(function()
+        if char.Parent == nil then
+            _maid:Destroy()
+        end
     end))
 end
 
@@ -115,8 +119,10 @@ local function onPlayerAdded(plr : Player)
     local char =  plr.Character or plr.CharacterAdded:Wait()
     onCharAdded(char)
     _maid:GiveTask(plr.CharacterAdded:Connect(onCharAdded))
-    _maid:GiveTask(plr.Destroying:Connect(function()
-        _maid:Destroy()
+    _maid:GiveTask(plr.AncestryChanged:Connect(function()
+        if plr.Parent == nil then
+            _maid:Destroy()
+        end
     end))
 end
 
@@ -339,8 +345,10 @@ function ToolManager.init(maid : Maid)
                         
                     end))
 
-                    toolMaid:GiveTask(toolInst.Destroying:Connect(function()
-                        toolMaid:DoCleaning()
+                    toolMaid:GiveTask(toolInst.AncestryChanged:Connect(function()
+                        if toolInst.Parent == nil then
+                            toolMaid:DoCleaning()
+                        end
                     end))
                     --[[local tween = game:GetService("TweenService"):Create(p, TweenInfo.new(0.1), { --parablola formula stuff
                         CFrame = mouse.Hit

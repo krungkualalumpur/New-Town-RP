@@ -152,12 +152,16 @@ function ExitButton.new(guiObject : GuiObject, isVisible : ValueState<boolean>, 
         exitButton.Position = UDim2.fromOffset(guiObject.AbsolutePosition.X + guiObject.AbsoluteSize.X - (exitButton.AbsoluteSize.X), guiObject.AbsolutePosition.Y + (exitButton.AbsoluteSize.Y*2))
     end))
 
-    maid:GiveTask(inst.Destroying:Connect(function()
-        if self._isAlive then self:Destroy() end
+    maid:GiveTask(inst.AncestryChanged:Connect(function()
+        if inst.Parent == nil then
+            if self._isAlive then self:Destroy() end
+        end
     end))
 
-    maid:GiveTask(guiObject.Destroying:Connect(function()
-        if self._isAlive then self:Destroy() end
+    maid:GiveTask(guiObject.AncestryChanged:Connect(function()
+        if guiObject.Parent == nil then
+            if self._isAlive then self:Destroy() end
+        end
     end))
 
     return self

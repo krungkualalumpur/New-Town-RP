@@ -53,10 +53,12 @@ export type PlayerManager = {
         [number] : CustomizationUtil.CharacterData
     },
     ChatCount : number,
+
     Framerate : number ?,
     PlayerOnDevice : string,
     PlayerLanguage : string,
     ScreenSize : Vector2,
+    PlayerPing : number,
     
     isLoaded : boolean,
 

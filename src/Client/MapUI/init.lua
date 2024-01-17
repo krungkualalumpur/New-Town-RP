@@ -49,7 +49,7 @@ local SECONDARY_COLOR = Color3.fromRGB(101,101,101)
 
 local SCALE = 20
 
-local DESTINATION_ARRIVE_DISTANCE = 5
+local DESTINATION_ARRIVE_DISTANCE = 16
 
 --variables
 
@@ -292,8 +292,10 @@ function mapHUD.new(
     --pathfinding demonstration
 
     local destIconImage = _Value("rbxassetid://6309764044")
+    local destIconDynamicSize = _Value(UDim2.new())
+
     local destIcon = maid:GiveTask(_new("ImageLabel")({
-        AnchorPoint = Vector2.new(0, 1),
+        AnchorPoint = Vector2.new(0.5, 1),
         Size = UDim2.fromScale(0.2, 0.2),
         Image = destIconImage, 
         BackgroundTransparency = 1,
@@ -318,10 +320,12 @@ function mapHUD.new(
     for _,v in pairs(buildings) do
         local iconImage = v:GetAttribute("MapIcon")
         if v:IsA("Model") and iconImage then
+            destIconDynamicSize:Set(UDim2.fromScale(0, 0))
             local pointFX = destIcon:Clone()
             pointFX:ClearAllChildren()
             _bind(pointFX)({
-                Size = UDim2.fromScale(0.08, 0.08),
+                Size = destIconDynamicSize:Tween(1.2),
+                --Size = _Value(UDim2.fromScale(0.08, 0.08)):Tween(0.5),
                 Image = "rbxassetid://" .. tostring(iconImage),
             })
             local cf, _ = v:GetBoundingBox()
@@ -340,7 +344,8 @@ function mapHUD.new(
                 end
             end))
             pointFX.Parent = out
-        end
+            destIconDynamicSize:Set(UDim2.fromScale(0.08, 0.08))
+        end 
     end
 
 

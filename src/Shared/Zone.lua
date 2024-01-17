@@ -335,12 +335,16 @@ function Zone.new(ZoneParts : {BasePart} ?, maid : Maid ?, filters :( {[number] 
 		end))
 
 		--detect on distroy...
-		_maid:GiveTask(hit.Destroying:Connect(function()
-			_maid:Destroy()
-			onHitQuit(zonePart, hit)
+		_maid:GiveTask(hit.AncestryChanged:Connect(function()
+			if hit.Parent == nil then
+				_maid:Destroy()
+				onHitQuit(zonePart, hit)
+			end
 		end))
-		_maid:GiveTask(zonePart.Destroying:Connect(function()
-			_maid:Destroy()
+		_maid:GiveTask(zonePart.AncestryChanged:Connect(function()
+			if zonePart.Parent == nil then
+				_maid:Destroy()
+			end
 		end))
 
 		return nil
@@ -373,9 +377,11 @@ function Zone.new(ZoneParts : {BasePart} ?, maid : Maid ?, filters :( {[number] 
 		--	onHitQuit(part, hit :: BasePart)
 		--end))
 
-        _maid:GiveTask(part.Destroying:Connect(function()
-            _maid:Destroy()
-            self:RemoveZoneInstance(part)
+        _maid:GiveTask(part.AncestryChanged:Connect(function()
+            if part.Parent == nil then
+				_maid:Destroy()
+            	self:RemoveZoneInstance(part)
+			end
         end))
 		
 		_maid:GiveTask(RunService.Stepped:Connect(function() --checking whether the zone is destroyed or not

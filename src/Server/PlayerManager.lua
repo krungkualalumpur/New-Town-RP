@@ -99,6 +99,7 @@ local USER_INTERVAL_UPDATE = "UserIntervalUpdate"
 local ON_VEHICLE_LOCKED = "OnVehicleLocked"
 
 local SEND_FEEDBACK = "SendFeedback"
+local ON_TOP_NOTIF_CHOICE = "OnTopNotifChoice"
 
 local ON_GAME_LOADING_COMPLETE = "OnGameLoadingComplete"
 --variables
@@ -331,6 +332,7 @@ function PlayerManager.new(player : Player, maid : Maid ?)
             self:AddVehicle("Avalon", true)
             self:AddVehicle("Rav", true)
             self:AddVehicle("Mersi", true)
+            self:AddVehicle("Lekotse", true)
             self:AddVehicle("Pickup", true)
             self:AddVehicle("Ambulance", true)
             self:AddVehicle("SWAT Car", true)
@@ -454,9 +456,6 @@ function PlayerManager.new(player : Player, maid : Maid ?)
     --end)
     task.spawn(function()
         Analytics.updateDataTable(self.Player, "User", "Session", self, function()
-            
-            local ping = 0
-
             local device = NetworkUtil.invokeClient(GET_PLAYER_INFO, self.Player, "Device")
             local language = NetworkUtil.invokeClient(GET_PLAYER_INFO, self.Player, "Language")
 
@@ -464,11 +463,14 @@ function PlayerManager.new(player : Player, maid : Maid ?)
             local screen_size = NetworkUtil.invokeClient(GET_PLAYER_INFO, self.Player, "ScreenSize")
             local dt = tick() - t
 
+            local ping = dt*1000
+
             self.PlayerOnDevice = device
             self.PlayerLanguage = language
             self.ScreenSize = screen_size
+            self.PlayerPing = ping
 
-            return device, language, screen_size, dt*1000
+            return device, language, screen_size, ping, "Player_Joins"
         end)
     end)
    
@@ -692,11 +694,13 @@ function PlayerManager:SpawnVehicle(key : number, isSpawned : boolean, vehicleNa
             end))
         end
 
-        vehicleMaid:GiveTask(vehicleModel.Destroying:Connect(function()
-            if currentOccupant then
-                currentOccupant.Sit = false
+        vehicleMaid:GiveTask(vehicleModel.AncestryChanged:Connect(function()
+            if vehicleModel.Parent == nil then
+                if currentOccupant then
+                    currentOccupant.Sit = false
+                end
+                vehicleMaid:Destroy()
             end
-            vehicleMaid:Destroy()
         end))
 
          --check if it overlaps
@@ -1175,8 +1179,7 @@ function PlayerManager.init(maid : Maid)
         _maid:GiveTask(plr.CharacterAdded:Connect(onCharAdded))
 
 
-        ChoiceActions.requestEvent(plr, "Default", "Welcome to the New Town", "Try our new outfit catalog feature and immerse yourself in this tropical city. The playground is yours.", true)            
-        --NetworkUtil.invokeClient(ON_NOTIF_CHOICE_INIT, plr, "msg : string", true, "Test")
+        --ChoiceActions.requestEvent(plr, "Default", "Welcome to the New Town", "Try our new outfit catalog feature and immerse yourself in this tropical city. The playground is yours.", true)            
     end
 
     local function onPlayerRemove(plr : Player)
@@ -1189,7 +1192,7 @@ function PlayerManager.init(maid : Maid)
             datastoreManager.CurrentSessionData.QuitTime = DateTime.now().UnixTimestamp
 
             Analytics.updateDataTable(plr, "User", "Session", plrInfo, function()
-                return plrInfo.PlayerOnDevice, plrInfo.PlayerLanguage, plrInfo.ScreenSize
+                return plrInfo.PlayerOnDevice, plrInfo.PlayerLanguage, plrInfo.ScreenSize, plrInfo.PlayerPing, "Player_Exits"
             end)
 
             local s, e = pcall(function()
@@ -1223,7 +1226,7 @@ function PlayerManager.init(maid : Maid)
         onPlayerRemove(plr)
     end))
     game:BindToClose(function()
-		for _, plr in pairs(game:GetService("Players"):GetPlayers()) do
+		for _, plr in pairs(Players:GetPlayers()) do
 			onPlayerRemove(plr)
 		end
 	end)
@@ -1528,7 +1531,21 @@ function PlayerManager.init(maid : Maid)
         Analytics.updateDataTable(plr, "Events", "Miscs", plrInfo, function()
             return "Client_Loaded_Success"
         end)
+
+        local saveData = DatastoreManager.get(plr)
+        if #saveData.SessionIds < 2 then
+            task.wait(5)
+            NetworkUtil.fireClient(ON_TOP_NOTIF_CHOICE, plr, "Welcome! You must be new here, let's start by hanging out at the soccer field!", "Waypoint", CFrame.new(444.246, 52.435, -220.786))
+        end
         return
+    end))
+
+    maid:GiveTask(NetworkUtil.onServerEvent(ON_TOP_NOTIF_CHOICE, function(plr : Player, callActionType : string)
+        local plrInfo = PlayerManager.get(plr)
+        Analytics.updateDataTable(plr, "Events", "Miscs", plrInfo, function()
+            return if callActionType == "Waypoint" then "Onboard_Waypoint_Set" else ""
+        end)
+        if RunService:IsStudio() then print("Waypoint set!") end
     end))
 
     NetworkUtil.onServerInvoke(ON_VEHICLE_LOCKED, function(plr : Player, lock : boolean)
@@ -1549,6 +1566,8 @@ function PlayerManager.init(maid : Maid)
 
         return vehicleModel:GetAttribute("isLocked")
     end)
+
+    
 
     NetworkUtil.getRemoteFunction(GET_PLAYER_VEHICLES)
     NetworkUtil.getRemoteFunction(GET_PLAYER_INFO)

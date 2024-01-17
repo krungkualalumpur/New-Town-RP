@@ -293,7 +293,7 @@ local function getSelectButton(maid : Maid, order : number, text : string, isSel
 
     local out = getButton(maid, order, text, fn, color)
     _bind(out)({
-        AutoButtonColor = false,
+        AutoButtonColor = true,
         BackgroundColor3 = color,
         Size = UDim2.new(0.25, 0,1,0),
         Children = {
@@ -616,16 +616,11 @@ return function(
     local header = _new("ScrollingFrame")({
         LayoutOrder = 1,
         BackgroundColor3 = BACKGROUND_COLOR,
-        Size = UDim2.fromScale(0.9, 0.1),
+        Size = UDim2.fromScale(0.9, 0.15),
         AutomaticCanvasSize = Enum.AutomaticSize.X,
         CanvasSize = UDim2.fromScale(0, 0),
         Children = {
-            _new("UIPadding")({
-                PaddingTop = PADDING_SIZE,
-                PaddingBottom = PADDING_SIZE,
-                PaddingLeft = PADDING_SIZE,
-                PaddingRight = PADDING_SIZE,
-            }),
+           
             _new("UIListLayout")({
                 FillDirection = Enum.FillDirection.Horizontal,
                 SortOrder = Enum.SortOrder.LayoutOrder,

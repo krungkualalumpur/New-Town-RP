@@ -378,8 +378,10 @@ function Interactable.InteractSwitch(model : Model, player : Player)
                 end
             end))
 
-            _maid:GiveTask(TVgui.Destroying:Connect(function()
-                _maid:Destroy()
+            _maid:GiveTask(TVgui.AncestryChanged:Connect(function()
+                if TVgui.Parent == nil then
+                    _maid:Destroy()
+                end
             end))
         else
             if RunService:IsClient() then

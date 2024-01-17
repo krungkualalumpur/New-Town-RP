@@ -26,8 +26,10 @@ local function onPlayerAdded(plr : Player)
         Jobs.setJob(plr, currentPlrJob)
     end))
 
-    plrMaid:GiveTask(plr.Destroying:Connect(function()
-        plrMaid:Destroy()
+    plrMaid:GiveTask(plr.AncestryChanged:Connect(function()
+        if plr.Parent == nil then
+            plrMaid:Destroy()
+        end
     end))
 end
 --script

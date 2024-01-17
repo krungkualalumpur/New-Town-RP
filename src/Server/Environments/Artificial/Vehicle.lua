@@ -34,6 +34,7 @@ local SPAWN_VEHICLE = "SpawnVehicle"
 local KEY_VALUE_NAME = "KeyValue"
 
 local ON_VEHICLE_CONTROL_EVENT = "OnVehicleControlEvent"
+local ON_VEHICLE_CHANGE_COLOR = "OnVehicleChangeColor"
 --variables
 --references
 local CarSpawns = workspace:WaitForChild("Miscs"):WaitForChild("CarSpawns")
@@ -52,8 +53,10 @@ local function playSound(soundId : number, target : Instance, isLoop : boolean, 
     _maid:GiveTask(sound.Ended:Connect(function()
         _maid:Destroy()
     end))
-    _maid:GiveTask(sound.Destroying:Connect(function()
-        _maid:Destroy()
+    _maid:GiveTask(sound.AncestryChanged:Connect(function()
+        if sound.Parent == nil then
+            _maid:Destroy()
+        end
     end))
 
     return sound
@@ -96,6 +99,16 @@ local function getVehicleData(model : Instance) : VehicleData
         OwnerId = model:GetAttribute("OwnerId"),
         DestroyLocked = model:GetAttribute("DestroyLocked")
     }
+end
+
+local function getVehicleFromPlayer(plr : Player) : Model ?
+    for _,vehicleModel in pairs(SpawnedCarsFolder:GetChildren()) do
+        local vehicleData = getVehicleData(vehicleModel)
+        if vehicleData.OwnerId == plr.UserId then
+            return vehicleModel
+        end
+    end
+    return nil
 end
 
 --class
@@ -451,9 +464,11 @@ function Vehicle.init(maid : Maid)
                     end))
                 end
             end
-            _maid:GiveTask(vehicleModel.Destroying:Connect(function()
-                print(vehicleModel, " destroyed")
-                _maid:Destroy()
+            _maid:GiveTask(vehicleModel.AncestryChanged:Connect(function()
+                if vehicleModel.Parent == nil then
+                    print(vehicleModel, " destroyed")
+                    _maid:Destroy()
+                end
             end))
         end
     end
@@ -538,6 +553,29 @@ function Vehicle.init(maid : Maid)
         end
         return
     end))
+
+    NetworkUtil.onServerInvoke(ON_VEHICLE_CHANGE_COLOR, function(plr : Player, color : Color3)
+        local vehicleModel = getVehicleFromPlayer(plr)
+        assert(vehicleModel)
+        local vehicleData = getVehicleData(vehicleModel)
+        if vehicleData.Class ~= "Vehicle" then
+            return nil
+        end
+        local bodyModel = vehicleModel:FindFirstChild("Body")
+        local internalBody = if bodyModel then bodyModel:FindFirstChild("Body") else nil
+        local paints = if internalBody then internalBody:FindFirstChild("Paints") else nil
+
+        if paints then
+            for _,v in pairs(paints:GetDescendants()) do
+                if v:IsA("BasePart") then
+                    v.Color = color
+                end
+            end
+        end
+    
+        return nil
+    end)
+
 end
 
 return Vehicle

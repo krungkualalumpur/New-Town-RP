@@ -6,12 +6,14 @@ local CollectionService = game:GetService("CollectionService")
 local Lighting = game:GetService("Lighting")
 --packages
 local Maid = require(ReplicatedStorage:WaitForChild("Packages"):WaitForChild("Maid"))
+local NetworkUtil = require(ReplicatedStorage:WaitForChild("Packages"):WaitForChild("NetworkUtil"))
 --remotes
 --types
 type Maid = Maid.Maid
 --constants
 local EVENT_LIGHT_KEY = "EventLight"
 --remotes
+local ON_TOP_NOTIF_CHOICE = "OnTopNotifChoice"
 --variables
 --references
 local shop = workspace:WaitForChild("Assets"):WaitForChild("Buildings"):WaitForChild("Modern Shop")
@@ -34,6 +36,8 @@ function PlaySound(id, parent, looped : boolean, volumeOptional: number ?, maxDi
 end
 
 local function clubEvent(period : number, building: Instance)
+
+    
     local _maid = Maid.new()
 
     local flashColor1 = BrickColor.Red()
@@ -96,23 +100,27 @@ local function clubEvent(period : number, building: Instance)
      building:WaitForChild("Furnitures"):WaitForChild("Interior"):WaitForChild("Floor 2"):WaitForChild("BarSection"):WaitForChild("Stage"):WaitForChild("Dj").PrimaryPart:WaitForChild("Smoke").Enabled = true
      local rand = math.random(1, 2)
     _maid:GiveTask(PlaySound(if rand == 1 then 1842613033 else 1835378016, building:WaitForChild("Furnitures"):WaitForChild("Interior"):WaitForChild("Floor 2"):WaitForChild("BarSection"):WaitForChild("Stage"):WaitForChild("Dj").PrimaryPart, true))
+
+     NetworkUtil.fireAllClients(ON_TOP_NOTIF_CHOICE, "Wohoo, a cafe is having a disco event!", "Waypoint", building.PrimaryPart.CFrame)
 end
 --class
 local Buildings = {}
 
 function Buildings.init(maid : Maid)
-    local eventDone = false
+    local clubEventDone = false
 
     maid:GiveTask(Lighting.Changed:Connect(function()
         if math.floor(Lighting.ClockTime) == 23 then
-            if eventDone == false then
+            if clubEventDone == false then
                 clubEvent(160, shop)
-                eventDone = true
+                clubEventDone = true
             end
         else
-            eventDone = false
+            clubEventDone = false
         end
     end))
+
+    NetworkUtil.getRemoteEvent(ON_TOP_NOTIF_CHOICE)
     return
 end
 
