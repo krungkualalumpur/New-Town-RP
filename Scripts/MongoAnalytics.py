@@ -164,6 +164,7 @@ database1collection2 = "population"
 database2 = "user"
 database2collection1 = "map"
 database2collection2 = "session"
+database2collection3 = "demography"
 
 database3 = "events"
 database3collection1 = "backpack"
@@ -178,6 +179,7 @@ download_raw(database1, database1collection2)
 
 download_raw(database2, database2collection1)
 download_raw(database2, database2collection2)
+download_raw(database2, database2collection3)
 
 download_raw(database3, database3collection1)
 download_raw(database3, database3collection2)

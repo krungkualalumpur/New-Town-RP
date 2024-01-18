@@ -45,14 +45,14 @@ local function initDayNightCycle(maid : Maid)
             brightness = 0.5
         end
 
-        return brightness
+        return brightness*1.25
     end
 
     local function getAmbientFromClockTime(clockTime : number)
         local ambient = Color3.fromRGB(
-            math.clamp(getBrightnessFromClockTime(clockTime)*(60/3), 25, math.huge), 
-            math.clamp(getBrightnessFromClockTime(clockTime)*(60/3), 25, math.huge), 
-            math.clamp(((getBrightnessFromClockTime(clockTime) - 2)*(60)), 25, 60)
+            math.clamp(getBrightnessFromClockTime(clockTime)*(70/3), 25, math.huge), 
+            math.clamp(getBrightnessFromClockTime(clockTime)*(70/3), 25, math.huge), 
+            math.clamp(((getBrightnessFromClockTime(clockTime) - 2)*(70)), 25, 70)
         )
 
 
@@ -66,6 +66,35 @@ local function initDayNightCycle(maid : Maid)
         Lighting.Ambient = getAmbientFromClockTime(Lighting.ClockTime)
         Lighting.OutdoorAmbient = getAmbientFromClockTime(Lighting.ClockTime)
     end))
+
+     --density parts
+     --[[local oriPos = workspace:WaitForChild("SpawnLocations"):WaitForChild("Spawn2").Position
+     local overlapParams = OverlapParams.new()
+
+     local folder = Instance.new("Folder")
+     folder.Name = "AssetsDensityTest"
+     folder.Parent = workspace
+
+     local gap = 50
+     for x = -50000/gap, 50000/gap, gap do
+         for z = -50000/gap, 50000/gap, gap do
+            local p = Instance.new("Part")
+            p.Anchored = true
+            p.Position = Vector3.new(x, -250, z) + oriPos
+            p.CanCollide = false
+            p.Size = Vector3.new(gap, 500, gap)
+            p.Parent = folder
+            
+            local parts = workspace:GetPartsInPart(p, overlapParams)
+            local height = 150               p.Color = Color3.fromHSV(0, math.clamp(#parts/1000, 0, 1), 1)
+            p.Transparency = 0.9    p.Locked = true     p.Size = Vector3.new(gap, height, gap)
+            p.Position = Vector3.new(p.Position.X, 0 + height*0.5 ,p.Position.Z)
+         end
+     end]]
+     local assetsDensityParts = workspace:FindFirstChild("AssetsDensityTest") 
+     if assetsDensityParts then
+         assetsDensityParts:Destroy()
+     end
 end
 --class
 return {

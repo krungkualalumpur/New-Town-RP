@@ -85,6 +85,7 @@ function Analytics.init(maid : Maid)
     performanceDataTable:AddColumn("session_id", "String", false)
     performanceDataTable:AddColumn("timestamp", "Date", false)
     performanceDataTable:AddColumn("frame_rate", "Int32", true)
+    performanceDataTable:AddColumn("ping", "Int64", true)
     performanceDataTable:AddColumn("pos_x", "Double", true)
     performanceDataTable:AddColumn("pos_z", "Double", true)
 
@@ -105,7 +106,6 @@ function Analytics.init(maid : Maid)
     sessionDataTable:AddColumn("session_id", "String", false)
     sessionDataTable:AddColumn("timestamp", "Date", false)
     sessionDataTable:AddColumn("user_id", "Int64", false)
-    sessionDataTable:AddColumn("is_premium", "Boolean", false)
     sessionDataTable:AddColumn("is_retained_on_d0", "Boolean", true)
     sessionDataTable:AddColumn("is_retained_on_d1", "Boolean", true)
     sessionDataTable:AddColumn("is_retained_on_d7", "Boolean", true)
@@ -113,13 +113,17 @@ function Analytics.init(maid : Maid)
     sessionDataTable:AddColumn("is_retained_on_d28", "Boolean", true)
     sessionDataTable:AddColumn("play_duration", "Int64", true)
     sessionDataTable:AddColumn("duration_after_joined", "Int64", true)
-    sessionDataTable:AddColumn("device", "String", true)
-    sessionDataTable:AddColumn("language", "String", true)
-    sessionDataTable:AddColumn("account_age", "Int32", true)
-    sessionDataTable:AddColumn("screen_size", "String", true)
-    sessionDataTable:AddColumn("ping", "Int64", true)
     sessionDataTable:AddColumn("event_name", "String", true)
-
+    local demographyDataTable = userDataSet:CreateDataTable("Demography", "demography")
+    demographyDataTable:AddColumn("server_id", "String", false)
+    demographyDataTable:AddColumn("session_id", "String", false)
+    demographyDataTable:AddColumn("timestamp", "Date", false)
+    demographyDataTable:AddColumn("user_id", "Int64", false)
+    demographyDataTable:AddColumn("device", "String", true)
+    demographyDataTable:AddColumn("language", "String", true)
+    demographyDataTable:AddColumn("account_age", "Int32", true)
+    demographyDataTable:AddColumn("screen_size", "String", true)
+    demographyDataTable:AddColumn("is_premium", "Boolean", false)
     --[[local gameplayDataTable = userDataSet:CreateDataTable("Gameplay", "gameplay")
     gameplayDataTable:AddColumn("server_id", "String", false)
     gameplayDataTable:AddColumn("user_id", "Int64", false)
@@ -249,6 +253,9 @@ function Analytics.updateDataTable(plr : Player, dataSetName : string, dataTable
             local charPrimaryPart = char:WaitForChild("HumanoidRootPart") :: BasePart
             
             assert(plrInfo, "Player info not found!")
+
+            local ping = addParamsFn()
+            
             dataTable:AddRow({
                 server_id = game.JobId,
                 session_id = tostring(math.round(currentTimeStamp)) .. tostring(plr.UserId),
@@ -257,6 +264,7 @@ function Analytics.updateDataTable(plr : Player, dataSetName : string, dataTable
                 frame_rate = if plrInfo then plrInfo.Framerate else nil,
                 pos_x = charPrimaryPart.Position.X,
                 pos_z = charPrimaryPart.Position.Z,
+                ping = ping
             })
         end
     elseif dataSetName == "User" then
@@ -283,17 +291,13 @@ function Analytics.updateDataTable(plr : Player, dataSetName : string, dataTable
             local play_duration = if currentSession.QuitTime then (currentSession.QuitTime - currentSession.JoinTime) else nil
             --print(firstSessionQuitTime, firstSession)
             --print(firstSession ~= currentSession, currentTimeStamp, firstSessionQuitTime, " debug") 
-
-            local device, language, screen_size : Vector2, ping, event_name = addParamsFn()
-
-            if RunService:IsStudio() then print(device, language, screen_size, " : device debug") end
+            local event_name = addParamsFn()
 
             dataTable:AddRow({
                 server_id = game.JobId,
                 session_id = tostring(math.round(currentTimeStamp)) .. tostring(plr.UserId),
                 timestamp = DateTime.now(),
                 user_id = plr.UserId,
-                is_premium = (plr.MembershipType == Enum.MembershipType.Premium),
 
                 is_retained_on_d0 = if plrInfo and firstSessionQuitTime then  (if (firstSession ~= currentSession) and (currentTimeStamp) and (firstSessionQuitTime) and (currentTimeStamp - firstSessionQuitTime) <= 60*60*24*1 then true elseif (currentTimeStamp - firstSessionQuitTime) > 60*60*24*1 then false else nil) else nil,
                 is_retained_on_d1 = if plrInfo and firstSessionQuitTime then (if firstSession ~= currentSession and (currentTimeStamp)  and (firstSessionQuitTime) and (((currentTimeStamp - firstSessionQuitTime) >= 60*60*24*1) and  (currentTimeStamp - firstSessionQuitTime <= 60*60*24*(1 + 1))) then true elseif (currentTimeStamp - firstSessionQuitTime) > 60*60*24*(1 + 1) then false else nil) else nil,
@@ -303,14 +307,26 @@ function Analytics.updateDataTable(plr : Player, dataSetName : string, dataTable
             
                 play_duration = play_duration,
                 duration_after_joined = duration_after_joined,
+                event_name = event_name
+            })
+            --print(duration_after_joined, " : after joined dur", play_duration, " : play dur")
+        elseif dataTableName == "Demography" then
+            local device, language, screen_size : Vector2 = addParamsFn()
+
+            if RunService:IsStudio() then print(device, language, screen_size, " : device debug") end
+
+            dataTable:AddRow({
+                server_id = game.JobId,
+                session_id = tostring(math.round(currentTimeStamp)) .. tostring(plr.UserId),
+                timestamp = DateTime.now(),
+                user_id = plr.UserId,
+
                 device = device,
                 language = language,
                 account_age = plr.AccountAge,
                 screen_size = if screen_size then string.format("%dX%d", math.floor(screen_size.X/200)*200, math.floor(screen_size.Y/200)*200) else nil,
-                ping = ping,
-                event_name = event_name
+                is_premium = (plr.MembershipType == Enum.MembershipType.Premium)
             })
-            --print(duration_after_joined, " : after joined dur", play_duration, " : play dur")
         end
     elseif dataSetName == "Events" then
         local plrData = if plrInfo then plrInfo:GetData() else nil

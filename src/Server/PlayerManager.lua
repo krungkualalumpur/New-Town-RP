@@ -456,21 +456,14 @@ function PlayerManager.new(player : Player, maid : Maid ?)
     --end)
     task.spawn(function()
         Analytics.updateDataTable(self.Player, "User", "Session", self, function()
+            return "Player_Joins"
+        end)
+        Analytics.updateDataTable(self.Player, "User", "Demography", self, function()
             local device = NetworkUtil.invokeClient(GET_PLAYER_INFO, self.Player, "Device")
             local language = NetworkUtil.invokeClient(GET_PLAYER_INFO, self.Player, "Language")
 
-            local t = tick()
             local screen_size = NetworkUtil.invokeClient(GET_PLAYER_INFO, self.Player, "ScreenSize")
-            local dt = tick() - t
-
-            local ping = dt*1000
-
-            self.PlayerOnDevice = device
-            self.PlayerLanguage = language
-            self.ScreenSize = screen_size
-            self.PlayerPing = ping
-
-            return device, language, screen_size, ping, "Player_Joins"
+            return device, language, screen_size
         end)
     end)
    
@@ -1192,7 +1185,7 @@ function PlayerManager.init(maid : Maid)
             datastoreManager.CurrentSessionData.QuitTime = DateTime.now().UnixTimestamp
 
             Analytics.updateDataTable(plr, "User", "Session", plrInfo, function()
-                return plrInfo.PlayerOnDevice, plrInfo.PlayerLanguage, plrInfo.ScreenSize, plrInfo.PlayerPing, "Player_Exits"
+                return "Player_Exits"
             end)
 
             local s, e = pcall(function()
@@ -1501,9 +1494,19 @@ function PlayerManager.init(maid : Maid)
     maid:GiveTask(NetworkUtil.onServerEvent(USER_INTERVAL_UPDATE, function(plr : Player, fps : number)
         local plrManager = PlayerManager.get(plr)
         assert(plrManager)
+        local t = tick()
+        NetworkUtil.invokeClient(GET_PLAYER_INFO, plr, "Ping")
+        local dt = tick() - t
+
+        local ping = dt*1000
+
         plrManager.Framerate = fps
+        plrManager.PlayerPing = ping
+
         Analytics.updateDataTable(plr, "Server", "Population", plrManager)
-        Analytics.updateDataTable(plr, "Server", "Performance", plrManager)
+        Analytics.updateDataTable(plr, "Server", "Performance", plrManager, function()
+            return ping
+        end)
         Analytics.updateDataTable(plr, "User", "Map", plrManager)
     end))
 
