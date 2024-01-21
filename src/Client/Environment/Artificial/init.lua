@@ -11,19 +11,46 @@ local BackpackUtil = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChi
 --types
 type Maid = Maid.Maid
 --constants
+local ADAPTIVE_LOD_ITEM_TAG = "AdaptiveLODItem"
 --remotes
 local ON_TEXT_INPUT = "OnTextInput"
 --variables
 --references
 local Player = Players.LocalPlayer
 --local functions
+local function clientOptimalization()
+    for _,door in pairs(CollectionService:GetTagged("Door")) do
+        if door:IsA("Model") and not door.PrimaryPart and not CollectionService:HasTag(door, ADAPTIVE_LOD_ITEM_TAG) then
+            local doorPrimaryPart
+            
+            local doorModel = door:FindFirstChild("Model")
+            if doorModel then
+                for _,modelChild in pairs(doorModel:GetChildren()) do
+                    if modelChild:IsA("BasePart") and modelChild:FindFirstChildWhichIsA("WeldConstraint") and modelChild:FindFirstChildWhichIsA("Attachment") then
+                        doorPrimaryPart = modelChild :: BasePart
+                        break
+                    end
+                end
+            end
+
+            if doorPrimaryPart then
+                door.PrimaryPart = doorPrimaryPart
+                CollectionService:AddTag(door, ADAPTIVE_LOD_ITEM_TAG)
+            end
+        end
+    end
+end
 --class
 local Artificial = {}
 
 function Artificial.init(maid : Maid)
+    --performance opt
+    clientOptimalization()
+   
+    --text display
     local backgroundColor = Color3.fromRGB(80,80,80)
     local primaryColor = Color3.fromRGB(255,255,255)
-    --text display
+    
     local function onCharAdded(char : Model)
         local _maid = Maid.new()
 
@@ -74,6 +101,7 @@ function Artificial.init(maid : Maid)
         end))
     end
     maid:GiveTask(Player.CharacterAdded:Connect(onCharAdded))
+
 end
 
 return Artificial

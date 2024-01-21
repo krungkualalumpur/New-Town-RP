@@ -15,6 +15,9 @@ local CharacterManager = require(ReplicatedStorage:WaitForChild("Client"):WaitFo
 local ToolManager = require(ReplicatedStorage:WaitForChild("Client"):WaitForChild("ToolManager"))
 
 local NotificationUtil = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("NotificationUtil"))
+
+local MapDensityChecker = require(ReplicatedStorage:WaitForChild("Client"):WaitForChild("MapDensityChecker"))
+
 --types
 --constants
 --variables
@@ -34,3 +37,5 @@ CharacterManager.init(maid)
 ToolManager.init(maid)
 
 NotificationUtil.init(maid)
+
+MapDensityChecker.init(maid)
