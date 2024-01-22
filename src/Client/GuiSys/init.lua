@@ -117,6 +117,11 @@ local Player = Players.LocalPlayer
 --references
 local dayValue = workspace:WaitForChild(DAY_VALUE_KEY) :: IntValue
 --local functions
+function getABValue()
+    local ABnum = math.round(Player.UserId%2)  
+    return if ABnum == 0 then "A" else "B"
+end
+
 function PlaySound(id, parent, volumeOptional: number ?)
 	task.spawn(function()
 		local s = Instance.new("Sound")
@@ -856,7 +861,7 @@ function guiSys.new()
     --StarterGui:SetCoreGuiEnabled(Enum.CoreGuiType.Backpack,false)
     --print(Player:WaitForChild("PlayerGui").ScreenOrientation, " : Screen Orientation")
   
-    NetworkUtil.fireServer(ON_GAME_LOADING_COMPLETE)
+    NetworkUtil.fireServer(ON_GAME_LOADING_COMPLETE, getABValue())
     return self 
 end
 

@@ -194,7 +194,15 @@ function Analytics.init(maid : Maid)
     miscsDataTable:AddColumn("pos_z", "Double", true)
     miscsDataTable:AddColumn("event_name", "String", false)
     miscsDataTable:AddColumn("content", "String", true)
-
+    local interfaceDataTable = eventsDataSet:CreateDataTable("Interface", "interface")
+    interfaceDataTable:AddColumn("server_id", "String", false)
+    interfaceDataTable:AddColumn("user_id", "Int64", false)
+    interfaceDataTable:AddColumn("session_id", "String", false)
+    interfaceDataTable:AddColumn("timestamp", "Date", false)
+    interfaceDataTable:AddColumn("pos_x", "Double", true)
+    interfaceDataTable:AddColumn("pos_z", "Double", true)
+    interfaceDataTable:AddColumn("event_name", "String", false)
+    interfaceDataTable:AddColumn("content", "String", true)
 
     local debugsDataSet = Midas:CreateDataSet("Debugs", "debugs")
     local errorDataTable = debugsDataSet:CreateDataTable("Error", "error")
@@ -416,6 +424,21 @@ function Analytics.updateDataTable(plr : Player, dataSetName : string, dataTable
 
                 event_name = eventName,
                 content = content
+            })
+        elseif dataTableName == "Interface" then
+            local char = plr.Character or plr.CharacterAdded:Wait()
+            local charPrimaryPart = char:WaitForChild("HumanoidRootPart") :: BasePart
+            
+            local eventName = addParamsFn()
+            dataTable:AddRow({
+                server_id = game.JobId,
+                session_id = tostring(math.round(currentTimeStamp)) .. tostring(plr.UserId),
+                timestamp = DateTime.now(),
+                user_id = plr.UserId,
+                pos_x = charPrimaryPart.Position.X,
+                pos_z = charPrimaryPart.Position.Z,
+
+                event_name = eventName,
             })
         end
     elseif dataSetName == "Debugs" then

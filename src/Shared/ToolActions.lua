@@ -400,6 +400,8 @@ local ToolActions = {}
 
 function ToolActions.onToolActivated(toolClass : string, player : Player, toolData : BackpackUtil.ToolData<nil>, plrInfo : any, isReleased : boolean ?)
     if RunService:IsServer() then
+
+
         local actionInfo = ToolActions.getActionInfo(toolClass)
         actionInfo.Activated(player, toolData, plrInfo, isReleased)
         if toolData.OnRelease and ((isReleased == nil) or (isReleased == false)) then

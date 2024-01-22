@@ -6,6 +6,7 @@ local RunService = game:GetService("RunService")
 local Maid = require(ReplicatedStorage:WaitForChild("Packages"):WaitForChild("Maid"))
 local ColdFusion = require(ReplicatedStorage:WaitForChild("Packages"):WaitForChild("ColdFusion8"))
 local Signal = require(ReplicatedStorage:WaitForChild("Packages"):WaitForChild("Signal"))
+local NetworkUtil = require(ReplicatedStorage:WaitForChild("Packages"):WaitForChild("NetworkUtil"))
 --modules
 local FeedbackUI = require(ReplicatedStorage:WaitForChild("Client"):WaitForChild("MainUI"):WaitForChild("FeedbackUI"))
 local ExitButton = require(ReplicatedStorage:WaitForChild("Client"):WaitForChild("ExitButton"))
@@ -21,6 +22,8 @@ local SECONDARY_COLOR = Color3.fromRGB(42, 42, 42)
 local TERTIARY_COLOR = Color3.fromRGB(70,70,70)
 
 local TEXT_COLOR = Color3.fromRGB(255,255,255)
+--remotes
+local SEND_ANALYTICS = "SendAnalytics"
 --variables
 --references
 --local functions
@@ -169,6 +172,10 @@ return function(
         end, _Computed(function(isSprinting : boolean)
             return if isSprinting then "Running" else "Walking" 
         end, sprintState), 1)  
+
+        if RunService:IsRunning() then
+            NetworkUtil.fireServer(SEND_ANALYTICS, "Events", "Interface", "sprint_button")
+        end
     end
 
     local feedbackUI = FeedbackUI(
@@ -185,6 +192,9 @@ return function(
     local feedbackButton = _bind(getButton(maid, "Leave a feedback", function()
         feedbackUI.Parent = feedBackScreenGui 
         print(feedbackUI, feedbackUI.Parent)
+        if RunService:IsRunning() then
+            NetworkUtil.fireServer(SEND_ANALYTICS, "Events", "Interface", "feedback_button")
+        end
         return
     end, 2, Color3.fromRGB(50,200,50)))({Size = UDim2.fromScale(1, 0.6)})
 

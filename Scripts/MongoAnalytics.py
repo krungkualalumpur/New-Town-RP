@@ -172,6 +172,7 @@ database3collection2 = "customization"
 database3collection3 = "vehicles"
 database3collection4 = "houses"
 database3collection5 = "miscs"
+database3collection6 = "interface"
 
 create_session()
 download_raw(database1, database1collection1)

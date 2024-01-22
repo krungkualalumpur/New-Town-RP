@@ -101,6 +101,7 @@ local ON_VEHICLE_LOCKED = "OnVehicleLocked"
 local SEND_FEEDBACK = "SendFeedback"
 local ON_TOP_NOTIF_CHOICE = "OnTopNotifChoice"
 
+local SEND_ANALYTICS = "SendAnalytics"
 local ON_GAME_LOADING_COMPLETE = "OnGameLoadingComplete"
 --variables
 local Registry = {}
@@ -284,6 +285,9 @@ local function backpackRefresh(char : Model, backpack : {[number] : BackpackUtil
             local character = plr.Character or plr.CharacterAdded:Wait()
             if character then    
                 ToolActions.onToolActivated(toolData.Class, plr, BackpackUtil.getData(toolVanilla, true), plrInfo)
+                Analytics.updateDataTable(plr, "Events", "Miscs", nil, function()
+                    return "tool_interacted", toolData.Name
+                end)
             end
         end))
     end
@@ -1237,6 +1241,13 @@ function PlayerManager.init(maid : Maid)
         end
     end))
 
+    maid:GiveTask(NetworkUtil.onServerEvent(SEND_ANALYTICS, function(plr : Player, dataSetName, dataTableName, ...)
+        local ns = {...}
+        Analytics.updateDataTable(plr, dataSetName, dataTableName, PlayerManager.get(plr), function()
+            return table.unpack(ns)
+        end)
+    end))
+
     NetworkUtil.onServerInvoke(GET_PLAYER_BACKPACK, function(plr : Player)
         local plrInfo = PlayerManager.get(plr)
         return plrInfo:GetBackpack(true, true)
@@ -1529,16 +1540,18 @@ function PlayerManager.init(maid : Maid)
         return
     end))
 
-    maid:GiveTask(NetworkUtil.onServerEvent(ON_GAME_LOADING_COMPLETE, function(plr : Player)
+    maid:GiveTask(NetworkUtil.onServerEvent(ON_GAME_LOADING_COMPLETE, function(plr : Player, ABValue : "A" | "B")
         local plrInfo = PlayerManager.get(plr)
         Analytics.updateDataTable(plr, "Events", "Miscs", plrInfo, function()
-            return "Client_Loaded_Success"
+            return "Client_Loaded_Success", ABValue
         end)
-
-        local saveData = DatastoreManager.get(plr)
-        if #saveData.SessionIds < 2 then
-            task.wait(5)
-            NetworkUtil.fireClient(ON_TOP_NOTIF_CHOICE, plr, "Welcome! You must be new here, let's start by hanging out at the soccer field!", "Waypoint", CFrame.new(444.246, 52.435, -220.786))
+        
+        if ABValue == "A" then
+            local saveData = DatastoreManager.get(plr)
+            if #saveData.SessionIds < 2 then
+                task.wait(5)
+                NetworkUtil.fireClient(ON_TOP_NOTIF_CHOICE, plr, "Welcome! You must be new here, let's start by hanging out at the soccer field!", "Waypoint", CFrame.new(444.246, 52.435, -220.786))
+            end
         end
         return
     end))

@@ -70,6 +70,7 @@ local TEXT_COLOR = Color3.fromRGB(255,255,255)
 local PADDING_SIZE = UDim.new(0.01,0)
 
 local DAY_VALUE_KEY = "DayValue"
+
 --remotes
 local GET_PLAYER_BACKPACK = "GetPlayerBackpack"
 
@@ -89,6 +90,8 @@ local GET_CATALOG_FROM_CATALOG_INFO = "GetCatalogFromCatalogInfo"
 
 local ON_HOUSE_CHANGE_COLOR = "OnHouseChangeColor"
 local ON_VEHICLE_CHANGE_COLOR = "OnVehicleChangeColor"
+
+local SEND_ANALYTICS = "SendAnalytics"
 --variables
 --references
 local Player = Players.LocalPlayer
@@ -1074,6 +1077,10 @@ return function(
                 roleplayText:Set("")
                 customizationText:Set("")
                 houseText:Set("")
+
+                if RunService:IsRunning() then
+                    NetworkUtil.fireServer(SEND_ANALYTICS, "Events", "Interface", "backpack_button")
+                end
             end, backpackText, 2, true))({
                 Children = {
                     --[[_new("TextLabel")({
@@ -1116,6 +1123,10 @@ return function(
                 roleplayText:Set("")
                 customizationText:Set("")
                 houseText:Set("")
+
+                if RunService:IsRunning() then
+                    NetworkUtil.fireServer(SEND_ANALYTICS, "Events", "Interface", "roleplay_button")
+                end
             end, roleplayText, 3, true))({
                 Events = {
                     MouseEnter = function()
@@ -1132,6 +1143,10 @@ return function(
                 roleplayText:Set("")
                 customizationText:Set("")
                 houseText:Set("")
+
+                if RunService:IsRunning() then
+                    NetworkUtil.fireServer(SEND_ANALYTICS, "Events", "Interface", "customization_button")
+                end
             end, customizationText, 1, true))({
                 Events = {
                     MouseEnter = function()
@@ -1152,6 +1167,10 @@ return function(
                 roleplayText:Set("")
                 customizationText:Set("")
                 houseText:Set("")
+                
+                if RunService:IsRunning() then
+                    NetworkUtil.fireServer(SEND_ANALYTICS, "Events", "Interface", "house_button")
+                end
             end, houseText, 1, true))({
                 Events = {
                     MouseEnter = function()
