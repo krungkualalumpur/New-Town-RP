@@ -10,7 +10,7 @@ local NetworkUtil = require(ReplicatedStorage:WaitForChild("Packages"):WaitForCh
 --types
 type Maid = Maid.Maid
 --constants
-local BIRD_COUNT = 25
+local BIRD_COUNT = 10
 
 local SUN_RISE = 5
 local SUN_SET = 18

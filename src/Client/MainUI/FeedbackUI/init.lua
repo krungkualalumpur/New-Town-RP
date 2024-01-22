@@ -222,7 +222,7 @@ return function(
                 OnFeedbackSend:Fire(textBox.Text, out)
             end, 1))({
                 AutomaticSize = Enum.AutomaticSize.None,
-                Size = UDim2.fromScale(0.15, 0.7)
+                Size = UDim2.fromScale(0.15, 0.15)
             })
         }
         

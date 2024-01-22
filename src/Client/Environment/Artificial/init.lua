@@ -11,6 +11,7 @@ local BackpackUtil = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChi
 --types
 type Maid = Maid.Maid
 --constants
+local LOD_ITEM_TAG = "LODItem"
 local ADAPTIVE_LOD_ITEM_TAG = "AdaptiveLODItem"
 --remotes
 local ON_TEXT_INPUT = "OnTextInput"
@@ -37,6 +38,12 @@ local function clientOptimalization()
                 door.PrimaryPart = doorPrimaryPart
                 CollectionService:AddTag(door, ADAPTIVE_LOD_ITEM_TAG)
             end
+        end
+    end
+
+    for _, interact in pairs(CollectionService:GetTagged("ClickInteractable")) do
+        if interact:GetAttribute("Class") == "Circuit" then
+            CollectionService:AddTag(interact, LOD_ITEM_TAG)
         end
     end
 end

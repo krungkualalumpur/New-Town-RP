@@ -291,7 +291,7 @@ function getImageButton(
         LayoutOrder = order,
         BackgroundColor3 = TERTIARY_COLOR,
         BackgroundTransparency = 0,
-        Size = UDim2.fromScale(0.5, 0.0815),
+        Size = UDim2.fromScale(0.33, 0.06),
         AutoButtonColor = true,
         Image = _Computed(function(imageId : number)
             return "rbxassetid://" .. tostring(imageId)
@@ -812,7 +812,7 @@ return function(
                 3
             ))({
                 AutomaticSize = Enum.AutomaticSize.None,
-                Size = UDim2.fromScale(1.5, 0.15),
+                Size = UDim2.fromScale(1, 0.1),
                 Children = {
                     _new("UIStroke")({
                         Color = PRIMARY_COLOR,
@@ -842,7 +842,7 @@ return function(
                 4
             ))({
                 AutomaticSize = Enum.AutomaticSize.None,
-                Size = UDim2.fromScale(1.5, 0.15),
+                Size = UDim2.fromScale(1, 0.1),
                 Children = {
                     _new("UIStroke")({
                         Color = PRIMARY_COLOR,
@@ -1058,7 +1058,7 @@ return function(
             _new("Frame")({
                 LayoutOrder = 0,
                 BackgroundTransparency = 1,
-                Size = UDim2.fromScale(1, 0.415)
+                Size = UDim2.fromScale(1, 0.48)
             }),
            _bind(getImageButton(maid, 2815418737, function()
                 UIStatus:Set(if UIStatus:Get() ~= "Backpack" then "Backpack" else nil)

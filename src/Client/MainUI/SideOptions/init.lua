@@ -94,7 +94,7 @@ local function getImageButton(
         LayoutOrder = order,
         BackgroundColor3 = color or BACKGROUND_COLOR,
         BackgroundTransparency = 0.5,
-        Size = UDim2.fromScale(1, 1),
+        Size = UDim2.fromScale(0.75, 0.75),
         AutoButtonColor = true,
         Image = _Computed(function(id : number)
             return "rbxassetid://" .. tostring(id)
@@ -182,11 +182,11 @@ return function(
         Parent = if RunService:IsRunning() then game.Players.LocalPlayer.PlayerGui else game:GetService("CoreGui")
     })
 
-    local feedbackButton = getButton(maid, "Leave a feedback", function()
+    local feedbackButton = _bind(getButton(maid, "Leave a feedback", function()
         feedbackUI.Parent = feedBackScreenGui 
         print(feedbackUI, feedbackUI.Parent)
         return
-    end, 2, Color3.fromRGB(50,200,50))
+    end, 2, Color3.fromRGB(50,200,50)))({Size = UDim2.fromScale(1, 0.6)})
 
     local out = _new("Frame")({
         Position = UDim2.fromScale(0, 0.05),
@@ -203,7 +203,8 @@ return function(
                 Padding = PADDING_SIZE,
                 SortOrder = Enum.SortOrder.LayoutOrder,
                 FillDirection = Enum.FillDirection.Horizontal,
-                HorizontalAlignment = Enum.HorizontalAlignment.Center
+                HorizontalAlignment = Enum.HorizontalAlignment.Center,
+                VerticalAlignment = Enum.VerticalAlignment.Center
             }),
              
             sprintButton,

@@ -255,7 +255,7 @@ return function(
                 LayoutOrder = 1,
                 Name = "ContentFrame",
                 BackgroundColor3 = BACKGROUND_COLOR,
-                Size = UDim2.fromScale(0.25, 1),
+                Size = UDim2.fromScale(0.25, 0.9),
                 Children = {
                     _new("UIListLayout")({
                         Padding = PADDING_SIZE,

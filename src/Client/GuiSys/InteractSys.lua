@@ -122,7 +122,8 @@ local function createInteract(maid : Maid, interactFrame : Frame, interactNameTa
                 InteractableUtil.Interact(inst :: Model, Player)                        
             end))
 
-            _maid:GiveTask(clickDetector.AncestryChanged:Connect(function()
+            _maid:GiveTask(clickDetector.Destroying:Connect(function()
+                print(clickDetector, " huh?")
                 if clickDetector.Parent == nil then
                     _maid:Destroy()
                 end
@@ -181,7 +182,7 @@ function createInteractByPrompt(
         local _Computed = _fuse.Computed
         local _Value = _fuse.Value
 
-        for _,inst in pairs(CollectionService:GetTagged(interactNameTag)) do
+        local function _onInstAdded(inst : Instance)
             local _maid = Maid.new()
 
             _maid:GiveTask(_new("BillboardGui")({
@@ -203,15 +204,27 @@ function createInteractByPrompt(
             clickDetector.Parent = inst
             
             _maid:GiveTask(clickDetector.MouseClick:Connect(function()
-                InteractableUtil.Interact(inst :: Model, Player)                        
+                InteractableUtil.Interact(inst :: Model, Player)        
             end))
 
-            _maid:GiveTask(clickDetector.AncestryChanged:Connect(function()
-                if clickDetector.Parent == nil then
-                    _maid:Destroy()
-                end
+            _maid:GiveTask(clickDetector.Destroying:Connect(function()
+                _maid:Destroy()
+            end))
+            _maid:GiveTask(inst.Destroying:Connect(function()
+                _maid:Destroy()
             end))
         end
+
+        ---
+        for _,inst in pairs(CollectionService:GetTagged(interactNameTag)) do
+            _onInstAdded(inst)
+        end
+        CollectionService:GetInstanceAddedSignal(interactNameTag):Connect(function(inst)
+            if inst:IsDescendantOf(workspace) then
+                _onInstAdded(inst)
+            end
+        end)
+
     end
 end
 
