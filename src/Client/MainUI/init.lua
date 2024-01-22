@@ -209,15 +209,23 @@ function getButton(
         BackgroundTransparency = 0,
         BackgroundColor3 = TERTIARY_COLOR,
         Size = UDim2.fromScale(0, 0.05),
-        AutomaticSize = Enum.AutomaticSize.X,
         TextXAlignment = Enum.TextXAlignment.Center,
         RichText = true,
         AutoButtonColor = true,
         Font = Enum.Font.Gotham,
         Text = "<b>" .. buttonName .. "</b>",
         TextColor3 = TEXT_COLOR,
+        TextScaled = true,
+        TextWrapped = true,
         Children = {
-            _new("UICorner")({})
+            _new("UICorner")({}),
+            _new("UIAspectRatioConstraint")({
+                AspectRatio = 2.5,
+            }),
+            _new("UITextSizeConstraint")({
+                MaxTextSize = 10,
+                MinTextSize = 1
+            })
         },
         Events = {
             Activated = function()
@@ -751,7 +759,7 @@ return function(
         Position = UDim2.fromScale(0.9, 0),
         BackgroundTransparency = 1,
         BackgroundColor3 = Color3.fromRGB(10,200,10),
-        Size = UDim2.fromScale(0.1, 1),
+        Size = UDim2.fromScale(0.15, 1),
         Children = {
             _new("UIPadding")({
                 PaddingBottom = PADDING_SIZE,
@@ -826,10 +834,10 @@ return function(
                     _new("TextLabel")({
                         BackgroundColor3 = SECONDARY_COLOR,
                         BackgroundTransparency = 0.5,
-                        AutomaticSize = Enum.AutomaticSize.XY,
-                        TextSize = 16,
+                        Size = UDim2.fromScale(0.75, 0.3),
                         Font = Enum.Font.Gotham,
                         Text = if KeyboardEnabled then "L Click" elseif TouchEnabled then "Touch" elseif GamepadEnabled then "A" else nil,
+                        TextScaled = true,
                         TextColor3 = PRIMARY_COLOR
                     }),
 
@@ -856,10 +864,10 @@ return function(
                     _new("TextLabel")({
                         BackgroundColor3 = SECONDARY_COLOR,
                         BackgroundTransparency = 0.5,
-                        AutomaticSize = Enum.AutomaticSize.XY,
-                        TextSize = 18,
+                        Size = UDim2.fromScale(0.75, 0.3),
                         Font = Enum.Font.Gotham,
                         Text = if KeyboardEnabled then "F" elseif TouchEnabled then "Touch" elseif GamepadEnabled then "B" else nil,
+                        TextScaled = true,
                         TextColor3 = PRIMARY_COLOR
                     }),
 
@@ -888,10 +896,10 @@ return function(
                     _new("TextLabel")({
                         BackgroundColor3 = SECONDARY_COLOR,
                         BackgroundTransparency = 0.5,
-                        AutomaticSize = Enum.AutomaticSize.XY,
-                        TextSize = 18,
+                        Size = UDim2.fromScale(0.75, 0.3),
                         Font = Enum.Font.Gotham,
                         Text = if KeyboardEnabled then "X" elseif TouchEnabled then "Touch" elseif GamepadEnabled then "X" else nil,
+                        TextScaled = true,
                         TextColor3 = PRIMARY_COLOR
                     }),
 
@@ -1026,8 +1034,8 @@ return function(
                         TextYAlignment = Enum.TextYAlignment.Bottom,
                         Children = {
                             _new("UITextSizeConstraint")({
-                                MinTextSize = 20,
-                                MaxTextSize = 100
+                                MinTextSize = 5,
+                                MaxTextSize = 25
                             })
                         }
                     })
