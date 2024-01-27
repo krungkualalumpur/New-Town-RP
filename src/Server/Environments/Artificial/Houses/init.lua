@@ -164,11 +164,31 @@ function House.init(maid : Maid)
                     end
                 end
                 if furnitures then
+                    local interiorFurnitures = furnitures:FindFirstChild("Interiors")
+                    local exteriorFurnitures = furnitures:FindFirstChild("Exteriors")
                     for _,interactable in pairs(furnitures:GetChildren()) do
                         if CollectionService:HasTag(interactable, "Interactable") or CollectionService:HasTag(interactable, "ClickInteractable") then
                             interactable:SetAttribute("OwnerId", if plr then plr.UserId else -1) 
                         end
                     end
+
+                    if interiorFurnitures then
+                        for _,interactable in pairs(interiorFurnitures:GetChildren()) do
+                            if CollectionService:HasTag(interactable, "Interactable") or CollectionService:HasTag(interactable, "ClickInteractable") then
+                                interactable:SetAttribute("OwnerId", if plr then plr.UserId else -1) 
+                            end
+                        end
+    
+                    end
+                    if exteriorFurnitures then
+                        for _,interactable in pairs(exteriorFurnitures:GetChildren()) do
+                            if CollectionService:HasTag(interactable, "Interactable") or CollectionService:HasTag(interactable, "ClickInteractable") then
+                                interactable:SetAttribute("OwnerId", if plr then plr.UserId else -1) 
+                            end
+                        end
+    
+                    end
+                    
                 end
                 if lamps then
                     for _,lampCircuit in pairs(lamps:GetDescendants()) do

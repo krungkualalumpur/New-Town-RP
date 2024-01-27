@@ -12,6 +12,7 @@ local Zone = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Zone
 type Maid = Maid.Maid
 --constants
 local LOAD_OF_DISTANCE = 70
+local LOD_UPDATE_INTERVAL = 0.25
 
 local ZONE_TAG = "RenderZone"
 local LOD_TAG = "LODItem"
@@ -119,15 +120,15 @@ function optimizationSys.init(maid : Maid)
     local lodItems = {} 
     local adaptiveLODItems = {}
 
-    for _,LODinst in pairs(CollectionService:GetTagged(LOD_TAG)) do
-        local parentPointerValue = Instance.new("ObjectValue")
+    local function onLODTagAdded(LODinst : Instance)
+        local parentPointerValue = Instance.new("ObjectValue") 
         parentPointerValue.Name = "ParentPointer"
         parentPointerValue.Value = LODinst.Parent  
         parentPointerValue.Parent = LODinst
         table.insert(lodItems, LODinst)
     end
 
-    for _, adaptiveLODInst in pairs(CollectionService:GetTagged(ADAPTIVE_LOD_TAG)) do
+    local function onAdaptiveLODTagAdded(adaptiveLODInst : Instance)
         local cf, size
         if adaptiveLODInst:IsA("Model") then
             cf, size = adaptiveLODInst:GetBoundingBox()
@@ -161,88 +162,176 @@ function optimizationSys.init(maid : Maid)
         distanceRenderPointerValue.Parent = adaptiveLODInst
 
         table.insert(adaptiveLODItems, adaptiveLODInst)
-    end
-    
-    maid:GiveTask(RunService.Stepped:Connect(function()
-        local camera = workspace.CurrentCamera :: Camera
 
-        for _,LODinst in pairs(lodItems) do
-            local pointer = LODinst:FindFirstChild("ParentPointer") :: ObjectValue
-            local cf, size
-            if LODinst:IsA("Model") then
-                cf, size = LODinst:GetBoundingBox()
-            elseif LODinst:IsA("BasePart") then
-                cf, size = LODinst.CFrame, LODinst.Size
-            else
-                warn(LODinst.Name, " is not a model nor a basepart for LOD!")
-            end
-            if cf and size and camera then
-                local currentDist = (cf.Position - camera.CFrame.Position).Magnitude - (math.max(size.X, size.Y, size.Z)*0.5)
-                currentDist = math.clamp(currentDist, 0, math.huge)
-
-                if currentDist >= ((LODinst:GetAttribute("RadiusAmplifier") or 1)*LOAD_OF_DISTANCE) then
-                    LODinst.Parent = nil
+        do
+            local prevRenderPart = distanceRenderPart
+            maid:GiveTask(distanceRenderPointerValue.Changed:Connect(function()
+                
+                if (distanceRenderPointerValue.Value == nil) then
+                    if prevRenderPart then
+                        prevRenderPart:Destroy()
+                    end
                 else
-                    LODinst.Parent = pointer.Value
+                    prevRenderPart = distanceRenderPointerValue.Value
                 end
-
-            end
+            end))
         end
+    end
 
-        for _,adaptiveLODinst in pairs(adaptiveLODItems) do
-            local parentPointer = adaptiveLODinst:FindFirstChild("ParentPointer") :: ObjectValue
-            local distanceRenderPartPointer = adaptiveLODinst:FindFirstChild("DistanceRenderPartPointer") :: ObjectValue
+    for _,LODinst in pairs(CollectionService:GetTagged(LOD_TAG)) do
+        onLODTagAdded(LODinst)
+    end
 
-            assert(distanceRenderPartPointer, ("No distance render POINTER detected for a part named %s!"):format(adaptiveLODinst.Name))
-            if distanceRenderPartPointer.Value then
-                --assert(distanceRenderPartPointer.Value, ("No distance render part detected for a part named %s!"):format(adaptiveLODinst.Name))
+    maid:GiveTask(CollectionService:GetInstanceAddedSignal(LOD_TAG):Connect(function(LODinst : Instance)
+        if not table.find(lodItems, LODinst) then
+            --print(LODinst, " added")
+            onLODTagAdded(LODinst)
+        end
+    end))
+
+    --[[maid:GiveTask(CollectionService:GetInstanceRemovedSignal(LOD_TAG):Connect(function(LODinst : Instance)
+        print("removed ", LODinst.Name)
+        local i = table.find(lodItems, LODinst)
+        if i then table.remove(lodItems, i) end
+    end))]]
+
+    for _, adaptiveLODInst in pairs(CollectionService:GetTagged(ADAPTIVE_LOD_TAG)) do
+        onAdaptiveLODTagAdded(adaptiveLODInst)
+    end
+
+    --do this later, lod_tag first tho
+    --[[maid:GiveTask(CollectionService:GetInstanceAddedSignal(ADAPTIVE_LOD_TAG):Connect(function(adaptiveLODinst : Instance)
+        if not table.find(adaptiveLODItems, adaptiveLODinst) then
+            onAdaptiveLODTagAdded(adaptiveLODinst)
+        end
+    end))]]
+
+    --[[maid:GiveTask(CollectionService:GetInstanceRemovedSignal(ADAPTIVE_LOD_TAG):Connect(function(LODinst : Instance)
+        local i = table.find(adaptiveLODItems, LODinst)
+        if i then table.remove(adaptiveLODItems, i) end
+    end))]]
+
+    
+    local t1 = tick()
+    local t2 = tick()
+    maid:GiveTask(RunService.Heartbeat:Connect(function()
+        if tick() - t1 > LOD_UPDATE_INTERVAL then 
+            t1 = tick()
+            local camera = workspace.CurrentCamera :: Camera
+
+            for _,LODinst in pairs(lodItems) do
+                local pointer = LODinst:FindFirstChild("ParentPointer") :: ObjectValue
                 local cf, size
-                if adaptiveLODinst:IsA("Model") then
-                    cf, size = adaptiveLODinst:GetBoundingBox()
-                elseif adaptiveLODinst:IsA("BasePart") then
-                    cf, size = adaptiveLODinst.CFrame, adaptiveLODinst.Size
+                if LODinst:IsA("Model") then
+                    cf, size = LODinst:GetBoundingBox()
+                elseif LODinst:IsA("BasePart") then
+                    cf, size = LODinst.CFrame, LODinst.Size
                 else
-                    warn(adaptiveLODinst.Name, " is not a model nor a basepart for LOD!")
+                    warn(LODinst.Name, " is not a model nor a basepart for LOD!")
                 end
                 if cf and size and camera then
-                    local currentDist = (cf.Position - camera.CFrame.Position).Magnitude - (math.max(size.X, size.Y, size.Z)*0.5)
-                    currentDist = math.clamp(currentDist, 0, math.huge)
+                    local s, e = pcall(function() 
+                        local currentDist = (cf.Position - camera.CFrame.Position).Magnitude - (math.max(size.X, size.Y, size.Z)*0.5)
+                        currentDist = math.clamp(currentDist, 0, math.huge)
 
-                    if currentDist >= ((adaptiveLODinst:GetAttribute("RadiusAmplifier") or 1)*LOAD_OF_DISTANCE) then
-                        adaptiveLODinst.Parent = nil
-                        distanceRenderPartPointer.Value.Parent = parentPointer.Value
-                    else
-                        distanceRenderPartPointer.Value.Parent = nil
-                        adaptiveLODinst.Parent = parentPointer.Value
+                        if currentDist >= ((LODinst:GetAttribute("RadiusAmplifier") or 1)*LOAD_OF_DISTANCE) then
+                            LODinst.Parent = nil
+                        else
+                            LODinst.Parent = pointer.Value
+                        end
+                    end)
+                    if not s and e then
+                        local i = table.find(lodItems, LODinst)
+                        if i then
+                            table.remove(lodItems, i)
+                        end
+                        warn(e)
                     end
                 end
-            elseif not distanceRenderPartPointer:GetAttribute("IsProcessing") then
-                local cf, size
-                if adaptiveLODinst:IsA("Model") then
-                    cf, size = adaptiveLODinst:GetBoundingBox()
-                elseif adaptiveLODinst:IsA("BasePart") then
-                    cf, size = adaptiveLODinst.CFrame, adaptiveLODinst.Size
-                else
-                    warn(adaptiveLODinst.Name, " is not a model nor a basepart for LOD!")
-                end
-                if cf and size then
-                    distanceRenderPartPointer:SetAttribute("IsProcessing", true)
-                    local distanceRenderPart = Instance.new("Part") 
-                    distanceRenderPart.Material = if adaptiveLODinst:IsA("BasePart") then adaptiveLODinst.Material elseif adaptiveLODinst:IsA("Model") then (if adaptiveLODinst.PrimaryPart then adaptiveLODinst.PrimaryPart.Material else distanceRenderPart.Material) else distanceRenderPart.Material 
-                    distanceRenderPart.Name = adaptiveLODinst.Name
-                    distanceRenderPart.CFrame, distanceRenderPart.Size = cf, size
-                    distanceRenderPart.Transparency = if adaptiveLODinst:IsA("BasePart") then adaptiveLODinst.Transparency elseif adaptiveLODinst:IsA("Model") then (if adaptiveLODinst.PrimaryPart then adaptiveLODinst.PrimaryPart.Transparency else distanceRenderPart.Transparency) else distanceRenderPart.Transparency 
-                    distanceRenderPart.Reflectance = if adaptiveLODinst:IsA("BasePart") then adaptiveLODinst.Reflectance elseif adaptiveLODinst:IsA("Model") then (if adaptiveLODinst.PrimaryPart then adaptiveLODinst.PrimaryPart.Reflectance else distanceRenderPart.Reflectance) else distanceRenderPart.Reflectance 
-                    distanceRenderPart.Anchored = true
-                    distanceRenderPart.TopSurface = Enum.SurfaceType.Smooth
-                    distanceRenderPart.BottomSurface = Enum.SurfaceType.Smooth
-                    distanceRenderPart.CanCollide = false
-                    distanceRenderPart.Color = if adaptiveLODinst:IsA("BasePart") then adaptiveLODinst.Color elseif adaptiveLODinst:IsA("Model") then (if adaptiveLODinst.PrimaryPart then adaptiveLODinst.PrimaryPart.Color else distanceRenderPart.Color) else distanceRenderPart.Color 
-                    distanceRenderPart.Parent = parentPointer.Value
-                    distanceRenderPartPointer.Value = distanceRenderPart
-                    distanceRenderPartPointer:SetAttribute("IsProcessing", nil)
+            end
+        end
+    end))
+
+    maid:GiveTask(RunService.Heartbeat:Connect(function()
+        if tick() - t2 > LOD_UPDATE_INTERVAL then 
+            t2 = tick()
+            
+            local camera = workspace.CurrentCamera :: Camera
+            for _,adaptiveLODinst in pairs(adaptiveLODItems) do
+                local parentPointer = adaptiveLODinst:FindFirstChild("ParentPointer") :: ObjectValue
+                local distanceRenderPartPointer = adaptiveLODinst:FindFirstChild("DistanceRenderPartPointer") :: ObjectValue
+
+                assert(distanceRenderPartPointer, ("No distance render POINTER detected for a part named %s!"):format(adaptiveLODinst.Name))
+                if distanceRenderPartPointer.Value then
+                    --assert(distanceRenderPartPointer.Value, ("No distance render part detected for a part named %s!"):format(adaptiveLODinst.Name))
+                    local cf, size
+                    if adaptiveLODinst:IsA("Model") then
+                        cf, size = adaptiveLODinst:GetBoundingBox()
+                    elseif adaptiveLODinst:IsA("BasePart") then
+                        cf, size = adaptiveLODinst.CFrame, adaptiveLODinst.Size
+                    else
+                        warn(adaptiveLODinst.Name, " is not a model nor a basepart for LOD!")
+                    end
+                    if cf and size and camera then
+                        local currentDist = (cf.Position - camera.CFrame.Position).Magnitude - (math.max(size.X, size.Y, size.Z)*0.5)
+                        currentDist = math.clamp(currentDist, 0, math.huge)
+
+                        if currentDist >= ((adaptiveLODinst:GetAttribute("RadiusAmplifier") or 1)*LOAD_OF_DISTANCE) then
+                            adaptiveLODinst.Parent = nil
+                            distanceRenderPartPointer.Value.Parent = parentPointer.Value
+                        else
+                            distanceRenderPartPointer.Value.Parent = nil
+                            adaptiveLODinst.Parent = parentPointer.Value
+                        end
+                    end
+                elseif not distanceRenderPartPointer:GetAttribute("IsProcessing") then
+                    local cf, size
+                    if adaptiveLODinst:IsA("Model") then
+                        cf, size = adaptiveLODinst:GetBoundingBox()
+                    elseif adaptiveLODinst:IsA("BasePart") then
+                        cf, size = adaptiveLODinst.CFrame, adaptiveLODinst.Size
+                    else
+                        warn(adaptiveLODinst.Name, " is not a model nor a basepart for LOD!")
+                    end
+                    if cf and size then
+                        distanceRenderPartPointer:SetAttribute("IsProcessing", true)
+                        local distanceRenderPart = Instance.new("Part") 
+                        distanceRenderPart.Material = if adaptiveLODinst:IsA("BasePart") then adaptiveLODinst.Material elseif adaptiveLODinst:IsA("Model") then (if adaptiveLODinst.PrimaryPart then adaptiveLODinst.PrimaryPart.Material else distanceRenderPart.Material) else distanceRenderPart.Material 
+                        distanceRenderPart.Name = adaptiveLODinst.Name
+                        distanceRenderPart.CFrame, distanceRenderPart.Size = cf, size
+                        distanceRenderPart.Transparency = if adaptiveLODinst:IsA("BasePart") then adaptiveLODinst.Transparency elseif adaptiveLODinst:IsA("Model") then (if adaptiveLODinst.PrimaryPart then adaptiveLODinst.PrimaryPart.Transparency else distanceRenderPart.Transparency) else distanceRenderPart.Transparency 
+                        distanceRenderPart.Reflectance = if adaptiveLODinst:IsA("BasePart") then adaptiveLODinst.Reflectance elseif adaptiveLODinst:IsA("Model") then (if adaptiveLODinst.PrimaryPart then adaptiveLODinst.PrimaryPart.Reflectance else distanceRenderPart.Reflectance) else distanceRenderPart.Reflectance 
+                        distanceRenderPart.Anchored = true
+                        distanceRenderPart.TopSurface = Enum.SurfaceType.Smooth
+                        distanceRenderPart.BottomSurface = Enum.SurfaceType.Smooth
+                        distanceRenderPart.CanCollide = false
+                        distanceRenderPart.Color = if adaptiveLODinst:IsA("BasePart") then adaptiveLODinst.Color elseif adaptiveLODinst:IsA("Model") then (if adaptiveLODinst.PrimaryPart then adaptiveLODinst.PrimaryPart.Color else distanceRenderPart.Color) else distanceRenderPart.Color 
+                        
+                        --distanceRenderPart.Parent = parentPointer.Value
+
+                        if camera then --setting the distance render part parent
+                            local currentDist = (cf.Position - camera.CFrame.Position).Magnitude - (math.max(size.X, size.Y, size.Z)*0.5)
+                            currentDist = math.clamp(currentDist, 0, math.huge)
+    
+                            if currentDist >= ((adaptiveLODinst:GetAttribute("RadiusAmplifier") or 1)*LOAD_OF_DISTANCE) then
+                                adaptiveLODinst.Parent = nil
+                                distanceRenderPartPointer.Value = distanceRenderPart
+                                distanceRenderPartPointer.Value.Parent = parentPointer.Value
+                            else
+                                distanceRenderPartPointer.Value = distanceRenderPart
+                                distanceRenderPartPointer.Value.Parent = nil
+                                adaptiveLODinst.Parent = parentPointer.Value
+                               
+                            end
+                        end
+
+                       
+                        
+                        distanceRenderPartPointer:SetAttribute("IsProcessing", nil)
+                    end
                 end
             end
+
         end
     end))
 end

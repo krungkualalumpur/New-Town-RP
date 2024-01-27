@@ -333,8 +333,8 @@ function PlayerManager.new(player : Player, maid : Maid ?)
             self:AddVehicle("Bajaj", true)
             self:AddVehicle("Taxi", true)
             self:AddVehicle("Muntjac", true)
-            self:AddVehicle("Avalon", true)
-            self:AddVehicle("Rav", true)
+            --self:AddVehicle("Avalon", true)
+            --self:AddVehicle("Rav", true)
             self:AddVehicle("Mersi", true)
             self:AddVehicle("Lekotse", true)
             self:AddVehicle("Pickup", true)
@@ -598,7 +598,9 @@ function PlayerManager:SetBackpackEquip(isEquip : boolean, toolKey : number)
 end
 
 function PlayerManager:DeleteBackpack(toolKey : number)
-    local toolName = self.Backpack[toolKey].Name
+    local toolData = self.Backpack[toolKey]
+    assert(toolData, string.format("Tool data not found from key: %s", tostring(toolKey)))
+    local toolName = toolData.Name
     
     local plr = self.Player    
     self:SetBackpackEquip(false, toolKey)
@@ -929,6 +931,7 @@ function PlayerManager:ThrowItem(toolData : ToolData<nil>)
         else
             NotificationUtil.Notify(self.Player, "Cooling down, please wait!")
             tool:Destroy()
+            return
         end
  
         tool:PivotTo(CFrame.new(raycastResult.Position + Vector3.new(0, (if tool:IsA("Model") then tool:GetExtentsSize().Y elseif tool:IsA("BasePart") then tool.Size.Y else 0)*0.5, 0))*(char.PrimaryPart.CFrame - char.PrimaryPart.CFrame.Position))

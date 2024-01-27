@@ -225,13 +225,24 @@ function Vehicle.init(maid : Maid)
 
                         --brake signal
                         local lights = vehicleModel:WaitForChild("Body"):WaitForChild("Lights")
-                        local brakeLight = lights:FindFirstChild("R") :: BasePart ?
+                        local brakeLight = lights:FindFirstChild("R") :: Instance ?
                         if brakeLight then
-                            if seat.Throttle == -1 then
-                                brakeLight.Material = Enum.Material.Neon
-                            else
-                                brakeLight.Material = Enum.Material.SmoothPlastic
+                            local function updateLight(part : BasePart) 
+                                if seat.Throttle == -1 then
+                                    part.Material = Enum.Material.Neon
+                                else
+                                    part.Material = Enum.Material.SmoothPlastic
+                                end
                             end
+
+                            if brakeLight:IsA("BasePart") then
+                                updateLight(brakeLight)
+                            else
+                                for _,part in pairs(brakeLight:GetChildren()) do
+                                    if part:IsA("BasePart") then updateLight(part) end
+                                end
+                            end
+                            
                         end
                        
                         --VectorForce.Force = Vector3.new(0,0,-seat.Throttle*8000)
@@ -290,13 +301,24 @@ function Vehicle.init(maid : Maid)
             _maid:GiveTask(vehicleModel:GetAttributeChangedSignal(isHeadlightAttribute):Connect(function()
                 if vehicleModel:GetAttribute("Class") == CAR_CLASS_KEY then
                     local lightsModel = vehicleModel:WaitForChild("Body"):WaitForChild("Lights")
-                    local F = lightsModel:FindFirstChild("F") :: BasePart ?
+                    local F = lightsModel:FindFirstChild("F") :: Instance ?
 
                     if F then
-                        F.Material = if vehicleModel:GetAttribute(isHeadlightAttribute) then Enum.Material.Neon else Enum.Material.SmoothPlastic
-                        local light = F:FindFirstChildWhichIsA("Light")
-                        if light then
-                            light.Enabled = vehicleModel:GetAttribute(isHeadlightAttribute) or false
+                        local function updateLight(part : BasePart) 
+                            part.Material = if vehicleModel:GetAttribute(isHeadlightAttribute) then Enum.Material.Neon else Enum.Material.SmoothPlastic
+                            local light = F:FindFirstChildWhichIsA("Light")
+                            if light then
+                                light.Enabled = vehicleModel:GetAttribute(isHeadlightAttribute) or false
+                            end
+                        end
+                        if F:IsA("BasePart") then
+                            updateLight(F)
+                        elseif F:IsA("Model") then
+                            for _,v in pairs(F:GetChildren()) do
+                                if v:IsA("BasePart") then
+                                    updateLight(v)
+                                end
+                            end
                         end
                     end
                 end
@@ -515,7 +537,6 @@ function Vehicle.init(maid : Maid)
     end)
 
     maid:GiveTask(NetworkUtil.onServerEvent(ON_VEHICLE_CONTROL_EVENT, function(plr : Player, vehicleModel : Model, eventName : string)
-        print(eventName, vehicleModel, " on_vehicle_control_event")
         if eventName == "Horn" then
             assert(vehicleModel.PrimaryPart)
             if vehicleModel.PrimaryPart:FindFirstChild("HornSound") then

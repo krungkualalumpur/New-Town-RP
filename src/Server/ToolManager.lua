@@ -24,8 +24,10 @@ function ToolManager.init(maid : Maid)
     local ToolCollections = ReplicatedStorage:WaitForChild("Assets"):WaitForChild("Tools")
 
     for _,v in pairs(CollectionService:GetTagged("Tool")) do
+        local hasIsTool = false
         for k, child in pairs(v:GetDescendants()) do
             if child:GetAttribute("IsTool") and not BackpackUtil.getToolFromName(child.Name) then
+                hasIsTool = true
                 local newTool = child:Clone()
                 newTool:SetAttribute("Class", v:GetAttribute("Class"))
                 newTool:SetAttribute("DisplayTypeName", v:GetAttribute("DisplayTypeName"))
@@ -39,7 +41,7 @@ function ToolManager.init(maid : Maid)
         end
         
         --set parents to replicated storage
-        if v:IsDescendantOf(workspace) then
+        if v:IsDescendantOf(workspace) and not ToolCollections:FindFirstChild(v.Name) and not hasIsTool then
             local newTool = v:Clone()
             newTool:SetAttribute("Class", v:GetAttribute("Class"))
             newTool:SetAttribute("DisplayTypeName", v:GetAttribute("DisplayTypeName"))

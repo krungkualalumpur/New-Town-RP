@@ -228,11 +228,9 @@ function guiSys.new()
     end)
 
     --makes mobile version horizontal always
-    RunService.Heartbeat:Connect(function()
-        if UserInputService.TouchEnabled == true then
-            Player:WaitForChild("PlayerGui").ScreenOrientation = Enum.ScreenOrientation.LandscapeRight
-        end
-    end)
+    if UserInputService.TouchEnabled == true then
+        Player:WaitForChild("PlayerGui").ScreenOrientation = Enum.ScreenOrientation.LandscapeRight
+    end
     
     local buttonlistsInfo = {}
 

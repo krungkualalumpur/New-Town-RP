@@ -196,7 +196,7 @@ return function(
             NetworkUtil.fireServer(SEND_ANALYTICS, "Events", "Interface", "feedback_button")
         end
         return
-    end, 2, Color3.fromRGB(50,200,50)))({Size = UDim2.fromScale(1, 0.6)})
+    end, 2, BACKGROUND_COLOR))({Size = UDim2.fromScale(1, 0.6)})
 
     local out = _new("Frame")({
         Position = UDim2.fromScale(0, 0.05),
