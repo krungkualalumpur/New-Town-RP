@@ -478,40 +478,47 @@ function mapHUD.new(
                 }
             }) :: ImageLabel
 
-            plrMaid:GiveTask(plr:GetPropertyChangedSignal("Parent"):Connect(function()
+            plrMaid:GiveTask(plr.AncestryChanged:Connect(function()
                 if plr.Parent == nil then
                     plrMaid:Destroy()
                 end
             end))
             
+            --local t = tick()
             plrMaid:GiveTask(RunService.Stepped:Connect(function()
-                local char = plr.Character 
+                --[[local dt = tick() - t
+                if dt >= 1 then
+                    t = tick()]]
 
-                if (char ~= nil) and (char.PrimaryPart ~= nil) then
-                    local intViewportPos, isOnSight = camera:WorldToViewportPoint(char.PrimaryPart.Position)
-                    -- destIcon.Position = UDim2.fromOffset(math.clamp(intViewportPos.X*out.AbsoluteSize.X, out.AbsolutePosition.X - out.AbsoluteSize.X*0.5, out.AbsolutePosition.X + out.AbsoluteSize.X*0.5), math.clamp(intViewportPos.Y*out.AbsoluteSize.Y, out.AbsolutePosition.Y - out.AbsoluteSize.Y*0.5, out.AbsolutePosition.Y + out.AbsoluteSize.Y*0.5))
-                        
-                    local x = intViewportPos.X*out.AbsoluteSize.X  
-                    local y =  intViewportPos.Y*out.AbsoluteSize.Y   
-                    plrIcon.Parent = out
-        
-                    plrIcon.Position = UDim2.fromOffset( 
-                        math.clamp(x, 0, out.AbsoluteSize.X), 
-                        math.clamp(y, 0, out.AbsoluteSize.Y)    
-                    )      
-        
-                    if not isOnSight then
-                        plrIcon.AnchorPoint = Vector2.new(0.5, 1)
-                        plrIcon.ImageColor3 = Color3.fromRGB(255,255,255)
-                        plrIcon.Size = UDim2.fromScale(0.05, 0.05)
-                        plrLabel.Visible = false
-                    else
-                        plrIcon.AnchorPoint = Vector2.new(0.5, 0.5)
-                        plrIcon.ImageColor3 = Color3.fromRGB(255,0,0)
-                        plrIcon.Size = UDim2.fromScale(0.075, 0.075)
-                        plrLabel.Visible = true
+                    local char = plr.Character 
+
+                    if (char ~= nil) and (char.PrimaryPart ~= nil) then
+                        local intViewportPos, isOnSight = camera:WorldToViewportPoint(char.PrimaryPart.Position)
+                        -- destIcon.Position = UDim2.fromOffset(math.clamp(intViewportPos.X*out.AbsoluteSize.X, out.AbsolutePosition.X - out.AbsoluteSize.X*0.5, out.AbsolutePosition.X + out.AbsoluteSize.X*0.5), math.clamp(intViewportPos.Y*out.AbsoluteSize.Y, out.AbsolutePosition.Y - out.AbsoluteSize.Y*0.5, out.AbsolutePosition.Y + out.AbsoluteSize.Y*0.5))
+                            
+                        local x = intViewportPos.X*out.AbsoluteSize.X  
+                        local y =  intViewportPos.Y*out.AbsoluteSize.Y   
+                        --plrIcon.Parent = out
+            
+                        plrIcon.Position = UDim2.fromOffset( 
+                            math.clamp(x, 0, out.AbsoluteSize.X), 
+                            math.clamp(y, 0, out.AbsoluteSize.Y)    
+                        )      
+            
+                        if not isOnSight then
+                            plrIcon.AnchorPoint = Vector2.new(0.5, 1)
+                            plrIcon.ImageColor3 = Color3.fromRGB(255,255,255)
+                            plrIcon.Size = UDim2.fromScale(0.05, 0.05)
+                            plrLabel.Visible = false
+                        else
+                            plrIcon.AnchorPoint = Vector2.new(0.5, 0.5)
+                            plrIcon.ImageColor3 = Color3.fromRGB(255,0,0)
+                            plrIcon.Size = UDim2.fromScale(0.075, 0.075)
+                            plrLabel.Visible = true
+                        end
                     end
-                end
+                --end
+                
             end))
         end
     end

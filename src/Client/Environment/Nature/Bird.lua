@@ -10,7 +10,7 @@ local NetworkUtil = require(ReplicatedStorage:WaitForChild("Packages"):WaitForCh
 --types
 type Maid = Maid.Maid
 --constants
-local BIRD_COUNT = 10
+local BIRD_COUNT = 4
 
 local SUN_RISE = 5
 local SUN_SET = 18
@@ -215,23 +215,31 @@ return {
                 birdModel.Parent = workspace
                 prepareBird(birdModel)
                 --movement
-                task.spawn(function()
-                    while task.wait() do
+                local db = true
+                maid:GiveTask(RunService.Heartbeat:Connect(function()
+                    if db == true then
+                        db = false
                         if game:GetService("Lighting").ClockTime <= SUN_SET and game:GetService("Lighting").ClockTime >= SUN_RISE then
                             goToATree(birdModel)
                         end
+                        db = true
                     end
-                end)
+                end))
                 --sound
-                task.spawn(function()
-                    while task.wait() do
+                local db2 = true
+                maid:GiveTask(RunService.Heartbeat:Connect(function()
+                    if db2 == true then
+                        db2 = false
                         if game:GetService("Lighting").ClockTime <= SUN_SET and game:GetService("Lighting").ClockTime >= SUN_RISE then
                             local randomIdGen = math.random(1, 2)
                             PlaySound(if randomIdGen == 1 then "rbxassetid://9113845102" else "rbxassetid://9056670230", birdModel:FindFirstChild("Torso"), math.random(1, 2))
                             task.wait(math.random(25, 100))
                         end
+                        db2 = true
                     end
-                end)
+                end))
+                   
+                
             end
         end)
         

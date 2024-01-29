@@ -451,7 +451,8 @@ local function getItemTypeFrame(
     Items : State<{
         [number] : ToolData & {Key : number}
     }>,
-    onBackpackButtonAddClickSignal : Signal
+    onBackpackButtonAddClickSignal : Signal,
+    frameOrder : number
 )
     local _fuse = ColdFusion.fuse(maid)
     local _new = _fuse.new
@@ -497,6 +498,7 @@ local function getItemTypeFrame(
     }) :: TextLabel
 
     local out = _new("Frame")({
+        LayoutOrder = frameOrder,
         AutomaticSize = Enum.AutomaticSize.Y,
         BackgroundTransparency = 0.9,
         Size = UDim2.new(1, 0, 0, 0),
@@ -821,11 +823,13 @@ return function(
             return filteredItemsByTypes
         end, itemsOwned, isVisible)
 
+        local order = -string.byte(string.match(typeName, ".") or " ")
         local itemTypeFrame = getItemTypeFrame(
             maid, 
             typeName, 
             itemsFiltered,
-            onBackpackButtonAddClickSignal
+            onBackpackButtonAddClickSignal,
+            order
         )
         itemTypeFrame.Parent = backpackContentFrame
     end

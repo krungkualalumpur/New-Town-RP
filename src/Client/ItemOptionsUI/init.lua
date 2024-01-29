@@ -392,7 +392,7 @@ return function(
     local onListSelected = maid:GiveTask(Signal.new())
 
     for _,v in pairs(ToolsList) do
-        print(v.Name)
+        --print(v.Name)
         local button = getOptButton(
             maid, 
             v,

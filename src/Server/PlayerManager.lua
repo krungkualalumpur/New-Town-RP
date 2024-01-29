@@ -1512,7 +1512,7 @@ function PlayerManager.init(maid : Maid)
         NetworkUtil.invokeClient(GET_PLAYER_INFO, plr, "Ping")
         local dt = tick() - t
 
-        local ping = dt*1000
+        local ping = math.clamp(dt*1000, 0, math.huge)
 
         plrManager.Framerate = fps
         plrManager.PlayerPing = ping

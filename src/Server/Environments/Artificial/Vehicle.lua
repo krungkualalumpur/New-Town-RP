@@ -461,10 +461,11 @@ function Vehicle.init(maid : Maid)
                                 task.wait(1)
                                 local sound = occupantMaid:GiveTask(playSound(vehicleModel:GetAttribute("EngineSound") or 532147820, vehicleModel.PrimaryPart, true, 35))
                                 occupantMaid:GiveTask(RunService.Stepped:Connect(function()
-                                    if not vehicleModel.PrimaryPart then
+                                    local pripart = vehicleModel.PrimaryPart
+                                    if not pripart then
                                         _maid:Destroy()
                                     end
-                                    sound.PlaybackSpeed = 1 + math.sqrt(vehicleModel.PrimaryPart.AssemblyLinearVelocity.Magnitude)/4
+                                    sound.PlaybackSpeed = 1 + math.sqrt(pripart.AssemblyLinearVelocity.Magnitude)/4
                                 end))
                             end)
                         else

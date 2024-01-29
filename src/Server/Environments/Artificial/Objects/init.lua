@@ -205,6 +205,10 @@ function Objects.init(maid : Maid)
                     end
                 end
             end
+        elseif object:GetAttribute("Class") == "Elevator" then
+            if object:IsA("BasePart") and object.Anchored == true then
+                object.AssemblyLinearVelocity = Vector3.new(0,0,5*(if object:GetAttribute("DirectionUp") == true then 1 else -1))
+            end
         end
     end
 end
