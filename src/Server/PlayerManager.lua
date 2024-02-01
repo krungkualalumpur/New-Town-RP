@@ -1546,16 +1546,16 @@ function PlayerManager.init(maid : Maid)
     maid:GiveTask(NetworkUtil.onServerEvent(ON_GAME_LOADING_COMPLETE, function(plr : Player, ABValue : "A" | "B")
         local plrInfo = PlayerManager.get(plr)
         Analytics.updateDataTable(plr, "Events", "Miscs", plrInfo, function()
-            return "Client_Loaded_Success", ABValue
+            return "Client_Loaded_Success"--, ABValue
         end)
         
-        if ABValue == "A" then
+        --[[if ABValue == "A" then
             local saveData = DatastoreManager.get(plr)
             if #saveData.SessionIds < 2 then
                 task.wait(5)
                 NetworkUtil.fireClient(ON_TOP_NOTIF_CHOICE, plr, "Welcome! You must be new here, let's start by hanging out at the soccer field!", "Waypoint", CFrame.new(444.246, 52.435, -220.786))
             end
-        end
+        end]] 
         return
     end))
 

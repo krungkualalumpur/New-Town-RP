@@ -17,6 +17,7 @@ local ToolManager = require(ServerScriptService:WaitForChild("Server"):WaitForCh
 local Roleplay = require(ServerScriptService:WaitForChild("Server"):WaitForChild("Roleplay"))
 local MarketplaceManager = require(ServerScriptService:WaitForChild("Server"):WaitForChild("MarketplaceManager"))
 local DateSys = require(ServerScriptService:WaitForChild("Server"):WaitForChild("DateSys"))
+local OptimizationSys = require(ServerScriptService:WaitForChild("Server"):WaitForChild("OptimizationSys"))
 local Analytics = require(ServerScriptService:WaitForChild("Server"):WaitForChild("Analytics"))
 
 local InteractableUtil = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("InteractableUtil"))
@@ -52,7 +53,7 @@ ToolManager.init(maid)
 
 Roleplay.init(maid)
 task.spawn(function() MarketplaceManager.init(maid) end)
-
+OptimizationSys.init(maid)
 --analytics setup
 --Midas.init(TITLE_ID, DEV_SECRET_KEY)
 

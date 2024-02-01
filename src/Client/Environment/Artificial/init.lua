@@ -66,13 +66,11 @@ function Artificial.init(maid : Maid)
                 _maid:Destroy()
             end
         end))
-
         _maid:GiveTask(char.ChildAdded:Connect(function(tool)
             if tool:IsA("Tool") then
                 local toolModel = tool:WaitForChild(tool.Name)
                 if toolModel then
                     local toolData = BackpackUtil.getData(toolModel, false)
-                    print(toolData.Class)
                     if toolData.Class == "TextDisplay" then
                         local toolMaid = Maid.new()
                         local textBox = toolMaid:GiveTask(Instance.new("TextBox")) :: TextBox
@@ -107,6 +105,10 @@ function Artificial.init(maid : Maid)
             end
         end))
     end
+    
+    local char = Player.Character
+    if char then onCharAdded(char) end
+
     maid:GiveTask(Player.CharacterAdded:Connect(onCharAdded))
 
 end

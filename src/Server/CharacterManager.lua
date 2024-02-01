@@ -3,6 +3,7 @@
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
+local PhysicsService = game:GetService("PhysicsService")
 --packages
 local Maid = require(ReplicatedStorage:WaitForChild("Packages"):WaitForChild("Maid"))
 local NetworkUtil = require(ReplicatedStorage:WaitForChild("Packages"):WaitForChild("NetworkUtil"))
@@ -111,6 +112,8 @@ local function paralyzeCharacter(char : Model)
 end
 
 local function characterAdded(char : Model)
+    local playerCollisionGroupKey = "Player"
+   
     local charMaid = Maid.new()
     
     local humanoid = char:WaitForChild("Humanoid") :: Humanoid
@@ -160,6 +163,12 @@ local function characterAdded(char : Model)
             charMaid:Destroy()
         end
     end))
+
+    for _,v in pairs(char:GetDescendants()) do
+        if v:IsA("BasePart") then
+            v.CollisionGroup = playerCollisionGroupKey
+        end
+    end
 end
 
 local function onPlayerAdded(plr : Player)
@@ -192,6 +201,10 @@ end
 local CharacterManager = {}
 
 function CharacterManager.init(maid : Maid)
+    local playerCollisionGroupKey = "Player"
+    PhysicsService:RegisterCollisionGroup(playerCollisionGroupKey)
+    PhysicsService:CollisionGroupSetCollidable(playerCollisionGroupKey, playerCollisionGroupKey, false)
+
     for _, plr : Player in pairs(Players:GetPlayers()) do
         onPlayerAdded(plr)
     end

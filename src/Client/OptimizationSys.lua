@@ -17,9 +17,14 @@ local LOD_UPDATE_INTERVAL = 0.5
 local ZONE_TAG = "RenderZone"
 local LOD_TAG = "LODItem"
 local ADAPTIVE_LOD_TAG = "AdaptiveLODItem"
+local LOD_OCCLUSION_TAG = "LODOcclusion"
 --variables
 --references
 local Player = Players.LocalPlayer
+
+local occlusionFolder = workspace:WaitForChild("Assets"):WaitForChild("OcclusionFolder")
+local occlusionBoundingParts = workspace:WaitForChild("Assets"):WaitForChild("OcclusionFolder"):WaitForChild("OcclusionBoundingParts")
+
 --local functions
 local function getInsideZone(plr : Player, zonePart : Instance)
     local pointer = zonePart:FindFirstChild("Pointer") :: ObjectValue
@@ -333,6 +338,122 @@ function optimizationSys.init(maid : Maid)
             end
 
         end
+    end))
+
+    ----------------
+    local occlusions = occlusionBoundingParts:GetChildren()
+    local instsOnHide = {}
+    local function occlusionHandle(inst : Instance, hide : boolean) 
+        if hide then
+            for _,occlusionInst : Instance in pairs(occlusions) do
+                if (inst == occlusionInst or inst:IsDescendantOf(occlusionInst)) and not table.find(instsOnHide, occlusionInst) then
+                    table.insert(instsOnHide, occlusionInst)
+                    --print(occlusionInst, " add")
+                end
+            end
+        else
+            for _,occlusionInst : Instance in pairs(occlusions) do
+                local instIndex = table.find(instsOnHide, occlusionInst)
+                if (inst == occlusionInst or inst:IsDescendantOf(occlusionInst)) and instIndex then
+                    table.remove(instsOnHide, instIndex)
+                    --print(occlusionInst, " rmeove")
+                end
+            end
+        end
+    end
+
+    --init occlusions
+    local occlusionRaycastParams = RaycastParams.new()
+    occlusionRaycastParams.FilterDescendantsInstances = occlusions
+    occlusionRaycastParams.FilterType = Enum.RaycastFilterType.Include
+
+    local db = true
+    maid:GiveTask(RunService.Heartbeat:Connect(function()
+        local camera = workspace.CurrentCamera 
+        if camera and db then
+            db = false
+            occlusions = occlusionBoundingParts:GetChildren()
+            occlusionRaycastParams.FilterDescendantsInstances = occlusions
+
+            local char = Player.Character
+            if char and char.PrimaryPart then
+                local parts = workspace:GetPartsInPart(char.PrimaryPart)
+                for _,v in pairs(parts) do
+                    local index = table.find(occlusions, v)
+                    if index then
+                        table.remove(occlusions, index)
+                    end
+                end
+            end
+
+            local povCf = camera.CFrame
+
+            local range = 250
+            local fov = camera.DiagonalFieldOfView
+          
+            local degreeInterval = 5
+            local occlusionDepth = 7
+            
+            for _,v in pairs(occlusions) do
+                local detailModelPointer = v:FindFirstChild("DetailModelPointer") :: ObjectValue ?
+                if detailModelPointer and detailModelPointer.Value then
+                    occlusionHandle(v, true) 
+                    --detailModelPointer.Value.Parent = nil
+                end
+            end 
+            
+            for depth = 1, occlusionDepth do
+                local radAmp = (depth/occlusionDepth)
+                local radius = math.tan(math.rad(fov*(radAmp))/2)*range
+            
+                for i = 1, 360, (360*degreeInterval/(360*radius/(occlusionDepth*range*0.5))) do
+                    local pos = (povCf.LookVector*range) + povCf:PointToWorldSpace(Vector3.new(math.cos(math.rad(i)), math.sin(math.rad(i)),  0)*radius)
+                    
+                    local ray = workspace:Raycast(
+                        povCf.Position, 
+                        pos - povCf.Position,
+                        occlusionRaycastParams
+                    )
+                    
+                    if ray then
+                        local v = ray.Instance
+                        local detailModelPointer = v:FindFirstChild("DetailModelPointer") :: ObjectValue ?
+                        if detailModelPointer and detailModelPointer.Value then
+                            --detailModelPointer.Value.Parent = occlusionFolder
+                            occlusionHandle(v, false) 
+                        end
+                    end
+                    
+                    --[[local p = Instance.new("Part")
+                    p.Size = Vector3.new(10,10,10)
+                    p.Position = pos
+                    p.Anchored = true
+                    p.Parent = workspace
+                    
+                    task.spawn(function()
+                        task.wait(0.5)
+                        p:Destroy()
+                    end)]]
+                
+                end
+                
+            end
+
+            for _,v in pairs(occlusions) do
+                local detailModelPointer = v:FindFirstChild("DetailModelPointer") :: ObjectValue ?
+                if detailModelPointer and detailModelPointer.Value then
+                    if table.find(instsOnHide, v) then
+                        detailModelPointer.Value.Parent = nil
+                    else
+                        detailModelPointer.Value.Parent = occlusionFolder
+                    end
+                end
+            end
+            task.wait(0.15)
+            db = true
+        end
+
+       
     end))
 end
 
