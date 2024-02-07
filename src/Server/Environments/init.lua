@@ -3,6 +3,7 @@
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local ServerScriptService = game:GetService("ServerScriptService")
 local RunService = game:GetService("RunService")
+local PhysicsService = game:GetService("PhysicsService")
 local Lighting = game:GetService("Lighting")
 --packages
 local Maid = require(ReplicatedStorage:WaitForChild("Packages"):WaitForChild("Maid"))
@@ -99,6 +100,9 @@ end
 --class
 return {
     init = function(maid : Maid)
+        local playerCollisionGroupKey = "Player"
+        PhysicsService:RegisterCollisionGroup(playerCollisionGroupKey)
+        
         initDayNightCycle(maid)
 
         Artificial.init(maid)

@@ -46,6 +46,7 @@ local function initFootBallField(inst : Instance, maid : Maid)
     PhysicsService:CollisionGroupSetCollidable(borderCollisionGroupKey, footballCollisionGroupKey, true)
     PhysicsService:CollisionGroupSetCollidable(borderCollisionGroupKey, DEFAULT_COLLISION_GROUP_KEY, false)
     PhysicsService:CollisionGroupSetCollidable(borderCollisionGroupKey, VIP_PLR_COLLISION_KEY, false)
+    PhysicsService:CollisionGroupSetCollidable(borderCollisionGroupKey, 'Player', false)
 
 
     local function resetfootball()

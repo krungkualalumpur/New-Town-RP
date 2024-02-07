@@ -8,7 +8,7 @@ local Maid = require(ReplicatedStorage:WaitForChild("Packages"):WaitForChild("Ma
 --types
 type Maid = Maid.Maid
 --constants
-local SIZE_RANGE = 20
+local SIZE_RANGE = 35
 
 local LOD_TAG = "LODItem"
 local ADAPTIVE_LOD_TAG = "AdaptiveLODItem"

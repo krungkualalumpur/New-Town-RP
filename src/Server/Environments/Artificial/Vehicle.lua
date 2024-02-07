@@ -417,6 +417,7 @@ function Vehicle.init(maid : Maid)
                     PhysicsService:CollisionGroupSetCollidable(borderCollisionKey, shipCollisionKey, true)
                     PhysicsService:CollisionGroupSetCollidable(defaultCollisionKey, borderCollisionKey, false)
                     PhysicsService:CollisionGroupSetCollidable(vipPlayerCollisionKey, borderCollisionKey, false)
+                    PhysicsService:CollisionGroupSetCollidable("Player", borderCollisionKey, false)
 
                 elseif vehicleModel:GetAttribute("Class") == CAR_CLASS_KEY then
                     local occupantMaid = _maid:GiveTask(Maid.new())

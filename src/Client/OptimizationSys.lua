@@ -388,11 +388,11 @@ function optimizationSys.init(maid : Maid)
 
             local povCf = camera.CFrame
 
-            local range = 250
+            local range = 350
             local fov = camera.DiagonalFieldOfView
           
             local degreeInterval = 5
-            local occlusionDepth = 7
+	        local occlusionDepth = 7
             
             for _,v in pairs(occlusions) do
                 local detailModelPointer = v:FindFirstChild("DetailModelPointer") :: ObjectValue ?
@@ -434,22 +434,44 @@ function optimizationSys.init(maid : Maid)
                         task.wait(0.5)
                         p:Destroy()
                     end)]]
-                
                 end
                 
             end
 
-            for _,v in pairs(occlusions) do
+            for _,v : BasePart in pairs(occlusions) do
                 local detailModelPointer = v:FindFirstChild("DetailModelPointer") :: ObjectValue ?
                 if detailModelPointer and detailModelPointer.Value then
                     if table.find(instsOnHide, v) then
-                        detailModelPointer.Value.Parent = nil
+                        if char then
+
+                            local largestAxisNum = -math.huge
+                            local axisIndex = 0
+                            local function iterate() : (number ?, number ?)
+                                axisIndex += 1
+                                if axisIndex <= 3 then
+                                    return axisIndex, if axisIndex == 1 then v.Size.X elseif axisIndex == 2 then v.Size.Y else v.Size.Z
+                                end
+                                return nil, nil
+                            end
+                            for k, v in iterate do
+                                if v and largestAxisNum < v then
+                                    largestAxisNum = v
+                                end
+                            end
+
+                            largestAxisNum = math.clamp(largestAxisNum, LOAD_OF_DISTANCE, math.huge)
+                            if (v.Position - camera.CFrame.Position).Magnitude >= largestAxisNum*1.5 then
+                                detailModelPointer.Value.Parent = nil
+                            else
+                                detailModelPointer.Value.Parent = occlusionFolder
+                            end     
+                        end
                     else
                         detailModelPointer.Value.Parent = occlusionFolder
                     end
                 end
             end
-            task.wait(0.15)
+            task.wait(0.2)
             db = true
         end
 

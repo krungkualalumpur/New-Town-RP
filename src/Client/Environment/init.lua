@@ -47,7 +47,7 @@ return {
             updateWeather(currentWeather)
         end
 
-
+        Rain:SetIntensityRatio(0.25)
         NetworkUtil.onClientEvent(CLIENT_WEATHER_UPDATE, function(weather)
             updateWeather(weather)
         end)
