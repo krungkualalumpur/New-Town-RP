@@ -55,7 +55,8 @@ def create_session():
                 if data["session_id"] == existing_data["session_id"]:
                     sessionAlreadyExists = True
                     break
-                    
+            
+            print(data)
             if not sessionAlreadyExists:
                 _id = data["_id"]
                 
