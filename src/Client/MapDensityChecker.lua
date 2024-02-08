@@ -69,19 +69,19 @@ function MapDensityChecker.init(maid : Maid)
             return screenSizeAxisNum/math.ceil(screenSizeAxisNum/qualityDegradation)
         end
 
-        print(roundQualityDeg(screenRes.X))
-
         local drawCallWeight = {
             Default = 1,
             Part = 1,
             MeshPart = 1,
             UnionOperation = 1,
             TransparentPart = 1,
+            SurfaceGui = 4,
             Texture = 1,
             Decal = 1,
             GuiBase = 3,
             ParticleEmitter = 2,
             Beam = 2,
+            RopeConstraint = 1,
             Mesh = 1
         }
 
@@ -96,6 +96,7 @@ function MapDensityChecker.init(maid : Maid)
             CornerWedge = 10,
             Mesh = 80,
             SpecialMesh = 800,
+            RopeConstraint = 1000
         }
 
         local function getWeightOrder(weightTbl) : {[number] : {Name : string, Value : number}}
@@ -110,26 +111,26 @@ function MapDensityChecker.init(maid : Maid)
                 }
             end
             
-            table.sort(newTbl, function(a, b)
+            table.sort(newTbl, function(a: { Name: string, Value: number }, b: { Name: string, Value: number })
                 return a.Value < b.Value
             end)
             
             return newTbl
         end
 
-        local function getWeightInstanceDataByName(tbl : {[number] : {Name : string, Value : number}},  name : string)
+        local function getWeightInstanceDataByName(tbl : {[number] : {Name : string, Value : number}},  name : string) : {Name : string, Value : number} ?
             for k,v in pairs(tbl) do
                 if v.Name == name then		
                     return v, k
                 end
             end
-            
+            return nil
         end
 
         local triWeightOrder = getWeightOrder(triWeight)
         local drawCallWeightOrder = getWeightOrder(drawCallWeight)
 
-        local function getDrawCallType(inst : Instance)
+        local function getDrawCallType(inst : Instance) : string ?
             if inst:IsA("Part") then
                 if inst.Transparency > 0 then
                     return "TransparentPart"
@@ -153,10 +154,13 @@ function MapDensityChecker.init(maid : Maid)
                 return "Texture"
             elseif inst:IsA("Decal") then
                 return "Decal"
+            elseif inst:IsA("RopeConstraint") then
+                return "RopeConstraint"
             end
+            return
         end
 
-        local function getTriType(inst : Instance) 
+        local function getTriType(inst : Instance): string ? 
             if inst:IsA("Texture") then
                 return "Texture"
             elseif inst:IsA("Decal") then
@@ -233,6 +237,9 @@ function MapDensityChecker.init(maid : Maid)
 
 
         local function drawCallHeatMap()
+            local char = Player.Character or Player.CharacterAdded:Wait()
+            assert(char.PrimaryPart)
+
             local totalCollectedDrawCall = {}
             
             screenGui:ClearAllChildren()
@@ -252,28 +259,52 @@ function MapDensityChecker.init(maid : Maid)
                     for _,v in pairs(parts) do
                         local drawcallType = getDrawCallType(v)
                         if drawcallType then
-                            if not table.find(collectedName, drawcallType) then
-                                local recordName = drawcallType .. if v:IsA("MeshPart") and v.MeshId then tostring(v.MeshId) elseif v:IsA("UnionOperation") then tostring(math.round(v.Size.Magnitude*100)/100) else ""
-                                table.insert(collectedName, recordName)
+                            local recordName = drawcallType ..(if v:IsA("MeshPart") and v.MeshId then tostring(v.MeshId)      
+                                elseif v:IsA("UnionOperation") then tostring(math.round(v.Size.Magnitude*100)/100) 
+                                elseif v:IsA("RopeConstraint") then tostring(#collectedName)      
+                            else  "")
+
+                            if not table.find(collectedName, recordName) then
                                 local data = getWeightInstanceDataByName(drawCallWeightOrder, drawcallType)
-                                drawcallCount += data.Value
-                                
-                                if not table.find(totalCollectedDrawCall, recordName) then
-                                    table.insert(totalCollectedDrawCall, recordName)
+                                if data then
+                                    table.insert(collectedName, recordName)
+                                    drawcallCount += data.Value
+
+                                    if recordName ~= "" and not table.find(totalCollectedDrawCall, recordName) then
+                                        table.insert(totalCollectedDrawCall, recordName)
+                                    end
                                 end
-                                
                             end
+
                             for _,descendant in pairs(v:GetDescendants()) do
                                 if not descendant:IsA("BasePart") then
                                     local descendantDrawCallType = getDrawCallType(descendant)
 
-                                    local data = getWeightInstanceDataByName(drawCallWeightOrder, descendantDrawCallType)
-                                    if data then
-                                        drawcallCount += data.Value
+                                    if descendantDrawCallType then
+                                       
+                                         local descendantRecordName: string ? = descendantDrawCallType ..(if descendant:IsA("MeshPart") and descendant.MeshId then tostring(descendant.MeshId)      
+                                            elseif descendant:IsA("UnionOperation") then tostring(math.round(descendant.Size.Magnitude*100)/100) 
+                                            elseif descendant:IsA("Texture") or descendant:IsA("Decal") or descendant:IsA("RopeConstraint") then tostring(#collectedName)      
+                                        else "")
                                         
-                                        local recordName = descendantDrawCallType .. if descendant:IsA("MeshPart") and descendant.MeshId then tostring(descendant.MeshId) elseif descendant:IsA("UnionOperation") then tostring(math.round(descendant.Size.Magnitude*100)/100) else ""
-                                        if not table.find(totalCollectedDrawCall, recordName) then
-                                            table.insert(totalCollectedDrawCall, recordName)
+                                        if descendant:IsA("SurfaceGui") then
+                                            if descendant.MaxDistance > (v.Position - char.PrimaryPart.Position).Magnitude then  
+                                                descendantRecordName = "SurfaceGui" .. tostring(#collectedName)
+                                            else
+                                                descendantRecordName = nil
+                                            end
+                                        end
+
+                                        if (descendantRecordName ~= nil) and (not table.find(collectedName, descendantRecordName)) then
+                                            local data = getWeightInstanceDataByName(drawCallWeightOrder, descendantDrawCallType)
+                                            if data then
+                                                table.insert(collectedName, descendantRecordName)
+                                                drawcallCount += data.Value
+
+                                                if descendantRecordName ~= "" and not table.find(totalCollectedDrawCall, descendantRecordName) then
+                                                    table.insert(totalCollectedDrawCall, descendantRecordName)
+                                                end
+                                            end
                                         end
                                     end
                                 end
@@ -309,17 +340,48 @@ function MapDensityChecker.init(maid : Maid)
                     for _,v in pairs(parts) do
                         local drawcallType = getDrawCallType(v)
                         if drawcallType then
-                            if not table.find(collectedName, drawcallType) or drawcallType == "MeshPart" then
-                                table.insert(collectedName, drawcallType)
+                           
+                            local recordName = drawcallType ..(if v:IsA("MeshPart") and v.MeshId then tostring(v.MeshId)      
+                                elseif v:IsA("UnionOperation") then tostring(math.round(v.Size.Magnitude*100)/100) 
+                                elseif v:IsA("RopeConstraint") then tostring(#collectedName)      
+                            else  "")
+
+                            if not table.find(collectedName, recordName) then
                                 local data = getWeightInstanceDataByName(drawCallWeightOrder, drawcallType)
-                                drawcallCount += data.Value
+                                if data then
+                                    table.insert(collectedName, recordName)
+                                    drawcallCount += data.Value
+                                end
                             end
+
                             for _,descendant in pairs(v:GetDescendants()) do
                                 if not descendant:IsA("BasePart") then
                                     local descendantDrawCallType = getDrawCallType(descendant)
-                                    local data = getWeightInstanceDataByName(drawCallWeightOrder, descendantDrawCallType)
-                                    if data then
-                                        drawcallCount += data.Value
+
+                                    if descendantDrawCallType then
+                                       
+                                        local descendantRecordName: string ? = descendantDrawCallType ..(if descendant:IsA("MeshPart") and descendant.MeshId then tostring(descendant.MeshId)      
+                                            elseif descendant:IsA("UnionOperation") then tostring(math.round(descendant.Size.Magnitude*100)/100) 
+                                            elseif descendant:IsA("Texture") or descendant:IsA("Decal") or descendant:IsA("RopeConstraint") then tostring(#collectedName)      
+                                        else "")
+                                        
+                                        if descendant:IsA("SurfaceGui") then
+                                            if descendant.MaxDistance > (v.Position - char.PrimaryPart.Position).Magnitude then  
+                                                descendantRecordName = "SurfaceGui" .. tostring(#collectedName)
+                                            else
+                                                descendantRecordName = nil
+                                            end
+                                        end
+
+                                        --print(descendantRecordName, v)
+                                        
+                                        if (descendantRecordName ~= nil) and (not table.find(collectedName, descendantRecordName)) then
+                                            local data = getWeightInstanceDataByName(drawCallWeightOrder, descendantDrawCallType)
+                                            if data then
+                                                table.insert(collectedName, descendantRecordName)
+                                                drawcallCount += data.Value     
+                                            end
+                                        end
                                     end
                                 end
                             end
@@ -352,7 +414,19 @@ function MapDensityChecker.init(maid : Maid)
                         local triType = getTriType(v)
                         if triType then
                             local data = getWeightInstanceDataByName(triWeightOrder, triType)
-                            trisCount += data.Value
+                            if data then
+                                trisCount += data.Value
+                            end
+
+                            for _,descendant in pairs(v:GetDescendants()) do
+                                local descendantTriType = getTriType(descendant)
+                                if descendantTriType then
+                                    local descendantData = getWeightInstanceDataByName(triWeightOrder, descendantTriType)
+                                    if descendantData then
+                                        trisCount += descendantData.Value
+                                    end
+                                end
+                            end
                         end
                     end
                     
@@ -383,7 +457,19 @@ function MapDensityChecker.init(maid : Maid)
                         local triType = getTriType(v)
                         if triType then
                             local data = getWeightInstanceDataByName(triWeightOrder, triType)
-                            trisCount += data.Value
+                            if data then
+                                trisCount += data.Value
+                            end
+
+                            for _,descendant in pairs(v:GetDescendants()) do
+                                local descendantTriType = getTriType(descendant)
+                                if descendantTriType then
+                                    local descendantData = getWeightInstanceDataByName(triWeightOrder, descendantTriType)
+                                    if descendantData then
+                                        trisCount += descendantData.Value
+                                    end
+                                end
+                            end
                         end
                     end
                     frame.BackgroundColor3 = Color3.new(trisCount/maxTris,0,0)
@@ -392,10 +478,10 @@ function MapDensityChecker.init(maid : Maid)
             end
         end
         --partCountHeatMap()
-        --[[while task.wait(5) do	
+        --while task.wait(5) do	
             --triHeatMap()
-            drawCallHeatMap()
-        end]]
+            --drawCallHeatMap()
+        --end
 
     end 
     return 
