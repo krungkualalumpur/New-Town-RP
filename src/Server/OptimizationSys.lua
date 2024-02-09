@@ -296,7 +296,7 @@ end
 local OptimizationSys = {}
 
 function OptimizationSys.init(maid : Maid)
-    local occlusionFolder = Instance.new("Folder")
+    --[[local occlusionFolder = Instance.new("Folder")
     occlusionFolder.Name = "OcclusionFolder"
     occlusionFolder.Parent = Assets
 
@@ -381,7 +381,7 @@ function OptimizationSys.init(maid : Maid)
         end
     end
 
-    print("Opt init done")
+    print("Opt init done")]]
 end
 
 

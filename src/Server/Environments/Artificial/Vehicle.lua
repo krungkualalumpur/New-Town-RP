@@ -484,12 +484,16 @@ function Vehicle.init(maid : Maid)
                     _maid:GiveTask(RunService.Stepped:Connect(function()
                         local seat = vehicleModel:FindFirstChild("VehicleSeat") :: VehicleSeat
 
-                        local direction = math.sign(seat.CFrame.LookVector:Dot(seat.AssemblyLinearVelocity.Unit))
-                        local currentVelocity = vehicleModel.PrimaryPart.AssemblyLinearVelocity.Magnitude
-                        VectorForce.Force = Vector3.new(0,0,-seat.Throttle*(math.clamp(vectorMaxForce - ((vectorMaxForce)*(((currentVelocity)/ speedLimit))), 0, vectorMaxForce)))
-                        if seat.Throttle ~= 0 and direction ~= seat.Throttle then
-                            VectorForce.Force = Vector3.new(0,0, direction*vectorMaxForce)
-                            --print(direction*vectorMaxForce)
+                        if seat then
+                            local direction = math.sign(seat.CFrame.LookVector:Dot(seat.AssemblyLinearVelocity.Unit))
+                            local currentVelocity = vehicleModel.PrimaryPart.AssemblyLinearVelocity.Magnitude
+                            VectorForce.Force = Vector3.new(0,0,-seat.Throttle*(math.clamp(vectorMaxForce - ((vectorMaxForce)*(((currentVelocity)/ speedLimit))), 0, vectorMaxForce)))
+                            if seat.Throttle ~= 0 and direction ~= seat.Throttle then
+                                VectorForce.Force = Vector3.new(0,0, direction*vectorMaxForce)
+                                --print(direction*vectorMaxForce)
+                            end
+                        else
+                            _maid:Destroy()
                         end
                     end))
                 end

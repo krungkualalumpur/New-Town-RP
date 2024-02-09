@@ -22,8 +22,8 @@ local LOD_OCCLUSION_TAG = "LODOcclusion"
 --references
 local Player = Players.LocalPlayer
 
-local occlusionFolder = workspace:WaitForChild("Assets"):WaitForChild("OcclusionFolder")
-local occlusionBoundingParts = workspace:WaitForChild("Assets"):WaitForChild("OcclusionFolder"):WaitForChild("OcclusionBoundingParts")
+--[[local occlusionFolder = workspace:WaitForChild("Assets"):WaitForChild("OcclusionFolder")
+local occlusionBoundingParts = workspace:WaitForChild("Assets"):WaitForChild("OcclusionFolder"):WaitForChild("OcclusionBoundingParts")]]
 
 --local functions
 local function getInsideZone(plr : Player, zonePart : Instance)
@@ -341,7 +341,7 @@ function optimizationSys.init(maid : Maid)
     end))
 
     ----------------
-    local occlusions = occlusionBoundingParts:GetChildren()
+    --[[local occlusions = occlusionBoundingParts:GetChildren()
     local instsOnHide = {}
     local function occlusionHandle(inst : Instance, hide : boolean) 
         if hide then
@@ -434,7 +434,7 @@ function optimizationSys.init(maid : Maid)
                         task.wait(0.5)
                         p:Destroy()
                     end)]]
-                end
+                --[[end
                 
             end
 
@@ -476,7 +476,7 @@ function optimizationSys.init(maid : Maid)
         end
 
        
-    end))
+    end))]]
 end
 
 return optimizationSys
