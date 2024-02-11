@@ -13,7 +13,6 @@ local InputHandler = require(ReplicatedStorage:WaitForChild("Client"):WaitForChi
 local ItemUtil = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("ItemUtil"))
 --local MidasEventTree = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("MidasEventTree"))
 --local MidasStateTree = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("MidasStateTree"))
-local VehicleControl = require(ReplicatedStorage:WaitForChild("Client"):WaitForChild("GuiSys"):WaitForChild("VehicleControl"))
 --types
 type Maid = Maid.Maid
 
@@ -27,17 +26,14 @@ export type VehicleData = ItemUtil.ItemInfo & {
 local WALK_SPEED = 10
 local FIELD_OF_VIEW = 70
 local CAM_SHAKE_TIME = 0.16
-local KEY_VALUE_NAME = "KeyValue"
 --remotes
 local ON_CAMERA_SHAKE = "OnCameraShake"
 local ON_ANIMATION_SET = "OnAnimationSet"
 local ON_RAW_ANIMATION_SET = "OnRawAnimationSet"
 local GET_CATALOG_FROM_CATALOG_INFO = "GetCatalogFromCatalogInfo"
-local ON_VEHICLE_CONTROL_EVENT = "OnVehicleControlEvent"
 --variables
 --references
 local Player = Players.LocalPlayer
-local SpawnedVehiclesParent = workspace:WaitForChild("Assets"):WaitForChild("Temporaries"):WaitForChild("Vehicles")
 --local functions
 function PlaySound(id, parent, volumeOptional: number ?, maxDist : number ?)
     local s = Instance.new("Sound")
@@ -162,24 +158,6 @@ local function camSprinting(on : boolean)
     end
 end
 
-local function getVehicleData(model : Instance) : VehicleData
-    local itemType : ItemUtil.ItemType =  ItemUtil.getItemTypeByName(model.Name) :: any
-
-    local keyValue = model:FindFirstChild(KEY_VALUE_NAME) :: StringValue ?
-    
-    local key = if keyValue then keyValue.Value else nil
-
-    return {
-        Type = itemType,
-        Class = model:GetAttribute("Class"),
-        IsSpawned = model:IsDescendantOf(SpawnedVehiclesParent),
-        Name = model.Name,
-        Key = key or "",
-        OwnerId = model:GetAttribute("OwnerId"),
-        DestroyLocked = model:GetAttribute("DestroyLocked")
-    }
-end
-
 --local function sprintSetup()   
     --local _maid = maid:GiveTask(Maid.new())
 
@@ -242,59 +220,6 @@ local function onCharacterAdded(char : Model)
     
         else
             camSprinting(false)
-        end
-    end))
-
-    local vehicleControlMaid = _maid:GiveTask(Maid.new())
-    _maid:GiveTask(humanoid:GetPropertyChangedSignal("SeatPart"):Connect(function()
-        local seat = humanoid.SeatPart
-        if seat and seat:IsDescendantOf(workspace:WaitForChild("Assets"):WaitForChild("Temporaries"):WaitForChild("Vehicles")) then
-            local vehicleModel = seat.Parent
-            assert(vehicleModel)
-            local vehicleData = getVehicleData(vehicleModel)
-            if vehicleModel:GetAttribute("Class") ~= "Vehicle" then
-                return
-            end
-            if vehicleModel:GetAttribute("isLocked") --[[and vehicleData.OwnerId ~= Player.UserId]] then
-                return
-            end
-
-            Player.CameraMaxZoomDistance = 18
-
-            local hornSignal = vehicleControlMaid:GiveTask(Signal.new())
-            local headlightSignal = vehicleControlMaid:GiveTask(Signal.new())
-            local leftSignal = vehicleControlMaid:GiveTask(Signal.new())
-            local rightSignal = vehicleControlMaid:GiveTask(Signal.new())
-
-            local vehicleControl = VehicleControl(
-                vehicleControlMaid,
-                
-                hornSignal,
-                headlightSignal,
-                leftSignal,
-                rightSignal
-            )
-
-            vehicleControl.Parent = Player:WaitForChild("PlayerGui"):WaitForChild("ScreenGui")
-
-            vehicleControlMaid:GiveTask(hornSignal:Connect(function()
-                NetworkUtil.fireServer(ON_VEHICLE_CONTROL_EVENT, vehicleModel, "Horn")
-            end))
-
-            vehicleControlMaid:GiveTask(headlightSignal:Connect(function()
-                NetworkUtil.fireServer(ON_VEHICLE_CONTROL_EVENT, vehicleModel, "Headlight")
-            end))
-            
-            vehicleControlMaid:GiveTask(leftSignal:Connect(function()
-                NetworkUtil.fireServer(ON_VEHICLE_CONTROL_EVENT, vehicleModel, "LeftSignal")
-            end))
-            
-            vehicleControlMaid:GiveTask(rightSignal:Connect(function()
-                NetworkUtil.fireServer(ON_VEHICLE_CONTROL_EVENT, vehicleModel, "RightSignal")
-            end))
-        else
-            Player.CameraMaxZoomDistance = 8
-            vehicleControlMaid:DoCleaning()
         end
     end))
 

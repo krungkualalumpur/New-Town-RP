@@ -4,6 +4,7 @@ local BadgeService = game:GetService("BadgeService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService= game:GetService("RunService")
 local CollectionService = game:GetService("CollectionService")
+local UserInputService = game:GetService("UserInputService")
 --packages
 local Maid = require(ReplicatedStorage:WaitForChild("Packages"):WaitForChild("Maid"))
 local ColdFusion = require(ReplicatedStorage:WaitForChild("Packages"):WaitForChild("ColdFusion8"))
@@ -35,6 +36,7 @@ type State<T> = ColdFusion.State<T>
 local BACKGROUND_COLOR = Color3.fromRGB(90,90,90)
 local PRIMARY_COLOR = Color3.fromRGB(255,255,255)
 local SECONDARY_COLOR = Color3.fromRGB(25,25,25)
+local TERTIARY_COLOR = Color3.fromRGB(80,80,80)
 local PADDING_SIZE = UDim.new(0,15)
 
 local SELECT_COLOR = Color3.fromRGB(75, 210, 80)
@@ -154,7 +156,7 @@ local function getItemButton(
         else CFrame.new()) else nil
     })
 
-    local optionButtonsPosition = _Value(UDim2.new(2,0,0,0))
+    local optionButtonsPosition = _Value(UDim2.new(if not UserInputService.TouchEnabled then 2 else 0,0,0,0))
 
     local optionButtonsFrame = _new("Frame")({
         LayoutOrder = 1,
@@ -172,7 +174,8 @@ local function getItemButton(
                 "Get",
                 function()
                     onBackpackButtonAddClickSignal:Fire(itemInfo)
-                end
+                end,
+                TERTIARY_COLOR
             ),
             --[[getButton(
                 maid, 
@@ -246,7 +249,7 @@ local function getItemButton(
                 optionButtonsPosition:Set(UDim2.fromScale(0, 0))
             end,
             MouseLeave = function()
-                optionButtonsPosition:Set(UDim2.fromScale(2, 0))
+                optionButtonsPosition:Set(UDim2.fromScale(if  not UserInputService.TouchEnabled then 2 else 0, 0))
             end
         }
     })
@@ -337,7 +340,7 @@ local function getVehicleButton(
         end
     end]]
 
-    local optionButtonsPosition = _Value(UDim2.new(2,0,0,0))
+    local optionButtonsPosition =  _Value(if  not UserInputService.TouchEnabled then UDim2.new(2,0,0,0) else UDim2.new())
 
     local optionButtonsFrame = _new("Frame")({
         LayoutOrder = 1,
@@ -358,7 +361,8 @@ local function getVehicleButton(
                 function()
                     local vehicleInfo = dynamicVehicleInfo:Get()
                     onVehicleButtonInteract:Fire(key, vehicleInfo)
-                end
+                end,
+                TERTIARY_COLOR
             ),
             --[[getButton(
                 maid, 
@@ -437,7 +441,7 @@ local function getVehicleButton(
                 optionButtonsPosition:Set(UDim2.fromScale(0, 0))
             end,
             MouseLeave = function()
-                optionButtonsPosition:Set(UDim2.fromScale(2, 0))
+                optionButtonsPosition:Set(UDim2.fromScale(if  not UserInputService.TouchEnabled then 2 else 0, 0))
             end
         }
     })

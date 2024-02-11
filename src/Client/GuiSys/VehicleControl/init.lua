@@ -2,6 +2,7 @@
 --services
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
+local UserInputService = game:GetService("UserInputService")
 --packages
 local Maid = require(ReplicatedStorage:WaitForChild("Packages"):WaitForChild("Maid"))
 local ColdFusion = require(ReplicatedStorage:WaitForChild("Packages"):WaitForChild("ColdFusion8"))
@@ -142,7 +143,9 @@ return function(
     hornSignal : Signal,
     headlightSignal : Signal,
     leftSignal : Signal,
-    rightSignal : Signal
+    rightSignal : Signal,
+
+    onMove : Signal
 )
     local _fuse = ColdFusion.fuse(maid)
     local _new = _fuse.new
@@ -151,6 +154,7 @@ return function(
     local _clone = _fuse.clone
 
     local content =  _new("Frame")({
+        LayoutOrder = 2,
         Size =  UDim2.fromScale(1, 0.25),
         BackgroundTransparency = 1,
         Children = {
@@ -182,7 +186,28 @@ return function(
     end, "", 3, false)
     rightSignalButton.Parent = content 
     
-    
+
+    local controlArrow = _new("TextButton")({
+        AnchorPoint = Vector2.new(0.5,0.5),
+        AutoButtonColor = true,
+        BackgroundTransparency = 0.5,
+        BackgroundColor3 = BACKGROUND_COLOR,
+        Size = UDim2.fromScale(0.3, 0.3),
+        TextScaled = true,
+        Font = Enum.Font.ArialBold,
+        Text = "<",
+        TextColor3 = PRIMARY_COLOR,
+        Children = {
+            _new("UICorner")({
+                CornerRadius = UDim.new(0.25,0),
+            }),
+            _new("UIAspectRatioConstraint")({
+                AspectRatio = 1
+            })
+        },
+        
+    })
+
     local out = _new("Frame")({
         Size = UDim2.fromScale(1, 1),
         BackgroundTransparency = 1,
@@ -198,11 +223,81 @@ return function(
                 SortOrder = Enum.SortOrder.LayoutOrder
             }),
             
+            
             _new("Frame")({
+                LayoutOrder = 1,
                 Size =  UDim2.fromScale(1, 0.1),
                 BackgroundTransparency = 1,
             }),
             content,
+            _new("Frame")({
+                LayoutOrder = 3,
+                BackgroundTransparency = 1,
+                Visible = if not RunService:IsStudio() then UserInputService.TouchEnabled else true,
+                Size = UDim2.fromScale(1, 0.6),
+                Children = {
+                    _new("UIListLayout")({
+                        FillDirection = Enum.FillDirection.Horizontal,
+                    }),
+                   
+                    _new("Frame")({
+                        BackgroundTransparency = 1,
+                        Size = UDim2.fromScale(0.3, 1),
+                        Children = {
+                            _new("UIAspectRatioConstraint")({
+                                AspectRatio = 0.75
+                            }),
+                            _clone(controlArrow)({
+                                Rotation = 90,
+                                Position = UDim2.fromScale(0.5, 0.27),
+                                Events = {
+                                    MouseButton1Down = function()
+                                        onMove:Fire("Forward")
+                                    end,
+                                    MouseButton1Up = function()
+                                        onMove:Fire("Brake")
+                                    end,
+                                }
+                            }),
+                            _clone(controlArrow)({
+                                Position = UDim2.fromScale(0.35, 0.5),
+                                Events = {
+                                    MouseButton1Down = function()
+                                        onMove:Fire("Left")
+                                    end,
+                                    MouseButton1Up = function()
+                                        onMove:Fire("Straight")
+                                    end,
+                                }
+                            }),
+                            _clone(controlArrow)({
+                                Rotation = 180,
+                                Position = UDim2.fromScale(0.65, 0.5),
+                                Events = {
+                                    MouseButton1Down = function()
+                                        onMove:Fire("Right")
+                                    end,
+                                    MouseButton1Up = function()
+                                        onMove:Fire("Straight")
+                                    end,
+                                }
+                            }),
+                            _clone(controlArrow)({
+                                Rotation = -90,
+                                Position = UDim2.fromScale(0.5, 0.73),
+                                Events = {
+                                    MouseButton1Down = function()
+                                        onMove:Fire("Backward")
+                                    end,
+                                    MouseButton1Up = function()
+                                        onMove:Fire("Brake")
+                                    end,
+                                }
+                            }),
+                        }
+                    })
+                }
+            })
         }
     })
     return out

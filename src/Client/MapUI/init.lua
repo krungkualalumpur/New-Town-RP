@@ -455,7 +455,7 @@ function mapHUD.new(
             --local outParent = out.Parent :: GuiObject
             local plrIconImage = _Value("rbxassetid://6677276258")
 
-            local plrLabel = _new("TextLabel")({
+            --[[local plrLabel = _new("TextLabel")({
                 Name = "PlayerName",
                 AnchorPoint = Vector2.new(0,0.5),
                 AutomaticSize = Enum.AutomaticSize.XY,
@@ -465,16 +465,17 @@ function mapHUD.new(
                 BackgroundTransparency = 0.5,
                 Position = UDim2.fromScale(1, 0.5),
                 Text = plr.Name
-            }) :: TextLabel
+            }) :: TextLabel]]
 
             local plrIcon = _new("ImageLabel")({
                 AnchorPoint = Vector2.new(0.5, 0.5),
-                Size = UDim2.fromScale(0.015, 0.015),
-                Image = plrIconImage, 
                 BackgroundTransparency = 1, 
+                Size = UDim2.fromScale(0.075, 0.075),
+                Image = plrIconImage, 
+                ImageColor3 = Color3.fromRGB(77, 180, 74),
                 Parent = out,
                 Children = { 
-                    plrLabel
+                    --plrLabel
                 }
             }) :: ImageLabel
 
@@ -493,7 +494,7 @@ function mapHUD.new(
                     local char = plr.Character 
 
                     if (char ~= nil) and (char.PrimaryPart ~= nil) then
-                        local intViewportPos, isOnSight = camera:WorldToViewportPoint(char.PrimaryPart.Position)
+                        local intViewportPos, isOnSight = camera:WorldToViewportPoint(char.PrimaryPart.Position + Vector3.new(0,0,-350))
                         -- destIcon.Position = UDim2.fromOffset(math.clamp(intViewportPos.X*out.AbsoluteSize.X, out.AbsolutePosition.X - out.AbsoluteSize.X*0.5, out.AbsolutePosition.X + out.AbsoluteSize.X*0.5), math.clamp(intViewportPos.Y*out.AbsoluteSize.Y, out.AbsolutePosition.Y - out.AbsoluteSize.Y*0.5, out.AbsolutePosition.Y + out.AbsoluteSize.Y*0.5))
                             
                         local x = intViewportPos.X*out.AbsoluteSize.X  
@@ -506,15 +507,17 @@ function mapHUD.new(
                         )      
             
                         if not isOnSight then
-                            plrIcon.AnchorPoint = Vector2.new(0.5, 1)
-                            plrIcon.ImageColor3 = Color3.fromRGB(255,255,255)
-                            plrIcon.Size = UDim2.fromScale(0.05, 0.05)
-                            plrLabel.Visible = false
+                            --plrIcon.AnchorPoint = Vector2.new(0.5, 1)
+                            --plrIcon.ImageColor3 = Color3.fromRGB(255,255,255)
+                            --plrIcon.Size = UDim2.fromScale(0.05, 0.05)
+                            plrIcon.Visible = false
+                            --plrLabel.Visible = false
                         else
                             plrIcon.AnchorPoint = Vector2.new(0.5, 0.5)
-                            plrIcon.ImageColor3 = Color3.fromRGB(255,0,0)
-                            plrIcon.Size = UDim2.fromScale(0.075, 0.075)
-                            plrLabel.Visible = true
+                            plrIcon.ImageColor3 = Color3.fromRGB(77, 180, 74)
+                            --plrIcon.Size = UDim2.fromScale(0.075, 0.075)
+                            plrIcon.Visible = true
+                            --plrLabel.Visible = true
                         end
                     end
                 --end
@@ -525,11 +528,11 @@ function mapHUD.new(
     
     if RunService:IsRunning() then
         for _,plr in pairs(Players:GetPlayers()) do
-            onPlrAdded(plr)
+            --onPlrAdded(plr)
         end       
         
         maid:GiveTask(Players.PlayerAdded:Connect(function(plr : Player)
-            onPlrAdded(plr)
+            --onPlrAdded(plr)
         end))
     end
 

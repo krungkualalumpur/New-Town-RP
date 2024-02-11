@@ -22,15 +22,24 @@ type CanBeState<T> = ColdFusion.State<T>
 --class
 return function(target : CoreGui)
     local maid = Maid.new()
+
+    local onMove = maid:GiveTask(Signal.new())
+
     local out = maid:GiveTask(VehicleControl(
         maid,
 
         maid:GiveTask(Signal.new()),
         maid:GiveTask(Signal.new()),
         maid:GiveTask(Signal.new()),
-        maid:GiveTask(Signal.new())
+        maid:GiveTask(Signal.new()),
+
+        onMove
     ))
     out.Parent = target
+
+    maid:GiveTask(onMove:Connect(function(directionStr : string)
+        print(directionStr)
+    end))
 
     return function()
         maid:Destroy()

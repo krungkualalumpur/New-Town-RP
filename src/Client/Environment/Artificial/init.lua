@@ -7,6 +7,8 @@ local Players = game:GetService("Players")
 local Maid = require(ReplicatedStorage:WaitForChild("Packages"):WaitForChild("Maid"))
 local NetworkUtil = require(ReplicatedStorage:WaitForChild("Packages"):WaitForChild("NetworkUtil"))
 --modules
+local Vehicle = require(ReplicatedStorage:WaitForChild("Client"):WaitForChild("Environment"):WaitForChild("Artificial"):WaitForChild("Vehicle"))
+
 local BackpackUtil = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("BackpackUtil"))
 --types
 type Maid = Maid.Maid
@@ -51,6 +53,8 @@ end
 local Artificial = {}
 
 function Artificial.init(maid : Maid)
+    Vehicle.init(maid)
+   
     --performance opt
     clientOptimalization()
    

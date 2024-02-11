@@ -408,7 +408,6 @@ local function applyBundleByHumanoidDescription(character : Model, bundleId : nu
 
     local humanoid = character:WaitForChild("Humanoid") :: Humanoid 
     local empty_humanoid_Desc = if (bundleDetails.BundleType ~= "AvatarAnimations") then Instance.new("HumanoidDescription") else humanoid:GetAppliedDescription()
-    -- print(bundleDetails.BundleType, " wtf mm8???")
 
     if (bundleDetails.BundleType ~= "AvatarAnimations") then 
         adjustHumanoidDescColor(empty_humanoid_Desc, Color3.fromRGB(155,155,155))

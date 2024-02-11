@@ -29,6 +29,9 @@ local VEHICLE_TAG = "Vehicle"
 local BOAT_CLASS_KEY = "Boat"
 local CAR_CLASS_KEY = "Vehicle"
 
+local CUSTOM_THROTTLE_KEY = "CustomThrottle"
+local CUSTOM_STEER_KEY = "CustomSteer"
+
 --remotes
 local SPAWN_VEHICLE = "SpawnVehicle"
 local KEY_VALUE_NAME = "KeyValue"
@@ -125,6 +128,9 @@ function Vehicle.init(maid : Maid)
         local vehicleSeat = vehicleModel:FindFirstChild("VehicleSeat") :: VehicleSeat
         local speedLimit = vehicleModel:GetAttribute("Speed") or 45
         
+        vehicleModel:SetAttribute(CUSTOM_THROTTLE_KEY, 0)
+        vehicleModel:SetAttribute(CUSTOM_STEER_KEY, 0)
+
         if vehicleModel:IsA("Model") and vehicleSeat and vehicleSeat:IsA("VehicleSeat") and vehicleModel.PrimaryPart then
             setupSpawnedCar(vehicleModel)
             
@@ -147,18 +153,21 @@ function Vehicle.init(maid : Maid)
             VectorForce.Attachment0 = attachment0
             VectorForce.Force = Vector3.new(0,0,0)
 
-            _maid:GiveTask(vehicleSeat:GetPropertyChangedSignal("Throttle"):Connect(function()
+            _maid:GiveTask(vehicleModel:GetAttributeChangedSignal(CUSTOM_THROTTLE_KEY):Connect(function()
+                local customThrottleNum = vehicleModel:GetAttribute(CUSTOM_THROTTLE_KEY) :: number
+                assert(customThrottleNum, "no throttle number")
+
                 if vehicleModel:GetAttribute("Class") == BOAT_CLASS_KEY then
                     local hum = vehicleSeat.Occupant
                     if hum then
                         if vehicleSeat.AssemblyLinearVelocity.Magnitude <= 10 then
-                            local throttleV3 = vehicleSeat.CFrame.LookVector*vehicleSeat.Throttle
+                            local throttleV3 = vehicleSeat.CFrame.LookVector*customThrottleNum
                             vehicleSeat.AssemblyLinearVelocity += throttleV3*15 
                         end
                         
                         local char = hum.Parent
                         local plr = if char then Players:GetPlayerFromCharacter(char) :: Player else nil 
-                        if char and plr and (vehicleSeat.Throttle ~= 0) then
+                        if char and plr and (customThrottleNum ~= 0) then
                             local rowAnim = 15341401436
                             local isPlayingTheAnim = false
 
@@ -206,18 +215,18 @@ function Vehicle.init(maid : Maid)
                         for _,v in pairs(wheels:GetDescendants()) do
                             if v:IsA("HingeConstraint") and v.ActuatorType == Enum.ActuatorType.Motor then
                                 --v.MotorMaxTorque = 1--999999999999
-                                v.AngularVelocity = seat.Throttle*convertionKpHtoVelocity((speedLimit)*(if math.sign(seat.Throttle) == 1 then 1 else 0.5))
+                                v.AngularVelocity = customThrottleNum*convertionKpHtoVelocity((speedLimit)*(if math.sign(customThrottleNum) == 1 then 1 else 0.5))
                                 local accDir = vehicleModel.PrimaryPart.CFrame:VectorToObjectSpace(vehicleModel.PrimaryPart.AssemblyLinearVelocity).Z
                                 --task.spawn(function() task.wait(1); v.MotorMaxTorque = 1--[[550000000]]; end)
-                                if seat.Throttle ~= 0 then
+                                if customThrottleNum ~= 0 then
                                     v.MotorMaxTorque = 1--999999999999
-                                    v.MotorMaxAcceleration = if math.sign(accDir*seat.Throttle) == 1 then 60 else 25
-                                    if math.sign(accDir*seat.Throttle) == 1 then
+                                    v.MotorMaxAcceleration = if math.sign(accDir*customThrottleNum) == 1 then 60 else 25
+                                    if math.sign(accDir*customThrottleNum) == 1 then
                                         v.AngularVelocity = 0
                                     end
                                 else
                                     v.MotorMaxTorque = 999999999999
-                                    v.MotorMaxAcceleration = 0
+                                    v.MotorMaxAcceleration = 5
                                     v.AngularVelocity = 0
                                 end
                             end
@@ -228,7 +237,7 @@ function Vehicle.init(maid : Maid)
                         local brakeLight = lights:FindFirstChild("R") :: Instance ?
                         if brakeLight then
                             local function updateLight(part : BasePart) 
-                                if seat.Throttle == -1 then
+                                if customThrottleNum == -1 then
                                     part.Material = Enum.Material.Neon
                                 else
                                     part.Material = Enum.Material.SmoothPlastic
@@ -245,14 +254,16 @@ function Vehicle.init(maid : Maid)
                             
                         end
                        
-                        --VectorForce.Force = Vector3.new(0,0,-seat.Throttle*8000)
+                        --VectorForce.Force = Vector3.new(0,0,-customThrottleNum*8000)
                     end
                 end
             end))
 
-            _maid:GiveTask(vehicleSeat:GetPropertyChangedSignal("Steer"):Connect(function()
+            _maid:GiveTask(vehicleModel:GetAttributeChangedSignal(CUSTOM_STEER_KEY):Connect(function()
+                local customSteer = vehicleModel:GetAttribute(CUSTOM_STEER_KEY) :: number
+                assert(customSteer, "no steer number")
                 if vehicleModel:GetAttribute("Class") == BOAT_CLASS_KEY then
-                    vehicleSeat.AssemblyAngularVelocity += Vector3.new(0,1,0)*-vehicleSeat.Steer
+                    vehicleSeat.AssemblyAngularVelocity += Vector3.new(0,1,0)*-customSteer
                 elseif vehicleModel:GetAttribute("Class") == CAR_CLASS_KEY then
                     local seat = vehicleModel:FindFirstChild("VehicleSeat") :: VehicleSeat ?
                     local wheels = vehicleModel:FindFirstChild("Wheels") :: Model ?
@@ -266,22 +277,22 @@ function Vehicle.init(maid : Maid)
                                 local angularSpeed
                                 if velocity < convertionKpHtoVelocity(10) then
                                     
-                                    targetAngle = 60*seat.Steer
+                                    targetAngle = 60*customSteer
                                     angularSpeed = 1
                                 elseif velocity < convertionKpHtoVelocity(20) then
-                                    targetAngle = 55*seat.Steer
+                                    targetAngle = 55*customSteer
                                     angularSpeed = 1*2
                                 elseif velocity >= convertionKpHtoVelocity(20) and velocity < convertionKpHtoVelocity(40) then
-                                    targetAngle = 42*seat.Steer
+                                    targetAngle = 42*customSteer
                                     angularSpeed = 2*2
                                 elseif velocity >= convertionKpHtoVelocity(40) and velocity < convertionKpHtoVelocity(60) then
-                                    targetAngle = 30*seat.Steer
+                                    targetAngle = 30*customSteer
                                     angularSpeed = 3*2
                                 elseif velocity >= convertionKpHtoVelocity(60) and velocity < convertionKpHtoVelocity(80) then
-                                    targetAngle = 25*seat.Steer
+                                    targetAngle = 25*customSteer
                                     angularSpeed = 3*2
                                 elseif velocity >= convertionKpHtoVelocity(80) then
-                                    targetAngle = 10*seat.Steer
+                                    targetAngle = 10*customSteer
                                     angularSpeed = 3*2
                                 end
 
@@ -297,6 +308,19 @@ function Vehicle.init(maid : Maid)
 
                 end
             end))
+
+            _maid:GiveTask(vehicleSeat:GetPropertyChangedSignal("Throttle"):Connect(function()
+                --if vehicleModel:GetAttribute(CUSTOM_THROTTLE_KEY) == 0 then
+                    vehicleModel:SetAttribute(CUSTOM_THROTTLE_KEY, vehicleSeat.Throttle)
+                --end
+            end))
+
+            _maid:GiveTask(vehicleSeat:GetPropertyChangedSignal("Steer"):Connect(function() 
+                --if vehicleModel:GetAttribute(CUSTOM_STEER_KEY) == 0 then
+                    vehicleModel:SetAttribute(CUSTOM_STEER_KEY, vehicleSeat.Steer)
+               -- end
+            end))
+
 
             _maid:GiveTask(vehicleModel:GetAttributeChangedSignal(isHeadlightAttribute):Connect(function()
                 if vehicleModel:GetAttribute("Class") == CAR_CLASS_KEY then
@@ -482,13 +506,14 @@ function Vehicle.init(maid : Maid)
 
                     local vectorMaxForce = vehicleModel:GetAttribute("Power") or 30000
                     _maid:GiveTask(RunService.Stepped:Connect(function()
+                        local customThrottleNum = vehicleModel:GetAttribute(CUSTOM_THROTTLE_KEY)
                         local seat = vehicleModel:FindFirstChild("VehicleSeat") :: VehicleSeat
 
                         if seat then
                             local direction = math.sign(seat.CFrame.LookVector:Dot(seat.AssemblyLinearVelocity.Unit))
                             local currentVelocity = vehicleModel.PrimaryPart.AssemblyLinearVelocity.Magnitude
-                            VectorForce.Force = Vector3.new(0,0,-seat.Throttle*(math.clamp(vectorMaxForce - ((vectorMaxForce)*(((currentVelocity)/ speedLimit))), 0, vectorMaxForce)))
-                            if seat.Throttle ~= 0 and direction ~= seat.Throttle then
+                            VectorForce.Force = Vector3.new(0,0,-customThrottleNum*(math.clamp(vectorMaxForce - ((vectorMaxForce)*(((currentVelocity)/ speedLimit))), 0, vectorMaxForce)))
+                            if customThrottleNum ~= 0 and direction ~= customThrottleNum then
                                 VectorForce.Force = Vector3.new(0,0, direction*vectorMaxForce)
                                 --print(direction*vectorMaxForce)
                             end
@@ -500,7 +525,6 @@ function Vehicle.init(maid : Maid)
             end
             _maid:GiveTask(vehicleModel.AncestryChanged:Connect(function()
                 if vehicleModel.Parent == nil then
-                    print(vehicleModel, " destroyed")
                     _maid:Destroy()
                 end
             end))
@@ -548,7 +572,7 @@ function Vehicle.init(maid : Maid)
         return plrInfo.Vehicles
     end)
 
-    maid:GiveTask(NetworkUtil.onServerEvent(ON_VEHICLE_CONTROL_EVENT, function(plr : Player, vehicleModel : Model, eventName : string)
+    maid:GiveTask(NetworkUtil.onServerEvent(ON_VEHICLE_CONTROL_EVENT, function(plr : Player, vehicleModel : Model, eventName : string, ...)
         if eventName == "Horn" then
             assert(vehicleModel.PrimaryPart)
             if vehicleModel.PrimaryPart:FindFirstChild("HornSound") then
@@ -583,6 +607,24 @@ function Vehicle.init(maid : Maid)
                 RRI.Material = Enum.Material.Neon
             end
             ]]
+        elseif eventName == "Move" then
+            local vehicleSeat = vehicleModel:FindFirstChild("VehicleSeat") :: VehicleSeat
+
+            local direction = table.pack(...)[1]
+
+            if direction == "Forward" then
+                vehicleModel:SetAttribute(CUSTOM_THROTTLE_KEY, 1)
+            elseif direction == "Backward" then
+                vehicleModel:SetAttribute(CUSTOM_THROTTLE_KEY, -1)
+            elseif direction == "Left" then
+                vehicleModel:SetAttribute(CUSTOM_STEER_KEY, -1)
+            elseif direction == "Right" then
+                vehicleModel:SetAttribute(CUSTOM_STEER_KEY, 1)
+            elseif direction == "Straight" then
+                vehicleModel:SetAttribute(CUSTOM_STEER_KEY, 0)
+            elseif direction == "Brake" then
+                vehicleModel:SetAttribute(CUSTOM_THROTTLE_KEY, 0)
+            end
         end
         return
     end))
