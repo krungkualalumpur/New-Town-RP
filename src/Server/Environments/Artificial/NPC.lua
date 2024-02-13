@@ -223,7 +223,7 @@ local function init(maid : Maid, vehicleModel : Model)
     end
 
 	print("Dest : dest1")
-    reachToDest(workspace.Dest1.Position, function()
+    --[[reachToDest(workspace.Dest1.Position, function()
         print("Obstakerru")
         setCarMovement(0, 0)
         task.wait()
@@ -250,7 +250,7 @@ local function init(maid : Maid, vehicleModel : Model)
 	print("Dest : dest5")
     reachToDest(workspace.Dest5.Position)
 	print("Dest : dest6")
-	reachToDest(workspace.Dest6.Position)
+	reachToDest(workspace.Dest6.Position)]]
 end
 
 --script
