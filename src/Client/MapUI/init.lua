@@ -10,7 +10,7 @@ local ColdFusion = require(ReplicatedStorage:WaitForChild("Packages"):WaitForChi
 local Signal = require(ReplicatedStorage:WaitForChild("Packages"):WaitForChild("Signal"))
 --modules
 local LineUtil = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("LineUtil"))
-local Pathfind = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Pathfind"))
+--local Pathfind = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Pathfind"))
 
 
 local ExitButton = require(ReplicatedStorage:WaitForChild("Client"):WaitForChild("ExitButton"))
@@ -56,7 +56,7 @@ local DESTINATION_ARRIVE_DISTANCE = 16
 --references
 
 --local function
-local function createPathPts(maid : Maid, fuse : Fuse, roadsModel : Model)
+--[[local function createPathPts(maid : Maid, fuse : Fuse, roadsModel : Model)
     local _new = fuse.new
     local pathPoints = maid:GiveTask(_new("Folder")({
     })) :: Folder
@@ -81,9 +81,9 @@ local function createPathPts(maid : Maid, fuse : Fuse, roadsModel : Model)
     end
     Pathfind.CreatePathSys(rawPts, pathPoints)
     return pathPoints
-end
+end]]
 
-local function generatePathToDestination(pathPoints, start : Vector3, destination : Vector3)
+--[[local function generatePathToDestination(pathPoints, start : Vector3, destination : Vector3)
     local startN, endN 
 
     local minPlrDist = math.huge
@@ -147,7 +147,7 @@ local function generateVisualPath(pathFindResult : {[number] : {Cost : number, N
     end 
  
     return visualPathFolder
-end 
+end ]]
 --
 local currentMapHUD : MapHUD
 
@@ -238,7 +238,7 @@ function mapHUD.new(
         end
     end
 
-    local pathPoints = createPathPts(maid, fuse, roadsModel)   
+   -- local pathPoints = createPathPts(maid, fuse, roadsModel)   
 
     local arrow = _new("Part")({
         CFrame = _Computed(function(cf : CFrame)
@@ -261,7 +261,7 @@ function mapHUD.new(
             roadsModel,
             buildingsModel,
             arrow,
-            pathPoints,
+            --pathPoints,
             visualFolder
         }
     })
@@ -353,11 +353,11 @@ function mapHUD.new(
         visualFolder:ClearAllChildren()
         destIcon.Parent = nil
         if destination then
-            local pathFindResult = generatePathToDestination(pathPoints, cf.Position, destination )
+            --local pathFindResult = generatePathToDestination(pathPoints, cf.Position, destination )
         -- print(pathFindResult) 
-            if pathFindResult then
-                local visuals = generateVisualPath(pathFindResult, pathPoints, arrow.Position, destination)
-                visuals.Parent = visualFolder 
+            --if pathFindResult then
+                --local visuals = generateVisualPath(pathFindResult, pathPoints, arrow.Position, destination)
+                --visuals.Parent = visualFolder 
 
             
         --[[ else
@@ -365,7 +365,7 @@ function mapHUD.new(
                 pathPoints = createPathPts(maid, fuse, roadsModel)   
                 pathPoints.Parent = worldModel
                 print("recreating path points")]]
-            end    
+            --end    
 
             --making waypoint
             local outParent = out.Parent :: GuiObject

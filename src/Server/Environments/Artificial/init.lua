@@ -22,6 +22,7 @@ local Speaker = require(ServerScriptService:WaitForChild("Server"):WaitForChild(
 local Objects = require(ServerScriptService:WaitForChild("Server"):WaitForChild("Environments"):WaitForChild("Artificial"):WaitForChild("Objects"))
 local Harbour = require(ServerScriptService:WaitForChild("Server"):WaitForChild("Environments"):WaitForChild("Artificial"):WaitForChild("Harbour"))
 local FishingSys = require(ServerScriptService:WaitForChild("Server"):WaitForChild("Environments"):WaitForChild("Artificial"):WaitForChild("FishingSys"))
+local NPC = require(ServerScriptService:WaitForChild("Server"):WaitForChild("Environments"):WaitForChild("Artificial"):WaitForChild("NPC"))
 --types
 type Maid = Maid.Maid
 --constants
@@ -161,6 +162,7 @@ return {
         Speaker.init(maid)
         Harbour.init(maid)
         FishingSys.init(maid)
+        NPC.init(maid)
 
         initNightLight(maid)
 
