@@ -190,6 +190,11 @@ local Pathfind = {}
 function Pathfind.breadthFirstSearch(points : {PointData}, startPoint : PointData)
 	return BFS(points, startPoint)
 end
+
+function Pathfind.simplePathfinding(points : {PointData}, startPoint : PointData, endPoint : PointData)
+	return simple_Pathfind_algorithm(points, startPoint, endPoint)
+end
+
 function Pathfind.djikstraPathfinding(points : {PointData}, startPoint : PointData, endPoint : PointData)
 	local output = djikstra_pathfind(points, startPoint, endPoint)
 	return processPathfindOutput(output, startPoint.PointId, endPoint.PointId)
