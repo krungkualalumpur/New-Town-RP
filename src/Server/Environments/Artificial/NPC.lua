@@ -4,11 +4,14 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local ServerScriptService = game:GetService("ServerScriptService")
 local CollectionService = game:GetService("CollectionService")
 local RunService = game:GetService("RunService")
+local Players = game:GetService("Players")
 --packages
 local Maid = require(ReplicatedStorage:WaitForChild("Packages"):WaitForChild("Maid"))
 --modules
+local Pathfind = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Pathfind"))
 --types
 type Maid = Maid.Maid
+type PointData = Pathfind.PointData
 --constants
 local NPC_TAG = "NPC"
 
@@ -19,13 +22,51 @@ local CUSTOM_STEER_KEY = "CustomSteer"
 --remotes
 --variables
 --references
+local NPCModels = ReplicatedStorage:WaitForChild("Assets"):WaitForChild("Others"):WaitForChild("NPCs")
+local NPCSpawns = workspace:WaitForChild("Assets"):WaitForChild("Spawns"):WaitForChild("NPCs")
 --local functions
+local function resetNPC(spawnPart : BasePart, initFn : (vehicleModel : Model, spawnPart : BasePart) -> ())
+	
+	local npcModelPointer = spawnPart:FindFirstChild("ModelPointer") :: ObjectValue ?
+	if npcModelPointer and npcModelPointer.Value then
+		local vehicleModel = npcModelPointer.Value:Clone() :: Model
+		vehicleModel:PivotTo(spawnPart.CFrame)
+		vehicleModel.Parent = workspace:WaitForChild("Assets"):WaitForChild("Temporaries"):WaitForChild("NPCs")
+		CollectionService:AddTag(vehicleModel, NPC_TAG)
+
+		initFn(vehicleModel, spawnPart)
+	end
+
+	return
+end
+local function newPointData(
+	PointId : number,
+	Cost : number,
+	Obstacled : boolean,
+	Neighbours : {
+		[number] : PointData
+	} ?,
+	Came_From : PointData ?
+
+) : PointData
+	return {
+		PointId = PointId,
+		Cost = Cost,
+		Came_From = Came_From,
+		Obstacled = Obstacled,
+		Neighbours = Neighbours or {}
+	}
+end
+
 local function convertionKpHtoVelocity(KpH : number)
 	return (KpH)*1000*3.571/3600
 end
 
-local function init(maid : Maid, vehicleModel : Model)
-	
+local function init(vehicleModel : Model, spawnPart : BasePart)
+	assert(vehicleModel.PrimaryPart)
+	local maid = Maid.new()
+	maid:GiveTask(vehicleModel)
+
     local vehiclePart = vehicleModel.PrimaryPart
     assert(vehiclePart, "Vehicle has no primary part!")
 
@@ -37,18 +78,17 @@ local function init(maid : Maid, vehicleModel : Model)
 	maid:GiveTask(vehicleModel:GetAttributeChangedSignal(CUSTOM_THROTTLE_KEY):Connect(function()
 		if vehicleModel:GetAttribute("Class") == CAR_CLASS_KEY then 
 			
-			print("Comfort zone test")
 			local throttle = vehicleModel:GetAttribute(CUSTOM_THROTTLE_KEY)
 			local wheels = vehicleModel:FindFirstChild("Wheels") :: Model
 			if throttle and wheels then
 				for _,v in pairs(wheels:GetDescendants()) do
 					if v:IsA("HingeConstraint") and v.ActuatorType == Enum.ActuatorType.Motor then
 						--v.MotorMaxTorque = 1--999999999999
-						v.AngularVelocity = throttle*convertionKpHtoVelocity((speedLimit)*(if math.sign(throttle) == 1 then 1 else 0.5))
+						v.AngularVelocity = throttle*convertionKpHtoVelocity((speedLimit))
 						local accDir = vehiclePart.CFrame:VectorToObjectSpace(vehiclePart.AssemblyLinearVelocity).Z
 						--task.spawn(function() task.wait(1); v.MotorMaxTorque = 1--[[550000000]]; end)
 						if throttle ~= 0 then
-							v.MotorMaxTorque = 1--999999999999
+							v.MotorMaxTorque = 5--999999999999
 							v.MotorMaxAcceleration = if math.sign(accDir*throttle) == 1 then 60 else 25
 							if math.sign(accDir*throttle) == 1 then
 								v.AngularVelocity = 0
@@ -88,60 +128,12 @@ local function init(maid : Maid, vehicleModel : Model)
 		end
 	end))
 
-	--[[vehicleSeat:GetPropertyChangedSignal("Steer"):Connect(function()
-		if vehicleModel:GetAttribute("Class") == BOAT_CLASS_KEY then
-			vehicleSeat.AssemblyAngularVelocity += Vector3.new(0,1,0)*-vehicleSeat.Steer
-		elseif vehicleModel:GetAttribute("Class") == CAR_CLASS_KEY then
-			local seat = vehicleModel:FindFirstChild("VehicleSeat") :: VehicleSeat ?
-			local wheels = vehicleModel:FindFirstChild("Wheels") :: Model ?
-
-			if seat and wheels then
-				for _,v in pairs(wheels:GetDescendants()) do
-					if v:IsA("HingeConstraint")  and v.ActuatorType == Enum.ActuatorType.Servo then    
-						local velocity = vehicleModel.PrimaryPart.AssemblyLinearVelocity.Magnitude
-
-						local targetAngle 
-						local angularSpeed
-						if velocity < convertionKpHtoVelocity(10) then
-
-							targetAngle = 60*seat.Steer
-							angularSpeed = 1
-						elseif velocity < convertionKpHtoVelocity(20) then
-							targetAngle = 55*seat.Steer
-							angularSpeed = 1*2
-						elseif velocity >= convertionKpHtoVelocity(20) and velocity < convertionKpHtoVelocity(40) then
-							targetAngle = 42*seat.Steer
-							angularSpeed = 2*2
-						elseif velocity >= convertionKpHtoVelocity(40) and velocity < convertionKpHtoVelocity(60) then
-							targetAngle = 30*seat.Steer
-							angularSpeed = 3*2
-						elseif velocity >= convertionKpHtoVelocity(60) and velocity < convertionKpHtoVelocity(80) then
-							targetAngle = 25*seat.Steer
-							angularSpeed = 3*2
-						elseif velocity >= convertionKpHtoVelocity(80) then
-							targetAngle = 10*seat.Steer
-							angularSpeed = 3*2
-						end
-
-						--v.TargetAngle = targetAngle
-						--v.AngularSpeed = angularSpeed
-						local tweenTime = 1
-						if math.round(targetAngle) == 0 then angularSpeed = 25; tweenTime = 0.05 end 
-						local tween  = TweenService:Create(v, TweenInfo.new(tweenTime), {TargetAngle = targetAngle, AngularSpeed = angularSpeed})
-						tween:Play()
-					end
-				end
-			end
-
-		end
-	end)]]
-	
 	local attachment0 = Instance.new("Attachment")
 	local VectorForce = Instance.new("VectorForce")  
 
 	attachment0.Parent = vehicleModel.PrimaryPart
 	VectorForce.Parent = vehicleModel.PrimaryPart
-
+	print(VectorForce, " aa")
 	VectorForce.Attachment0 = attachment0
 	VectorForce.Force = Vector3.new(0,0,0)
 	
@@ -168,7 +160,7 @@ local function init(maid : Maid, vehicleModel : Model)
         for _,v in pairs(wheels:GetDescendants()) do
             if v:IsA("HingeConstraint")  and v.ActuatorType == Enum.ActuatorType.Servo then  
 --              local velocity = vehiclePart.AssemblyLinearVelocity.Magnitude                
-                local _angularSpeed = angularSpeed or 40
+                local _angularSpeed = angularSpeed or 30
 
                 v.TargetAngle = targetAngle
                 v.AngularSpeed = _angularSpeed
@@ -177,23 +169,40 @@ local function init(maid : Maid, vehicleModel : Model)
         end
     end
 
-    local function reachToDest(v3 :Vector3, onObstacleDetected : ((parts : {Instance}) -> ()) ?)
-        local obstacleDetectionRange = 25
+    local function reachToDest(v3 :Vector3, onObstacleDetected : ((parts : {BasePart}) -> ()) ?, onObstacleCleared : (() -> ()) ?)
+		
+	
+		local destDetectionRange = 6
+		local obstacleDetectionRange = 15
         
+		local charactersModel = {}
+		for _,plr in pairs(Players:GetPlayers()) do
+			local char = plr.Character
+			table.insert(charactersModel, char)
+		end
+
         local overlapParams = OverlapParams.new()
         overlapParams.FilterType = Enum.RaycastFilterType.Include
-        overlapParams.FilterDescendantsInstances = workspace:WaitForChild("Assets"):WaitForChild("Temporaries"):WaitForChild("Vehicles"):GetChildren()
+        overlapParams.FilterDescendantsInstances = {
+			charactersModel
+			--workspace:WaitForChild("Assets"):WaitForChild("Temporaries"):WaitForChild("Vehicles"):GetChildren()
+			--workspace:WaitForChild("Assets"):WaitForChild("Temporaries"):WaitForChild("Vehicles"):GetChildren(),
+			--workspace:WaitForChild("Assets"):WaitForChild("Buildings"):GetChildren(),
+
+		--	workspace:WaitForChild("Assets"):WaitForChild("Infrastructures"):GetChildren()
+		}
         
         setCarMovement(1, 0)
 
         --local conn 
             
         --conn = RunService.Stepped:Connect(function()
-        while (vehiclePart.Position - v3).Magnitude > 15 do
+        while (vehiclePart.Position - v3).Magnitude > destDetectionRange do
             task.wait()
+			assert(vehiclePart.Parent)
             --creating bounding box for collusion detection
             local cf, size = vehicleModel:GetBoundingBox()
-            cf = cf - Vector3.new(0,0,obstacleDetectionRange*0.5)*vehicleModel:GetAttribute(CUSTOM_THROTTLE_KEY)
+            cf = cf + vehiclePart.CFrame.LookVector*obstacleDetectionRange*0.5*vehicleModel:GetAttribute(CUSTOM_THROTTLE_KEY)
             size += Vector3.new(0,0,obstacleDetectionRange)
             
             local partsDetected = workspace:GetPartBoundsInBox(cf, size, overlapParams)
@@ -201,14 +210,24 @@ local function init(maid : Maid, vehicleModel : Model)
             local cross = vehiclePart.CFrame.LookVector:Cross((v3 - vehiclePart.Position).Unit)
             local dot = vehiclePart.CFrame.LookVector:Dot((v3 - vehiclePart.Position).Unit)
 
+			local canCollidePartsDetected = {}
+			for _,v in pairs(partsDetected) do
+				if v.CanCollide == true then
+					table.insert(canCollidePartsDetected, v)
+				end
+			end
             
-            if #partsDetected > 0 then
+            if #canCollidePartsDetected > 0 then
                 if onObstacleDetected then	
-                    onObstacleDetected(partsDetected)
+                    onObstacleDetected(canCollidePartsDetected)
                     continue
                 end
+			else
+				if onObstacleCleared then
+					onObstacleCleared()
+				end
             end
-            setCarMovement(1*math.sign(dot), (-cross.Y)*30*math.sign(dot), 40)
+            setCarMovement(1*math.sign(dot), (-cross.Y)*35*math.sign(dot))
         end
             --if (vehicleSeat.Position - v3).Magnitude < 25 then
                 --conn:Disconnect()
@@ -222,44 +241,229 @@ local function init(maid : Maid, vehicleModel : Model)
         return
     end
 
-	print("Dest : dest1")
-    --[[reachToDest(workspace.Dest1.Position, function()
-        print("Obstakerru")
-        setCarMovement(0, 0)
-        task.wait()
-    end)
+	local pathfindsFolder = workspace:WaitForChild("Assets"):WaitForChild("Paths"):WaitForChild("Pathfinds")
+	
+	local mallPatrol = pathfindsFolder:WaitForChild("MallPatrol")
+	
+	do --mall path pts
+		local pts = {}
+		for _,v in pairs(mallPatrol:GetChildren()) do
+			local pointId = tonumber(v.Name)
+			assert(pointId, "Incorrect point id")
+			local neighbours = {}
+			local pointData = newPointData(pointId, 0, false, neighbours)
+			pts[pointId] = pointData
+		end
 
-	print("Dest : dest2")
-    reachToDest(workspace.Dest2.Position, function()
-        task.wait()
-        setCarMovement(0, 0)
-        print("Obstakerru")
+		for _,v in pairs(pts) do
+			local pointInst = mallPatrol:FindFirstChild(tostring(v.PointId))
+			local neighbours = {}
+			for _,beam : Instance in pairs(pointInst:GetChildren()) do
+				if beam:IsA("Beam") then
+					local battachment0 = beam.Attachment0
+					local battachment1 = beam.Attachment1
+					
+					local neighbourPointId 
+					if battachment0 and battachment0.Parent then
+						if v.PointId ~= tonumber(battachment0.Parent.Name)  then
+							neighbourPointId = tonumber(battachment0.Parent.Name) 
+						end
+					end
+					if battachment1 and battachment1.Parent then
+						if v.PointId ~= tonumber(battachment1.Parent.Name)  then
+							neighbourPointId = tonumber(battachment1.Parent.Name) 
+						end
+					end
 
-    end)
+					if neighbourPointId then
+						local neighbourPointData = pts[neighbourPointId]
+						if neighbourPointData and not table.find(neighbours, neighbourPointData) then 
+							table.insert(neighbours, neighbourPointData)
+							if not table.find(neighbourPointData.Neighbours, v) then
+								table.insert(neighbourPointData.Neighbours, v)
+							end
+						end
+					end
+				end
+			end
+			for _,detectedNeighbourPt in pairs(neighbours) do
+				table.insert(v.Neighbours, detectedNeighbourPt)
+			end
+		end
 
-	print("Dest : dest3")
-    reachToDest(workspace.Dest3.Position, function()
-        task.wait()
-        setCarMovement(0, 0)
-        print("Obstakerru")
+		local t = tick()
 
-    end)
+		local stopT = 0
+		local db = false
+		maid:GiveTask(RunService.Stepped:Connect(function()
+			--check if the npc is stuck or is outside
+			if vehicleModel.PrimaryPart then
+				if not vehicleModel:GetAttribute("HasObstacle") then
+					if tick() - t > 1 then
+						t = tick()
 
-	print("Dest : dest4")
-    reachToDest(workspace.Dest4.Position)
-	print("Dest : dest5")
-    reachToDest(workspace.Dest5.Position)
-	print("Dest : dest6")
-	reachToDest(workspace.Dest6.Position)]]
+						if math.round(vehicleModel.PrimaryPart.AssemblyLinearVelocity.Magnitude) <= 1 then
+							stopT += 1
+						else
+							stopT = 0
+						end
+
+						if stopT >= 10 then
+							maid:Destroy()
+							resetNPC(spawnPart, init)
+						end
+					end
+				end
+			else
+				maid:Destroy()
+				resetNPC(spawnPart, init)
+			end
+			-----
+			
+			if not db then
+				db = true
+				local nearestPointPart 
+				local farthestPointPart
+
+				local minDist = math.huge
+				local maxDist = 0
+				for _,v : Part in pairs(mallPatrol:GetChildren()) do
+					local dist = (v.Position - vehicleModel.PrimaryPart.Position).Magnitude
+					if dist < minDist then
+						minDist = dist
+						nearestPointPart = v
+					end
+					if dist > maxDist then
+						maxDist = dist
+						farthestPointPart = v
+					end
+				end
+
+				local nearestPointId = tonumber(nearestPointPart.Name)
+				local farthestPointId = tonumber(farthestPointPart.Name)
+				local nearestPoint = if nearestPointId then pts[nearestPointId] else nil
+				local farthestPoint = if farthestPointId then pts[farthestPointId] else nil
+
+				if nearestPoint and farthestPoint then
+					local output = Pathfind.djikstraPathfinding(pts, nearestPoint, farthestPoint)
+					--print(nearestPoint, farthestPoint, pts, output)
+					for _,v in pairs(output) do
+						local destPart = mallPatrol:FindFirstChild(tostring(v.PointId))
+						print(destPart, " is now the destination!!!")
+						reachToDest(destPart.Position, function(parts)
+							vehicleModel:SetAttribute("HasObstacle", true)
+							
+							local minODist = math.huge
+							local nearestObstacle
+							for _,v in pairs(parts) do
+								local dist = (v.Position - vehicleModel.PrimaryPart.Position).Magnitude
+								if dist < minODist then
+									minODist = dist
+									nearestObstacle = v
+								end
+							end
+
+							if nearestObstacle then
+								--local cross = vehiclePart.CFrame.LookVector:Cross((destPart.Position - vehiclePart.Position).Unit)
+
+								--setCarMovement(
+									---math.sign(vehiclePart.CFrame.LookVector:Dot((nearestObstacle.Position - vehiclePart.Position).Unit)), 
+									--vehicleModel.PrimaryPart.CFrame.LookVector:Dot((nearestObstacle.Position - vehicleModel.PrimaryPart.Position).Unit)*40*-math.sign(cross.Y)
+								--)
+								setCarMovement(0, 0)
+
+								local plr = Players:GetPlayerFromCharacter(nearestObstacle.Parent)
+								if plr then
+									local vehicleBody = vehicleModel:WaitForChild("Body"):WaitForChild("Body")
+									local infoDisplay = vehicleBody:FindFirstChild("InfoDisplay")
+
+									local sg = if infoDisplay then infoDisplay:FindFirstChild("SurfaceGui") else nil
+									if infoDisplay and sg then
+										local frame = sg:FindFirstChild("Frame")
+										if frame then
+											local title = frame:FindFirstChild("Title") :: TextLabel ?
+											local avatarImage = frame:FindFirstChild("AvatarImage") :: ImageLabel ?
+
+											if title then
+												title.Text = `WELCOME <font color = "rgb(20,100,20)"> {plr.Name:upper()} </font>`	
+											end
+
+											if avatarImage then
+												local uiStroke = avatarImage:FindFirstChild("UIStroke") :: UIStroke ?
+												avatarImage.Image = Players:GetUserThumbnailAsync(plr.UserId, Enum.ThumbnailType.AvatarThumbnail, Enum.ThumbnailSize.Size420x420)
+												avatarImage.BackgroundColor3 = Color3.fromRGB(138, 204, 255)
+
+												if uiStroke then
+													uiStroke.Color = avatarImage.BackgroundColor3
+												end
+											end
+										end
+										task.wait(1)
+									end
+								end
+							end
+							task.wait()
+						end, function()
+							vehicleModel:SetAttribute("HasObstacle", nil)
+
+							local vehicleBody = vehicleModel:WaitForChild("Body"):WaitForChild("Body")
+							local infoDisplay = vehicleBody:FindFirstChild("InfoDisplay")
+
+							local sg = if infoDisplay then infoDisplay:FindFirstChild("SurfaceGui") else nil
+							if infoDisplay and sg then
+								local frame = sg:FindFirstChild("Frame")
+								if frame then
+									local title = frame:FindFirstChild("Title") :: TextLabel ?
+									local avatarImage = frame:FindFirstChild("AvatarImage") :: ImageLabel ?
+
+									if title then
+										title.Text = `STATUS: <font color = "rgb(255,0,0)">PATROLLING </font>`	
+									end
+
+									if avatarImage then
+										local uiStroke = avatarImage:FindFirstChild("UIStroke") :: UIStroke ?
+
+										avatarImage.Image = ""
+										avatarImage.BackgroundColor3 = Color3.fromRGB(255,50,50)
+										if uiStroke then
+											uiStroke.Color = avatarImage.BackgroundColor3
+										end
+									end
+								end
+							end
+
+						end)
+					end
+				end
+				db = false
+			end
+		end))	
+	end
 end
 
 --script
 local NPC = {}
 
 function NPC.init(maid : Maid)
-    for _, vehicleModel in pairs(CollectionService:GetTagged(NPC_TAG)) do
-        init(maid, vehicleModel)
+	for _, spawnPart in pairs(NPCSpawns:GetChildren()) do
+		assert(spawnPart:IsA("BasePart"))
+		local npcModelPointer = spawnPart:FindFirstChild("ModelPointer") :: ObjectValue ?
+
+		resetNPC(spawnPart, init)
+
+		--[[if npcModelPointer and npcModelPointer.Value then
+			init(npcModelPointer.Value :: Model, spawnPart)
+		end]]
+	end
+	--[[for _, vehicleModel in pairs(CollectionService:GetTagged(NPC_TAG)) do
+		if vehicleModel:IsDescendantOf(workspace) then
+			init(vehicleModel)
+		end
     end
+
+	maid:GiveTask(CollectionService:GetInstanceAddedSignal(NPC_TAG):Connect(function(npc : Model)
+		init(npc)
+	end))]]
 end
     --automation
 return NPC

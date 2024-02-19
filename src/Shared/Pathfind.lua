@@ -3,7 +3,7 @@
 --packages
 --modules
 --types
-type PointData = {
+export type PointData = {
 	PointId : number,
 	["Neighbours"] : {
 		[number] : PointData
@@ -28,10 +28,10 @@ local function newPointData(
 	PointId : number,
 	Cost : number,
 	Obstacled : boolean,
-	Came_From : PointData ?,
 	Neighbours : {
 		[number] : PointData
-	} ?
+	} ?,
+	Came_From : PointData ?
 ) : PointData
 	return {
 		PointId = PointId,
@@ -200,4 +200,4 @@ function Pathfind.djikstraPathfinding(points : {PointData}, startPoint : PointDa
 	return processPathfindOutput(output, startPoint.PointId, endPoint.PointId)
 end
 --
-return
+return Pathfind
