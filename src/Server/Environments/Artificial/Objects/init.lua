@@ -204,6 +204,44 @@ function Objects.init(maid : Maid)
                         end))
                     end
                 end
+            elseif object:GetAttribute("DisplayType") == "Sequence" then
+                for _,v in pairs(object:GetDescendants()) do
+                    if v:IsA("SurfaceGui") then
+                        print(v, " ScreenUOI?")
+                        local t = tick()
+                        local interval = 15
+
+                        local maxLayoutOrder = 0 
+
+                        for _, guiObject : GuiObject in pairs(v:GetChildren()) do
+                            if guiObject.LayoutOrder > maxLayoutOrder then
+                                maxLayoutOrder = guiObject.LayoutOrder
+                            end
+                        end
+
+                        maid:GiveTask(RunService.Stepped:Connect(function()
+                            if tick() - t > 1 then
+                                t = tick()
+
+                                for _, guiObject : GuiObject in pairs(v:GetChildren()) do
+                                    guiObject.Visible = false
+                                end
+
+                                local currentOrder = v:GetAttribute("CurrentOrder") or 0
+                                for _, guiObject : GuiObject in pairs(v:GetChildren()) do
+                                    if guiObject.LayoutOrder == currentOrder then
+                                        guiObject.Visible = true
+
+                                        v:SetAttribute("CurrentOrder", if currentOrder >= maxLayoutOrder then 0 else currentOrder + 1)
+                                        break
+                                    else
+                                        v:SetAttribute("CurrentOrder", 0)
+                                    end
+                                end
+                            end
+                        end))
+                    end
+                end
             end
         elseif object:GetAttribute("Class") == "Elevator" then
             if object:IsA("BasePart") and object.Anchored == true then

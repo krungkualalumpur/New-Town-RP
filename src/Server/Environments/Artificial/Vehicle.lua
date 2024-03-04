@@ -256,6 +256,8 @@ function Vehicle.init(maid : Maid)
                        
                         --VectorForce.Force = Vector3.new(0,0,-customThrottleNum*8000)
                     end
+
+                    
                 end
             end))
 
@@ -329,8 +331,10 @@ function Vehicle.init(maid : Maid)
 
                     if F then
                         local function updateLight(part : BasePart) 
+                            print(part, "1")
                             part.Material = if vehicleModel:GetAttribute(isHeadlightAttribute) then Enum.Material.Neon else Enum.Material.SmoothPlastic
-                            local light = F:FindFirstChildWhichIsA("Light")
+                            local light = part:FindFirstChildWhichIsA("Light")
+                            print(part, light, "1")
                             if light then
                                 light.Enabled = vehicleModel:GetAttribute(isHeadlightAttribute) or false
                             end
@@ -347,8 +351,62 @@ function Vehicle.init(maid : Maid)
                     end
                 end
             end))
+
+            local function lightSignalFn(I: {BasePart | Model}, isStop : boolean)
+                if isStop then
+                    local mat = Enum.Material.SmoothPlastic
+                    for _,v in pairs(I) do
+                        if v:IsA("Model") then
+                            for _,l in pairs(v:GetDescendants()) do
+                                if l:IsA("BasePart") then
+                                    l.Material = mat
+                                end
+                            end
+                        elseif v:IsA("BasePart") then
+                            v.Material = mat
+                        end
+                    end
+                else
+                    local firstInst = I[1]
+                    local firstMat 
+
+                    if firstInst:IsA("BasePart") then
+                        firstMat = firstInst.Material
+                    elseif firstInst:IsA("Model") then
+                        for _,v in pairs(firstInst:GetDescendants()) do
+                            if v:IsA("BasePart") then
+                                firstMat = v.Material
+                                break
+                            end
+                        end
+                    end
+ 
+                    for _,v in pairs(I) do
+                        local targetMat = if firstMat == Enum.Material.Neon then Enum.Material.SmoothPlastic else Enum.Material.Neon
+                        if v:IsA("BasePart") then
+                            v.Material = targetMat
+                        elseif v:IsA("Model") then
+                            for _,l in pairs(v:GetChildren()) do
+                                if l:IsA("BasePart") then
+                                    l.Material = targetMat
+                                end
+                            end
+
+                        end
+                        
+                         
+                    end
+                end
+                
+                
+            end
+
             _maid:GiveTask(vehicleModel:GetAttributeChangedSignal(isLeftSignalingAttribute):Connect(function()
                 if vehicleModel:GetAttribute("Class") == CAR_CLASS_KEY then
+                    
+                  
+
+                    
                     local lightsModel = vehicleModel:WaitForChild("Body"):WaitForChild("Lights")
                     local FLI = lightsModel:FindFirstChild("FLI") :: BasePart ?
                     local RLI = lightsModel:FindFirstChild("RLI") :: BasePart ?
@@ -362,20 +420,21 @@ function Vehicle.init(maid : Maid)
                                 if tick() - t >= 0.35 then
                                     t = tick()
 
-                                    if FLI.Material == Enum.Material.Neon then
+                                    lightSignalFn({FLI, RLI}, false)
+                                    --[[if FLI.Material == Enum.Material.Neon then
                                         FLI.Material = Enum.Material.SmoothPlastic
                                         RLI.Material = Enum.Material.SmoothPlastic
                                     else
                                         FLI.Material = Enum.Material.Neon
                                         RLI.Material = Enum.Material.Neon
-                                    end
+                                    end]]
+                                    
                                 end
                             
                             end)
 
                         else
-                            FLI.Material = Enum.Material.SmoothPlastic
-                            RLI.Material = Enum.Material.SmoothPlastic
+                            lightSignalFn({FLI, RLI}, true)
                             _maid.LightSignal = nil
                         end
                     end
@@ -397,20 +456,20 @@ function Vehicle.init(maid : Maid)
                                 if tick() - t >= 0.35 then
                                     t = tick()
 
-                                    if FRI.Material == Enum.Material.Neon then
+                                    lightSignalFn({FRI, RRI}, false)
+                                    --[[if FRI.Material == Enum.Material.Neon then
                                         FRI.Material = Enum.Material.SmoothPlastic
                                         RRI.Material = Enum.Material.SmoothPlastic
                                     else
                                         FRI.Material = Enum.Material.Neon
                                         RRI.Material = Enum.Material.Neon
-                                    end
+                                    end]]
                                 end
                             
                             end)
 
                         else
-                            FRI.Material = Enum.Material.SmoothPlastic
-                            RRI.Material = Enum.Material.SmoothPlastic
+                            lightSignalFn({FRI, RRI}, true)
                             _maid.LightSignal = nil
                         end
                     end
@@ -528,6 +587,38 @@ function Vehicle.init(maid : Maid)
                     _maid:Destroy()
                 end
             end))
+
+            if vehicleModel:GetAttribute("Class") == CAR_CLASS_KEY then
+                local function updatePlate()
+                    local plates = vehicleModel:WaitForChild("Body"):WaitForChild("Body"):FindFirstChild("Plates")
+
+                    if plates then
+                        local function getRandomNum()
+                            return string.char(math.random(49, 57))
+                        end
+                        local function getRandomAlphabet()
+                            return string.char(math.random(65, 65+25))
+                        end
+    
+                        local randomPlateNum = `{getRandomAlphabet()} {getRandomNum()}{getRandomNum()}{getRandomNum()}{getRandomNum()} {getRandomAlphabet()}{getRandomAlphabet()}`
+                       
+                        for _,v in pairs(plates:GetChildren()) do
+                            local sg = v:FindFirstChildWhichIsA("SurfaceGui")
+                            local tl = if sg then sg:FindFirstChildWhichIsA("TextLabel") else nil
+                            if tl then
+                                tl.Text = if vehicleModel:GetAttribute("OwnerId") then Players:GetNameFromUserIdAsync(vehicleModel:GetAttribute("OwnerId") or 0) else randomPlateNum
+                            end
+                        end
+                    end
+                end
+
+                if vehicleModel:IsDescendantOf(workspace) then
+                    updatePlate()
+                    _maid:GiveTask(vehicleModel:GetAttributeChangedSignal("OwnerId"):Connect(function()
+                        updatePlate()
+                    end))
+                end
+            end
         end
     end
     
@@ -633,7 +724,7 @@ function Vehicle.init(maid : Maid)
         local vehicleModel = getVehicleFromPlayer(plr)
         assert(vehicleModel)
         local vehicleData = getVehicleData(vehicleModel)
-        if vehicleData.Class ~= "Vehicle" then
+        if vehicleData.Class ~= CAR_CLASS_KEY then
             return nil
         end
         local bodyModel = vehicleModel:FindFirstChild("Body")

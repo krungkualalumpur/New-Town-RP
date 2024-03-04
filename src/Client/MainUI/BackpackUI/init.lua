@@ -156,7 +156,7 @@ local function getItemButton(
         else CFrame.new()) else nil
     })
 
-    local optionButtonsPosition = _Value(UDim2.new(if not UserInputService.TouchEnabled then 2 else 0,0,0,0))
+    local optionButtonsPosition = _Value(UDim2.new())
 
     local optionButtonsFrame = _new("Frame")({
         LayoutOrder = 1,
@@ -168,15 +168,7 @@ local function getItemButton(
                 VerticalAlignment = Enum.VerticalAlignment.Bottom,
                 Padding = UDim.new(PADDING_SIZE.Scale*0.5, PADDING_SIZE.Offset*0.5),
             }),
-            getButton(
-                maid, 
-                1,
-                "Get",
-                function()
-                    onBackpackButtonAddClickSignal:Fire(itemInfo)
-                end,
-                TERTIARY_COLOR
-            ),
+           
             --[[getButton(
                 maid, 
                 2,
@@ -244,17 +236,34 @@ local function getItemButton(
                 }
             })
         },
-        Events = {
-            MouseEnter = function()
-                optionButtonsPosition:Set(UDim2.fromScale(0, 0))
-            end,
-            MouseLeave = function()
-                optionButtonsPosition:Set(UDim2.fromScale(if  not UserInputService.TouchEnabled then 2 else 0, 0))
-            end
-        }
+       
     })
 
-    return out
+    local out2 = _new("Frame")({
+        BackgroundTransparency = 1,
+        Children = {
+            _bind(out)({
+                Size = UDim2.fromScale(1, 1),
+                
+            }),
+
+            
+            _bind(getButton(
+                maid, 
+                1,
+                "",
+                function()
+                    onBackpackButtonAddClickSignal:Fire(itemInfo)
+                end,
+                TERTIARY_COLOR
+            ))({
+                Size = UDim2.fromScale(1, 1),
+                BackgroundTransparency = 1
+            }),
+        }
+    })
+    
+    return out2
 end
 
 local function getVehicleButton(
@@ -340,7 +349,7 @@ local function getVehicleButton(
         end
     end]]
 
-    local optionButtonsPosition =  _Value(if  not UserInputService.TouchEnabled then UDim2.new(2,0,0,0) else UDim2.new())
+    local optionButtonsPosition =  _Value(UDim2.new())
 
     local optionButtonsFrame = _new("Frame")({
         LayoutOrder = 1,
@@ -352,7 +361,7 @@ local function getVehicleButton(
                 VerticalAlignment = Enum.VerticalAlignment.Bottom,
                 Padding = UDim.new(PADDING_SIZE.Scale*0.5, PADDING_SIZE.Offset*0.5),
             }),
-            getButton(
+            --[[_bind(getButton(
                 maid, 
                 1,
                 _Computed(function(vehicleInfo : VehicleData ?)
@@ -363,7 +372,10 @@ local function getVehicleButton(
                     onVehicleButtonInteract:Fire(key, vehicleInfo)
                 end,
                 TERTIARY_COLOR
-            ),
+            ))({
+                Size = UDim2.fromScale(1, 1),
+                BackgroundTransparency = 0.5
+            }),]]
             --[[getButton(
                 maid, 
                 2,
@@ -434,19 +446,37 @@ local function getVehicleButton(
                         }
                     })
                 }
-            })
+            }),
+          
         },
-        Events = {
-            MouseEnter = function()
-                optionButtonsPosition:Set(UDim2.fromScale(0, 0))
-            end,
-            MouseLeave = function()
-                optionButtonsPosition:Set(UDim2.fromScale(if  not UserInputService.TouchEnabled then 2 else 0, 0))
-            end
+    })
+
+
+    local out2 = _new("Frame")({
+        BackgroundTransparency = 1,
+        Children = {
+            _bind(out)({
+                Size = UDim2.fromScale(1, 1),
+                
+            }),
+
+            _bind(getButton(
+                maid, 
+                1,
+                "",
+                function()
+                    local vehicleInfo = dynamicVehicleInfo:Get()
+                    onVehicleButtonInteract:Fire(key, vehicleInfo)
+                end,
+                TERTIARY_COLOR
+            ))({
+                Size = UDim2.fromScale(1, 1),
+                BackgroundTransparency = 1
+            }),
         }
     })
 
-    return out
+    return out2
 end
 
 local function getItemTypeFrame(

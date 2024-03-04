@@ -165,6 +165,10 @@ return function(target : CoreGui)
 
     end))
 
+    maid:GiveTask(onVehicleSpawn:Connect(function(t1, vName)
+        print("Test1 ", vName)
+    end))
+
     return function() 
         maid:Destroy()
     end

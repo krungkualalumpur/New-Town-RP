@@ -329,9 +329,13 @@ function PlayerManager.new(player : Player, maid : Maid ?)
         self.isLoaded = true
         if not characterLoadSuccess then
             --loads vanilla
-            self:AddVehicle("Motorcycle", true)
+            for _,v in pairs(ReplicatedStorage:WaitForChild("Assets"):WaitForChild("Vehicles"):GetChildren()) do
+                self:AddVehicle(v.Name, true)
+            end
+           --[[ self:AddVehicle("Motorcycle", true)
             self:AddVehicle("Bajaj", true)
             --self:AddVehicle("Taxi", true)
+            self:AddVehicle("Local Bus", true)
             self:AddVehicle("Muntjac", true)
             --self:AddVehicle("Avalon", true)
             --self:AddVehicle("Rav", true)
@@ -341,7 +345,7 @@ function PlayerManager.new(player : Player, maid : Maid ?)
             --self:AddVehicle("Ambulance", true)
             self:AddVehicle("SWAT Car", true)
             self:AddVehicle("Police", true)
-            self:AddVehicle("Firetruck", true)
+            self:AddVehicle("Firetruck", true)]]
 
             --character loading
             self:SetData(self:GetData(), false)

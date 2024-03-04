@@ -88,11 +88,11 @@ local function init(vehicleModel : Model, spawnPart : BasePart)
 						local accDir = vehiclePart.CFrame:VectorToObjectSpace(vehiclePart.AssemblyLinearVelocity).Z
 						--task.spawn(function() task.wait(1); v.MotorMaxTorque = 1--[[550000000]]; end)
 						if throttle ~= 0 then
-							v.MotorMaxTorque = 5--999999999999
-							v.MotorMaxAcceleration = if math.sign(accDir*throttle) == 1 then 60 else 25
-							if math.sign(accDir*throttle) == 1 then
+							v.MotorMaxTorque = vehicleModel:GetAttribute("WheelPower") or 15--999999999999
+							v.MotorMaxAcceleration = 60 --if math.sign(accDir*throttle) == 1 then 60 else 25
+							--[[if math.sign(accDir*throttle) == 1 then
 								v.AngularVelocity = 0
-							end
+							end]]
 						else
 							v.MotorMaxTorque = 999999999999
 							v.MotorMaxAcceleration = 40
@@ -227,7 +227,7 @@ local function init(vehicleModel : Model, spawnPart : BasePart)
 					onObstacleCleared()
 				end
             end
-            setCarMovement(1*math.sign(dot), (-cross.Y)*35*math.sign(dot))
+            setCarMovement(1*math.sign(dot), (-cross.Y)*32*math.sign(dot))
         end
             --if (vehicleSeat.Position - v3).Magnitude < 25 then
                 --conn:Disconnect()
@@ -302,7 +302,7 @@ local function init(vehicleModel : Model, spawnPart : BasePart)
 					if tick() - t > 1 then
 						t = tick()
 
-						if math.round(vehicleModel.PrimaryPart.AssemblyLinearVelocity.Magnitude) <= 1 then
+						if math.round(vehicleModel.PrimaryPart.AssemblyLinearVelocity.Magnitude) < 1 then
 							stopT += 1
 						else
 							stopT = 0
