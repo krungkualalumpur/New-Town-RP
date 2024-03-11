@@ -26,8 +26,9 @@ type VehicleData = ManagerTypes.VehicleData
 --constants
 local VEHICLE_TAG = "Vehicle"
 
-local BOAT_CLASS_KEY = "Boat"
+local ENV_BOAT_CLASS_KEY = "EnvironmentBoat"
 local CAR_CLASS_KEY = "Vehicle"
+local BOAT_CLASS_KEY = "Boat"
 
 local CUSTOM_THROTTLE_KEY = "CustomThrottle"
 local CUSTOM_STEER_KEY = "CustomSteer"
@@ -48,7 +49,7 @@ local function playSound(soundId : number, target : Instance, isLoop : boolean, 
 
     local sound = _maid:GiveTask(Instance.new("Sound"))
     sound.Looped = isLoop
-    sound.RollOffMaxDistance = maxHeardDistance or 20
+    sound.RollOffMaxDistance = maxHeardDistance or 50
     sound.Parent = target
     sound.SoundId = "rbxassetid://" .. tostring(soundId)
     sound:Play()
@@ -122,6 +123,8 @@ function Vehicle.init(maid : Maid)
     local isHeadlightAttribute= "IsHeadlightAttribute"
     local isLeftSignalingAttribute = "IsLeftSignaling"
     local isRightSignalingAttribute = "IsRightSignaling"
+    local isHazardSignalingAttribute = "IsHazardSignaling"
+    local isSireningAttribute = "IsSirening"
 
 
     local function vehicleSetup(vehicleModel : Instance)
@@ -132,11 +135,11 @@ function Vehicle.init(maid : Maid)
         vehicleModel:SetAttribute(CUSTOM_STEER_KEY, 0)
 
         if vehicleModel:IsA("Model") and vehicleSeat and vehicleSeat:IsA("VehicleSeat") and vehicleModel.PrimaryPart then
-            setupSpawnedCar(vehicleModel)
+            if vehicleModel:GetAttribute("Class") == CAR_CLASS_KEY then setupSpawnedCar(vehicleModel) end
             
             local _maid = Maid.new()
 
-            --[[if vehicleModel:GetAttribute("Class") == BOAT_CLASS_KEY then
+            --[[if vehicleModel:GetAttribute("Class") == ENV_BOAT_CLASS_KEY then
                 _maid:GiveTask(vehicleSeat:GetPropertyChangedSignal("Occupant"):Connect(function()
                     local hum = vehicleSeat.Occupant
                     local char = if hum then hum.Parent else nil
@@ -157,7 +160,7 @@ function Vehicle.init(maid : Maid)
                 local customThrottleNum = vehicleModel:GetAttribute(CUSTOM_THROTTLE_KEY) :: number
                 assert(customThrottleNum, "no throttle number")
 
-                if vehicleModel:GetAttribute("Class") == BOAT_CLASS_KEY then
+                if vehicleModel:GetAttribute("Class") == ENV_BOAT_CLASS_KEY then
                     local hum = vehicleSeat.Occupant
                     if hum then
                         if vehicleSeat.AssemblyLinearVelocity.Magnitude <= 10 then
@@ -256,7 +259,9 @@ function Vehicle.init(maid : Maid)
                        
                         --VectorForce.Force = Vector3.new(0,0,-customThrottleNum*8000)
                     end
-
+                
+                elseif vehicleModel:GetAttribute("Class") == BOAT_CLASS_KEY then
+                    print("powahh!")
                     
                 end
             end))
@@ -264,7 +269,7 @@ function Vehicle.init(maid : Maid)
             _maid:GiveTask(vehicleModel:GetAttributeChangedSignal(CUSTOM_STEER_KEY):Connect(function()
                 local customSteer = vehicleModel:GetAttribute(CUSTOM_STEER_KEY) :: number
                 assert(customSteer, "no steer number")
-                if vehicleModel:GetAttribute("Class") == BOAT_CLASS_KEY then
+                if vehicleModel:GetAttribute("Class") == ENV_BOAT_CLASS_KEY then
                     vehicleSeat.AssemblyAngularVelocity += Vector3.new(0,1,0)*-customSteer
                 elseif vehicleModel:GetAttribute("Class") == CAR_CLASS_KEY then
                     local seat = vehicleModel:FindFirstChild("VehicleSeat") :: VehicleSeat ?
@@ -307,7 +312,15 @@ function Vehicle.init(maid : Maid)
                             end
                         end
                     end
-
+                elseif vehicleModel:GetAttribute("Class") == BOAT_CLASS_KEY then
+                    if customSteer ~= 0 then
+                        _maid.OnRotate = RunService.Stepped:Connect(function()
+                            local customThrottle = customSteer*vehicleModel:GetAttribute(CUSTOM_THROTTLE_KEY)
+                            vehicleSeat.AssemblyAngularVelocity += Vector3.new(0,0.03,0)*(-customSteer*(if customThrottle ~= 0 then customSteer*customThrottle else 1))
+                        end)     
+                    else
+                       _maid.OnRotate = nil 
+                    end
                 end
             end))
 
@@ -331,10 +344,8 @@ function Vehicle.init(maid : Maid)
 
                     if F then
                         local function updateLight(part : BasePart) 
-                            print(part, "1")
                             part.Material = if vehicleModel:GetAttribute(isHeadlightAttribute) then Enum.Material.Neon else Enum.Material.SmoothPlastic
                             local light = part:FindFirstChildWhichIsA("Light")
-                            print(part, light, "1")
                             if light then
                                 light.Enabled = vehicleModel:GetAttribute(isHeadlightAttribute) or false
                             end
@@ -352,7 +363,7 @@ function Vehicle.init(maid : Maid)
                 end
             end))
 
-            local function lightSignalFn(I: {BasePart | Model}, isStop : boolean)
+            local function lightSignalFn(I: {BasePart | Model}, isStop : boolean, hasBuffer : boolean)
                 if isStop then
                     local mat = Enum.Material.SmoothPlastic
                     for _,v in pairs(I) do
@@ -385,10 +396,12 @@ function Vehicle.init(maid : Maid)
                         local targetMat = if firstMat == Enum.Material.Neon then Enum.Material.SmoothPlastic else Enum.Material.Neon
                         if v:IsA("BasePart") then
                             v.Material = targetMat
+                            if hasBuffer then task.wait(0.1) end
                         elseif v:IsA("Model") then
                             for _,l in pairs(v:GetChildren()) do
                                 if l:IsA("BasePart") then
                                     l.Material = targetMat
+                                    if hasBuffer then task.wait(0.1) end
                                 end
                             end
 
@@ -403,16 +416,13 @@ function Vehicle.init(maid : Maid)
 
             _maid:GiveTask(vehicleModel:GetAttributeChangedSignal(isLeftSignalingAttribute):Connect(function()
                 if vehicleModel:GetAttribute("Class") == CAR_CLASS_KEY then
-                    
-                  
-
-                    
                     local lightsModel = vehicleModel:WaitForChild("Body"):WaitForChild("Lights")
-                    local FLI = lightsModel:FindFirstChild("FLI") :: BasePart ?
-                    local RLI = lightsModel:FindFirstChild("RLI") :: BasePart ?
+                    local FLI = lightsModel:FindFirstChild("FLI") :: (BasePart | Model) ?
+                    local RLI = lightsModel:FindFirstChild("RLI") :: (BasePart | Model) ?
 
                     if FLI and RLI then
                         if vehicleModel:GetAttribute(isLeftSignalingAttribute) == true then
+                            vehicleModel:SetAttribute(isHazardSignalingAttribute, nil)
                             vehicleModel:SetAttribute(isRightSignalingAttribute, nil)
                             task.wait()
                             local t = tick()
@@ -420,7 +430,7 @@ function Vehicle.init(maid : Maid)
                                 if tick() - t >= 0.35 then
                                     t = tick()
 
-                                    lightSignalFn({FLI, RLI}, false)
+                                    lightSignalFn({FLI, RLI}, false, false)
                                     --[[if FLI.Material == Enum.Material.Neon then
                                         FLI.Material = Enum.Material.SmoothPlastic
                                         RLI.Material = Enum.Material.SmoothPlastic
@@ -434,7 +444,7 @@ function Vehicle.init(maid : Maid)
                             end)
 
                         else
-                            lightSignalFn({FLI, RLI}, true)
+                            lightSignalFn({FLI, RLI}, true, false)
                             _maid.LightSignal = nil
                         end
                     end
@@ -444,11 +454,12 @@ function Vehicle.init(maid : Maid)
             _maid:GiveTask(vehicleModel:GetAttributeChangedSignal(isRightSignalingAttribute):Connect(function()
                 if vehicleModel:GetAttribute("Class") == CAR_CLASS_KEY then
                     local lightsModel = vehicleModel:WaitForChild("Body"):WaitForChild("Lights")
-                    local FRI = lightsModel:FindFirstChild("FRI") :: BasePart ?
-                    local RRI = lightsModel:FindFirstChild("RRI") :: BasePart ?
-
+                    local FRI = lightsModel:FindFirstChild("FRI") :: (BasePart | Model) ?
+                    local RRI = lightsModel:FindFirstChild("RRI") :: (BasePart | Model) ?
+                    
                     if FRI and RRI then
                         if vehicleModel:GetAttribute(isRightSignalingAttribute) == true then
+                            vehicleModel:SetAttribute(isHazardSignalingAttribute, nil)
                             vehicleModel:SetAttribute(isLeftSignalingAttribute, nil)
                             task.wait()
                             local t = tick()
@@ -456,7 +467,7 @@ function Vehicle.init(maid : Maid)
                                 if tick() - t >= 0.35 then
                                     t = tick()
 
-                                    lightSignalFn({FRI, RRI}, false)
+                                    lightSignalFn({FRI, RRI}, false, false)
                                     --[[if FRI.Material == Enum.Material.Neon then
                                         FRI.Material = Enum.Material.SmoothPlastic
                                         RRI.Material = Enum.Material.SmoothPlastic
@@ -469,16 +480,86 @@ function Vehicle.init(maid : Maid)
                             end)
 
                         else
-                            lightSignalFn({FRI, RRI}, true)
+                            lightSignalFn({FRI, RRI}, true, false)
                             _maid.LightSignal = nil
                         end
                     end
                 end
             end))
 
+            _maid:GiveTask(vehicleModel:GetAttributeChangedSignal(isHazardSignalingAttribute):Connect(function()
+                if vehicleModel:GetAttribute("Class") == CAR_CLASS_KEY then
+                    local lightsModel = vehicleModel:WaitForChild("Body"):WaitForChild("Lights")
+                    local FRI = lightsModel:FindFirstChild("FRI") :: BasePart ?
+                    local RRI = lightsModel:FindFirstChild("RRI") :: BasePart ?
+                    local FLI = lightsModel:FindFirstChild("FLI") :: BasePart ?
+                    local RLI = lightsModel:FindFirstChild("RLI") :: BasePart ?
+
+                    if FRI and RRI and FLI and RLI then
+                        if vehicleModel:GetAttribute(isHazardSignalingAttribute) == true then
+                            vehicleModel:SetAttribute(isLeftSignalingAttribute, nil)
+                            vehicleModel:SetAttribute(isRightSignalingAttribute, nil)
+                            task.wait()
+                            local t = tick()
+                            _maid.LightSignal = RunService.Stepped:Connect(function()
+                                if tick() - t >= 0.35 then
+                                    t = tick()
+
+                                    lightSignalFn({FRI, RRI, FLI, RLI}, false, false)
+                                end
+                            
+                            end)
+                        else
+                            lightSignalFn({FRI, RRI, FLI, RLI}, true, false)
+                            _maid.LightSignal = nil
+                        end
+                    end
+                end
+            end))
+
+            _maid:GiveTask(vehicleModel:GetAttributeChangedSignal(isSireningAttribute):Connect(function()
+                if vehicleModel:GetAttribute("Class") == CAR_CLASS_KEY then
+                    local vehicleBody = vehicleModel:FindFirstChild("Body")
+                    if vehicleBody then
+                        local body = vehicleBody:WaitForChild("Body")
+                        local sirene = body:FindFirstChild("Sirene")
+
+                        local sireneLamps = {}
+                        for _,v in pairs(sirene:GetChildren()) do
+                            if v:IsA("BasePart") then
+                                table.insert(sireneLamps, v)
+                            end
+                        end
+
+                        if sirene then
+                            if vehicleModel:GetAttribute(isSireningAttribute) == true then
+                                local t = tick()
+                                local db = false
+                                _maid.Sirene = RunService.Stepped:Connect(function()
+                                    if tick() - t >= 0.5 and not db then
+                                        db =  true
+                                        t = tick()
+
+                                        lightSignalFn(sireneLamps, false, true)
+                                        db = false
+                                    end
+                                end)
+
+                                _maid.SireneSound = playSound(5074502989, vehicleModel.PrimaryPart, true)
+                                
+                            else
+                                _maid.Sirene = nil
+                                _maid.SireneSound = nil
+                                lightSignalFn(sireneLamps, true, false)
+                            end
+
+                        end
+                    end
+                end
+            end))
 
             if vehicleModel:IsDescendantOf(workspace) then
-                if vehicleModel:GetAttribute("Class") == BOAT_CLASS_KEY then
+                if vehicleModel:GetAttribute("Class") == ENV_BOAT_CLASS_KEY then
                     --ship physics check
                     local spawnPositionValue = vehicleModel:FindFirstChild("SpawnPosition") :: CFrameValue
                     if spawnPositionValue then
@@ -502,7 +583,7 @@ function Vehicle.init(maid : Maid)
                     PhysicsService:CollisionGroupSetCollidable(vipPlayerCollisionKey, borderCollisionKey, false)
                     PhysicsService:CollisionGroupSetCollidable("Player", borderCollisionKey, false)
 
-                elseif vehicleModel:GetAttribute("Class") == CAR_CLASS_KEY then
+                elseif (vehicleModel:GetAttribute("Class") == CAR_CLASS_KEY) or (vehicleModel:GetAttribute("Class") == BOAT_CLASS_KEY) then
                     local occupantMaid = _maid:GiveTask(Maid.new())
                     
                     local seat = vehicleModel:FindFirstChild("VehicleSeat") :: VehicleSeat ?
@@ -666,6 +747,18 @@ function Vehicle.init(maid : Maid)
     maid:GiveTask(NetworkUtil.onServerEvent(ON_VEHICLE_CONTROL_EVENT, function(plr : Player, vehicleModel : Model, eventName : string, ...)
         if eventName == "Horn" then
             assert(vehicleModel.PrimaryPart)
+
+            local vehicleBody = vehicleModel:FindFirstChild("Body")
+            if vehicleBody then
+                local body = vehicleBody:WaitForChild("Body")
+                local sirene = if body then body:FindFirstChild("Sirene") else nil
+
+                if sirene then
+                    vehicleModel:SetAttribute(isSireningAttribute, if vehicleModel:GetAttribute(isSireningAttribute) == true then nil else true)
+                    return
+                end
+            end
+
             if vehicleModel.PrimaryPart:FindFirstChild("HornSound") then
                 return  
             end
@@ -675,29 +768,11 @@ function Vehicle.init(maid : Maid)
             vehicleModel:SetAttribute(isHeadlightAttribute, if vehicleModel:GetAttribute(isHeadlightAttribute) == true then nil else true)
         elseif eventName == "LeftSignal" then
             vehicleModel:SetAttribute(isLeftSignalingAttribute, if vehicleModel:GetAttribute(isLeftSignalingAttribute) == true then nil else true)
-            --[[
-            local lightsModel = vehicleModel:WaitForChild("Body"):WaitForChild("Lights")
-            local FLI = lightsModel:FindFirstChild("FLI") :: BasePart ?
-            local RLI = lightsModel:FindFirstChild("RLI") :: BasePart ?
-
-            if FLI and RLI then
-                FLI.Material = Enum.Material.Neon
-                RLI.Material = Enum.Material.Neon
-            end
-            ]]
         elseif eventName == "RightSignal" then
             --PlaySound(200530606, seat, 1, 85)
             vehicleModel:SetAttribute(isRightSignalingAttribute, if vehicleModel:GetAttribute(isRightSignalingAttribute) == true then nil else true)
-            --[[
-            local lightsModel = vehicleModel:WaitForChild("Body"):WaitForChild("Lights")
-            local FRI = lightsModel:FindFirstChild("FRI") :: BasePart ?
-            local RRI = lightsModel:FindFirstChild("RRI") :: BasePart ?
-
-            if FRI and RRI then
-                FRI.Material = Enum.Material.Neon
-                RRI.Material = Enum.Material.Neon
-            end
-            ]]
+        elseif eventName == "HazardSignal" then
+            vehicleModel:SetAttribute(isHazardSignalingAttribute, if vehicleModel:GetAttribute(isHazardSignalingAttribute) == true then nil else true)
         elseif eventName == "Move" then
             local vehicleSeat = vehicleModel:FindFirstChild("VehicleSeat") :: VehicleSeat
 

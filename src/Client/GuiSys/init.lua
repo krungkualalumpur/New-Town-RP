@@ -25,6 +25,7 @@ local MapUI = require(ReplicatedStorage:WaitForChild("Client"):WaitForChild("Map
 local ExitButton = require(ReplicatedStorage:WaitForChild("Client"):WaitForChild("ExitButton"))
 local NewCustomizationUI = require(ReplicatedStorage:WaitForChild("Client"):WaitForChild("MainUI"):WaitForChild("NewCustomizationUI"))
 local LoadingFrame = require(ReplicatedStorage:WaitForChild("Client"):WaitForChild("LoadingFrame"))
+local StatusUtil = require(ReplicatedStorage:WaitForChild("Client"):WaitForChild("StatusUtil"))
 
 local CustomEnum = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("CustomEnum"))
 local NumberUtil = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("NumberUtil"))
@@ -148,7 +149,7 @@ local function getCharacter(fromWorkspace : boolean, plr : Player ?)
         else
             for _,charModel in pairs(workspace:GetChildren()) do
                 local humanoid = charModel:FindFirstChild("Humanoid")
-                print(charModel:IsA("Model"), humanoid, humanoid and humanoid:IsA("Humanoid"), charModel.Name == (if plr then plr.Name else Players.LocalPlayer.Name))
+                --print(charModel:IsA("Model"), humanoid, humanoid and humanoid:IsA("Humanoid"), charModel.Name == (if plr then plr.Name else Players.LocalPlayer.Name))
                 if charModel:IsA("Model") and humanoid and humanoid:IsA("Humanoid") and charModel.Name == (if plr then plr.Name else Players.LocalPlayer.Name) then
                     charModel.Archivable = true
                     char = charModel:Clone()
@@ -272,7 +273,7 @@ function guiSys.new()
 
     local onCharacterReset = maid:GiveTask(Signal.new())
 
-    local MainUIStatus : ValueState<MainUI.UIStatus> = _Value(nil) :: any
+    local MainUIStatus : ValueState<StatusUtil.UIStatus> = StatusUtil.getStatusFromName("Ui")
 
     local isOwnHouse = _Value(false)
     local isOwnVehicle = _Value(false)
@@ -312,7 +313,7 @@ function guiSys.new()
 
         target
     )
-   
+
     maid:GiveTask(game.Lighting.Changed:Connect(function()
         date:Set(string.format("%s, %s", getCurrentDay().Name, NumberUtil.NumberToClock(game.Lighting.ClockTime*60*60, false)))
     end))
@@ -349,7 +350,6 @@ function guiSys.new()
         else
             cartSpawnedState:Set(false)
         end
-        print(itemCart)
     end))
     
     maid:GiveTask(onJobChange:Connect(function(job)

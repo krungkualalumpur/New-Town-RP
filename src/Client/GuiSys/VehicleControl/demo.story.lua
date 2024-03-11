@@ -32,6 +32,7 @@ return function(target : CoreGui)
         maid:GiveTask(Signal.new()),
         maid:GiveTask(Signal.new()),
         maid:GiveTask(Signal.new()),
+        maid:GiveTask(Signal.new()),
 
         onMove
     ))

@@ -144,6 +144,7 @@ return function(
     headlightSignal : Signal,
     leftSignal : Signal,
     rightSignal : Signal,
+    hazardSignal : Signal,
 
     onMove : Signal
 )
@@ -169,10 +170,7 @@ return function(
         }
     })
 
-    local hornButton = getImageButton(maid, 6824924955, function()
-        hornSignal:Fire()
-    end, "", 4, false)
-    hornButton.Parent = content 
+   
     local lightButton = getImageButton(maid, 3047402270, function()
         headlightSignal:Fire()
     end, "", 1, false)
@@ -185,6 +183,14 @@ return function(
         rightSignal:Fire()
     end, "", 3, false)
     rightSignalButton.Parent = content 
+    local hazardButton = getImageButton(maid, 12089594444, function()
+        hazardSignal:Fire()
+    end, "", 4, false)
+    hazardButton.Parent = content  
+    local hornButton = getImageButton(maid, 6824924955, function()
+        hornSignal:Fire()
+    end, "", 5, false)
+    hornButton.Parent = content 
     
 
     local controlArrow = _new("TextButton")({

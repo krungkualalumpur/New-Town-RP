@@ -498,11 +498,16 @@ end
 
 function Interactable.InteractNonSwitch(model : Model, plr : Player)
     local data = Interactable.getData(model)
-    
     if data.Class == "CharacterCustomization" then
-        if RunService:IsClient() then             
-            NetworkUtil.fireServer(ON_INTERACT, model)
-            return 
+        if RunService:IsClient() then       
+            if model:GetAttribute("HasShirt") then   
+                NetworkUtil.fireServer(ON_INTERACT, model)
+            else
+                --open the customization UI
+                local uistatus = require(ReplicatedStorage:WaitForChild("Client"):WaitForChild("StatusUtil")).getStatusFromName("Ui")
+                uistatus:Set("Customization")      
+            end
+            return
         end
 
         local function CustomeReplacement(character : Model, instClassName : "Shirt" | "Pants" , id : number)
@@ -542,8 +547,7 @@ function Interactable.InteractNonSwitch(model : Model, plr : Player)
                     CustomizationUtil.Customize(plr, v:GetAttribute("Accessory"), Enum.AvatarItemType.Asset)
                 end
             end
-        else
-
+         
         end
     elseif data.Class == "ItemOptionsUI" then
         if RunService:IsServer() then

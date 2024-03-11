@@ -22,6 +22,7 @@ local ItemOptionsUI = require(ReplicatedStorage:WaitForChild("Client"):WaitForCh
 local HouseUI = require(ReplicatedStorage:WaitForChild("Client"):WaitForChild("MainUI"):WaitForChild("HouseUI"))
 local ColorWheel = require(ReplicatedStorage:WaitForChild("Client"):WaitForChild("ColorWheel"))
 local LoadingFrame = require(ReplicatedStorage:WaitForChild("Client"):WaitForChild("LoadingFrame"))
+local StatusUtil = require(ReplicatedStorage:WaitForChild("Client"):WaitForChild("StatusUtil"))
 
 local ExitButton = require(ReplicatedStorage:WaitForChild("Client"):WaitForChild("ExitButton"))
 local BackpackUtil = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("BackpackUtil"))
@@ -42,7 +43,7 @@ local ToolActions = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChil
 type Maid = Maid.Maid
 type Signal = Signal.Signal
 
-export type UIStatus = "Backpack" | "Roleplay" | "Customization" | "House" | nil
+type UIStatus = StatusUtil.UIStatus
 type ToolData = BackpackUtil.ToolData<boolean>
 export type VehicleData = ItemUtil.ItemInfo & {
     Key : string,

@@ -205,7 +205,10 @@ end
 
 local function createVehicleModel(vehicleData : VehicleData, cf : CFrame)
     local vehicleModel = ItemUtil.getItemFromName(vehicleData.Name):Clone()
-    vehicleModel:PivotTo(cf)
+    assert(vehicleModel:IsA("Model"), "This vehicle model is not a model!")
+    local modelIntCf, size = vehicleModel:GetBoundingBox()
+    --local lookV3 = modelIntCf.LookVector
+    vehicleModel:PivotTo(cf + cf.LookVector*size.Z + cf.UpVector*size.Y*0.6)
 
     applyVehicleData(vehicleModel, vehicleData)
 
@@ -722,11 +725,26 @@ function PlayerManager:SpawnVehicle(key : number, isSpawned : boolean, vehicleNa
             --NotificationUtil.Notify(self.Player, "Can not spawn vehicles inside a building!")
             --return
          end
+         --check if its boat and its under wateee
+         if vehicleModel:GetAttribute("Class") == "Boat" then
+            local _raycastParams = RaycastParams.new()
+            _raycastParams.IgnoreWater = false
+            _raycastParams.RespectCanCollide = true
+           -- _raycastParams.FilterType = Enum.RaycastFilterType.Exclude
+           -- _raycastParams.FilterDescendantsInstances = workspace:WaitForChild("Assets"):GetChildren()
+
+            local ray = workspace:Raycast(vehicleModel.PrimaryPart.Position, Vector3.new(0,-20,0), _raycastParams)
+            if ray.Material ~= Enum.Material.Water then
+                self:SpawnVehicle(key, false)
+                NotificationUtil.Notify(self.Player, "Boat can only be spawned on water")
+                return
+            end
+         end
 
         lockVehicle(vehicleModel, false)
     else
         self._Maid.CurrentSpawnedVehicle = nil
-    end
+    end 
 
     Analytics.updateDataTable(
         self.Player, 

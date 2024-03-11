@@ -59,6 +59,7 @@ local function onCharacterAdded(char : Model)
             local vehicleModel = seat.Parent
             assert(vehicleModel)
             local vehicleData = getVehicleData(vehicleModel)
+            Player.CameraMaxZoomDistance = 24
             if vehicleModel:GetAttribute("Class") ~= "Vehicle" then
                 return
             end
@@ -66,12 +67,12 @@ local function onCharacterAdded(char : Model)
                 return
             end
 
-            Player.CameraMaxZoomDistance = 18
 
             local hornSignal = vehicleControlMaid:GiveTask(Signal.new())
             local headlightSignal = vehicleControlMaid:GiveTask(Signal.new())
             local leftSignal = vehicleControlMaid:GiveTask(Signal.new())
             local rightSignal = vehicleControlMaid:GiveTask(Signal.new())
+            local hazardSignal = vehicleControlMaid:GiveTask(Signal.new())
 
             local onMove  = vehicleControlMaid:GiveTask(Signal.new())
 
@@ -82,6 +83,8 @@ local function onCharacterAdded(char : Model)
                 headlightSignal,
                 leftSignal,
                 rightSignal,
+
+                hazardSignal,
 
                 onMove
             )
@@ -102,6 +105,10 @@ local function onCharacterAdded(char : Model)
             
             vehicleControlMaid:GiveTask(rightSignal:Connect(function()
                 NetworkUtil.fireServer(ON_VEHICLE_CONTROL_EVENT, vehicleModel, "RightSignal")
+            end))
+
+            vehicleControlMaid:GiveTask(hazardSignal:Connect(function()
+                NetworkUtil.fireServer(ON_VEHICLE_CONTROL_EVENT, vehicleModel, "HazardSignal")
             end))
 
             vehicleControlMaid:GiveTask(onMove:Connect(function(directionStr : string)
