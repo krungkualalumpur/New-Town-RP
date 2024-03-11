@@ -140,7 +140,6 @@ function createInteractByPrompt(
     interactCode : Enum.KeyCode | Enum.UserInputType, 
     currentInputKeyCodeState : ValueState<Enum.KeyCode | Enum.UserInputType>
 )
-    
     local instancePointer = proximityPrompt:FindFirstChild("InstancePointer") :: ObjectValue    
 
     maid:GiveTask(proximityPrompt.Triggered:Connect(function()
@@ -236,6 +235,9 @@ function interactSys.init(
     proximityPrompt : ProximityPrompt, --interactFrame : Frame, 
     interactKeyCode : ValueState<Enum.KeyCode | Enum.UserInputType>
 )   
+    proximityPrompt.MaxActivationDistance = 100000
+   
+
     local _fuse = ColdFusion.fuse(maid)
     local _new = _fuse.new
     local _import = _fuse.import
@@ -288,9 +290,9 @@ function interactSys.init(
                     local pos = if v.PrimaryPart then v.PrimaryPart.Position else v:GetBoundingBox().Position
                     local _, isWithinRange = camera:WorldToScreenPoint(pos)
                     local dist = (camera.CFrame.Position - pos).Magnitude
-                    if (dist <= MAXIMUM_INTERACT_DISTANCE) and (dist < minDist) and (isWithinRange) then
+                    if (dist <= (v:GetAttribute("MaxInteractDistance") or MAXIMUM_INTERACT_DISTANCE)) and (dist < minDist) and (isWithinRange) then
                         minDist = dist
-                        nearestInst = v        
+                        nearestInst = v    
                     end
                 end
             end

@@ -183,14 +183,13 @@ local function init(vehicleModel : Model, spawnPart : BasePart)
 
         local overlapParams = OverlapParams.new()
         overlapParams.FilterType = Enum.RaycastFilterType.Include
-        overlapParams.FilterDescendantsInstances = {
-			charactersModel
+        overlapParams.FilterDescendantsInstances =	charactersModel
 			--workspace:WaitForChild("Assets"):WaitForChild("Temporaries"):WaitForChild("Vehicles"):GetChildren()
 			--workspace:WaitForChild("Assets"):WaitForChild("Temporaries"):WaitForChild("Vehicles"):GetChildren(),
 			--workspace:WaitForChild("Assets"):WaitForChild("Buildings"):GetChildren(),
 
 		--	workspace:WaitForChild("Assets"):WaitForChild("Infrastructures"):GetChildren()
-		}
+		
         
         setCarMovement(1, 0)
 

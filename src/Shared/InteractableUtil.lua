@@ -4,6 +4,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local CollectionService = game:GetService("CollectionService")
 local ServerScriptService = game:GetService("ServerScriptService")
 local RunService = game:GetService("RunService")
+local TweenService = game:GetService("TweenService")
 local Players = game:GetService("Players")
 --packages
 local Maid = require(ReplicatedStorage:WaitForChild("Packages"):WaitForChild("Maid"))
@@ -136,7 +137,7 @@ function Interactable.Interact(model : Model, player : Player, plrInfo : any)
     if (interactableData.Class) and (interactableData.IsSwitch ~= nil) then
         Interactable.InteractSwitch(model, player)
     elseif (interactableData.Class) and interactableData.IsSwitch == nil then
-        Interactable.InteractNonSwitch(model, player)
+        Interactable.InteractNonSwitch(model, player, plrInfo)
     end
 
         
@@ -196,7 +197,7 @@ function Interactable.onClientToolInteract(model : Model)
     NetworkUtil.fireServer(ON_TOOL_INTERACT, model)
 end
 
-function Interactable.InteractSwitch(model : Model, player : Player)
+function Interactable.InteractSwitch(model : Model, player : Player, plrInfo : any)
     local IsWaterAttributeKey = "IsWater"
     local IsParticleAttributeKey = "IsParticle"
 
@@ -493,10 +494,11 @@ function Interactable.InteractSwitch(model : Model, player : Player)
                 end
             end
         end
+   
     end
 end
 
-function Interactable.InteractNonSwitch(model : Model, plr : Player)
+function Interactable.InteractNonSwitch(model : Model, plr : Player, plrInfo : any)
     local data = Interactable.getData(model)
     if data.Class == "CharacterCustomization" then
         if RunService:IsClient() then       
@@ -605,6 +607,91 @@ function Interactable.InteractNonSwitch(model : Model, plr : Player)
             end
            
         end]]
+    elseif data.Class == "Farm" then
+        if RunService:IsClient() then
+            NetworkUtil.fireServer(ON_INTERACT, model)
+            return
+        end
+        
+        local plantPartName = "Plant"
+
+        local plantPart = ReplicatedStorage:WaitForChild("Assets"):WaitForChild("Environment"):WaitForChild("Nature"):WaitForChild("Grass") :: BasePart
+        local farmState = (model:GetAttribute("State")) :: "Plant" | "Food" | "Processing"
+
+        if farmState == "Processing" then
+            return
+        end
+
+        local farmPripart = model.PrimaryPart
+        assert(farmPripart)
+
+        local cf, size = model:GetBoundingBox() 
+
+        local plantModel : Model ? = (if model.Parent and not model.Parent:FindFirstChild(plantPartName) then Instance.new("Model") elseif model.Parent and model.Parent:FindFirstChild(plantPartName) then model.Parent:FindFirstChild(plantPartName) :: Model else nil)
+        assert(plantModel) 
+        plantModel.Name = plantPartName
+
+        model:SetAttribute("State", "Processing")
+        if farmState == "Plant" then 
+            for i = 1, 5 do
+                local plantPartCloned = plantPart:Clone()
+                plantPartCloned.CFrame = cf + farmPripart.CFrame.RightVector*size.X*math.random(-50, 50)*0.01
+                plantPartCloned.Size = Vector3.new()
+                plantPartCloned.Parent = plantModel
+            end
+            plantModel.Parent = model.Parent
+            farmPripart.Transparency = 1
+
+            --plant grow anim
+            for _,v in pairs(plantModel:GetChildren()) do
+                if v:IsA("BasePart") then
+                    local waitTime = 0.25
+                    v.Size = Vector3.new()
+
+                    local tween = TweenService:Create(v, TweenInfo.new(waitTime), {Size = plantPart.Size})
+                    tween:Play()
+                    playSound(6544398467, false, v)
+                    task.wait(waitTime)
+                    tween:Destroy()
+                end
+            end
+        else
+            if farmState == "Food" then 
+                farmPripart.Transparency = 1
+                if plrInfo then
+                    local newTool = BackpackUtil.getToolFromName("Rice")
+                    -----
+                    if newTool then
+                        local success = plrInfo:InsertToBackpack(newTool)
+                        if success then
+                            NetworkUtil.fireClient(ON_NOTIFICATION, plr, newTool.Name .. " added to your backpack!")
+                        end
+                    end
+                end
+
+                --plant destroys
+                for _,v in pairs(plantModel:GetChildren()) do
+                    if v:IsA("BasePart") then
+                        local waitTime = 0.25
+                        local intSize = v.Size
+                        v.Size = Vector3.new()
+    
+                        local tween = TweenService:Create(v, TweenInfo.new(waitTime), {Size = Vector3.new()})
+                        tween:Play()
+                        playSound(6544398467, false, v)
+                        task.wait(waitTime)
+                        v:Destroy()
+                        tween:Destroy()
+                    end
+                end
+            elseif farmState == nil then
+                farmPripart.Transparency = 0
+            end
+
+            plantModel:Destroy()
+        end
+
+        model:SetAttribute("State", if farmState == "Plant" then "Food" elseif farmState == "Food" then nil else "Plant")
     else  --default
         if RunService:IsClient() then
             NetworkUtil.fireServer(ON_INTERACT, model)
@@ -841,13 +928,12 @@ function Interactable.init(maid : Maid)
     end
  
     NetworkUtil.onServerInvoke(ON_OPTIONS_OPENED, function(plr : Player)
-        
         return nil
     end)
 
     NetworkUtil.onServerInvoke(ON_ITEM_OPTIONS_OPENED, function(plr : Player, model : Model)
-        Interactable.InteractNonSwitch(model, plr)
-        return nil
+        Interactable.InteractNonSwitch(model, plr) 
+        return nil 
     end)
 
        

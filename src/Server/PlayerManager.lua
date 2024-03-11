@@ -1255,7 +1255,7 @@ function PlayerManager.init(maid : Maid)
 
     maid:GiveTask(NetworkUtil.onServerEvent(ON_INTERACT, function(plr : Player, inst : Instance)
         if inst:IsA("Model") then
-            InteractableUtil.Interact(inst, plr)
+            InteractableUtil.Interact(inst, plr, PlayerManager.get(plr))
         end
     end))
 
