@@ -483,6 +483,7 @@ function PlayerManager.new(player : Player, maid : Maid ?)
 end
 
 function PlayerManager:InsertToBackpack(tool : Instance)
+    print(debug.traceback())
     if #self.Backpack >= MAX_TOOLS_COUNT then
         --notif
         NotificationUtil.Notify(self.Player, "Already has max amount of tools to have")

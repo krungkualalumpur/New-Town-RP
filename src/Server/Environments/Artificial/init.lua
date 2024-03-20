@@ -26,11 +26,56 @@ local NPC = require(ServerScriptService:WaitForChild("Server"):WaitForChild("Env
 --types
 type Maid = Maid.Maid
 --constants
+local LOD_ITEM_TAG = "LODItem"
+local ADAPTIVE_LOD_ITEM_TAG = "AdaptiveLODItem"
 --remotes
 local ON_TEXT_INPUT = "OnTextInput"
 --variables
 --references
 --local function
+local function clientOptimalization()
+    for _,door in pairs(CollectionService:GetTagged("Door")) do
+        if door:IsA("Model") and not CollectionService:HasTag(door, ADAPTIVE_LOD_ITEM_TAG) then
+            local doorPrimaryPart
+            
+            local doorModel = door:FindFirstChild("Model")
+            if doorModel and not doorModel.PrimaryPart then
+                for _,modelChild in pairs(doorModel:GetChildren()) do
+                    if modelChild:IsA("BasePart") and modelChild:FindFirstChildWhichIsA("Attachment") then
+                        doorPrimaryPart = modelChild :: BasePart
+                        break
+                    end
+                end
+            elseif doorModel then
+                doorPrimaryPart = doorModel.PrimaryPart
+            end
+
+            if doorPrimaryPart then
+                door.PrimaryPart = doorPrimaryPart
+                CollectionService:AddTag(door, ADAPTIVE_LOD_ITEM_TAG)
+            end
+
+            if doorModel then
+                for _,modelChild in pairs(doorModel:GetDescendants()) do
+                    if modelChild:IsA("BasePart") and modelChild ~= doorPrimaryPart then
+                        local weldConstraint = Instance.new("WeldConstraint")
+                        weldConstraint.Part0 = modelChild
+                        weldConstraint.Part1 = doorPrimaryPart
+                        weldConstraint.Parent = doorPrimaryPart
+                    end
+                end
+                
+            end
+        end
+    end
+
+    for _, interact in pairs(CollectionService:GetTagged("ClickInteractable")) do
+        if interact:GetAttribute("Class") == "Circuit" then
+            CollectionService:AddTag(interact, LOD_ITEM_TAG)
+        end
+    end
+end
+
 local function initNightLight(maid : Maid)    
     local function turnOnOff(inst : Instance, on :boolean)
         task.wait()
@@ -164,6 +209,7 @@ return {
         FishingSys.init(maid)
         NPC.init(maid)
 
+        clientOptimalization()
         initNightLight(maid)
 
         remotesInit(maid)

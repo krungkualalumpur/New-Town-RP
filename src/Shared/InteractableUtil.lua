@@ -120,6 +120,7 @@ function Interactable.Interact(model : Model, player : Player, plrInfo : any)
 
     if CollectionService:HasTag(model, "Door") or CollectionService:HasTag(model, "Window") then
         Interactable.InteractOpening(model,true, player)
+        return
     end 
 
     
@@ -131,6 +132,7 @@ function Interactable.Interact(model : Model, player : Player, plrInfo : any)
                 Interactable.InteractToolGiver(plrInfo, model, player)
             end
         end
+        return
     end
 
     local interactableData = Interactable.getData(model)

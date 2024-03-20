@@ -23,17 +23,18 @@ local Player = Players.LocalPlayer
 --local functions
 local function clientOptimalization()
     for _,door in pairs(CollectionService:GetTagged("Door")) do
-        if door:IsA("Model") and not door.PrimaryPart and not CollectionService:HasTag(door, ADAPTIVE_LOD_ITEM_TAG) then
-            local doorPrimaryPart
-            
+        local doorPrimaryPart
+
+        if door:IsA("Model") and not CollectionService:HasTag(door, ADAPTIVE_LOD_ITEM_TAG) then       
             local doorModel = door:FindFirstChild("Model")
             if doorModel then
                 for _,modelChild in pairs(doorModel:GetChildren()) do
-                    if modelChild:IsA("BasePart") and modelChild:FindFirstChildWhichIsA("WeldConstraint") and modelChild:FindFirstChildWhichIsA("Attachment") then
+                    if modelChild:IsA("BasePart") and modelChild:FindFirstChildWhichIsA("Attachment") then
                         doorPrimaryPart = modelChild :: BasePart
                         break
                     end
                 end
+                
             end
 
             if doorPrimaryPart then

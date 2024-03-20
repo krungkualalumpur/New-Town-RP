@@ -222,7 +222,7 @@ function Vehicle.init(maid : Maid)
                                 local accDir = vehicleModel.PrimaryPart.CFrame:VectorToObjectSpace(vehicleModel.PrimaryPart.AssemblyLinearVelocity).Z
                                 --task.spawn(function() task.wait(1); v.MotorMaxTorque = 1--[[550000000]]; end)
                                 if customThrottleNum ~= 0 then
-                                    v.MotorMaxTorque = 1--999999999999
+                                    v.MotorMaxTorque = 5--999999999999
                                     v.MotorMaxAcceleration = if math.sign(accDir*customThrottleNum) == 1 then 60 else 25
                                     if math.sign(accDir*customThrottleNum) == 1 then
                                         v.AngularVelocity = 0
