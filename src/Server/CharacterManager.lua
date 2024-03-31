@@ -202,7 +202,12 @@ local CharacterManager = {}
 
 function CharacterManager.init(maid : Maid)
     local playerCollisionGroupKey = "Player"
+    local trainWheelCollisionGroupKey = "TrainWheel"
+    local trainWheelSwitchCollisionGroupKey = "TrainWheel_Switch"
+
     PhysicsService:CollisionGroupSetCollidable(playerCollisionGroupKey, playerCollisionGroupKey, false)
+    PhysicsService:CollisionGroupSetCollidable(playerCollisionGroupKey, trainWheelCollisionGroupKey, false)
+    PhysicsService:CollisionGroupSetCollidable(playerCollisionGroupKey, trainWheelSwitchCollisionGroupKey, false)
 
     for _, plr : Player in pairs(Players:GetPlayers()) do
         onPlayerAdded(plr)

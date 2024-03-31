@@ -20,6 +20,7 @@ local Minigame = require(ServerScriptService:WaitForChild("Server"):WaitForChild
 local Vehicle = require(ServerScriptService:WaitForChild("Server"):WaitForChild("Environments"):WaitForChild("Artificial"):WaitForChild("Vehicle"))
 local Speaker = require(ServerScriptService:WaitForChild("Server"):WaitForChild("Environments"):WaitForChild("Artificial"):WaitForChild("Speaker"))
 local Objects = require(ServerScriptService:WaitForChild("Server"):WaitForChild("Environments"):WaitForChild("Artificial"):WaitForChild("Objects"))
+local Trains = require(ServerScriptService:WaitForChild("Server"):WaitForChild("Environments"):WaitForChild("Artificial"):WaitForChild("Trains"))
 local Harbour = require(ServerScriptService:WaitForChild("Server"):WaitForChild("Environments"):WaitForChild("Artificial"):WaitForChild("Harbour"))
 local FishingSys = require(ServerScriptService:WaitForChild("Server"):WaitForChild("Environments"):WaitForChild("Artificial"):WaitForChild("FishingSys"))
 local NPC = require(ServerScriptService:WaitForChild("Server"):WaitForChild("Environments"):WaitForChild("Artificial"):WaitForChild("NPC"))
@@ -206,6 +207,7 @@ return {
         Vehicle.init(maid)
         Speaker.init(maid)
         Harbour.init(maid)
+        Trains.init(maid)
         FishingSys.init(maid)
         NPC.init(maid)
 
