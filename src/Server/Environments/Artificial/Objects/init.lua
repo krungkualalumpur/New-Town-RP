@@ -190,6 +190,17 @@ function Objects.init(maid : Maid)
                     end
                 end))
             end
+        elseif object:GetAttribute("Class") == "Clock" then
+            maid:GiveTask(Lighting.Changed:Connect(function()
+                local hourNeedle = object:FindFirstChild("HourNeedle") :: Model ?
+                local minuteNeedle = object:FindFirstChild("MinuteNeedle") :: Model ?
+    
+                local timeDiff = object:GetAttribute("TimeDiff") or 0
+                if hourNeedle and minuteNeedle and hourNeedle.PrimaryPart and minuteNeedle.PrimaryPart then
+                    hourNeedle:PivotTo(CFrame.new(hourNeedle.PrimaryPart.Position)*(CFrame.Angles(math.rad(hourNeedle.PrimaryPart.Orientation.X), math.rad(hourNeedle.PrimaryPart.Orientation.Y), math.rad((Lighting.ClockTime + timeDiff)*15*2 ))))
+                    minuteNeedle:PivotTo(CFrame.new(minuteNeedle.PrimaryPart.Position)*(CFrame.Angles(math.rad(minuteNeedle.PrimaryPart.Orientation.X), math.rad(minuteNeedle.PrimaryPart.Orientation.Y), math.rad((Lighting.ClockTime + timeDiff)*15*24 ))))
+                end
+            end))
         elseif object:GetAttribute("Class") == "TextDisplay" then
             if object:GetAttribute("DisplayType") == "Slide" then
                 for _,v in pairs(object:GetDescendants()) do
