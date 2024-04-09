@@ -12,7 +12,7 @@ local Zone = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Zone
 type Maid = Maid.Maid
 --constants
 local LOAD_OF_DISTANCE = 70
-local LOD_UPDATE_INTERVAL = 0.5
+local LOD_UPDATE_INTERVAL = 0.75
 
 local ZONE_TAG = "RenderZone"
 local LOD_TAG = "LODItem"

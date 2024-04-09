@@ -123,7 +123,6 @@ local function createInteract(maid : Maid, interactFrame : Frame, interactNameTa
             end))
 
             _maid:GiveTask(clickDetector.Destroying:Connect(function()
-                print(clickDetector, " huh?")
                 if clickDetector.Parent == nil then
                     _maid:Destroy()
                 end

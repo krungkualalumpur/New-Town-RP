@@ -2,6 +2,7 @@
 --services
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
+local ServerStorage = game:GetService("ServerStorage")
 --packages
 local Maid = require(ReplicatedStorage:WaitForChild("Packages"):WaitForChild("Maid"))
 local NetworkUtil = require(ReplicatedStorage:WaitForChild("Packages"):WaitForChild("NetworkUtil"))
@@ -38,6 +39,30 @@ local Trains = {}
 
 function Trains.init(maid : Maid)
     for _,train in pairs(workspace:WaitForChild("Assets"):WaitForChild("Temporaries"):WaitForChild("Trains"):GetChildren()) do
+        local trainOriginalCFrame = train.PrimaryPart.CFrame
+        
+        local firstTickErrorDetect : number ?
+
+        local function trainStuckCheck()
+            if train.PrimaryPart == nil then
+                return true
+            end
+          
+            if (math.floor(train.PrimaryPart.AssemblyLinearVelocity.Magnitude) == 0) or (math.abs(train.PrimaryPart.Orientation.X) > 8) or (math.abs(train.PrimaryPart.Orientation.Z) > 8) then
+                    --if tick() - errorCheck >= 1 then
+                firstTickErrorDetect = firstTickErrorDetect or tick()
+                    --end
+                --print("seconds before reset: ", tick() - firstTickErrorDetect)
+            else 
+                firstTickErrorDetect = nil
+            end
+            if firstTickErrorDetect and (tick() - firstTickErrorDetect >= 4) then
+                firstTickErrorDetect = nil
+                return true
+            end
+            return false
+        end
+
         local function setVelocity(velocity : number)
         --	print("Velocity set: ", velocity, debug.traceback())
             train:SetAttribute("CustomVelocity", velocity)
@@ -57,6 +82,14 @@ function Trains.init(maid : Maid)
             
         end
         
+        
+        local function setLoopState(n : number)
+            train:SetAttribute("LoopState", n)
+        end
+        local function getLoopState(specTrain : Model ?) 
+            return (specTrain or train):GetAttribute("LoopState")
+        end
+
         local function start(intVel : number ?)
             local vel = intVel or 36
 
@@ -84,6 +117,10 @@ function Trains.init(maid : Maid)
                         local vel = math.clamp(distDir, -3, 3)
                         setVelocity(vel)
                         --print(vel, " :velocity approach")
+
+                        if trainStuckCheck() then
+                            error(`Train is detected stuck during stop at dist {distDir} studs`)
+                        end
                     until (math.round(distDir))*loopState <= 1
                     --else
                     setVelocity(0)
@@ -92,7 +129,7 @@ function Trains.init(maid : Maid)
                     --end 
                 end)
                 if e then
-                    warn(e)
+                    error(e)
                 end
                 --[[local conn
                 conn = RunService.Stepped:Connect(function()
@@ -183,6 +220,8 @@ function Trains.init(maid : Maid)
                 end
             end
         end
+
+     
         
         local function moveToStation(stationPart : BasePart, loopState : number)
             local stationWaitTime = 10
@@ -223,30 +262,68 @@ function Trains.init(maid : Maid)
             --running to destination
             local s, e = pcall(function()
                 trainSpeedUpdate()
+
+                --announce
+                task.spawn(function() -- make this in klooooiien leitha on okeh?
+                    local stationNameSoundId = if stationPart:GetAttribute("Order") == 1 then 16878542580 elseif stationPart:GetAttribute("Order") == 2 then 16878536551 elseif stationPart:GetAttribute("Order") == 3 then 16878525832 else 0
+                    
+                    task.wait(1)
+                    local s = playSound(143147223, train.PrimaryPart, 0.35, 30)
+                    s.Destroying:Wait()
+                    local s2 = playSound(16878504815, train.PrimaryPart, 0.35, 30)
+                    s2.Destroying:Wait()
+                    local s3 =  playSound(stationNameSoundId, train.PrimaryPart, 0.35, 30)
+                    s3.Destroying:Wait()
+                    local randAnn = math.random(0,math.random(0,1))
+                    if randAnn == 1 then
+                        local s4 =  playSound(16878550604, train.PrimaryPart, 0.35, 30)
+                        
+                    end
+
+                end)
                 repeat  task.wait()
+                    local emergencyStop = false
+                    
                     local slowDownPt = workspace:GetPartsInPart(train.PrimaryPart, overlapParams)
 
-                   -- local dot = stationPart.CFrame.LookVector:Dot((stationPart.CFrame.Position - train.PrimaryPart.Position).Unit)
                     local dist =  (train.PrimaryPart.Position - stationPart.Position).Magnitude--*math.sign(dot)*loopState
-                    
-                    if dist <= triggerStopDistanceFromStation*2 then
-                        train:SetAttribute("IsSlowDown", true)
-                    else
-                        if #slowDownPt > 0 then
-                            train:SetAttribute("IsSlowDown", true)
-                        else
-                            train:SetAttribute("IsSlowDown", nil)    
+
+                    for _,otherTrain in pairs(workspace:WaitForChild("Assets"):WaitForChild("Temporaries"):WaitForChild("Trains"):GetChildren()) do
+                        if otherTrain ~= train then
+                            local _dist = if otherTrain.PrimaryPart then (otherTrain.PrimaryPart.Position - train.PrimaryPart.Position).Magnitude else math.huge
+                            if (getLoopState(otherTrain) == getLoopState()) and _dist <= 100 then
+                                emergencyStop = true
+                                stop(getLoopState())
+                                task.wait(6)
+                                break
+                            end
                         end
                     end
-                   
+
+                    if not emergencyStop then
+                    -- local dot = stationPart.CFrame.LookVector:Dot((stationPart.CFrame.Position - train.PrimaryPart.Position).Unit)
+                        
+                        if dist <= triggerStopDistanceFromStation*2 then
+                            train:SetAttribute("IsSlowDown", true)
+                        else
+                            if #slowDownPt > 0 then
+                                train:SetAttribute("IsSlowDown", true)
+                            else
+                                train:SetAttribute("IsSlowDown", nil)    
+                            end
+                        end
                     
-                  
+                        if trainStuckCheck() then
+                            error(`Train is detected stuck during approach to station {stationPart.Name} at dist {dist} studs`)
+                        end 
+                    end
                 until dist <= triggerStopDistanceFromStation 
                 slowDownConn:Disconnect()
                 stop(loopState, stationPart.CFrame)
             end)
             if e then
-                warn(e)
+                warn(`Refreshing train due to an error: {e}`)
+                return false
             end
             
             local function refreshTrain()
@@ -263,7 +340,21 @@ function Trains.init(maid : Maid)
             ---DOOR OPENING----
             local isDoorOpenFlip = stationPart:GetAttribute("IsTrainDoorOpenFlip")
             
+            local stationDoorsPointer = stationPart:FindFirstChild("StationDoorsPointer") :: ObjectValue
+            local stationDoors = if stationDoorsPointer then stationDoorsPointer.Value else nil
             
+            if stationDoors then
+                for _,v in pairs(stationDoors:GetDescendants()) do
+                    if v:IsA("BasePart") then
+                        if not v:GetAttribute("Transparency") then
+                            v:SetAttribute("Transparency", v.Transparency)
+                        end
+                        v.Transparency = 1
+                        v.CanCollide = false
+                    end
+                end
+            end
+
             local copiedDoors : {CopiedDoor : Model, OriginalDoor : Model} = {} :: any
             for _,door in pairs(train.Body.Doors:GetChildren()) do
                 local doorOnDesignatedSide = checkPositionSideRelativeToTrain(door.PrimaryPart)
@@ -389,6 +480,15 @@ function Trains.init(maid : Maid)
                 playSound(2547083186, train.PrimaryPart, 0.04) -- door close sound
             end	
             
+            --station doors closing
+            if stationDoors then
+                for _,v in pairs(stationDoors:GetDescendants()) do
+                    if v:IsA("BasePart") then
+                        v.Transparency = v:GetAttribute("Transparency") or 0
+                        v.CanCollide = true
+                    end
+                end
+            end
             task.wait(1.2)
             for _,copiedDoorData in pairs(copiedDoors) do
                 local intCf = copiedDoorData.CopiedDoor:GetAttribute("CFrameRelativeToTrain")
@@ -434,56 +534,136 @@ function Trains.init(maid : Maid)
             task.wait(3)
             train.PrimaryPart.Anchored = false
             refreshTrain()
+
+            return true
         end
         
         init()
         task.wait(3)
         
-        local loopState = train:GetAttribute("InitialLoopState" or 1)
-        
-        
-     
-        
-        task.spawn(function()
-            while task.wait() do -- REPLACE THIS LATER
-                local stationPartsRaw = if loopState == 1 then workspace.Assets.Infrastructures.LRT.Stops.Lane1 else workspace.Assets.Infrastructures.LRT.Stops.Lane2
+        local intLoopState = train:GetAttribute("InitialLoopState") or 1
 
-                local stationParts = {}
-                for _,v in pairs(stationPartsRaw:GetChildren()) do
-                    if v:IsA("BasePart") and v:GetAttribute("Order") then
-                        stationParts[v:GetAttribute("Order")] = v
-                    end
-                end
-                
-                if loopState == -1 then
-                    for i = 1, #stationParts do
-                        local destinationStationPart = stationParts[i]
-                        local finalStationPart = stationParts[#stationParts]
-            
-                        updateAnnouncementDisplay("Station", destinationStationPart, finalStationPart, loopState)
-                        moveToStation(destinationStationPart, loopState)
-                    end
-                else
-                    for i = #stationParts, 1, -1 do
-                        local destinationStationPart = stationParts[i]
-                        local finalStationPart = stationParts[1]
-            
-                        updateAnnouncementDisplay("Station", destinationStationPart, finalStationPart, loopState)
-                        moveToStation(destinationStationPart, loopState)
-                    end
-                end
-                
-                 --test onleh
-                 if loopState == 1 then
-                    switchTrack(loopState, workspace.Assets.Infrastructures.LRT.LineSwitchPoints.SwitchPoint1)
-                 else
-                    switchTrack(loopState, workspace.Assets.Infrastructures.LRT.LineSwitchPoints.SwitchPoint2)
-                end
-
-                loopState = if loopState == 1 then -1 else 1
-            end  
-        end)
+      
         
+        setLoopState(intLoopState)
+        
+        local function checkIfOtherTrainIsInDifferentLoop()
+            local isDifferentLoop: boolean ? = true
+            for _,otherTrain in pairs(workspace:WaitForChild("Assets"):WaitForChild("Temporaries"):WaitForChild("Trains"):GetChildren()) do
+                if otherTrain ~= train then
+                    if getLoopState(otherTrain) == getLoopState() then --temporary / doesnt apply if >2 #n of train
+                        isDifferentLoop = false
+                        break
+                    end
+                end
+            end
+
+            if #workspace:WaitForChild("Assets"):WaitForChild("Temporaries"):WaitForChild("Trains"):GetChildren() == 0 then
+                isDifferentLoop = nil
+            end
+            return isDifferentLoop
+        end
+
+        local function operateTrain()
+            local trainMaid = Maid.new()
+
+            local function resetTrain()
+                trainMaid:Destroy()
+                train:Destroy()
+                
+                repeat task.wait(1); --[[print(checkIfOtherTrainIsInDifferentLoop())]] until (checkIfOtherTrainIsInDifferentLoop() == true) or (checkIfOtherTrainIsInDifferentLoop() == nil)
+
+                local new_train = ServerStorage:WaitForChild("Assets"):WaitForChild("Train"):Clone()
+                new_train:PivotTo(trainOriginalCFrame)
+                new_train.Parent = workspace:WaitForChild("Assets"):WaitForChild("Temporaries"):WaitForChild("Trains")
+    
+                train = new_train
+                setLoopState(intLoopState)
+
+                operateTrain()
+            end
+
+            local db = false
+            trainMaid:GiveTask(RunService.Stepped:Connect(function()
+                if db == false then
+                    db = true
+                    local s, e = pcall(function()
+                        local stationPartsRaw = if getLoopState() == 1 then workspace.Assets.Infrastructures.LRT.Stops.Lane2 else workspace.Assets.Infrastructures.LRT.Stops.Lane1
+
+                        local stationParts = {}
+                        for _,v in pairs(stationPartsRaw:GetChildren()) do
+                            if v:IsA("BasePart") and v:GetAttribute("Order") then
+                                stationParts[v:GetAttribute("Order")] = v
+                            end
+                        end
+                        
+                        if getLoopState() == -1 then
+                            for i = 1, #stationParts do
+                                local destinationStationPart = stationParts[i]
+                                local finalStationPart = stationParts[#stationParts]
+
+                                updateAnnouncementDisplay("Station", destinationStationPart, finalStationPart, getLoopState())
+                                local success = moveToStation(destinationStationPart, getLoopState())
+                                if success == false then
+                                    resetTrain()
+                                    return success
+                                end
+                            end
+                        else
+                            for i = #stationParts, 1, -1 do
+                                local destinationStationPart = stationParts[i]
+                                local finalStationPart = stationParts[1]
+
+                                updateAnnouncementDisplay("Station", destinationStationPart, finalStationPart, getLoopState())
+                                local success = moveToStation(destinationStationPart, getLoopState())
+                                if success == false then
+                                    resetTrain()  
+                                    return success
+
+                                end
+                            end
+                        end
+                        
+                        --wait until other train is in the same loop, then switch tracks
+                        train:SetAttribute("IsSwitchingLoop", true)
+                        repeat task.wait(1);  
+                            local isOtherSwitching = false
+                            for _,otherTrain in pairs(workspace:WaitForChild("Assets"):WaitForChild("Temporaries"):WaitForChild("Trains"):GetChildren()) do
+                                if train ~= otherTrain and otherTrain:GetAttribute("IsSwitchingLoop") then  --temporary
+                                    isOtherSwitching = true
+                                end
+                            end
+                        until (checkIfOtherTrainIsInDifferentLoop() == false) or (checkIfOtherTrainIsInDifferentLoop() == nil) or (isOtherSwitching == true)
+
+                        --switch tracks
+                        local s, e = pcall(function()
+                            if getLoopState() == 1 then
+                                switchTrack(getLoopState(), workspace.Assets.Infrastructures.LRT.LineSwitchPoints.SwitchPoint1)
+                            else
+                                switchTrack(getLoopState(), workspace.Assets.Infrastructures.LRT.LineSwitchPoints.SwitchPoint2)
+                            end
+                        end)
+                        
+                        if not s and e then
+                            warn(e)
+                            resetTrain()
+                            return s, e
+                        end
+                        setLoopState(if getLoopState() == 1 then -1 else 1)
+                        train:SetAttribute("IsSwitchingLoop", nil)
+
+                        return true
+                    end)
+                    
+                    if not s and e then
+                        warn(`Train error during this operation: {e}`)
+                    end
+                    db = false
+                end
+              
+            end))
+        end
+        operateTrain()
     end
 
     NetworkUtil.getRemoteEvent(ON_TRAIN_INIT)

@@ -133,7 +133,6 @@ local function init(vehicleModel : Model, spawnPart : BasePart)
 
 	attachment0.Parent = vehicleModel.PrimaryPart
 	VectorForce.Parent = vehicleModel.PrimaryPart
-	print(VectorForce, " aa")
 	VectorForce.Attachment0 = attachment0
 	VectorForce.Force = Vector3.new(0,0,0)
 	
@@ -236,7 +235,6 @@ local function init(vehicleModel : Model, spawnPart : BasePart)
         
         
         vehicleModel:SetAttribute(CUSTOM_THROTTLE_KEY, 0)
-        print("Done!")
         return
     end
 
@@ -348,7 +346,6 @@ local function init(vehicleModel : Model, spawnPart : BasePart)
 					--print(nearestPoint, farthestPoint, pts, output)
 					for _,v in pairs(output) do
 						local destPart = mallPatrol:FindFirstChild(tostring(v.PointId))
-						print(destPart, " is now the destination!!!")
 						reachToDest(destPart.Position, function(parts)
 							vehicleModel:SetAttribute("HasObstacle", true)
 							

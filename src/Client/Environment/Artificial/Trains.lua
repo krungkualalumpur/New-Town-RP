@@ -66,7 +66,6 @@ function Trains.init(maid : Maid)
             tween:Play()
             tween:Destroy()
         elseif status == "Slowdown" then
-            print("slow down ma boi client")
             local sound = train.Part.DieselSound
                 
             if sound.PlaybackSpeed < 1*0.3 then
@@ -156,6 +155,10 @@ function Trains.init(maid : Maid)
                     sg.DestinationDisplay.DoorFrame.RArrow.Text = if doorStatus == "Open" then ">" else "<"
                     sg.DestinationDisplay.DoorFrame.StationName.Text = ("Doors " ..  if doorStatus == "Open" then "opening " else "closing ") .. (if isDesired then "on this side" else "on another side")
                     
+                    if doorStatus == "Open" then
+                        sg.DestinationDisplay.StationFrame.Direction1.Text = "⬇"
+                        sg.DestinationDisplay.StationFrame.Direction2.Text = "⬇"
+                    end
                     
                     task.spawn(function()
                         local lArrow =  sg.DestinationDisplay.DoorFrame.LArrow

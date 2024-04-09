@@ -115,14 +115,16 @@ function Interactable.Interact(model : Model, player : Player, plrInfo : any)
     --if model.PrimaryPart then
     local ownerId = model:GetAttribute("OwnerId")
     if ownerId ~= nil and player.UserId ~= ownerId then
+        if CollectionService:HasTag(model, "Door") then
+            playSound(4545514554, false, model.PrimaryPart)
+        end
         return
     end
 
     if CollectionService:HasTag(model, "Door") or CollectionService:HasTag(model, "Window") then
         Interactable.InteractOpening(model,true, player)
         return
-    end 
-
+    end
     
     if CollectionService:HasTag(model, "Tool") then
         if RunService:IsClient() then
