@@ -548,19 +548,19 @@ function Trains.init(maid : Maid)
         setLoopState(intLoopState)
         
         local function checkIfOtherTrainIsInDifferentLoop()
-            local isDifferentLoop: boolean ? = true
+            local isDifferentLoop: boolean ?
             for _,otherTrain in pairs(workspace:WaitForChild("Assets"):WaitForChild("Temporaries"):WaitForChild("Trains"):GetChildren()) do
                 if otherTrain ~= train then
-                    if getLoopState(otherTrain) == getLoopState() then --temporary / doesnt apply if >2 #n of train
+                    if getLoopState(otherTrain) == getLoopState() then --temporary / doesnt apply if there's >2 #n of trains
                         isDifferentLoop = false
                         break
+                    else
+                        isDifferentLoop = true
                     end
                 end
             end
 
-            if #workspace:WaitForChild("Assets"):WaitForChild("Temporaries"):WaitForChild("Trains"):GetChildren() == 0 then
-                isDifferentLoop = nil
-            end
+         
             return isDifferentLoop
         end
 
