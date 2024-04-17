@@ -20,6 +20,7 @@ local NewCustomizationUI = require(ReplicatedStorage:WaitForChild("Client"):Wait
 local CustomizationUI = require(ReplicatedStorage:WaitForChild("Client"):WaitForChild("MainUI"):WaitForChild("CustomizationUI"))
 local ItemOptionsUI = require(ReplicatedStorage:WaitForChild("Client"):WaitForChild("ItemOptionsUI"))
 local HouseUI = require(ReplicatedStorage:WaitForChild("Client"):WaitForChild("MainUI"):WaitForChild("HouseUI"))
+local VehicleUI = require(ReplicatedStorage:WaitForChild("Client"):WaitForChild("MainUI"):WaitForChild("VehicleUI"))
 local ColorWheel = require(ReplicatedStorage:WaitForChild("Client"):WaitForChild("ColorWheel"))
 local LoadingFrame = require(ReplicatedStorage:WaitForChild("Client"):WaitForChild("LoadingFrame"))
 local StatusUtil = require(ReplicatedStorage:WaitForChild("Client"):WaitForChild("StatusUtil"))
@@ -302,6 +303,7 @@ function getImageButton(
         Name = buttonName,
         LayoutOrder = order,
         BackgroundColor3 = TERTIARY_COLOR,
+        ZIndex = -((order - 1)%2),
         BackgroundTransparency = 0,
         Size = UDim2.fromScale(0.33, 0.06),
         AutoButtonColor = true,
@@ -475,7 +477,6 @@ return function(
                 dynamicVehicleData:Set(vehicleData)
                 
             end
-
             return ""
         end, vehiclesList)
     })
@@ -745,7 +746,6 @@ return function(
             end
         end  
     end
-    
 
     local onEquipFrame = _new("Frame")({
         LayoutOrder = 1, 
@@ -1051,6 +1051,7 @@ return function(
     local backpackText = _Value("")
     local roleplayText = _Value("")
     local customizationText = _Value("")
+    local vehicleText = _Value("")
     local houseText = _Value("")
 
     local alertColor = _Value(Color3.fromRGB(255,50,50))
@@ -1058,25 +1059,27 @@ return function(
     local mainOptions =  _new("Frame")({
         LayoutOrder = 0,
         BackgroundTransparency = 1,
-        Size = UDim2.fromScale(0.1, 0.8),
+        Size = UDim2.fromScale(0.1, 0.4),
         Position = UDim2.fromScale(0, 0),   
         Children = {
-            _new("UIListLayout")({
-                FillDirection = Enum.FillDirection.Vertical,
+            _new("UIGridLayout")({
+                FillDirection = Enum.FillDirection.Horizontal,
                 SortOrder = Enum.SortOrder.LayoutOrder,
-                Padding = PADDING_SIZE,
-                VerticalAlignment = Enum.VerticalAlignment.Top
+                CellSize = UDim2.fromScale(0.4, 0.2),  
+                StartCorner = Enum.StartCorner.TopLeft, 
+                VerticalAlignment = Enum.VerticalAlignment.Top   
             }),   
-            _new("Frame")({
+           --[[ _new("Frame")({
                 LayoutOrder = 0,
                 BackgroundTransparency = 1,
                 Size = UDim2.fromScale(1, 0.48)
-            }),
+            }),]]
            _bind(getImageButton(maid, 2815418737, function()
                 UIStatus:Set(if UIStatus:Get() ~= "Backpack" then "Backpack" else nil)
                 backpackText:Set("")
                 roleplayText:Set("")
                 customizationText:Set("")
+                vehicleText:Set("")
                 houseText:Set("")
 
                 if RunService:IsRunning() then
@@ -1111,7 +1114,7 @@ return function(
                 },
                 Events = {
                     MouseEnter = function()
-                        backpackText:Set("← Tools & Vehicles")
+                        backpackText:Set("← Tools")
                     end,
                     MouseLeave = function()
                         backpackText:Set("")
@@ -1123,6 +1126,7 @@ return function(
                 backpackText:Set("")
                 roleplayText:Set("")
                 customizationText:Set("")
+                vehicleText:Set("")
                 houseText:Set("")
 
                 if RunService:IsRunning() then
@@ -1143,6 +1147,7 @@ return function(
                 backpackText:Set("")
                 roleplayText:Set("")
                 customizationText:Set("")
+                vehicleText:Set("")
                 houseText:Set("")
 
                 if RunService:IsRunning() then
@@ -1158,15 +1163,13 @@ return function(
                     end
                 }
             }),
-            _bind(dateFrame)({
-                LayoutOrder = 4,
-                Size = UDim2.fromScale(2, 0.05),
-            }),
+           
             _bind(getImageButton(maid, 279461710, function()
                 UIStatus:Set(if UIStatus:Get() ~= "House" then "House" else nil)
                 backpackText:Set("")
                 roleplayText:Set("")
                 customizationText:Set("")
+                vehicleText:Set("")
                 houseText:Set("")
                 
                 if RunService:IsRunning() then
@@ -1182,8 +1185,34 @@ return function(
                     end
                 }
             }),
+            _bind(getImageButton(maid, 7013364587, function()
+                UIStatus:Set(if UIStatus:Get() ~= "Vehicle" then "Vehicle" else nil)
+                backpackText:Set("")
+                roleplayText:Set("")
+                customizationText:Set("")
+                vehicleText:Set("")
+                houseText:Set("")
+                
+                if RunService:IsRunning() then
+                    NetworkUtil.fireServer(SEND_ANALYTICS, "Events", "Interface", "vehicle_button")
+                end
+            end, vehicleText, 1, true))({
+                Events = {
+                    MouseEnter = function()
+                        vehicleText:Set("← Vehicle")
+                    end,
+                    MouseLeave = function()
+                        vehicleText:Set("")
+                    end
+                }
+            }),
+            _new("Frame")({
+                BackgroundTransparency = 1,
+                LayoutOrder = 6,
+                Size = UDim2.fromScale(1, 0.48)
+            }),
             _bind(dateFrame)({
-                LayoutOrder = 5,
+                LayoutOrder = 7,
                 Size = UDim2.fromScale(2, 0.05)
             })
         }
@@ -1352,12 +1381,7 @@ return function(
                 backpack,
 
                 onBackpackButtonAddClickSignal,
-                onBackpackButtonDeleteClickSignal,
-
-                newVehiclesListVersion,
-
-                onVehicleSpawn,
-                onVehicleDelete
+                onBackpackButtonDeleteClickSignal
             )
 
             backpackUI.Parent = out
@@ -1674,6 +1698,18 @@ return function(
             houseUI.Parent = target
 
             updateCamCf()
+        elseif status == "Vehicle" then
+            local vehicleUI = VehicleUI(
+                statusMaid,
+                
+                newVehiclesListVersion,
+
+                onVehicleSpawn,
+                onVehicleDelete
+            ) 
+            vehicleUI.Parent = out
+
+            getExitButton(vehicleUI)
         end
         return ""
     end, UIStatus)

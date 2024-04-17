@@ -16,7 +16,7 @@ local NetworkUtil = require(ReplicatedStorage:WaitForChild("Packages"):WaitForCh
 local ColdFusion = require(ReplicatedStorage:WaitForChild("Packages"):WaitForChild("ColdFusion8"))
 --modules
 --types
-export type UIStatus = "Backpack" | "Roleplay" | "Customization" | "House" | nil
+export type UIStatus = "Backpack" | "Roleplay" | "Customization" | "House" | "Vehicle" | nil
 
 type Maid = Maid.Maid
 type Signal = Signal.Signal

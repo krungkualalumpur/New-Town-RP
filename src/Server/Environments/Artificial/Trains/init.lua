@@ -227,7 +227,7 @@ function Trains.init(maid : Maid)
             local stationWaitTime = 10
             train.PrimaryPart.Anchored = false
             
-            local velocity = 17*loopState
+            local velocity = 20*loopState
             
             local triggerStopDistanceFromStation = 50
             local dist = (train.PrimaryPart.Position - stationPart.Position).Magnitude
@@ -578,8 +578,9 @@ function Trains.init(maid : Maid)
                 new_train.Parent = workspace:WaitForChild("Assets"):WaitForChild("Temporaries"):WaitForChild("Trains")
     
                 train = new_train
-                setLoopState(intLoopState)
 
+                init()
+                setLoopState(intLoopState)
                 operateTrain()
             end
 

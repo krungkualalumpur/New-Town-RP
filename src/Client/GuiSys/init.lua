@@ -251,6 +251,7 @@ function guiSys.new()
     local backpack = _Value({})
     task.spawn(function() backpack:Set(NetworkUtil.invokeServer(GET_PLAYER_BACKPACK)) end)
     local vehicleList = _Value({}) 
+    task.spawn(function() vehicleList:Set(NetworkUtil.invokeServer(GET_PLAYER_VEHICLES)) end)
     local date = _Value(string.format("%s\n%s", getCurrentDay().Name, NumberUtil.NumberToClock(game.Lighting.ClockTime, false)))
 
     local backpackOnAdd = maid:GiveTask(Signal.new())
