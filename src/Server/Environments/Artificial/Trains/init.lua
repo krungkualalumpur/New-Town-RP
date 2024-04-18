@@ -281,9 +281,20 @@ function Trains.init(maid : Maid)
                     end
 
                 end)
-                repeat  task.wait()
-                    local emergencyStop = false
+
+                local emergencyStop = false
                     
+                local function setEmergencyStop(trainModel : Model, bool : boolean)
+                    emergencyStop = bool
+                    trainModel:SetAttribute("IsEmergencyStop", bool)
+                end
+                local function getEmergencyStop(trainModel : Model)
+                    trainModel:GetAttribute("IsEmergencyStop")
+                end
+               
+                repeat  task.wait()
+                    setEmergencyStop(train, false)
+
                     local slowDownPt = workspace:GetPartsInPart(train.PrimaryPart, overlapParams)
 
                     local dist =  (train.PrimaryPart.Position - stationPart.Position).Magnitude--*math.sign(dot)*loopState
@@ -291,8 +302,9 @@ function Trains.init(maid : Maid)
                     for _,otherTrain in pairs(workspace:WaitForChild("Assets"):WaitForChild("Temporaries"):WaitForChild("Trains"):GetChildren()) do
                         if otherTrain ~= train then
                             local _dist = if otherTrain.PrimaryPart then (otherTrain.PrimaryPart.Position - train.PrimaryPart.Position).Magnitude else math.huge
-                            if (getLoopState(otherTrain) == getLoopState()) and _dist <= 100 then
-                                emergencyStop = true
+                            if (getLoopState(otherTrain) == getLoopState()) and _dist <= 100 and not getEmergencyStop(otherTrain) then
+                                setEmergencyStop(train, true)
+
                                 stop(getLoopState())
                                 task.wait(6)
                                 break
@@ -658,10 +670,12 @@ function Trains.init(maid : Maid)
                     
                     if not s and e then
                         warn(`Train error during this operation: {e}`)
+                        resetTrain()   
+                        return s
                     end
                     db = false
                 end
-              
+                return true
             end))
         end
         operateTrain()
