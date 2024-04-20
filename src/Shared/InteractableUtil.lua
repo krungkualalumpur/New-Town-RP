@@ -498,7 +498,17 @@ function Interactable.InteractSwitch(model : Model, player : Player, plrInfo : a
                 end
             end
         end
-   
+    elseif data.Class == "SoundSwitch" then
+        if data.IsSwitch then
+            local soundId = model:GetAttribute("SoundId")
+            playSound(soundId, true, model.PrimaryPart, nil, 18)
+            
+        else
+            local sound = if model.PrimaryPart then model.PrimaryPart:FindFirstChildWhichIsA("Sound") else nil
+            if sound then
+                sound:Destroy()
+            end 
+        end
     end
 end
 

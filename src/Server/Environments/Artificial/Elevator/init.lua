@@ -170,6 +170,9 @@ local function openCageDoor(elevModel : Model, openTime : number, floorName : st
 				end)
 				--sound
 				playSound(9114154039, false, v)
+				if elevModel:GetAttribute("OpenAnnouncementSoundId") then
+					playSound(elevModel:GetAttribute("OpenAnnouncementSoundId"), false, v)
+				end
 			end
 		end
 
@@ -744,8 +747,9 @@ function Elevator:UpdateUI()
 
 	local floordisplay = (if prismaticConstraint.Velocity == 0 then "" elseif self.Status == "Ascending" then '⬆️' else '⬇️') .. self.CurrentFloor
 	
-	if floorNameText.Text ~= floordisplay and math.floor(prismaticConstraint.Velocity) ~= 0 then
-		playSound(6148388066, false, floorIndicationPart)
+	local floorUpdateSoundId = self.Model:GetAttribute("FloorUpdateSoundId")
+	if floorNameText.Text ~= floordisplay and math.floor(prismaticConstraint.Velocity) ~= 0 and floorUpdateSoundId then
+		playSound(floorUpdateSoundId , false, floorIndicationPart)
 	end
 
 	local floorNameText2 = floorIndicationPart:WaitForChild("SurfaceGui"):WaitForChild("FloorName") :: TextLabel
