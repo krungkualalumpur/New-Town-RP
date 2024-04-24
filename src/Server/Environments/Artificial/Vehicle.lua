@@ -175,8 +175,8 @@ function Vehicle.init(maid : Maid)
                                     db = true
 
                                     if vehicleSeat.AssemblyLinearVelocity.Magnitude <= 10 then
-                                        local throttleV3 = vehicleSeat.CFrame.LookVector*customThrottleNum*0.8
-                                        vehicleSeat.AssemblyLinearVelocity += throttleV3*15 
+                                        local throttleV3 = vehicleSeat.CFrame.LookVector*customThrottleNum
+                                        vehicleSeat.AssemblyLinearVelocity += throttleV3*20 
                                     end
                                     
                                     local rowAnim = 15341401436
