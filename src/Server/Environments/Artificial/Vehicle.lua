@@ -163,49 +163,64 @@ function Vehicle.init(maid : Maid)
                 if vehicleModel:GetAttribute("Class") == ENV_BOAT_CLASS_KEY then
                     local hum = vehicleSeat.Occupant
                     if hum then
-                        if vehicleSeat.AssemblyLinearVelocity.Magnitude <= 10 then
-                            local throttleV3 = vehicleSeat.CFrame.LookVector*customThrottleNum
-                            vehicleSeat.AssemblyLinearVelocity += throttleV3*15 
-                        end
-                        
+                      
                         local char = hum.Parent
                         local plr = if char then Players:GetPlayerFromCharacter(char) :: Player else nil 
+
+                      
                         if char and plr and (customThrottleNum ~= 0) then
-                            local rowAnim = 15341401436
-                            local isPlayingTheAnim = false
+                            local db = false
+                            _maid.BoatOnRow = RunService.Stepped:Connect(function()
+                                if not db then
+                                    db = true
 
-                            local humanoid = char:WaitForChild("Humanoid") :: Humanoid
-                            for _,v : AnimationTrack in pairs(humanoid:GetPlayingAnimationTracks()) do
-                                local animId =  tonumber(v.Animation.AnimationId:match("%d+"))
-                                if animId == rowAnim then
-                                    isPlayingTheAnim = true
-                                    break
+                                    if vehicleSeat.AssemblyLinearVelocity.Magnitude <= 10 then
+                                        local throttleV3 = vehicleSeat.CFrame.LookVector*customThrottleNum*0.8
+                                        vehicleSeat.AssemblyLinearVelocity += throttleV3*15 
+                                    end
+                                    
+                                    local rowAnim = 15341401436
+                                    local isPlayingTheAnim = false
+        
+                                    local humanoid = char:WaitForChild("Humanoid") :: Humanoid
+                                    for _,v : AnimationTrack in pairs(humanoid:GetPlayingAnimationTracks()) do
+                                        local animId =  tonumber(v.Animation.AnimationId:match("%d+"))
+                                        if animId == rowAnim then
+                                            isPlayingTheAnim = true
+                                            break
+                                        end
+                                    end
+        
+                                    if not isPlayingTheAnim then
+                                        AnimationUtil.playAnim(plr, rowAnim, false)
+        
+                                        local rowPart = vehicleModel:FindFirstChild("RowTool") :: BasePart ?
+                                        assert(rowPart, "Row row row your boat, but where's the rowing tool?")
+                                        local leftHand = char:FindFirstChild("LeftHand") :: BasePart
+                                        assert(leftHand, "Cannot find the left hand!")
+                    
+                                        local handle = _maid:GiveTask(rowPart:Clone())
+                                        handle.Name = "Handle"
+                                        handle.CFrame = leftHand.CFrame + leftHand.CFrame.LookVector*(leftHand.Size.Z*0.5)
+                                        handle.Parent = leftHand
+                                        --local tool = Instance.new("Tool")
+                                        local weld = Instance.new("WeldConstraint") :: WeldConstraint
+                                        weld.Name = "WeldConstraint"
+                                        weld.Part0 = handle
+                                        weld.Part1 = leftHand
+                                        weld.Parent = handle
+                                        --tool.Parent = char    
+                                        playSound(5930519356, rowPart, false)  
+                                        task.wait(0.85)
+                                        handle:Destroy()
+                                    end
+                                    db = false
                                 end
-                            end
-
-                            if not isPlayingTheAnim then
-                                AnimationUtil.playAnim(plr, rowAnim, false)
-
-                                local rowPart = vehicleModel:FindFirstChild("RowTool") :: BasePart ?
-                                assert(rowPart, "Row row row your boat, but where's the rowing tool?")
-                                local leftHand = char:FindFirstChild("LeftHand") :: BasePart
-                                assert(leftHand, "Cannot find the left hand!")
-            
-                                local handle = _maid:GiveTask(rowPart:Clone())
-                                handle.Name = "Handle"
-                                handle.CFrame = leftHand.CFrame + leftHand.CFrame.LookVector*(leftHand.Size.Z*0.5)
-                                handle.Parent = leftHand
-                                --local tool = Instance.new("Tool")
-                                local weld = Instance.new("WeldConstraint") :: WeldConstraint
-                                weld.Name = "WeldConstraint"
-                                weld.Part0 = handle
-                                weld.Part1 = leftHand
-                                weld.Parent = handle
-                                --tool.Parent = char    
-                                playSound(5930519356, rowPart, false)  
-                                task.wait(3)
-                                handle:Destroy()
-                            end
+                            end)
+                        elseif char and plr and (customThrottleNum == 0) then
+                            _maid.BoatOnRow = nil
+                        else
+                            _maid.BoatOnRow = nil
                         end
                         -- animation:Destroy()
                     end
@@ -270,7 +285,16 @@ function Vehicle.init(maid : Maid)
                 local customSteer = vehicleModel:GetAttribute(CUSTOM_STEER_KEY) :: number
                 assert(customSteer, "no steer number")
                 if vehicleModel:GetAttribute("Class") == ENV_BOAT_CLASS_KEY then
-                    vehicleSeat.AssemblyAngularVelocity += Vector3.new(0,1,0)*-customSteer
+                    local db = false
+
+                    _maid.BoatOnTurn = RunService.Stepped:Connect(function()
+                        if db == false then
+                            db = true
+                            vehicleSeat.AssemblyAngularVelocity += Vector3.new(0,0.25,0)*-customSteer
+                            task.wait(0.5)
+                            db = false
+                        end
+                    end)
                 elseif vehicleModel:GetAttribute("Class") == CAR_CLASS_KEY then
                     local seat = vehicleModel:FindFirstChild("VehicleSeat") :: VehicleSeat ?
                     local wheels = vehicleModel:FindFirstChild("Wheels") :: Model ?
