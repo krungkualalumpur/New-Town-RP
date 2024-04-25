@@ -291,6 +291,12 @@ function Trains.init(maid : Maid)
                 local function getEmergencyStop(trainModel : Model)
                     trainModel:GetAttribute("IsEmergencyStop")
                 end
+
+                local function getOtherTrainRelativeDirectionRelativeToTrain(train : Model, otherTrain : Model)
+                    assert(otherTrain.PrimaryPart and train.PrimaryPart)
+
+                    return train.PrimaryPart.CFrame.LookVector:Dot((otherTrain.PrimaryPart.Position - train.PrimaryPart.Position).Unit)*getLoopState(train)
+                end
                
                 repeat  task.wait()
                     setEmergencyStop(train, false)
@@ -302,7 +308,11 @@ function Trains.init(maid : Maid)
                     for _,otherTrain in pairs(workspace:WaitForChild("Assets"):WaitForChild("Temporaries"):WaitForChild("Trains"):GetChildren()) do
                         if otherTrain ~= train then
                             local _dist = if otherTrain.PrimaryPart then (otherTrain.PrimaryPart.Position - train.PrimaryPart.Position).Magnitude else math.huge
-                            if (getLoopState(otherTrain) == getLoopState()) and _dist <= 100 and not getEmergencyStop(otherTrain) then
+
+                            --if train.Parent:GetChildren()[1] == train then
+                            -- --   print(getOtherTrainRelativeDirectionRelativeToTrain(train, otherTrain), " direction breeh! ", train)
+                            --end
+                            if (getLoopState(otherTrain) == getLoopState()) and _dist <= 100 and (getOtherTrainRelativeDirectionRelativeToTrain(train, otherTrain) > 0) then
                                 setEmergencyStop(train, true)
 
                                 stop(getLoopState())
