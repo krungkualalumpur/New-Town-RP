@@ -149,6 +149,7 @@ function Vehicle.init(maid : Maid)
             end]]
             local attachment0 = Instance.new("Attachment")
             local VectorForce = Instance.new("VectorForce")  
+            VectorForce.Name = "GeneratedVectorForce"
 
             attachment0.Parent = vehicleModel.PrimaryPart
             VectorForce.Parent = vehicleModel.PrimaryPart
@@ -230,12 +231,10 @@ function Vehicle.init(maid : Maid)
                     local wheels = vehicleModel:FindFirstChild("Wheels") :: Model
 
                     if seat and wheels then
-                        for _,v in pairs(wheels:GetDescendants()) do
+                       --[[ for _,v in pairs(wheels:GetDescendants()) do
                             if v:IsA("HingeConstraint") and v.ActuatorType == Enum.ActuatorType.Motor then
-                                --v.MotorMaxTorque = 1--999999999999
                                 v.AngularVelocity = customThrottleNum*convertionKpHtoVelocity((speedLimit)*(if math.sign(customThrottleNum) == 1 then 1 else 0.5))
                                 local accDir = vehicleModel.PrimaryPart.CFrame:VectorToObjectSpace(vehicleModel.PrimaryPart.AssemblyLinearVelocity).Z
-                                --task.spawn(function() task.wait(1); v.MotorMaxTorque = 1--[[550000000]]; end)
                                 if customThrottleNum ~= 0 then
                                     v.MotorMaxTorque = 5--999999999999
                                     v.MotorMaxAcceleration = if math.sign(accDir*customThrottleNum) == 1 then 60 else 25
@@ -248,7 +247,7 @@ function Vehicle.init(maid : Maid)
                                     v.AngularVelocity = 0
                                 end
                             end
-                        end
+                        end]]
 
                         --brake signal
                         local lights = vehicleModel:WaitForChild("Body"):WaitForChild("Lights")
@@ -296,7 +295,7 @@ function Vehicle.init(maid : Maid)
                         end
                     end)
                 elseif vehicleModel:GetAttribute("Class") == CAR_CLASS_KEY then
-                    local seat = vehicleModel:FindFirstChild("VehicleSeat") :: VehicleSeat ?
+                    --[[local seat = vehicleModel:FindFirstChild("VehicleSeat") :: VehicleSeat ?
                     local wheels = vehicleModel:FindFirstChild("Wheels") :: Model ?
 
                     if seat and wheels then
@@ -327,24 +326,23 @@ function Vehicle.init(maid : Maid)
                                     angularSpeed = 3*2
                                 end
 
-                                --v.TargetAngle = targetAngle
-                                --v.AngularSpeed = angularSpeed
+                        
                                 local tweenTime = 1
                                 if math.round(targetAngle) == 0 then angularSpeed = 25; tweenTime = 0.05 end 
                                 local tween  = TweenService:Create(v, TweenInfo.new(tweenTime), {TargetAngle = targetAngle, AngularSpeed = angularSpeed})
                                 tween:Play()
                             end
                         end
-                    end
+                    end]]
                 elseif vehicleModel:GetAttribute("Class") == BOAT_CLASS_KEY then
-                    if customSteer ~= 0 then
+                    --[[if customSteer ~= 0 then
                         _maid.OnRotate = RunService.Stepped:Connect(function()
                             local customThrottle = customSteer*vehicleModel:GetAttribute(CUSTOM_THROTTLE_KEY)
                             vehicleSeat.AssemblyAngularVelocity += Vector3.new(0,0.03,0)*(-customSteer*(if customThrottle ~= 0 then customSteer*customThrottle else 1))
                         end)     
                     else
                        _maid.OnRotate = nil 
-                    end
+                    end]]
                 end
             end))
 
@@ -668,23 +666,24 @@ function Vehicle.init(maid : Maid)
                         end
                     end)) 
 
-                    local vectorMaxForce = vehicleModel:GetAttribute("Power") or 30000
-                    _maid:GiveTask(RunService.Stepped:Connect(function()
-                        local customThrottleNum = vehicleModel:GetAttribute(CUSTOM_THROTTLE_KEY)
-                        local seat = vehicleModel:FindFirstChild("VehicleSeat") :: VehicleSeat
+                    --[[if vehicleModel:GetAttribute("Class") == BOAT_CLASS_KEY then
+                        local vectorMaxForce = vehicleModel:GetAttribute("Power") or 30000
+                        _maid:GiveTask(RunService.Stepped:Connect(function()
+                            local customThrottleNum = vehicleModel:GetAttribute(CUSTOM_THROTTLE_KEY)
+                            local seat = vehicleModel:FindFirstChild("VehicleSeat") :: VehicleSeat
 
-                        if seat then
-                            local direction = math.sign(seat.CFrame.LookVector:Dot(seat.AssemblyLinearVelocity.Unit))
-                            local currentVelocity = vehicleModel.PrimaryPart.AssemblyLinearVelocity.Magnitude
-                            VectorForce.Force = Vector3.new(0,0,-customThrottleNum*(math.clamp(vectorMaxForce - ((vectorMaxForce)*(((currentVelocity)/ speedLimit))), 0, vectorMaxForce)))
-                            if customThrottleNum ~= 0 and direction ~= customThrottleNum then
-                                VectorForce.Force = Vector3.new(0,0, direction*vectorMaxForce)
-                                --print(direction*vectorMaxForce)
+                            if seat then
+                                local direction = math.sign(seat.CFrame.LookVector:Dot(seat.AssemblyLinearVelocity.Unit))
+                                local currentVelocity = vehicleModel.PrimaryPart.AssemblyLinearVelocity.Magnitude
+                                VectorForce.Force = Vector3.new(0,0,-customThrottleNum*(math.clamp(vectorMaxForce - ((vectorMaxForce)*(((currentVelocity)/ speedLimit))), 0, vectorMaxForce)))
+                                if customThrottleNum ~= 0 and direction ~= customThrottleNum then
+                                    VectorForce.Force = Vector3.new(0,0, direction*vectorMaxForce)
+                                end
+                            else
+                                _maid:Destroy()
                             end
-                        else
-                            _maid:Destroy()
-                        end
-                    end))
+                        end))
+                    end]]
                 end
             end
             _maid:GiveTask(vehicleModel.AncestryChanged:Connect(function()

@@ -262,7 +262,26 @@ function Objects.init(maid : Maid)
                 object.AssemblyLinearVelocity = Vector3.new(0,0,5*(if object:GetAttribute("DirectionUp") == true then 1 else -1))
             end
         elseif object:GetAttribute("Class") == "Physics" then
-
+            if object:IsA("Model") then
+                if object.PrimaryPart == nil then 
+                    local minMagn = 0
+                    local pripart;
+                    for _,v in pairs(object:GetDescendants()) do
+                        if v:IsA("BasePart") then
+                            v:SetAttribute("Transparency", v.Transparency);
+                            v.CanCollide = false;
+                            if v.Size.Magnitude > minMagn then
+                                minMagn = v.Size.Magnitude;
+                                pripart = v;
+                            end
+                        elseif v:IsA("SurfaceGui") then
+                            v:SetAttribute("Enabled", v.Enabled)
+                        end
+                    end
+                    object.PrimaryPart = pripart;
+                end
+                assert(object.PrimaryPart, "Unable to set primary part");
+            end
         end
     end
 end
