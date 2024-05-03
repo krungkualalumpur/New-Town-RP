@@ -214,7 +214,7 @@ local function onCharacterAdded(char : Model)
 
     _maid:GiveTask(char:GetAttributeChangedSignal("IsSprinting"):Connect(function()
         if char:GetAttribute("IsSprinting") then
-            humanoid.WalkSpeed = WALK_SPEED*2.3
+            humanoid.WalkSpeed = WALK_SPEED*1.6
     
             camSprinting(true)
     

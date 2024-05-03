@@ -5,6 +5,7 @@ local RunService = game:GetService("RunService")
 local ServerScriptService = game:GetService("ServerScriptService")
 local CollectionService = game:GetService("CollectionService")
 local Lighting = game:GetService("Lighting")
+local Players = game:GetService("Players")
 --packages
 local Maid = require(ReplicatedStorage:WaitForChild("Packages"):WaitForChild("Maid"))
 local NetworkUtil = require(ReplicatedStorage:WaitForChild("Packages"):WaitForChild("NetworkUtil"))
@@ -51,9 +52,9 @@ function Objects.init(maid : Maid)
     
                 maid:GiveTask(object.PrimaryPart.Touched:Connect(function(hit : BasePart)
                     
-                    local forceN = hit.AssemblyAngularVelocity.Magnitude*hit.Mass*4
-
-                    if forceN >= 2 and not object:GetAttribute("OnHit") then
+                    local forceN = hit.AssemblyAngularVelocity.Magnitude*hit.Mass
+                    print(`Force: {forceN} newtons`)
+                    if forceN >= 20 and not object:GetAttribute("OnHit") and not Players:GetPlayerFromCharacter(hit.Parent) then
                         object:SetAttribute("OnHit", true)
                         local model = physicsObjectUniqueModels[object.Name]:Clone()
                         for _,v in pairs(model:GetDescendants()) do
