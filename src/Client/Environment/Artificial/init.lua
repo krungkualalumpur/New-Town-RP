@@ -9,6 +9,7 @@ local NetworkUtil = require(ReplicatedStorage:WaitForChild("Packages"):WaitForCh
 --modules
 local Vehicle = require(ReplicatedStorage:WaitForChild("Client"):WaitForChild("Environment"):WaitForChild("Artificial"):WaitForChild("Vehicle"))
 local Trains = require(ReplicatedStorage:WaitForChild("Client"):WaitForChild("Environment"):WaitForChild("Artificial"):WaitForChild("Trains"))
+local Objects = require(ReplicatedStorage:WaitForChild("Client"):WaitForChild("Environment"):WaitForChild("Artificial"):WaitForChild("Objects"))
 
 local BackpackUtil = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("BackpackUtil"))
 --types
@@ -57,7 +58,7 @@ local Artificial = {}
 function Artificial.init(maid : Maid)
     Vehicle.init(maid)
     Trains.init(maid)
-   
+    Objects.init(maid)
     --performance opt
     clientOptimalization()
    

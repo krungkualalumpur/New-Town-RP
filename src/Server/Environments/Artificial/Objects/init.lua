@@ -7,11 +7,14 @@ local CollectionService = game:GetService("CollectionService")
 local Lighting = game:GetService("Lighting")
 --packages
 local Maid = require(ReplicatedStorage:WaitForChild("Packages"):WaitForChild("Maid"))
+local NetworkUtil = require(ReplicatedStorage:WaitForChild("Packages"):WaitForChild("NetworkUtil"))
 --modules
 --types
 type Maid = Maid.Maid
 --constants
+--remotes
 --variables
+local physicsObjectUniqueModels = {};
 --references
 --local functions
 --class
@@ -254,10 +257,12 @@ function Objects.init(maid : Maid)
                     end
                 end
             end
-        elseif object:GetAttribute("Class") == "Elevator" then
+        elseif object:GetAttribute("Class") == "Elevator" then -- escalator
             if object:IsA("BasePart") and object.Anchored == true then
                 object.AssemblyLinearVelocity = Vector3.new(0,0,5*(if object:GetAttribute("DirectionUp") == true then 1 else -1))
             end
+        elseif object:GetAttribute("Class") == "Physics" then
+
         end
     end
 end
