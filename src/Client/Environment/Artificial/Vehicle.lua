@@ -176,6 +176,7 @@ local function onCharacterAdded(char : Model)
             local leftSignal = vehicleControlMaid:GiveTask(Signal.new())
             local rightSignal = vehicleControlMaid:GiveTask(Signal.new())
             local hazardSignal = vehicleControlMaid:GiveTask(Signal.new())
+            local waterSpraySignal = vehicleControlMaid:GiveTask(Signal.new())
 
             local onMove  = vehicleControlMaid:GiveTask(Signal.new())
 
@@ -188,6 +189,7 @@ local function onCharacterAdded(char : Model)
                 rightSignal,
 
                 hazardSignal,
+                if vehicleModel:WaitForChild("Body"):WaitForChild("Body"):FindFirstChild("WaterEmitter") then waterSpraySignal else nil,
 
                 onMove
             )
@@ -221,6 +223,10 @@ local function onCharacterAdded(char : Model)
 
             vehicleControlMaid:GiveTask(hazardSignal:Connect(function()
                 NetworkUtil.fireServer(ON_VEHICLE_CONTROL_EVENT, vehicleModel, "HazardSignal")
+            end))
+
+            vehicleControlMaid:GiveTask(waterSpraySignal:Connect(function()
+                NetworkUtil.fireServer(ON_VEHICLE_CONTROL_EVENT, vehicleModel, "WaterSpraySignal")
             end))
 
             vehicleControlMaid:GiveTask(onMove:Connect(function(directionStr : string)

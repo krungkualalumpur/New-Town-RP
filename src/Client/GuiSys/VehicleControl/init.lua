@@ -145,6 +145,7 @@ return function(
     leftSignal : Signal,
     rightSignal : Signal,
     hazardSignal : Signal,
+    waterSpraySignal : Signal ?,
 
     onMove : Signal
 )
@@ -192,6 +193,12 @@ return function(
     end, "", 5, false)
     hornButton.Parent = content 
     
+    if waterSpraySignal then
+        local waterSprayButton = getImageButton(maid, 6824924955, function()
+            waterSpraySignal:Fire()
+        end, "", 5, false)
+        waterSprayButton.Parent = content 
+    end
 
     local controlArrow = _new("TextButton")({
         AnchorPoint = Vector2.new(0.5,0.5),
@@ -240,15 +247,16 @@ return function(
                 LayoutOrder = 3,
                 BackgroundTransparency = 1,
                 Visible = if not RunService:IsStudio() then UserInputService.TouchEnabled else true,
-                Size = UDim2.fromScale(1, 0.6),
+                Size = UDim2.fromScale(0.85, 1),
                 Children = {
                     _new("UIListLayout")({
                         FillDirection = Enum.FillDirection.Horizontal,
+                        HorizontalAlignment = Enum.HorizontalAlignment.Right,
                     }),
                    
                     _new("Frame")({
                         BackgroundTransparency = 1,
-                        Size = UDim2.fromScale(0.3, 1),
+                        Size = UDim2.fromScale(0.4, 1),
                         Children = {
                             _new("UIAspectRatioConstraint")({
                                 AspectRatio = 0.75

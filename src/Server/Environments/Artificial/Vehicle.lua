@@ -814,6 +814,8 @@ function Vehicle.init(maid : Maid)
             elseif direction == "Brake" then
                 vehicleModel:SetAttribute(CUSTOM_THROTTLE_KEY, 0)
             end
+        elseif eventName == "WaterSpraySignal" then
+            --continue this tommorow pls
         end
         return
     end))
