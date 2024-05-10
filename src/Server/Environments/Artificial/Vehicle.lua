@@ -816,6 +816,20 @@ function Vehicle.init(maid : Maid)
             end
         elseif eventName == "WaterSpraySignal" then
             --continue this tommorow pls
+            local waterEmitter = vehicleModel:WaitForChild("Body"):WaitForChild("Body"):FindFirstChild("WaterEmitter")
+            if waterEmitter then
+                local particleEmitter = waterEmitter:FindFirstChildWhichIsA("ParticleEmitter")
+                if particleEmitter then
+                    particleEmitter.Enabled = not particleEmitter.Enabled
+
+                    if particleEmitter.Enabled then
+                        playSound(5057582133, waterEmitter, true, 50)
+                    else
+                        local sound = waterEmitter:FindFirstChildWhichIsA("Sound")
+                        if sound then sound:Destroy() end
+                    end
+                end
+            end
         end
         return
     end))

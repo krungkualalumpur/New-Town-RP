@@ -194,7 +194,7 @@ return function(
     hornButton.Parent = content 
     
     if waterSpraySignal then
-        local waterSprayButton = getImageButton(maid, 6824924955, function()
+        local waterSprayButton = getImageButton(maid, 13492318033, function()
             waterSpraySignal:Fire()
         end, "", 5, false)
         waterSprayButton.Parent = content 
