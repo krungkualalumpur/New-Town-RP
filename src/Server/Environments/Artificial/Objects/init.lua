@@ -17,6 +17,42 @@ type Maid = Maid.Maid
 local physicsObjectUniqueModels = {};
 --references
 --local functions
+local function blinkingLight(maid : Maid, object : BasePart, interval : number ?)
+    if interval then object:SetAttribute("BlinkingTime", interval) end
+    
+    object.Material = Enum.Material.Metal
+    local blinkingTime = object:GetAttribute("BlinkingTime") :: number or 0.1
+    local blinkColor = object:GetAttribute("BlinkColor") :: boolean
+
+    local colorOrder = 1
+
+    local t = tick()
+    maid:GiveTask(RunService.Stepped:Connect(function()
+        if tick() - t > blinkingTime then
+            t = tick()
+            if not blinkColor then
+                if object.Material == Enum.Material.Neon then
+                    object.Material = Enum.Material.Metal 
+                else
+                    object.Material = Enum.Material.Neon
+                end
+            else
+                local color = if colorOrder == 1 then 
+                    BrickColor.White() elseif  colorOrder == 2 then 
+                    BrickColor.Green() elseif colorOrder == 3 then
+                    BrickColor.Blue() else nil
+
+                if color == nil then
+                    colorOrder = 0
+                    color = BrickColor.Red()
+                end
+                object.Material = Enum.Material.Neon
+                object.BrickColor = color
+                colorOrder += 1
+            end
+        end
+    end))
+end
 --class
 local Objects = {}
 function Objects.init(maid : Maid)
@@ -159,40 +195,7 @@ function Objects.init(maid : Maid)
                 
             end))
         elseif object:GetAttribute("Class") == "BlinkingNeon" then
-            if object:IsA("BasePart") then
-                object.Material = Enum.Material.Metal
-                local blinkingTime = object:GetAttribute("BlinkingTime") :: number or 0.1
-                local blinkColor = object:GetAttribute("BlinkColor") :: boolean
-
-                local colorOrder = 1
-
-                local t = tick()
-                maid:GiveTask(RunService.Stepped:Connect(function()
-                    if tick() - t > blinkingTime then
-                        t = tick()
-                        if not blinkColor then
-                            if object.Material == Enum.Material.Neon then
-                                object.Material = Enum.Material.Metal 
-                            else
-                                object.Material = Enum.Material.Neon
-                            end
-                        else
-                            local color = if colorOrder == 1 then 
-                                BrickColor.White() elseif  colorOrder == 2 then 
-                                BrickColor.Green() elseif colorOrder == 3 then
-                                BrickColor.Blue() else nil
-
-                            if color == nil then
-                                colorOrder = 0
-                                color = BrickColor.Red()
-                            end
-                            object.Material = Enum.Material.Neon
-                            object.BrickColor = color
-                            colorOrder += 1
-                        end
-                    end
-                end))
-            end
+            blinkingLight(maid, object)
         elseif object:GetAttribute("Class") == "Clock" then
             maid:GiveTask(Lighting.Changed:Connect(function()
                 local hourNeedle = object:FindFirstChild("HourNeedle") :: Model ?
@@ -281,6 +284,94 @@ function Objects.init(maid : Maid)
                     object.PrimaryPart = pripart;
                 end
                 assert(object.PrimaryPart, "Unable to set primary part");
+            end
+        elseif object:GetAttribute("Class") == "TrafficLight" then
+            
+        end
+    end
+
+    do
+       
+       
+        for _,object in CollectionService:GetTagged("Object") do
+            if object:GetAttribute("Class") == "TrafficLight" then
+                local t = tick()
+                local waitTime = 20
+                local lights = object:FindFirstChild("Lights")
+                assert(lights)
+
+                local lightsCount = #lights:GetChildren()
+
+                if lightsCount == 2 then
+                    blinkingLight(maid,  lights:GetChildren()[1], 0.9)
+                elseif lightsCount == 3 then
+                    maid:GiveTask(RunService.Stepped:Connect(function()
+                        if tick() - t > waitTime then 
+                            print("koe kataken")
+                            t = tick()
+    
+                            local trafficLightState : "Red" | "Yellow" | "Green" 
+    
+                            local function update()
+                                for _,v in pairs(lights:GetChildren()) do
+                                    if v:GetAttribute("Index") == 1 and trafficLightState == "Red" then
+                                        v.Material = Enum.Material.Neon
+                                        v.Transparency = 0
+                                    elseif v:GetAttribute("Index") == 2 and trafficLightState == "Yellow" then
+                                        v.Material = Enum.Material.Neon
+                                        v.Transparency = 0
+                                    elseif v:GetAttribute("Index") == 3 and trafficLightState == "Green" then
+                                        v.Material = Enum.Material.Neon
+                                        v.Transparency = 0
+                                    else
+                                        v.Material = Enum.Material.Plastic
+                                        v.Transparency = 0.95
+                                    end
+                                end
+                            
+                            end
+    
+                            local function setTrafficLight(state : "Red" | "Yellow" | "Green")
+                                trafficLightState = state
+                                object:SetAttribute("Status", state)
+                                update()
+                            end
+    
+                            local function getTrafficLight()  : ("Red" | "Yellow" | "Green") ?
+                                return object:GetAttribute("Status") 
+                            end
+    
+                            local timer = object:FindFirstChild("Timer") :: BasePart ?
+                            setTrafficLight(getTrafficLight() or "Red")
+                            print(getTrafficLight(), " status?")
+                            if trafficLightState == "Red" then
+                                setTrafficLight("Yellow")
+                                task.wait(0.9)
+                                setTrafficLight("Green")
+    
+                                if timer then
+                                    (timer:WaitForChild("SurfaceGui"):WaitForChild("TextLabel") :: TextLabel).TextColor3 = Color3.fromRGB(50,200,50)
+                                end
+                            elseif trafficLightState == "Green" then
+                                setTrafficLight("Yellow")
+                                task.wait(0.9)
+                                setTrafficLight("Red")
+    
+                                if timer then
+                                    (timer:WaitForChild("SurfaceGui"):WaitForChild("TextLabel") :: TextLabel).TextColor3 = Color3.fromRGB(200,50,50)
+                                end
+                            end
+    
+                            if timer then
+                                for i = waitTime, 1, -1 do 
+                                    (timer:WaitForChild("SurfaceGui"):WaitForChild("TextLabel") :: TextLabel).Text = tostring(i)
+                                    task.wait(1)
+                                end
+                            end
+                            
+                        end
+                    end))
+                end
             end
         end
     end

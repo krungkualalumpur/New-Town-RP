@@ -247,7 +247,7 @@ return function(
                 LayoutOrder = 3,
                 BackgroundTransparency = 1,
                 Visible = if not RunService:IsStudio() then UserInputService.TouchEnabled else true,
-                Size = UDim2.fromScale(0.85, 1),
+                Size = UDim2.fromScale(0.85, 0.8),
                 Children = {
                     _new("UIListLayout")({
                         FillDirection = Enum.FillDirection.Horizontal,
