@@ -312,7 +312,7 @@ function Trains.init(maid : Maid)
                             --if train.Parent:GetChildren()[1] == train then
                             -- --   print(getOtherTrainRelativeDirectionRelativeToTrain(train, otherTrain), " direction breeh! ", train)
                             --end
-                            if (getLoopState(otherTrain) == getLoopState()) and _dist <= 100 and (getOtherTrainRelativeDirectionRelativeToTrain(train, otherTrain) > 0) then
+                            if (getLoopState(otherTrain) == getLoopState()) and _dist <= 150 and (getOtherTrainRelativeDirectionRelativeToTrain(train, otherTrain) > 0) then
                                 setEmergencyStop(train, true)
 
                                 stop(getLoopState())

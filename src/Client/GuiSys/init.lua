@@ -141,7 +141,7 @@ function PlaySound(id, parent, volumeOptional: number ?)
 	end)
 end
 
-local function getCharacter(fromWorkspace : boolean, plr : Player ?)
+local function getCharacterClone(fromWorkspace : boolean, plr : Player ?)
     local char 
     if RunService:IsRunning() then 
         if not fromWorkspace then
@@ -201,6 +201,14 @@ end
 local function getCurrentDay() : CustomEnum.Day
     return getDayEnumFromNum(workspace:WaitForChild(DAY_VALUE_KEY).Value)
 end
+
+local function getVehicle(name : string)
+    return ReplicatedStorage:WaitForChild("Assets"):WaitForChild("Vehicles"):FindFirstChild(name)
+end
+local function getVehicleSpawnCf(char : Model, spawnPart : BasePart ?)
+    return if spawnPart then spawnPart.CFrame elseif char.PrimaryPart then (char.PrimaryPart.CFrame + char.PrimaryPart.CFrame.LookVector*5) else nil
+end
+
 
 --class
 local currentGuiSys : GuiSys
@@ -774,7 +782,7 @@ function guiSys.new()
             local loadingFrame = LoadingFrame(notifMaid, "Resetting character, please what")
             loadingFrame.Parent = target
             NetworkUtil.invokeServer(ON_CHARACTER_APPEARANCE_RESET)
-            char:Set(getCharacter(true))
+            char:Set(getCharacterClone(true))
             notifMaid:DoCleaning()
         end, function()
             notifMaid:DoCleaning()
@@ -796,6 +804,24 @@ function guiSys.new()
    -- end)
 
    maid:GiveTask(onVehicleSpawn:Connect(function(key, val : string)
+        local overlapParams = OverlapParams.new()
+        overlapParams.FilterType = Enum.RaycastFilterType.Include
+        overlapParams.FilterDescendantsInstances = {
+            workspace:WaitForChild("Assets"):WaitForChild("Buildings"):GetChildren(), 
+            workspace:WaitForChild("Assets"):WaitForChild("Environment"):GetChildren(),
+            workspace:WaitForChild("Assets"):WaitForChild("Houses"):GetChildren(),
+            workspace:WaitForChild("Assets"):WaitForChild("Shops"):GetChildren(),
+            workspace:WaitForChild("Miscs"):WaitForChild("NoSpawnZone"),
+        }
+        local parts = workspace:GetPartBoundsInBox(getVehicleSpawnCf(Player.Character),  Vector3.new(5,5,5), overlapParams)
+        for _,v in pairs(parts) do
+            if v:IsDescendantOf(workspace:WaitForChild("Miscs"):WaitForChild("NoSpawnZone")) then
+                self:Notify("Can not spawn vehicles in this area!")
+                return
+            end
+         end
+        
+         --spawn
         local vehicles : {[number] : VehicleData} = NetworkUtil.invokeServer(
             SPAWN_VEHICLE, 
             key,

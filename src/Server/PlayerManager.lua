@@ -245,6 +245,10 @@ local function lockVehicle(vehicleModel : Model, lock : boolean)
     playSound(138111999, false, vehicleModel.PrimaryPart, nil, 75)
 end
 
+local function getVehicleSpawnCf(char : Model, spawnPart : BasePart ?)
+    return if spawnPart then spawnPart.CFrame elseif char.PrimaryPart then (char.PrimaryPart.CFrame + char.PrimaryPart.CFrame.LookVector*5) else nil
+end
+
 local function setToolEquip(inst : Tool, char : Model)
     
     --set collision
@@ -681,9 +685,9 @@ function PlayerManager:SpawnVehicle(key : number, isSpawned : boolean, vehicleNa
     end
     
     vehicleInfo.IsSpawned = isSpawned
-    if isSpawned == true then
+    if isSpawned == true then 
         local char = self.Player.Character or self.Player.CharacterAdded:Wait()
-        local cf = if spawnPart then spawnPart.CFrame elseif char.PrimaryPart then (char.PrimaryPart.CFrame + char.PrimaryPart.CFrame.LookVector*5) else nil
+        local cf = getVehicleSpawnCf(char, spawnPart)
         assert(cf)
         local vehicleModel = createVehicleModel(vehicleInfo, cf)
 
@@ -717,17 +721,26 @@ function PlayerManager:SpawnVehicle(key : number, isSpawned : boolean, vehicleNa
             workspace:WaitForChild("Assets"):WaitForChild("Buildings"):GetChildren(), 
             workspace:WaitForChild("Assets"):WaitForChild("Environment"):GetChildren(),
             workspace:WaitForChild("Assets"):WaitForChild("Houses"):GetChildren(),
-            workspace:WaitForChild("Assets"):WaitForChild("Shops"):GetChildren()
+            workspace:WaitForChild("Assets"):WaitForChild("Shops"):GetChildren(),
+            workspace:WaitForChild("Miscs"):WaitForChild("NoSpawnZone"),
         }
 
-         local parts = workspace:GetPartBoundsInBox(cf, vehicleModel:GetExtentsSize(), overlapParams)
-         if #parts > 0 then
+        local parts = workspace:GetPartBoundsInBox(cf, vehicleModel:GetExtentsSize(), overlapParams)
+        if #parts > 0 then
             --self:SpawnVehicle(key, false)
             --NotificationUtil.Notify(self.Player, "Can not spawn vehicles inside a building!")
             --return
          end
+         --check if its in no go zone
+         for _,v in pairs(parts) do
+            if v:IsDescendantOf(workspace:WaitForChild("Miscs"):WaitForChild("NoSpawnZone")) then
+                self:SpawnVehicle(key, false)
+                NotificationUtil.Notify(self.Player, "Can not spawn vehicles in this area!")
+                return
+            end
+         end
          --check if its boat and its under wateee
-         if vehicleModel:GetAttribute("Class") == "Boat" then
+        if vehicleModel:GetAttribute("Class") == "Boat" then
             local _raycastParams = RaycastParams.new()
             _raycastParams.IgnoreWater = false
             _raycastParams.RespectCanCollide = true
@@ -740,7 +753,7 @@ function PlayerManager:SpawnVehicle(key : number, isSpawned : boolean, vehicleNa
                 NotificationUtil.Notify(self.Player, "Boat can only be spawned on water")
                 return
             end
-         end
+        end
 
         lockVehicle(vehicleModel, false)
     else
