@@ -53,12 +53,19 @@ function Objects.init(maid : Maid)
                 maid:GiveTask(object.PrimaryPart.Touched:Connect(function(hit : BasePart)
                     
                     local forceN = hit.AssemblyAngularVelocity.Magnitude*hit.Mass
-                    print(`Force: {forceN} newtons`)
+
                     if forceN >= 20 and not object:GetAttribute("OnHit") and not Players:GetPlayerFromCharacter(hit.Parent) then
                         object:SetAttribute("OnHit", true)
                         local model = physicsObjectUniqueModels[object.Name]:Clone()
                         for _,v in pairs(model:GetDescendants()) do
-                            if v:IsA("BasePart") then v.Massless = true; v.Anchored = false; v.CanCollide = true; end
+                            
+                            if v:IsA("BasePart") then 
+                                local weld = Instance.new("WeldConstraint")
+                                weld.Part0 = v
+                                weld.Part1 = model.PrimaryPart
+                                weld.Parent = model.PrimaryPart
+                                v.Massless = true; v.Anchored = false; v.CanCollide = true;
+                            end
                         end
                         model:PivotTo(oriCf);
                         model.Parent = object.Parent;
@@ -81,7 +88,7 @@ function Objects.init(maid : Maid)
                             vfx.EmissionDirection = Enum.NormalId.Top
                             vfx.Color = ColorSequence.new{
                                 ColorSequenceKeypoint.new(0, Color3.fromRGB(255,255,255));
-                                ColorSequenceKeypoint.new(0, Color3.fromRGB(255,255,255));
+                                ColorSequenceKeypoint.new(1, Color3.fromRGB(255,255,255));
                             }
                             vfx.SpreadAngle = Vector2.new(5, 5)
                             vfx.Size = NumberSequence.new{

@@ -307,7 +307,6 @@ function Objects.init(maid : Maid)
                 elseif lightsCount == 3 then
                     maid:GiveTask(RunService.Stepped:Connect(function()
                         if tick() - t > waitTime then 
-                            print("koe kataken")
                             t = tick()
     
                             local trafficLightState : "Red" | "Yellow" | "Green" 
@@ -343,7 +342,6 @@ function Objects.init(maid : Maid)
     
                             local timer = object:FindFirstChild("Timer") :: BasePart ?
                             setTrafficLight(getTrafficLight() or "Red")
-                            print(getTrafficLight(), " status?")
                             if trafficLightState == "Red" then
                                 setTrafficLight("Yellow")
                                 task.wait(0.9)
