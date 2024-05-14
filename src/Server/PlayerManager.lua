@@ -26,6 +26,7 @@ local NotificationUtil = require(ReplicatedStorage:WaitForChild("Shared"):WaitFo
 local ToolActions = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("ToolActions"))
 local ChoiceActions = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("ChoiceActions"))
 local Jobs = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Jobs"))
+local ToolManager = require(ServerScriptService:WaitForChild("Server"):WaitForChild("ToolManager"))
 
 local DatastoreManager = require(ServerScriptService:WaitForChild("Server"):WaitForChild("DatastoreManager"))
 local MarketplaceManager = require(ServerScriptService:WaitForChild("Server"):WaitForChild("MarketplaceManager"))
@@ -250,7 +251,6 @@ local function getVehicleSpawnCf(char : Model, spawnPart : BasePart ?)
 end
 
 local function setToolEquip(inst : Tool, char : Model)
-    
     --set collision
     for _,v in pairs(inst:GetDescendants()) do
         if v:IsA("BasePart") and char.PrimaryPart then
@@ -285,7 +285,8 @@ local function backpackRefresh(char : Model, backpack : {[number] : BackpackUtil
         clonedTool:SetAttribute("ToolKey", key)
         clonedTool.Parent = if toolData.IsEquipped then char else plr.Backpack
 
-        setToolEquip(clonedTool, char)
+        ToolManager.onToolOnBackpack(clonedTool, char)
+        --setToolEquip(clonedTool, char)
 
         local _maid = Maid.new()
         _maid:GiveTask(clonedTool.Activated:Connect(function()
@@ -1179,7 +1180,8 @@ function PlayerManager.init(maid : Maid)
                 --print(plrInfo.Backpack, inst:GetAttribute("ToolKey"), " kok bisa not found yo.?")
                 plrInfo:SetBackpackEquip(true, toolKey)
                 NetworkUtil.fireClient(UPDATE_PLAYER_BACKPACK, player, plrInfo:GetBackpack(true, true))
-                setToolEquip(inst :: Tool, char)
+                ToolManager.onToolOnBackpack(inst, char)
+                --setToolEquip(inst :: Tool, char)
             elseif inst:IsA("Tool") then
                 inst:Destroy()
             end

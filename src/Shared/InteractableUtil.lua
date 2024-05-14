@@ -21,6 +21,7 @@ local Zone = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Zone
 
 local TelevisionChannel = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("TelevisionChannel"))
 
+
 --types
 type Maid = Maid.Maid
 
@@ -144,7 +145,13 @@ function Interactable.Interact(model : Model, player : Player, plrInfo : any)
         Interactable.InteractNonSwitch(model, player, plrInfo)
     end
 
-        
+    if RunService:IsServer() then
+        local Analytics = require(ServerScriptService:WaitForChild("Server"):WaitForChild("Analytics"))
+
+        Analytics.updateDataTable(player, "Events", "Interface", plrInfo, function()
+            return "On_Object_Interact", model.Name
+        end)
+    end
         --just for fun :P
         --local exp = Instance.new("Explosion")
         --exp.BlastRadius = 35

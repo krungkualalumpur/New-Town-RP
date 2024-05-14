@@ -2,6 +2,7 @@
 --services
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local CollectionService = game:GetService("CollectionService")
+local Players = game:GetService("Players")
 --packages
 local Maid = require(ReplicatedStorage:WaitForChild("Packages"):WaitForChild("Maid"))
 --modules
@@ -19,6 +20,39 @@ local ToolsAsset = ReplicatedStorage:WaitForChild("Assets"):WaitForChild("Tools"
 --local functions
 --class
 local ToolManager = {}
+
+function ToolManager.onToolOnBackpack(tool : Tool, char : Model)
+    --set up collision group
+    for _,v in pairs(tool:GetDescendants()) do
+        if v:IsA("BasePart") and char.PrimaryPart then
+            v.CollisionGroup = char.PrimaryPart.CollisionGroup
+        end
+    end
+
+    --
+    if tool.Name:lower() == "identity card" then
+        local toolModel = tool:FindFirstChild(tool.Name) :: Model ?
+        assert(toolModel and toolModel.PrimaryPart)
+        local surfaceGui = toolModel.PrimaryPart:WaitForChild("SurfaceGui")
+        local idText = surfaceGui:WaitForChild("Details"):WaitForChild("Id") :: TextLabel 
+        local plrNameText = surfaceGui:WaitForChild("Details"):WaitForChild("PlayerName") :: TextLabel 
+        local accountAgeText = surfaceGui:WaitForChild("Details"):WaitForChild("AccountAge") :: TextLabel 
+        local citizenshipText = surfaceGui:WaitForChild("Details"):WaitForChild("Citizenship") :: TextLabel
+        local avatarImage = surfaceGui:WaitForChild("AvatarImage") :: ImageLabel
+
+        local plr = Players:GetPlayerFromCharacter(char)
+        
+        if plr then
+            local plrRoleName = plr:GetRoleInGroup(5255603)
+    
+            idText.Text = `Identity Number: {plr.UserId}`
+            plrNameText.Text = `Name: {char.Name}`
+            accountAgeText.Text = `Account age: {plr.AccountAge}`
+            citizenshipText.Text = `Citizenship: {if plrRoleName:lower() == "guest" then "Tourist" else plrRoleName}`
+            avatarImage.Image = Players:GetUserThumbnailAsync(plr.UserId, Enum.ThumbnailType.HeadShot, Enum.ThumbnailSize.Size420x420)
+        end
+    end
+end
 
 function ToolManager.init(maid : Maid)
     local ToolCollections = ReplicatedStorage:WaitForChild("Assets"):WaitForChild("Tools")
