@@ -114,6 +114,7 @@ function Analytics.init(maid : Maid)
     sessionDataTable:AddColumn("play_duration", "Int64", true)
     sessionDataTable:AddColumn("duration_after_joined", "Int64", true)
     sessionDataTable:AddColumn("event_name", "String", true)
+    sessionDataTable:AddColumn("ab_value", "String", false)
     local demographyDataTable = userDataSet:CreateDataTable("Demography", "demography")
     demographyDataTable:AddColumn("server_id", "String", false)
     demographyDataTable:AddColumn("session_id", "String", false)
@@ -299,7 +300,7 @@ function Analytics.updateDataTable(plr : Player, dataSetName : string, dataTable
             local play_duration = if currentSession.QuitTime then (currentSession.QuitTime - currentSession.JoinTime) else nil
             --print(firstSessionQuitTime, firstSession)
             --print(firstSession ~= currentSession, currentTimeStamp, firstSessionQuitTime, " debug") 
-            local event_name = addParamsFn()
+            local event_name, ab_value = addParamsFn()
 
             dataTable:AddRow({
                 server_id = game.JobId,
@@ -315,7 +316,8 @@ function Analytics.updateDataTable(plr : Player, dataSetName : string, dataTable
             
                 play_duration = play_duration,
                 duration_after_joined = duration_after_joined,
-                event_name = event_name
+                event_name = event_name,
+                ab_value = ab_value
             })
             --print(duration_after_joined, " : after joined dur", play_duration, " : play dur")
         elseif dataTableName == "Demography" then

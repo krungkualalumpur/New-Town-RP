@@ -104,6 +104,8 @@ local ON_TOP_NOTIF_CHOICE = "OnTopNotifChoice"
 
 local SEND_ANALYTICS = "SendAnalytics"
 local ON_GAME_LOADING_COMPLETE = "OnGameLoadingComplete"
+
+local GET_AB_VALUE = "GetABValue"
 --variables
 local Registry = {}
 --references
@@ -325,7 +327,7 @@ function PlayerManager.new(player : Player, maid : Maid ?)
 
     self.onLoadingComplete = self._Maid:GiveTask(Signal.new())
 
-    self.ABValue = "B"
+    self.ABValue = getRandomAB()
 
     Registry[player] = self
     
@@ -472,7 +474,7 @@ function PlayerManager.new(player : Player, maid : Maid ?)
     --end)
     task.spawn(function()
         Analytics.updateDataTable(self.Player, "User", "Session", self, function()
-            return "Player_Joins"
+            return "Player_Joins", self.ABValue
         end)
         Analytics.updateDataTable(self.Player, "User", "Demography", self, function()
             local device = NetworkUtil.invokeClient(GET_PLAYER_INFO, self.Player, "Device")
@@ -950,6 +952,19 @@ function PlayerManager:ThrowItem(toolData : ToolData<nil>)
     local plr = self.Player
     local char =  plr.Character
 
+    local function detectIfPlrHasTool()
+        for _,v in pairs(self.Backpack) do
+            if v.Name == toolData.Name then
+                return true
+            end
+        end
+        return false
+    end
+
+    if not detectIfPlrHasTool() then
+        NotificationUtil.Notify(self.Player, "Item doesn't exist!")
+        return
+    end
     if rawTool and char and char.PrimaryPart then
         local pos = char.PrimaryPart.Position + char.PrimaryPart.CFrame.LookVector*5 -- temporary
         local raycastResult = workspace:Raycast(pos, Vector3.new(0,-100,0), raycastParams)
@@ -1230,7 +1245,7 @@ function PlayerManager.init(maid : Maid)
             datastoreManager.CurrentSessionData.QuitTime = DateTime.now().UnixTimestamp
 
             Analytics.updateDataTable(plr, "User", "Session", plrInfo, function()
-                return "Player_Exits"
+                return "Player_Exits", plrInfo.ABValue
             end)
 
             local s, e = pcall(function()
@@ -1623,11 +1638,15 @@ function PlayerManager.init(maid : Maid)
 
         return vehicleModel:GetAttribute("isLocked")
     end)
-
     
+    NetworkUtil.onServerInvoke(GET_AB_VALUE, function(plr : Player)
+        local plrInfo = PlayerManager.get(plr)
+        return plrInfo.ABValue
+    end)
 
     NetworkUtil.getRemoteFunction(GET_PLAYER_VEHICLES)
     NetworkUtil.getRemoteFunction(GET_PLAYER_INFO)
+    NetworkUtil.getRemoteFunction(GET_AB_VALUE)
     NetworkUtil.getRemoteEvent(ON_INTERACT)
     NetworkUtil.getRemoteEvent(ON_GAME_LOADING_COMPLETE)
     NetworkUtil.getRemoteEvent(ON_JOB_CHANGE)

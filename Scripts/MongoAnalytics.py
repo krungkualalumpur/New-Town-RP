@@ -172,8 +172,8 @@ def create_user_ids():
 
     values_to_pop = (
         "event_name",
-        "session_id",
-        "event_id"
+        "event_id",
+        "server_id"
     )
 
     with open(json_path, "r", encoding='utf-8') as json_file:

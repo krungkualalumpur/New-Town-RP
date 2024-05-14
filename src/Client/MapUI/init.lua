@@ -8,10 +8,10 @@ local Maid = require(ReplicatedStorage:WaitForChild("Packages"):WaitForChild("Ma
 local ServiceProxy = require(ReplicatedStorage:WaitForChild("Packages"):WaitForChild("ServiceProxy"))
 local ColdFusion = require(ReplicatedStorage:WaitForChild("Packages"):WaitForChild("ColdFusion8"))
 local Signal = require(ReplicatedStorage:WaitForChild("Packages"):WaitForChild("Signal"))
+local NetworkUtil = require(ReplicatedStorage:WaitForChild("Packages"):WaitForChild("NetworkUtil"))
 --modules
 local LineUtil = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("LineUtil"))
 --local Pathfind = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Pathfind"))
-
 
 local ExitButton = require(ReplicatedStorage:WaitForChild("Client"):WaitForChild("ExitButton"))
 
@@ -50,7 +50,8 @@ local SECONDARY_COLOR = Color3.fromRGB(101,101,101)
 local SCALE = 20
 
 local DESTINATION_ARRIVE_DISTANCE = 16
-
+--remotes
+local GET_AB_VALUE = "GetABValue"
 --variables
 
 --references
@@ -382,7 +383,7 @@ function mapHUD.new(
                 math.clamp(x, 0, out.AbsoluteSize.X), 
                 math.clamp(y, 0, out.AbsoluteSize.Y)   
             )      
-
+            
             if not isOnSight then
                 destIconImage:Set("rbxassetid://6677276258")
                 destIcon.ImageColor3 = Color3.fromRGB(255,0,0)
@@ -455,7 +456,8 @@ function mapHUD.new(
             --local outParent = out.Parent :: GuiObject
             local plrIconImage = _Value("rbxassetid://6677276258")
 
-            --[[local plrLabel = _new("TextLabel")({
+
+            local plrLabel = _new("TextLabel")({
                 Name = "PlayerName",
                 AnchorPoint = Vector2.new(0,0.5),
                 AutomaticSize = Enum.AutomaticSize.XY,
@@ -465,7 +467,7 @@ function mapHUD.new(
                 BackgroundTransparency = 0.5,
                 Position = UDim2.fromScale(1, 0.5),
                 Text = plr.Name
-            }) :: TextLabel]]
+            }) :: TextLabel
 
             local plrIcon = _new("ImageLabel")({
                 AnchorPoint = Vector2.new(0.5, 0.5),
@@ -475,7 +477,7 @@ function mapHUD.new(
                 ImageColor3 = Color3.fromRGB(77, 180, 74),
                 Parent = out,
                 Children = { 
-                    --plrLabel
+                    plrLabel
                 }
             }) :: ImageLabel
 
@@ -485,55 +487,57 @@ function mapHUD.new(
                 end
             end))
             
-            --local t = tick()
+            local t = tick()
             plrMaid:GiveTask(RunService.Stepped:Connect(function()
-                --[[local dt = tick() - t
-                if dt >= 1 then
-                    t = tick()]]
+                local dt = tick() - t
+                if dt >= 0.1 then
+                    t = tick()
 
                     local char = plr.Character 
 
                     if (char ~= nil) and (char.PrimaryPart ~= nil) then
-                        local intViewportPos, isOnSight = camera:WorldToViewportPoint(char.PrimaryPart.Position + Vector3.new(0,0,-350))
-                        -- destIcon.Position = UDim2.fromOffset(math.clamp(intViewportPos.X*out.AbsoluteSize.X, out.AbsolutePosition.X - out.AbsoluteSize.X*0.5, out.AbsolutePosition.X + out.AbsoluteSize.X*0.5), math.clamp(intViewportPos.Y*out.AbsoluteSize.Y, out.AbsolutePosition.Y - out.AbsoluteSize.Y*0.5, out.AbsolutePosition.Y + out.AbsoluteSize.Y*0.5))
+                        local intViewportPos, isOnSight = camera:WorldToViewportPoint(char.PrimaryPart.Position)
+                        --destIcon.Position = UDim2.fromOffset(math.clamp(intViewportPos.X*out.AbsoluteSize.X, out.AbsolutePosition.X - out.AbsoluteSize.X*0.5, out.AbsolutePosition.X + out.AbsoluteSize.X*0.5), math.clamp(intViewportPos.Y*out.AbsoluteSize.Y, out.AbsolutePosition.Y - out.AbsoluteSize.Y*0.5, out.AbsolutePosition.Y + out.AbsoluteSize.Y*0.5))
                             
                         local x = intViewportPos.X*out.AbsoluteSize.X  
                         local y =  intViewportPos.Y*out.AbsoluteSize.Y   
-                        --plrIcon.Parent = out
-            
+                        plrIcon.Parent = out
+
                         plrIcon.Position = UDim2.fromOffset( 
                             math.clamp(x, 0, out.AbsoluteSize.X), 
                             math.clamp(y, 0, out.AbsoluteSize.Y)    
                         )      
             
                         if not isOnSight then
-                            --plrIcon.AnchorPoint = Vector2.new(0.5, 1)
-                            --plrIcon.ImageColor3 = Color3.fromRGB(255,255,255)
-                            --plrIcon.Size = UDim2.fromScale(0.05, 0.05)
-                            plrIcon.Visible = false
-                            --plrLabel.Visible = false
+                            plrIcon.AnchorPoint = Vector2.new(0.5, 1)
+                            plrIcon.ImageColor3 = Color3.fromRGB(255,255,255)
+                            plrIcon.Size = UDim2.fromScale(0.05, 0.05)
+                            plrLabel.Visible = false
                         else
                             plrIcon.AnchorPoint = Vector2.new(0.5, 0.5)
                             plrIcon.ImageColor3 = Color3.fromRGB(77, 180, 74)
-                            --plrIcon.Size = UDim2.fromScale(0.075, 0.075)
-                            plrIcon.Visible = true
-                            --plrLabel.Visible = true
+                            plrIcon.Size = UDim2.fromScale(0.075, 0.075)
+                            plrLabel.Visible = true
                         end
                     end
-                --end
+                end
                 
             end))
         end
     end
     
     if RunService:IsRunning() then
-        for _,plr in pairs(Players:GetPlayers()) do
-            --onPlrAdded(plr)
-        end       
-        
-        maid:GiveTask(Players.PlayerAdded:Connect(function(plr : Player)
-            --onPlrAdded(plr)
-        end))
+        local ABValue : "A"|"B" = NetworkUtil.invokeServer(GET_AB_VALUE)
+        --print(ABValue, " abvalue ?")
+        if ABValue == "A" then
+            for _,plr in pairs(Players:GetPlayers()) do
+                onPlrAdded(plr)
+            end       
+            
+            maid:GiveTask(Players.PlayerAdded:Connect(function(plr : Player)
+                onPlrAdded(plr)
+            end))        
+        end
     end
 
     local self : MapHUD = setmetatable({}, mapHUD) :: any
