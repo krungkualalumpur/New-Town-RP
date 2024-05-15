@@ -1062,159 +1062,168 @@ return function(
         Size = UDim2.fromScale(0.1, 0.4),
         Position = UDim2.fromScale(0, 0),   
         Children = {
-            _new("UIGridLayout")({
-                FillDirection = Enum.FillDirection.Horizontal,
-                SortOrder = Enum.SortOrder.LayoutOrder,
-                CellSize = UDim2.fromScale(0.4, 0.2),  
-                StartCorner = Enum.StartCorner.TopLeft, 
-                VerticalAlignment = Enum.VerticalAlignment.Top   
-            }),   
-           --[[ _new("Frame")({
-                LayoutOrder = 0,
-                BackgroundTransparency = 1,
-                Size = UDim2.fromScale(1, 0.48)
-            }),]]
-           _bind(getImageButton(maid, 2815418737, function()
-                UIStatus:Set(if UIStatus:Get() ~= "Backpack" then "Backpack" else nil)
-                backpackText:Set("")
-                roleplayText:Set("")
-                customizationText:Set("")
-                vehicleText:Set("")
-                houseText:Set("")
-
-                if RunService:IsRunning() then
-                    NetworkUtil.fireServer(SEND_ANALYTICS, "Events", "Interface", "backpack_button")
-                end
-            end, backpackText, 2, true))({
-                Children = {
-                    --[[_new("TextLabel")({
-                        BackgroundTransparency = _Computed(function(backpackList : {[number] : ToolData})
-                            task.spawn(function()
-                                alertColor:Set(PRIMARY_COLOR)
-                                task.wait(0.1)
-                                alertColor:Set(SECONDARY_COLOR)
-                            end)
-                            return 0.1
-                        end, backpack),
-                        BackgroundColor3 = alertColor:Tween(0.1),
-                        Position = UDim2.fromScale(0.7, 0.7),
-                        Size = UDim2.fromScale(0.4, 0.4),
-                        RichText = true,
-                        TextColor3 = TEXT_COLOR,
-                        Text = _Computed(function(backpackList : {[number] : ToolData})
-                            return "<b>" .. #backpackList .. "</b>"
-                        end, backpack),
-                        TextScaled = true,
-                        Children = {
-                            _new("UICorner")({
-                                CornerRadius = UDim.new(1,0)
-                            })
-                        }
-                    })]]
-                },
-                Events = {
-                    MouseEnter = function()
-                        backpackText:Set("← Tools")
-                    end,
-                    MouseLeave = function()
-                        backpackText:Set("")
-                    end
-                }
-            }),
-            _bind(getImageButton(maid, 11955884948, function()
-                UIStatus:Set(if UIStatus:Get() ~= "Roleplay" then "Roleplay" else nil)
-                backpackText:Set("")
-                roleplayText:Set("")
-                customizationText:Set("")
-                vehicleText:Set("")
-                houseText:Set("")
-
-                if RunService:IsRunning() then
-                    NetworkUtil.fireServer(SEND_ANALYTICS, "Events", "Interface", "roleplay_button")
-                end
-            end, roleplayText, 3, true))({
-                Events = {
-                    MouseEnter = function()
-                        roleplayText:Set("← Actions")
-                    end,
-                    MouseLeave = function()
-                        roleplayText:Set("")
-                    end
-                }
-            }),
-            _bind(getImageButton(maid, 13285102351, function()
-                UIStatus:Set(if UIStatus:Get() ~= "Customization" then "Customization" else nil)
-                backpackText:Set("")
-                roleplayText:Set("")
-                customizationText:Set("")
-                vehicleText:Set("")
-                houseText:Set("")
-
-                if RunService:IsRunning() then
-                    NetworkUtil.fireServer(SEND_ANALYTICS, "Events", "Interface", "customization_button")
-                end
-            end, customizationText, 1, true))({
-                Events = {
-                    MouseEnter = function()
-                        customizationText:Set("← Customization")
-                    end,
-                    MouseLeave = function()
-                        customizationText:Set("")
-                    end
-                }
-            }),
-           
-            _bind(getImageButton(maid, 279461710, function()
-                UIStatus:Set(if UIStatus:Get() ~= "House" then "House" else nil)
-                backpackText:Set("")
-                roleplayText:Set("")
-                customizationText:Set("")
-                vehicleText:Set("")
-                houseText:Set("")
-                
-                if RunService:IsRunning() then
-                    NetworkUtil.fireServer(SEND_ANALYTICS, "Events", "Interface", "house_button")
-                end
-            end, houseText, 1, true))({
-                Events = {
-                    MouseEnter = function()
-                        houseText:Set("← House")
-                    end,
-                    MouseLeave = function()
-                        houseText:Set("")
-                    end
-                }
-            }),
-            _bind(getImageButton(maid, 7013364587, function()
-                UIStatus:Set(if UIStatus:Get() ~= "Vehicle" then "Vehicle" else nil)
-                backpackText:Set("")
-                roleplayText:Set("")
-                customizationText:Set("")
-                vehicleText:Set("")
-                houseText:Set("")
-                
-                if RunService:IsRunning() then
-                    NetworkUtil.fireServer(SEND_ANALYTICS, "Events", "Interface", "vehicle_button")
-                end
-            end, vehicleText, 1, true))({
-                Events = {
-                    MouseEnter = function()
-                        vehicleText:Set("← Vehicle")
-                    end,
-                    MouseLeave = function()
-                        vehicleText:Set("")
-                    end
-                }
-            }),
             _new("Frame")({
-                BackgroundTransparency = 1,
-                LayoutOrder = 6,
-                Size = UDim2.fromScale(1, 0.48)
+                Name = "BufferFrame",
+                BackgroundTransparency = 1,  
+                Position = UDim2.fromScale(0, 0.37),
+                Size = UDim2.fromScale(0.92, 0.8),
+                Children = {
+                    _new("UIGridLayout")({
+                        FillDirection = Enum.FillDirection.Horizontal,
+                        SortOrder = Enum.SortOrder.LayoutOrder,
+                        CellSize = UDim2.fromScale(0.4, 0.2),  
+                        StartCorner = Enum.StartCorner.TopLeft, 
+                        VerticalAlignment = Enum.VerticalAlignment.Top   
+                    }),   
+                   --[[ _new("Frame")({
+                        LayoutOrder = 0,
+                        BackgroundTransparency = 1,
+                        Size = UDim2.fromScale(1, 0.48)
+                    }),]]
+                   _bind(getImageButton(maid, 2815418737, function()
+                        UIStatus:Set(if UIStatus:Get() ~= "Backpack" then "Backpack" else nil)
+                        backpackText:Set("")
+                        roleplayText:Set("")
+                        customizationText:Set("")
+                        vehicleText:Set("")
+                        houseText:Set("")
+        
+                        if RunService:IsRunning() then
+                            NetworkUtil.fireServer(SEND_ANALYTICS, "Events", "Interface", "backpack_button")
+                        end
+                    end, backpackText, 2, true))({
+                        Children = {
+                            --[[_new("TextLabel")({
+                                BackgroundTransparency = _Computed(function(backpackList : {[number] : ToolData})
+                                    task.spawn(function()
+                                        alertColor:Set(PRIMARY_COLOR)
+                                        task.wait(0.1)
+                                        alertColor:Set(SECONDARY_COLOR)
+                                    end)
+                                    return 0.1
+                                end, backpack),
+                                BackgroundColor3 = alertColor:Tween(0.1),
+                                Position = UDim2.fromScale(0.7, 0.7),
+                                Size = UDim2.fromScale(0.4, 0.4),
+                                RichText = true,
+                                TextColor3 = TEXT_COLOR,
+                                Text = _Computed(function(backpackList : {[number] : ToolData})
+                                    return "<b>" .. #backpackList .. "</b>"
+                                end, backpack),
+                                TextScaled = true,
+                                Children = {
+                                    _new("UICorner")({
+                                        CornerRadius = UDim.new(1,0)
+                                    })
+                                }
+                            })]]
+                        },
+                        Events = {
+                            MouseEnter = function()
+                                backpackText:Set("← Tools")
+                            end,
+                            MouseLeave = function()
+                                backpackText:Set("")
+                            end
+                        }
+                    }),
+                    _bind(getImageButton(maid, 11955884948, function()
+                        UIStatus:Set(if UIStatus:Get() ~= "Roleplay" then "Roleplay" else nil)
+                        backpackText:Set("")
+                        roleplayText:Set("")
+                        customizationText:Set("")
+                        vehicleText:Set("")
+                        houseText:Set("")
+        
+                        if RunService:IsRunning() then
+                            NetworkUtil.fireServer(SEND_ANALYTICS, "Events", "Interface", "roleplay_button")
+                        end
+                    end, roleplayText, 3, true))({
+                        Events = {
+                            MouseEnter = function()
+                                roleplayText:Set("← Actions")
+                            end,
+                            MouseLeave = function()
+                                roleplayText:Set("")
+                            end
+                        }
+                    }),
+                    _bind(getImageButton(maid, 13285102351, function()
+                        UIStatus:Set(if UIStatus:Get() ~= "Customization" then "Customization" else nil)
+                        backpackText:Set("")
+                        roleplayText:Set("")
+                        customizationText:Set("")
+                        vehicleText:Set("")
+                        houseText:Set("")
+        
+                        if RunService:IsRunning() then
+                            NetworkUtil.fireServer(SEND_ANALYTICS, "Events", "Interface", "customization_button")
+                        end
+                    end, customizationText, 1, true))({
+                        Events = {
+                            MouseEnter = function()
+                                customizationText:Set("← Customization")
+                            end,
+                            MouseLeave = function()
+                                customizationText:Set("")
+                            end
+                        }
+                    }),
+                   
+                    _bind(getImageButton(maid, 279461710, function()
+                        UIStatus:Set(if UIStatus:Get() ~= "House" then "House" else nil)
+                        backpackText:Set("")
+                        roleplayText:Set("")
+                        customizationText:Set("")
+                        vehicleText:Set("")
+                        houseText:Set("")
+                        
+                        if RunService:IsRunning() then
+                            NetworkUtil.fireServer(SEND_ANALYTICS, "Events", "Interface", "house_button")
+                        end
+                    end, houseText, 1, true))({
+                        Events = {
+                            MouseEnter = function()
+                                houseText:Set("← House")
+                            end,
+                            MouseLeave = function()
+                                houseText:Set("")
+                            end
+                        }
+                    }),
+                    _bind(getImageButton(maid, 7013364587, function()
+                        UIStatus:Set(if UIStatus:Get() ~= "Vehicle" then "Vehicle" else nil)
+                        backpackText:Set("")
+                        roleplayText:Set("")
+                        customizationText:Set("")
+                        vehicleText:Set("")
+                        houseText:Set("")
+                        
+                        if RunService:IsRunning() then
+                            NetworkUtil.fireServer(SEND_ANALYTICS, "Events", "Interface", "vehicle_button")
+                        end
+                    end, vehicleText, 1, true))({
+                        Events = {
+                            MouseEnter = function()
+                                vehicleText:Set("← Vehicle")
+                            end,
+                            MouseLeave = function()
+                                vehicleText:Set("")
+                            end
+                        }
+                    }),
+                    _new("Frame")({
+                        BackgroundTransparency = 1,
+                        LayoutOrder = 6,
+                        Size = UDim2.fromScale(1, 0.48)
+                    }),
+                    _bind(dateFrame)({
+                        LayoutOrder = 7,
+                        Size = UDim2.fromScale(2, 0.05)
+                    })
+                }
             }),
-            _bind(dateFrame)({
-                LayoutOrder = 7,
-                Size = UDim2.fromScale(2, 0.05)
-            })
+            
         }
     }) :: Frame
 
@@ -1278,6 +1287,7 @@ return function(
                 VerticalAlignment = Enum.VerticalAlignment.Center
             }),
             --dateFrame,
+            
             mainOptions,
             --secondaryOptions
         }

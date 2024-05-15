@@ -293,18 +293,18 @@ database3collection4 = "houses"
 database3collection5 = "miscs"
 database3collection6 = "interface"
 
-#create_session()
+create_session()
 create_user_ids()
-#download_raw(database1, database1collection1)
-#download_raw(database1, database1collection2)
+download_raw(database1, database1collection1)
+download_raw(database1, database1collection2)
 
-#download_raw(database2, database2collection1)
-#download_raw(database2, database2collection2)
-#download_raw(database2, database2collection3)
+download_raw(database2, database2collection1)
+download_raw(database2, database2collection2)
+download_raw(database2, database2collection3)
 
-#download_raw(database3, database3collection1)
-#download_raw(database3, database3collection2)
-#download_raw(database3, database3collection3)
-#download_raw(database3, database3collection4)
-#download_raw(database3, database3collection5)
-#download_raw(database3, database3collection6)
+download_raw(database3, database3collection1)
+download_raw(database3, database3collection2)
+download_raw(database3, database3collection3)
+download_raw(database3, database3collection4)
+download_raw(database3, database3collection5)
+download_raw(database3, database3collection6)
