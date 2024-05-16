@@ -34,6 +34,59 @@ local raycastParams = RaycastParams.new()
 raycastParams.FilterType = Enum.RaycastFilterType.Include
 raycastParams.FilterDescendantsInstances = {workspace:WaitForChild("Assets"):GetChildren()}
 --local functions
+function onToolOnBackpack(toolHeld : Tool, char : Model)
+    local tool = BackpackUtil.getToolFromName(toolHeld.Name)
+    if tool then
+        local _maid = Maid.new()
+
+        local toolData = BackpackUtil.getData(tool ,false)
+        if toolData.Name == "Pencil" then
+            local pencilMaid = _maid:GiveTask(Maid.new())
+            local pts = {}
+            _maid:GiveTask(toolHeld:GetAttributeChangedSignal(TOOL_IS_WRITING_KEY):Connect(function()
+                --print(toolHeld, toolHeld:GetAttribute(TOOL_IS_WRITING_KEY))
+                if toolHeld:GetAttribute(TOOL_IS_WRITING_KEY) then
+                    pencilMaid.Conn = RunService.RenderStepped:Connect(function()
+                        if #pts <= WRITING_MAX_PTS then
+                            local camera = workspace.CurrentCamera
+                            local origin, direction = camera.CFrame.Position, (Mouse.Hit.Position - camera.CFrame.Position).Unit*WRITING_MAX_DISTANCE 
+                            local ray = workspace:Raycast(origin, direction, raycastParams)
+
+                            if ray then
+                                local part = pencilMaid:GiveTask(Instance.new("Part"))
+                                part.Color = Color3.fromRGB(0,0,0)
+                                part.Size = Vector3.new(0.25,0.25,0.25)
+                                part.Anchored = true
+                                part.Position = ray.Position
+                                part.Parent = toolHeld
+                                table.insert(pts, ray.Position)
+                            else
+                                NotificationUtil.Notify(Player, "Surface too far for writing!")
+                            end
+                        else
+                            NotificationUtil.Notify(Player, "Already reached max writing amount!")
+                            pencilMaid.Conn = nil
+                        end
+                    end)
+                else
+                    NetworkUtil.fireServer(ON_WRITING_FINISHED, pts)
+
+                    table.clear(pts)
+                    pencilMaid:DoCleaning()
+                end
+            end))  
+        elseif toolData.Name:lower() == "phone" then
+                 
+        end
+
+        _maid:GiveTask(toolHeld.AncestryChanged:Connect(function()
+            if toolHeld.Parent == nil then
+                _maid:Destroy()
+            end
+        end))
+    end
+end
+
 function PlaySound(id, parent, volumeOptional: number ?)
     local s = Instance.new("Sound")
 
@@ -56,54 +109,7 @@ local function onCharAdded(char : Model)
 
     _maid:GiveTask(char.ChildAdded:Connect(function(toolHeld : Instance)
         if toolHeld:IsA("Tool") then
-            local tool = BackpackUtil.getToolFromName(toolHeld.Name)
-            if tool then
-                local _maid = Maid.new()
-
-                local toolData = BackpackUtil.getData(tool ,false)
-                if toolData.Name == "Pencil" then
-                    local pencilMaid = _maid:GiveTask(Maid.new())
-                    local pts = {}
-                    _maid:GiveTask(toolHeld:GetAttributeChangedSignal(TOOL_IS_WRITING_KEY):Connect(function()
-                        --print(toolHeld, toolHeld:GetAttribute(TOOL_IS_WRITING_KEY))
-                        if toolHeld:GetAttribute(TOOL_IS_WRITING_KEY) then
-                            pencilMaid.Conn = RunService.RenderStepped:Connect(function()
-                                if #pts <= WRITING_MAX_PTS then
-                                    local camera = workspace.CurrentCamera
-                                    local origin, direction = camera.CFrame.Position, (Mouse.Hit.Position - camera.CFrame.Position).Unit*WRITING_MAX_DISTANCE 
-                                    local ray = workspace:Raycast(origin, direction, raycastParams)
-
-                                    if ray then
-                                        local part = pencilMaid:GiveTask(Instance.new("Part"))
-                                        part.Color = Color3.fromRGB(0,0,0)
-                                        part.Size = Vector3.new(0.25,0.25,0.25)
-                                        part.Anchored = true
-                                        part.Position = ray.Position
-                                        part.Parent = toolHeld
-                                        table.insert(pts, ray.Position)
-                                    else
-                                        NotificationUtil.Notify(Player, "Surface too far for writing!")
-                                    end
-                                else
-                                    NotificationUtil.Notify(Player, "Already reached max writing amount!")
-                                    pencilMaid.Conn = nil
-                                end
-                            end)
-                        else
-                            NetworkUtil.fireServer(ON_WRITING_FINISHED, pts)
-
-                            table.clear(pts)
-                            pencilMaid:DoCleaning()
-                        end
-                    end))
-                end
-
-                _maid:GiveTask(toolHeld.AncestryChanged:Connect(function()
-                    if toolHeld.Parent == nil then
-                        _maid:Destroy()
-                    end
-                end))
-            end
+            onToolOnBackpack(toolHeld, char)
         end
     end))
 
@@ -135,7 +141,6 @@ local ToolManager = {}
 
 function ToolManager.init(maid : Maid)
     onPlayerAdded(Player)
-   
     local toolMaid = maid:GiveTask(Maid.new())
 
     maid:GiveTask(NetworkUtil.onClientEvent(ON_TOOL_ACTIVATED, function(toolClass : string, player : Player, toolData : BackpackUtil.ToolData<nil>, plrInfo : any, isReleased : boolean?)
