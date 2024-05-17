@@ -47,8 +47,24 @@ local ON_PHONE_MESSAGE_START = "OnPhoneMessageStart"
 local IS_PLAYER_TYPING_CHECK = "IsPlayerTypingCheck"
 --variables
 --references
+local Player = Players.LocalPlayer
 --local functions
+function PlaySound(id, parent, volumeOptional: number ?, maxDistance : number ?)
+    local s = Instance.new("Sound")
 
+    s.Name = "Sound"
+    s.SoundId = `rbxassetid://{id}`
+    s.Volume = volumeOptional or 1
+    s.RollOffMaxDistance = maxDistance or 35
+    s.Looped = false
+    s.Parent = parent or Player:FindFirstChild("PlayerGui")
+    s:Play()
+    task.spawn(function() 
+        s.Ended:Wait()
+        s:Destroy()
+    end)
+    return s
+end
 local function getDayEnumFromNum(num : number) : CustomEnum.Day
     for _,v in pairs(CustomEnum.Day:GetEnumItems()) do
         if v.Value == num then
@@ -127,6 +143,7 @@ local function getButton(
         },
         Events = {
             MouseButton1Click = function()
+                PlaySound(6052548458)
                 onClick:Fire()
             end
         }

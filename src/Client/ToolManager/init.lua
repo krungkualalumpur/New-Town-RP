@@ -403,6 +403,7 @@ function ToolManager.init(maid : Maid)
     
     maid:GiveTask(onMessageSend:Connect(function(reciever : Player, msgText : string)
         --print("Sendos !, ", type(reciever.Name), type(msgText))
+        PlaySound(6698737249)
         return 
     end))
 
