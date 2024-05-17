@@ -40,7 +40,7 @@ return function(target : CoreGui)
 
     out.Parent = target
 
-    onMessageRecieve:Fire(workspace.Part1, "Test1212")
+   -- onMessageRecieve:Fire(workspace.Part1, "Test1212")
     return function()
         maid:Destroy()
     end

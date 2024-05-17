@@ -167,7 +167,7 @@ local function getPlayerList(maid : Maid, player : Player, onMessagePageClickSig
     maid:GiveTask(onMessageClick:Connect(function()
         onMessagePageClickSignal:Fire(player)
 
-        notificationText.Visible = false --update notif
+        notificationText.Visible = false 
     end))
 
     local out = _new("Frame")({
@@ -426,7 +426,7 @@ return function(
         })
          
         senderData.Instance = chatTextFrame
-        chatContent.CanvasPosition = Vector2.new(0, chatContent.AbsoluteCanvasSize.Y)
+        chatContent.CanvasPosition = Vector2.new(0, chatContent.AbsoluteCanvasSize.Y*0.5)
 
         return chatTextFrame 
     end
@@ -442,7 +442,7 @@ return function(
             end
         end
     end
-
+ 
     local chatFrame = _new("Frame")({
         Name = "ChatFrame",
         ZIndex = 2,
@@ -499,8 +499,9 @@ return function(
         }
     })
     local playersMessageListFrame = _new("Frame")({
-        BackgroundTransparency = 1,
-        Size = UDim2.fromScale(1, 1),
+        BackgroundTransparency = 0.6,
+        BackgroundColor3 = BACKGROUND_COLOR,
+        Size = UDim2.fromScale(1, 0.88),
         Children = {    
             _new("UIPadding")({
                 PaddingBottom = PADDING_SIZE,
@@ -517,15 +518,35 @@ return function(
         }
     })
     local messageFrame = _new("Frame")({
-        Name = "MessageFrame",
+        Name = "MessageFrame", 
         Size = UDim2.fromScale(1, 1),
         Visible = _Computed(function(uiStatus : PhoneUIStatus)
             return uiStatus == "Message"
         end, UIStatus),
+        ClipsDescendants = true,
         Children = {
             _new("UICorner")({}),
 
-            playersMessageListFrame,
+            _new("Frame")({
+                BackgroundTransparency = 1,
+                Size = UDim2.fromScale(1, 1),
+                Children = {
+                    _new("UIListLayout")({
+                        SortOrder = Enum.SortOrder.LayoutOrder
+                    }),
+                    _new("TextLabel")({
+                        LayoutOrder = -1,
+                        Name = "MsgTitle",
+                        BackgroundTransparency = 1,
+                        Size = UDim2.fromScale(1, 0.1),
+                        RichText = true,
+                        Text = "<b>Messages</b>",
+                        TextScaled = true,
+                        TextColor3 = GREY_COLOR, 
+                    }),
+                    playersMessageListFrame
+                }
+            }),
             chatFrame,
 
         }
@@ -588,12 +609,23 @@ return function(
         }
     }
 
+    local totalMsgNotifText = _new("TextLabel")({
+        BackgroundColor3 = RED_COLOR,
+        Visible = false,
+        Size = UDim2.fromScale(0.25, 0.25),
+        Position = UDim2.fromScale(0.75, 0),
+        TextColor3 = WHITE_COLOR,
+        Text = "0",
+    }) ::TextLabel
     local out = _new("Frame"){
         BackgroundColor3 = GREY_COLOR,
         Size = UDim2.fromScale(0.15, 0.3),
-        Position = UDim2.fromScale(0.42, 0.5), 
+        Position = UDim2.fromScale(0.42, 0.55), 
         Children = {
             backButton,
+            _new("UIAspectRatioConstraint")({
+                AspectRatio = 0.62,
+            }),
             _new("UICorner")({}),
             _new("UIPadding")({ 
                 PaddingBottom = PADDING_SIZE, 
@@ -633,7 +665,11 @@ return function(
                                 PaddingLeft = PADDING_SIZE,
                                 PaddingRight = PADDING_SIZE,
                             }),
-                            getImageButton(maid, 11702915127, onMessageClick, "Messages"),
+                            _bind(getImageButton(maid, 11702915127, onMessageClick, "Messages"))({
+                                Children = {
+                                    totalMsgNotifText
+                                }
+                            }),
                             getImageButton(maid, 9753762469, onSettingsClick, "Settings"),
                         }
                     }),
@@ -659,11 +695,12 @@ return function(
  
     local function updateNotif(plr : Player)
         --update notif
+        local totalChatCount = 0
         for _,v in pairs(playersMessageListFrame:GetChildren()) do
             local notifText = v:FindFirstChild("Notification") :: TextLabel ?
             local chatHistoryData = playersChatHistory[plr.Name]
             local chatCount = #chatHistoryData
-
+            totalChatCount += chatCount
             if v:IsA("Frame") then
                 if v.Name == plr.Name then
                     if chatWithPlayerStatus:Get() ~= plr then
@@ -697,7 +734,13 @@ return function(
                     end
                 end
             end
-            
+        end
+
+        totalMsgNotifText.Text = tostring(totalChatCount)
+        if totalChatCount > 0 then
+            totalMsgNotifText.Visible = true
+        else
+            totalMsgNotifText.Visible = false
         end
     end
     maid:GiveTask(onMessageSendAttempt:Connect(function()
@@ -709,7 +752,7 @@ return function(
 
         if string.match(msgText, "%S") == nil then return end -- if space only 
 
-        onMessageSend:Fire(chatWithPlayerStatus:Get(), msgText)
+        onMessageSend:Fire(plr, msgText)
  
         onChatCreateUI("Local", plr, msgText)
 
@@ -738,22 +781,29 @@ return function(
         playersChatHistory[plr.Name] = {}
         getPlayerList(maid, plr, onMessagePlayerClick, 0).Parent = playersMessageListFrame
     end
+
+    for _,plr in pairs(Players:GetPlayers()) do
+        if plr ~= Players.LocalPlayer then
+            onPlayerChatHistoryAdded(plr)
+        end
+    end
+
     maid:GiveTask(Players.PlayerAdded:Connect(function(plr : Player) 
         onPlayerChatHistoryAdded(plr)
     end))
     maid:GiveTask(Players.PlayerRemoving:Connect(function(plr : Player) 
         removeOtherPlayerChatHistory(plr)
         for _,v in pairs(playersMessageListFrame:GetChildren()) do
-            if v:IsA("Frame") and v.Name == plr.Name then
+            if v:IsA("Frame") and v.Name == plr.Name and v:FindFirstChild("PlayerInfoFrame") then
                 v:Destroy()
             end
         end
     end))
 
     if RunService:IsStudio() then
-        onPlayerChatHistoryAdded(workspace.Part1)
-        onPlayerChatHistoryAdded(workspace.Part2)
-        onPlayerChatHistoryAdded(workspace.Part3)
+        --onPlayerChatHistoryAdded(workspace.Part1)
+        --onPlayerChatHistoryAdded(workspace.Part2)
+        --onPlayerChatHistoryAdded(workspace.Part3)
     end 
 
     return out

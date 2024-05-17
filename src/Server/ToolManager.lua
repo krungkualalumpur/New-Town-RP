@@ -14,6 +14,8 @@ type Maid = Maid.Maid
 local WRITING_MAX_PTS = 50
 --remotes
 local ON_WRITING_FINISHED = "OnWritingFinished"
+
+local ON_PHONE_MESSAGE_START = "OnPhoneMessageStart"
 --variables
 --references
 local ToolsAsset = ReplicatedStorage:WaitForChild("Assets"):WaitForChild("Tools")
@@ -117,11 +119,20 @@ function ToolManager.init(maid : Maid)
                 conn = tween.Completed:Connect(function()
                     conn:Disconnect()
                     v:Destroy()
-                end)            
+                end)             
             end
         end)
         return
     end))
+
+    NetworkUtil.onServerInvoke(ON_PHONE_MESSAGE_START, function(sender : Player, recieverName : string, msgText : string)
+        local reciever = Players:FindFirstChild(recieverName)
+        assert(reciever and reciever:IsA("Player"))
+        NetworkUtil.invokeClient(ON_PHONE_MESSAGE_START, reciever, sender.Name, msgText)
+        return nil 
+    end)
+
+    NetworkUtil.getRemoteFunction(ON_PHONE_MESSAGE_START)
 end
 
 return ToolManager
