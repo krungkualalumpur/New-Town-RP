@@ -36,7 +36,10 @@ return function(target : CoreGui)
     end))
     maid:GiveTask(onMessageRecieve:Connect(function(player : Player, msgText : string)
         print("Message sent ", msgText)
-    end))
+        return
+    end))  
+
+    print(onMessageRecieve:Fire())
 
     out.Parent = target
 

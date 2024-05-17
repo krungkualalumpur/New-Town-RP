@@ -3,6 +3,7 @@
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local CollectionService = game:GetService("CollectionService")
 local Players = game:GetService("Players")
+local TextService = game:GetService("TextService")
 --packages
 local Maid = require(ReplicatedStorage:WaitForChild("Packages"):WaitForChild("Maid"))
 --modules
@@ -16,10 +17,27 @@ local WRITING_MAX_PTS = 50
 local ON_WRITING_FINISHED = "OnWritingFinished"
 
 local ON_PHONE_MESSAGE_START = "OnPhoneMessageStart"
+local IS_PLAYER_TYPING_CHECK = "IsPlayerTypingCheck"
 --variables
 --references
 local ToolsAsset = ReplicatedStorage:WaitForChild("Assets"):WaitForChild("Tools")
 --local functions
+function PlaySound(id, parent, volumeOptional: number ?, maxDistance : number ?)
+    local s = Instance.new("Sound")
+
+    s.Name = "Sound"
+    s.SoundId = `rbxassetid://{id}`
+    s.Volume = volumeOptional or 1
+    s.RollOffMaxDistance = maxDistance or 35
+    s.Looped = false
+    s.Parent = parent 
+    s:Play()
+    task.spawn(function() 
+        s.Ended:Wait()
+        s:Destroy()
+    end)
+    return s
+end
 --class
 local ToolManager = {}
 
@@ -128,9 +146,64 @@ function ToolManager.init(maid : Maid)
     NetworkUtil.onServerInvoke(ON_PHONE_MESSAGE_START, function(sender : Player, recieverName : string, msgText : string)
         local reciever = Players:FindFirstChild(recieverName)
         assert(reciever and reciever:IsA("Player"))
+
+        local new_msgText
+        local result : TextFilterResult
+        local s, e = pcall(function()
+            result = TextService:FilterStringAsync(msgText, sender.UserId)
+        end)
+        new_msgText = result:GetNonChatStringForBroadcastAsync()
+        if not s or not new_msgText then
+            error(e or "Chat filter not av")
+        end
+
         NetworkUtil.invokeClient(ON_PHONE_MESSAGE_START, reciever, sender.Name, msgText)
-        return nil 
+
+        --notification sound
+        --check if plr has phone
+        local plrHasPhone = false
+        for _,v in pairs(reciever.Backpack:GetChildren()) do
+            local tool = BackpackUtil.getToolFromName(v.Name)
+            local toolData = if tool then BackpackUtil.getData(tool ,false) else nil
+            
+            if toolData then 
+                if toolData.Class == "Phone" then
+                    plrHasPhone = true
+                    break
+                end
+            end
+        end
+
+        if plrHasPhone == false then
+            local char = reciever.Character or reciever.CharacterAdded:Wait()
+            for _,v in pairs(char:GetChildren()) do
+                if v:IsA("Tool") then
+                    local tool = BackpackUtil.getToolFromName(v.Name)
+                    local toolData = if tool then BackpackUtil.getData(tool ,false) else nil
+                    if toolData then  
+                        if toolData.Class == "Phone" then
+                            plrHasPhone = true
+                            break
+                        end
+                    end
+                end
+            end
+        end
+
+        --then notify sound if plr has phone
+        if plrHasPhone then 
+            PlaySound(826129174,reciever.Character.PrimaryPart, 2)
+        end
+
+
+        return new_msgText 
     end)
+
+    maid:GiveTask(NetworkUtil.onServerEvent(IS_PLAYER_TYPING_CHECK, function(plr : Player, recieverName : string, isTyping : boolean)
+        local reciever = Players:FindFirstChild(recieverName)
+        assert(reciever)
+        NetworkUtil.fireClient(IS_PLAYER_TYPING_CHECK, reciever, plr.Name, isTyping)
+    end))
 
     NetworkUtil.getRemoteFunction(ON_PHONE_MESSAGE_START)
 end

@@ -342,20 +342,7 @@ function PlayerManager.new(player : Player, maid : Maid ?)
             for _,v in pairs(ReplicatedStorage:WaitForChild("Assets"):WaitForChild("Vehicles"):GetChildren()) do
                 self:AddVehicle(v.Name, true)
             end
-           --[[ self:AddVehicle("Motorcycle", true)
-            self:AddVehicle("Bajaj", true)
-            --self:AddVehicle("Taxi", true)
-            self:AddVehicle("Local Bus", true)
-            self:AddVehicle("Muntjac", true)
-            --self:AddVehicle("Avalon", true)
-            --self:AddVehicle("Rav", true)
-            self:AddVehicle("Mersi", true)
-           -- self:AddVehicle("Lekotse", true)
-            self:AddVehicle("Pickup", true)
-            --self:AddVehicle("Ambulance", true)
-            self:AddVehicle("SWAT Car", true)
-            self:AddVehicle("Police", true)
-            self:AddVehicle("Firetruck", true)]]
+            self:InsertToBackpack("Phone") 
 
             --character loading
             self:SetData(self:GetData(), false)
@@ -489,8 +476,11 @@ function PlayerManager.new(player : Player, maid : Maid ?)
     return self
 end
 
-function PlayerManager:InsertToBackpack(tool : Instance)
-    print(debug.traceback())
+function PlayerManager:InsertToBackpack(toolName : string)
+    local tool = BackpackUtil.getToolFromName(toolName)
+    assert(tool, string.format("Unable to find the tool from the tool name %s", toolName))
+
+    --print(debug.traceback())
     if #self.Backpack >= MAX_TOOLS_COUNT then
         --notif
         NotificationUtil.Notify(self.Player, "Already has max amount of tools to have")
@@ -853,10 +843,10 @@ function PlayerManager:SetData(plrData : ManagerTypes.PlayerData, isYield : bool
     --(debug.traceback("Debugging setdata method"))
     table.clear(self.Backpack)
     for _,v in pairs(plrData.Backpack) do
-        local tool = BackpackUtil.getToolFromName(v)
-        if tool then
-            self:InsertToBackpack(tool)
-        end
+       -- local tool = BackpackUtil.getToolFromName(v)
+        --if tool then
+            self:InsertToBackpack(v)
+        --end
     end
 
     table.clear(self.Vehicles)
@@ -1366,13 +1356,13 @@ function PlayerManager.init(maid : Maid)
         local plrInfo = PlayerManager.get(plr)
 
         
-        local toolModel = BackpackUtil.getToolFromName(toolName)
-        if toolModel then 
-            local success = plrInfo:InsertToBackpack(toolModel) 
-            if success then
-                NotificationUtil.Notify(plr, toolName .. " is added to your backpack")        
-            end
+        --local toolModel = BackpackUtil.getToolFromName(toolName)
+        --if toolModel then 
+        local success = plrInfo:InsertToBackpack(toolName) 
+        if success then
+            NotificationUtil.Notify(plr, toolName .. " is added to your backpack")        
         end
+       -- end
 
         NetworkUtil.fireClient(UPDATE_PLAYER_BACKPACK, plr, plrInfo:GetBackpack(true, true))
 

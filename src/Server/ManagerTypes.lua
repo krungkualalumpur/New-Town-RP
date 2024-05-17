@@ -68,7 +68,7 @@ export type PlayerManager = {
 
     new : (player : Player, maid : Maid ?) -> PlayerManager,
     
-    InsertToBackpack : (PlayerManager, tool : Instance) -> boolean,
+    InsertToBackpack : (PlayerManager, toolName : string) -> boolean,
     DeleteBackpack : (PlayerManager, toolKey : number) -> (),
 
     GetBackpack : (PlayerManager, hasDisplayType : boolean, hasEquipInfo : boolean) -> {[number] : BackpackUtil.ToolData<boolean ?>},

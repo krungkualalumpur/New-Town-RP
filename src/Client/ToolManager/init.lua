@@ -45,13 +45,13 @@ raycastParams.FilterDescendantsInstances = {workspace:WaitForChild("Assets"):Get
 --local functions
 
 
-function PlaySound(id, parent, volumeOptional: number ?)
+function PlaySound(id, parent, volumeOptional: number ?, maxDistance : number ?)
     local s = Instance.new("Sound")
 
     s.Name = "Sound"
-    s.SoundId = id
+    s.SoundId = `rbxassetid://{id}`
     s.Volume = volumeOptional or 1
-    s.RollOffMaxDistance = 350
+    s.RollOffMaxDistance = maxDistance or 35
     s.Looped = false
     s.Parent = parent or Player:FindFirstChild("PlayerGui")
     s:Play()
@@ -240,7 +240,7 @@ function ToolManager.init(maid : Maid)
                         rope.Length = (baitHolder.Position - pos).Magnitude*1
                         task.wait()
                     end
-                    PlaySound("rbxassetid://9120584671", p, 100)
+                    PlaySound(9120584671, p, 100, 350)
 
                     p.Transparency = 1
 
@@ -356,7 +356,7 @@ function ToolManager.init(maid : Maid)
                                         })
                                     }
                                 }))
-                                PlaySound("rbxassetid://1584394759")
+                                PlaySound(1584394759)
                                 
                                 --right click to interacto!
                                 localMaid:GiveTask(UserInputService.InputEnded:Connect(function(input, gpe)
@@ -403,7 +403,7 @@ function ToolManager.init(maid : Maid)
     
     maid:GiveTask(onMessageSend:Connect(function(reciever : Player, msgText : string)
         --print("Sendos !, ", type(reciever.Name), type(msgText))
-        NetworkUtil.invokeServer(ON_PHONE_MESSAGE_START, reciever.Name, msgText)
+        return 
     end))
 
     NetworkUtil.onClientInvoke(ON_PHONE_MESSAGE_START, function(senderName : string, msgText : string)

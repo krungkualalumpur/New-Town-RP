@@ -27,7 +27,7 @@ type CanBeState<T> = ColdFusion.CanBeState<T>
 
 type PhoneUIStatus = "Message" | "Settings" | nil
 --constants
-local CHAT_LIMIT = 12
+local CHAT_LIMIT = 8
 
 local BACKGROUND_COLOR = Color3.fromRGB(200,200,200)
 local PRIMARY_COLOR = Color3.fromRGB(150,150,150)
@@ -43,6 +43,8 @@ local TOP_PADDING_SIZE =  UDim.new(0.07, 0)
 
 local DAY_VALUE_KEY = "DayValue"
 --remotes
+local ON_PHONE_MESSAGE_START = "OnPhoneMessageStart"
+local IS_PLAYER_TYPING_CHECK = "IsPlayerTypingCheck"
 --variables
 --references
 --local functions
@@ -131,7 +133,7 @@ local function getButton(
     })
 end
 
-local function getPlayerList(maid : Maid, player : Player, onMessagePageClickSignal : Signal, notifCount : number)
+local function getPlayerList(maid : Maid, player : Player, onMessagePlayerClickSignal : Signal, notifCount : number)
     local _fuse = ColdFusion.fuse(maid)
     local _new = _fuse.new
     local _import = _fuse.import
@@ -165,7 +167,7 @@ local function getPlayerList(maid : Maid, player : Player, onMessagePageClickSig
 
     local onMessageClick = maid:GiveTask(Signal.new())
     maid:GiveTask(onMessageClick:Connect(function()
-        onMessagePageClickSignal:Fire(player)
+        onMessagePlayerClickSignal:Fire(player)
 
         notificationText.Visible = false 
     end))
@@ -185,7 +187,7 @@ local function getPlayerList(maid : Maid, player : Player, onMessagePageClickSig
                 LayoutOrder = 0,
                 BackgroundColor3 = PRIMARY_COLOR, 
                 Size = UDim2.fromScale(0.15, 1),
-                Image = "",
+                Image = Players:GetUserThumbnailAsync(player.UserId, Enum.ThumbnailType.HeadShot, Enum.ThumbnailSize.Size420x420),
                 Children = {
                     _new("UICorner"){
                         CornerRadius = UDim.new(1,0)
@@ -260,10 +262,21 @@ return function(
 
     local onBack = maid:GiveTask(Signal.new())
 
+    local isTypingText = _new("TextLabel")({
+        LayoutOrder = 3,
+        Name = "IsTypingStatus",
+        Visible = false,
+        Size = UDim2.fromScale(1, 0.07),
+        Text = "is typing...",
+        TextColor3 = GREY_COLOR,
+        TextXAlignment = Enum.TextXAlignment.Left,
+        TextScaled = true,
+    }) :: TextLabel
+
     local chatContent =  _new("ScrollingFrame")({ 
         LayoutOrder = 2,
         Name = "ChatContent",
-        Size = UDim2.fromScale(1, 0.73),
+        Size = UDim2.fromScale(1, 0.65),
         CanvasSize = UDim2.fromScale(0, 0),
         AutomaticCanvasSize = Enum.AutomaticSize.Y,
         ScrollBarThickness = 0,
@@ -282,7 +295,19 @@ return function(
         Size = UDim2.fromScale(0.65, 1),
         TextXAlignment = Enum.TextXAlignment.Left,
         Events = {
+            Focused = function()
+                if RunService:IsRunning() then
+                    local reciever = chatWithPlayerStatus:Get() 
+                    assert(reciever)
+                    NetworkUtil.fireServer(IS_PLAYER_TYPING_CHECK, reciever.Name, true)
+                end
+            end,
             FocusLost = function(enterPressed : boolean)
+                if RunService:IsRunning() then
+                    local reciever = chatWithPlayerStatus:Get() 
+                    assert(reciever)
+                    NetworkUtil.fireServer(IS_PLAYER_TYPING_CHECK, reciever.Name, false)
+                end
                 if enterPressed then
                     onMessageSendAttempt:Fire()
                 end
@@ -368,10 +393,10 @@ return function(
                     LayoutOrder = if senderData.Sender == "Local" then 2 else 0,
                     BackgroundColor3 =  BACKGROUND_COLOR, 
                     Size = UDim2.fromScale(0.15, 1),
-                    Image = "",
+                    Image = Players:GetUserThumbnailAsync(plr.UserId, Enum.ThumbnailType.HeadShot, Enum.ThumbnailSize.Size420x420),
                     Children = {
                         _new("UICorner"){
-                            CornerRadius = UDim.new(1,0)
+                            CornerRadius = UDim.new(1,0) 
                         },
                         _new("UIAspectRatioConstraint")({})
                     } 
@@ -426,7 +451,7 @@ return function(
         })
          
         senderData.Instance = chatTextFrame
-        chatContent.CanvasPosition = Vector2.new(0, chatContent.AbsoluteCanvasSize.Y*0.5)
+        chatContent.CanvasPosition = Vector2.new(0, chatContent.AbsoluteCanvasSize.Y)
 
         return chatTextFrame 
     end
@@ -478,10 +503,11 @@ return function(
                 TextColor3 = WHITE_COLOR,
             }),
             chatContent,
+            isTypingText,
             _new("Frame")({
-                LayoutOrder = 3, 
+                LayoutOrder = 4, 
                 BackgroundTransparency = 1,
-                Size = UDim2.fromScale(1, 0.1),
+                Size = UDim2.fromScale(1, 0.1 ),
                 Children = {
                     _new("UIListLayout")({
                         SortOrder = Enum.SortOrder.LayoutOrder,
@@ -667,7 +693,7 @@ return function(
                             }),
                             _bind(getImageButton(maid, 11702915127, onMessageClick, "Messages"))({
                                 Children = {
-                                    totalMsgNotifText
+                                    totalMsgNotifText :: any
                                 }
                             }),
                             getImageButton(maid, 9753762469, onSettingsClick, "Settings"),
@@ -688,10 +714,6 @@ return function(
         UIStatus:Set("Settings") 
     end))
 
-    maid:GiveTask(onMessagePlayerClick:Connect(function(player : Player)
-        MessageUIStatus:Set("Chat")
-        chatWithPlayerStatus:Set(player)
-    end))
  
     local function updateNotif(plr : Player)
         --update notif
@@ -700,7 +722,7 @@ return function(
             local notifText = v:FindFirstChild("Notification") :: TextLabel ?
             local chatHistoryData = playersChatHistory[plr.Name]
             local chatCount = #chatHistoryData
-            totalChatCount += chatCount
+
             if v:IsA("Frame") then
                 if v.Name == plr.Name then
                     if chatWithPlayerStatus:Get() ~= plr then
@@ -736,6 +758,16 @@ return function(
             end
         end
 
+        for _,v in pairs(playersMessageListFrame:GetChildren()) do
+            local notifText = v:FindFirstChild("Notification") :: TextLabel ?
+            if notifText and notifText.Visible then
+                local notifCount  = tonumber(notifText.Text)
+                if notifCount then
+                    totalChatCount += notifCount
+                end
+            end
+        end
+
         totalMsgNotifText.Text = tostring(totalChatCount)
         if totalChatCount > 0 then
             totalMsgNotifText.Visible = true
@@ -743,6 +775,15 @@ return function(
             totalMsgNotifText.Visible = false
         end
     end
+
+    
+    maid:GiveTask(onMessagePlayerClick:Connect(function(player : Player)
+        MessageUIStatus:Set("Chat")
+        chatWithPlayerStatus:Set(player)
+
+        updateNotif(player)
+    end))
+
     maid:GiveTask(onMessageSendAttempt:Connect(function()
         local plr = chatWithPlayerStatus:Get()
         assert(plr)
@@ -751,8 +792,11 @@ return function(
         chatInsertionTextBox.Text = ""
 
         if string.match(msgText, "%S") == nil then return end -- if space only 
-
+ 
         onMessageSend:Fire(plr, msgText)
+        if RunService:IsRunning() then
+            msgText = NetworkUtil.invokeServer(ON_PHONE_MESSAGE_START, plr.Name, msgText)
+        end
  
         onChatCreateUI("Local", plr, msgText)
 
@@ -800,10 +844,17 @@ return function(
         end
     end))
 
-    if RunService:IsStudio() then
+    if not RunService:IsRunning() then
         --onPlayerChatHistoryAdded(workspace.Part1)
         --onPlayerChatHistoryAdded(workspace.Part2)
         --onPlayerChatHistoryAdded(workspace.Part3)
+    else
+        NetworkUtil.onClientEvent(IS_PLAYER_TYPING_CHECK, function(senderName : string, isTyping : boolean)
+            local plrtochat = chatWithPlayerStatus:Get()
+            if plrtochat and (senderName == plrtochat.Name) then
+                isTypingText.Visible = isTyping 
+            end
+        end)
     end 
 
     return out

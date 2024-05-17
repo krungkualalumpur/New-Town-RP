@@ -168,23 +168,23 @@ function Interactable.InteractToolGiver(plrInfo : any,  model : Model, player : 
         if not model:GetAttribute("DescendantsAreTools") then
           
             --local newTool = createTool(model)
-            local newTool = BackpackUtil.getToolFromName(model.Name)
+           -- local newTool = BackpackUtil.getToolFromName(model.Name)
             -----
-            if newTool then
-                local success = plrInfo:InsertToBackpack(newTool)
-                if success then
-                    NetworkUtil.fireClient(ON_NOTIFICATION, player, model.Name .. " added to your backpack!")
-                end
+           -- if newTool then
+            local success = plrInfo:InsertToBackpack(model.Name)
+            if success then
+                NetworkUtil.fireClient(ON_NOTIFICATION, player, model.Name .. " added to your backpack!")
             end
+            --end
             ----- 
         else
             for _,v in pairs(model:GetChildren()) do
                 if v:GetAttribute("IsTool") then
-                    local newTool = BackpackUtil.getToolFromName(v.Name)
+                    --local newTool = BackpackUtil.getToolFromName(v.Name)
                    -- createTool(newModel).Parent = player:WaitForChild("Backpack")
                      ----- 
-                    assert(newTool) 
-                    local success = plrInfo:InsertToBackpack(newTool)
+                   -- assert(newTool) 
+                    local success = plrInfo:InsertToBackpack(v.Name)
                     if success then
                         NetworkUtil.fireClient(ON_NOTIFICATION, player, v.Name .. " added to your backpack!")
                     end
@@ -680,14 +680,15 @@ function Interactable.InteractNonSwitch(model : Model, plr : Player, plrInfo : a
             if farmState == "Food" then 
                 farmPripart.Transparency = 1
                 if plrInfo then
-                    local newTool = BackpackUtil.getToolFromName("Rice")
+                    --local newTool = BackpackUtil.getToolFromName("Rice")
                     -----
-                    if newTool then
-                        local success = plrInfo:InsertToBackpack(newTool)
-                        if success then
-                            NetworkUtil.fireClient(ON_NOTIFICATION, plr, newTool.Name .. " added to your backpack!")
-                        end
+                   -- if newTool then
+                    local toolName = "Rice"
+                    local success = plrInfo:InsertToBackpack(toolName)
+                    if success then
+                        NetworkUtil.fireClient(ON_NOTIFICATION, plr, toolName .. " added to your backpack!")
                     end
+                -- end
                 end
 
                 --plant destroys
