@@ -527,17 +527,16 @@ function mapHUD.new(
     end
     
     if RunService:IsRunning() then
-        local ABValue : "A"|"B" = NetworkUtil.invokeServer(GET_AB_VALUE)
+       -- local ABValue : "A"|"B" = NetworkUtil.invokeServer(GET_AB_VALUE)
         --print(ABValue, " abvalue ?")
-        if ABValue == "A" then
-            for _,plr in pairs(Players:GetPlayers()) do
-                onPlrAdded(plr)
-            end       
-            
-            maid:GiveTask(Players.PlayerAdded:Connect(function(plr : Player)
-                onPlrAdded(plr)
-            end))        
-        end
+        for _,plr in pairs(Players:GetPlayers()) do
+            onPlrAdded(plr)
+        end       
+        
+        maid:GiveTask(Players.PlayerAdded:Connect(function(plr : Player)
+            onPlrAdded(plr)
+        end))       
+        
     end
 
     local self : MapHUD = setmetatable({}, mapHUD) :: any

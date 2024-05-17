@@ -342,8 +342,10 @@ function PlayerManager.new(player : Player, maid : Maid ?)
             for _,v in pairs(ReplicatedStorage:WaitForChild("Assets"):WaitForChild("Vehicles"):GetChildren()) do
                 self:AddVehicle(v.Name, true)
             end
-            self:InsertToBackpack("Phone") 
 
+            if self.ABValue == "A" then 
+                self:InsertToBackpack("Phone") 
+            end
             --character loading
             self:SetData(self:GetData(), false)
         end
