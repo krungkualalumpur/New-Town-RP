@@ -39,8 +39,6 @@ return function(target : CoreGui)
         return
     end))  
 
-    print(onMessageRecieve:Fire())
-
     out.Parent = target
 
    -- onMessageRecieve:Fire(workspace.Part1, "Test1212")

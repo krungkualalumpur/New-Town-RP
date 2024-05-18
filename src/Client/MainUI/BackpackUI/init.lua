@@ -46,6 +46,28 @@ local GET_PLAYER_VEHICLES = "GetPlayerVehicles"
 --references
 local vehicles = ReplicatedStorage:WaitForChild("Assets"):WaitForChild("Vehicles")
 --local functions
+local function getItemData()
+    local allItems = CollectionService:GetTagged("Tool")
+    local allItemsData = {}
+    for _,v in pairs(allItems) do
+        if not v:GetAttribute("DescendantsAreTools") then
+            local toolData : ToolData = BackpackUtil.getData(v, true) :: any
+            local toolAlreadyCollected = false
+            for _,v in pairs(allItemsData) do
+                if v.Name == toolData.Name then  
+                    toolAlreadyCollected = true
+                    break
+                end
+            end
+            if not toolAlreadyCollected then
+                table.insert(allItemsData, toolData)
+            end
+        end
+    end
+  
+    return allItemsData
+end
+
 local function getButton(
     maid : Maid, 
     order : number,
@@ -85,6 +107,45 @@ local function getButton(
     })
 
     return out
+end
+
+local function getImageButton(
+    maid : Maid,
+    imageId : number, 
+    onClick : Signal,
+    buttonName : string?,
+    Bg_Color : Color3 ?
+)
+    local _fuse = ColdFusion.fuse(maid)
+    local _new = _fuse.new
+    local _import = _fuse.import
+    local _bind = _fuse.bind
+    local _clone = _fuse.clone
+    local _Computed = _fuse.Computed
+    local _Value = _fuse.Value
+
+    return _new("ImageButton")({
+        AutoButtonColor = true,
+        BackgroundColor3 = Bg_Color or SELECT_COLOR,
+        Image = `rbxassetid://{imageId}`,
+        Children = {
+            _new("UICorner")({}),
+            _new("TextLabel")({
+                AnchorPoint = Vector2.new(0.5,0.5),
+                Size = UDim2.fromScale(1, 0.4),
+                Position = UDim2.fromScale(0.5, 1.2),
+                BackgroundTransparency = 1,
+                TextColor3 = PRIMARY_COLOR,
+                Text = buttonName or "",
+                TextScaled = true
+            })
+        },
+        Events = {
+            MouseButton1Click = function()
+                onClick:Fire()
+            end
+        }
+    })
 end
 
 local function getItemButton(
@@ -667,6 +728,43 @@ return function(
           
         }
     })
+
+    local onSearch = maid:GiveTask(Signal.new())
+    
+    local searchTextBox = _new("TextBox")({
+        LayoutOrder = 1,
+        BackgroundColor3 = BACKGROUND_COLOR,
+        BackgroundTransparency = 0.5,
+        PlaceholderText = "Search...",
+        TextColor3 = PRIMARY_COLOR,
+        Size = UDim2.fromScale(0.9, 1),
+        TextXAlignment = Enum.TextXAlignment.Left,
+        Events = {
+            Focused = function()
+                
+            end,
+            FocusLost = function(enterPressed : boolean)
+                
+            end :: any,
+        }
+    }) :: TextBox
+    local searchBarFrame = _new("Frame")({
+        LayoutOrder = 1,
+        BackgroundColor3 = BACKGROUND_COLOR,
+        BackgroundTransparency = 0.74,
+        Size = UDim2.fromScale(1, 0.05), 
+        Children = {
+            _new("UIListLayout")({
+                FillDirection = Enum.FillDirection.Horizontal,
+                SortOrder = Enum.SortOrder.LayoutOrder
+            }),
+            _bind(getImageButton(maid, 4359655183, onSearch, nil, BACKGROUND_COLOR))({
+                Size = UDim2.fromScale(0.1, 1)
+            }),
+            searchTextBox
+        }
+    })
+   
     
     local backpackUIListLayout =  _new("UIListLayout")({
         SortOrder = Enum.SortOrder.LayoutOrder,
@@ -674,6 +772,7 @@ return function(
     }) :: UIListLayout
     local backpackContentFrame = _new("ScrollingFrame")({
         Name = "ContentFrame",
+        LayoutOrder = 2,
         Visible = _Computed(function(page : string)
            return page == "Items" 
         end, selectedPage),
@@ -681,7 +780,7 @@ return function(
         BackgroundColor3 = BACKGROUND_COLOR,
         BackgroundTransparency = 0.74,
         Position = UDim2.fromScale(0,0),
-        Size = UDim2.fromScale(1,0.8),
+        Size = UDim2.fromScale(1,0.75),
         Children = {
             _new("UICorner")({
                 CornerRadius = UDim.new(1,0)
@@ -700,6 +799,84 @@ return function(
         }
     }) :: ScrollingFrame
 
+    local backpackSearchUIListLayout = _new("UIListLayout")({
+        SortOrder = Enum.SortOrder.LayoutOrder,
+        Padding = PADDING_SIZE
+    }) :: UIListLayout
+    local searchContentFrameList = _new("Frame")({
+        LayoutOrder = 2,
+        BackgroundTransparency = 1,
+        AutomaticSize = Enum.AutomaticSize.Y,
+        Size = UDim2.fromScale(1, 0),
+        Children = {
+            _new("UIGridLayout")({
+                CellPadding = UDim2.fromOffset(5, 5),
+                CellSize = UDim2.fromOffset(100, 100)
+            }),
+            _new("UIPadding")({
+                PaddingBottom = PADDING_SIZE,
+                PaddingTop = PADDING_SIZE,
+                PaddingLeft = PADDING_SIZE,
+                PaddingRight = PADDING_SIZE
+            }),
+
+        }
+    }) :: Frame
+    local searchContentFrame = _new("ScrollingFrame")({
+        Name = "ContentFrame",
+        LayoutOrder = 2,
+        Visible = false,
+        AutomaticCanvasSize = Enum.AutomaticSize.None,
+        BackgroundColor3 = BACKGROUND_COLOR,
+        BackgroundTransparency = 0.74,
+        Position = UDim2.fromScale(0,0),
+        Size = UDim2.fromScale(1,0.75),
+        Children = {
+            _new("UICorner")({
+                CornerRadius = UDim.new(1,0)
+            }),
+            backpackSearchUIListLayout,
+            searchContentFrameList
+            --[[_new("TextLabel")({
+                BackgroundTransparency = 1,
+                Size = UDim2.fromScale(1, 0.06),
+                RichText = true,
+                TextScaled = true,
+                Font = Enum.Font.Gotham,
+                Text = "<b>Backpack</b>",
+                TextColor3 = PRIMARY_COLOR,
+                TextStrokeTransparency = 0.5
+            }) ]]
+        }
+    }) :: ScrollingFrame
+
+    maid:GiveTask(searchTextBox:GetPropertyChangedSignal("Text"):Connect(function()
+        for _,v in pairs(searchContentFrameList:GetChildren()) do
+            if v:IsA("Frame") then
+                v:Destroy()
+            end
+        end 
+
+        local toolSearchText = searchTextBox.Text
+        if toolSearchText:find("%S") ~= nil then
+            searchContentFrame.Visible = true
+            backpackContentFrame.Visible = false
+
+            local toolsData = getItemData()
+
+            for k,v in pairs(toolsData) do
+                if v.Name:lower():find(toolSearchText:lower()) then
+                    local itemButton = getItemButton(maid, k, v, onBackpackButtonAddClickSignal)
+                    itemButton.Parent = searchContentFrameList
+                end
+            end
+        else
+            searchContentFrame.Visible = false
+            backpackContentFrame.Visible = true 
+        end
+        print(toolSearchText)
+    end))
+    
     _bind(backpackUIListLayout)({
         Events = {
             Changed = function()
@@ -707,6 +884,14 @@ return function(
             end
         }
     })
+    _bind(backpackSearchUIListLayout)({
+        Events = {
+            Changed = function()
+                searchContentFrame.CanvasSize =  UDim2.new(0,0,0,backpackSearchUIListLayout.AbsoluteContentSize.Y + PADDING_SIZE.Offset*2)
+            end
+        }
+    })
+
 
     local function getButtonInfo(
         signal : Signal,
@@ -763,6 +948,8 @@ return function(
                 TextStrokeTransparency = 0.5
             }) ]]
             header,
+            searchBarFrame,
+            searchContentFrame,
             backpackContentFrame
             --vehiclesContentFrame
         }
@@ -772,7 +959,7 @@ return function(
         local itemsFiltered = _Computed(function(items : {[number] : ToolData})
             local allItems = CollectionService:GetTagged("Tool")
             local allItemsData = {}
-            for _,v in pairs(allItems) do
+            for _,v in pairs(allItems) do 
                 if not v:GetAttribute("DescendantsAreTools") then
                     local toolData : ToolData = BackpackUtil.getData(v, true) :: any
                     local toolAlreadyCollected = false

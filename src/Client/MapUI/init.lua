@@ -11,7 +11,7 @@ local Signal = require(ReplicatedStorage:WaitForChild("Packages"):WaitForChild("
 local NetworkUtil = require(ReplicatedStorage:WaitForChild("Packages"):WaitForChild("NetworkUtil"))
 --modules
 local LineUtil = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("LineUtil"))
---local Pathfind = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Pathfind"))
+local Pathfind = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Pathfind"))
 
 local ExitButton = require(ReplicatedStorage:WaitForChild("Client"):WaitForChild("ExitButton"))
 
@@ -57,10 +57,9 @@ local GET_AB_VALUE = "GetABValue"
 --references
 
 --local function
---[[local function createPathPts(maid : Maid, fuse : Fuse, roadsModel : Model)
-    local _new = fuse.new
-    local pathPoints = maid:GiveTask(_new("Folder")({
-    })) :: Folder
+--[[local function createPathPts(roadsModel : Model)
+    local pathPoints = Instance.new("Folder")({
+    }) :: Folder
 
     local rawPts = maid:GiveTask(_new("Folder")({})) :: Folder
     for _,v : BasePart in pairs(roadsModel:GetChildren() :: any) do
@@ -82,15 +81,129 @@ local GET_AB_VALUE = "GetABValue"
     end
     Pathfind.CreatePathSys(rawPts, pathPoints)
     return pathPoints
-end]]
+end ]]
+local function newPointData(
+	PointId : number,
+	Cost : number,
+	Obstacled : boolean,
+	Neighbours : {
+		[number] :  Pathfind.PointData
+	} ?,
+	Came_From :  Pathfind.PointData ?
+) : Pathfind.PointData
+	return {
+		PointId = PointId,
+		Cost = Cost,
+		Came_From = Came_From,
+		Obstacled = Obstacled,
+		Neighbours = Neighbours or {}
+	}
+end
 
---[[local function generatePathToDestination(pathPoints, start : Vector3, destination : Vector3)
+
+local function createPathFolder(roadsModel : Model)
+    local pathFolder = Instance.new("Folder")
+
+    local pointsPart = Instance.new("Folder")
+    for _,v : BasePart in pairs(roadsModel:GetChildren() :: any) do
+        local folder = Instance.new("Folder")
+        folder.Parent = pointsPart
+
+        local p1 = Instance.new("Part")
+        p1.Name = "1"
+        p1.CFrame = v.CFrame + v.CFrame.LookVector*v.Size.Z*0.5
+        p1.Anchored = true
+        p1.Size = Vector3.new(1,1,1)
+        p1.Parent = folder
+
+        local p2 = Instance.new("Part")
+        p2.Name = "2"
+        p2.CFrame = v.CFrame - v.CFrame.LookVector*v.Size.Z*0.5 
+        p2.Size = Vector3.new(1,1,1)
+        p2.Anchored = true
+        p2.Parent = folder
+    end
+    LineUtil.CreatePathStuff(pointsPart, pathFolder)
+    pointsPart:Destroy()
+
+    --temporary
+    --for _,v in pairs(pathFolder:GetChildren()) do
+        --if v:IsA("BasePart") then
+           -- v.Transparency = 0
+            --v.Size = Vector3.new(5,5,5)
+            --[[print(v.Name, " : Part")
+            for _,v in pairs(v:GetChildren()) do
+                print(v.Name , ": Valie?" , v.Value)
+            end]]
+        --end
+    --end
+   -- Pathfind.djikstraPathfinding({points}, startPoint, endPoint) 
+
+    return pathFolder
+end
+
+local function extractPathPointsFolderToPathPointsData(pathPointsFolder : Folder)
+    local pathPointsData : {[number] : Pathfind.PointData} = {}
+
+    local function findPointDataByNum(n : number): Pathfind.PointData ?
+        for _,v in pairs(pathPointsData) do
+            if v.PointId == n then
+                return v
+            end
+        end
+        return nil
+    end
+
+    for _,v in pairs(pathPointsFolder:GetChildren()) do
+        if v:IsA("BasePart") then
+            local n = tonumber(v.Name)
+            if n then
+                local pointData = newPointData(
+                    n, 
+                    0, 
+                    false,
+                    {}
+                )
+                table.insert(pathPointsData, pointData)
+            end
+        end
+    end
+    for _,v in pairs(pathPointsFolder:GetChildren()) do
+        if v:IsA("BasePart") then
+            local n = tonumber(v.Name)
+            if n then
+                local pointData : Pathfind.PointData ? = findPointDataByNum(n)
+                if pointData then
+                    for _,v in pairs(v:GetChildren()) do
+                        if v:IsA("ObjectValue") then
+                            local neighborInstance = v.Value
+                            if neighborInstance then
+                                local neighborN = tonumber(neighborInstance.Name)
+                                if neighborN then
+                                    local neighborPointData = findPointDataByNum(neighborN)
+                                    if neighborPointData then
+                                        table.insert(pointData.Neighbours, neighborPointData)
+                                    end
+                                end
+                            end
+                        end
+                    end
+                end
+            end
+        end
+    end
+
+    return pathPointsData
+end
+
+local function generatePathToDestination(pathPointsFolder : Folder, start : Vector3, destination : Vector3) : {[number] : Pathfind.PointData} ?
+    
     local startN, endN 
 
     local minPlrDist = math.huge
     local minDestDist = math.huge 
 
-    for _,v : Part in pairs(pathPoints:GetChildren() :: any) do
+    for _,v : Part in pairs(pathPointsFolder:GetChildren() :: any) do
         local plrdist = (v.Position - start).Magnitude
         local destdist = (v.Position - destination).Magnitude
         --finding minimum distance of player
@@ -104,14 +217,35 @@ end]]
             endN = tonumber(v.Name)
         end
     end
-    
-   -- task.wait()
-    if startN and endN then 
-        return Pathfind(pathPoints, startN, endN)
+
+    if startN and endN then
+        --convert to pathPointsFolder to pathPointsData
+        local pathPointsData : {[number] : Pathfind.PointData} = extractPathPointsFolderToPathPointsData(pathPointsFolder)
+
+        local function findPointDataByNum(n : number): Pathfind.PointData ?
+            for _,v in pairs(pathPointsData) do
+                if v.PointId == n then
+                    return v
+                end
+            end
+            return nil
+        end
+
+        local startPointData = findPointDataByNum(startN)
+        local endPointData = findPointDataByNum(endN)
+
+        assert(startPointData and endPointData)
+        --print(startPointData, endPointData)
+        return Pathfind.djikstraPathfinding(pathPointsData, startPointData, endPointData)
     end
+    return nil
+   -- task.wait()
+    --if startN and endN then 
+        --return Pathfind.djikstraPathfinding(points, startN, endN)
+    --end
 end
 
-local function generateVisualPath(pathFindResult : {[number] : {Cost : number, N : number}}, pathPoints : Instance, startPoint : Vector3 ?, endPoint : Vector3 ?)
+--[[local function generateVisualPath(pathFindResult : {[number] : {Cost : number, N : number}}, pathPoints : Instance, startPoint : Vector3 ?, endPoint : Vector3 ?)
     local visualPathFolder = Instance.new("Folder")
     for k,v in pairs(pathFindResult) do
         local point = pathPoints:FindFirstChild(tostring(v.N)) :: BasePart
@@ -239,7 +373,7 @@ function mapHUD.new(
         end
     end
 
-   -- local pathPoints = createPathPts(maid, fuse, roadsModel)   
+    --local pathPoints = maid:GiveTask(createPathFolder(roadsModel))
 
     local arrow = _new("Part")({
         CFrame = _Computed(function(cf : CFrame)
@@ -354,7 +488,8 @@ function mapHUD.new(
         visualFolder:ClearAllChildren()
         destIcon.Parent = nil
         if destination then
-            --local pathFindResult = generatePathToDestination(pathPoints, cf.Position, destination )
+            --local pathFindResult = generatePathToDestination(pathPoints, cf.Position, destination)
+            --print(pathFindResult)
         -- print(pathFindResult) 
             --if pathFindResult then
                 --local visuals = generateVisualPath(pathFindResult, pathPoints, arrow.Position, destination)
@@ -440,7 +575,7 @@ function mapHUD.new(
         end 
         textPos:Set(UDim2.fromScale(0, -0.35))
         transp:Set(0)
-        print(str) 
+        --print(str) 
         return nil
     end, IntText)
 

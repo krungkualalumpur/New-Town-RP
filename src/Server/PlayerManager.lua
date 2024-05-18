@@ -343,8 +343,9 @@ function PlayerManager.new(player : Player, maid : Maid ?)
                 self:AddVehicle(v.Name, true)
             end
 
-            if self.ABValue == "A" then 
+            if self.ABValue == "B" then 
                 self:InsertToBackpack("Phone") 
+                self:InsertToBackpack("Sign") 
             end
             --character loading
             self:SetData(self:GetData(), false)

@@ -26,10 +26,10 @@ return function(target)
     local _Value = fuse.Value
     local _Computed = fuse.Computed
 
-    local Cf = _Value(CFrame.new(-748.194, -79.566, -1683.347)*CFrame.Angles(0, 1, 0) + Vector3.new(0,25,60))
-    local out =  maid:GiveTask(HUD.new(maid, Cf, _Value(true), Vector3.new(-61.094, -81.905, -1759.019) :: any))
+    local Cf = _Value(CFrame.new(-748.194, -79.566, -1683.347)*CFrame.Angles(0, 0, 0) + Vector3.new(0,25,60))
+    local out =  maid:GiveTask(HUD.new(maid, Cf, _Value(true), Vector3.new(292.223, 20.068, -484.346)+ Vector3.new(10,25,20) :: any))
     out.Instance.Parent = target 
-    Cf:Set(CFrame.new(392.223, 50.068, -514.346)*CFrame.Angles(0, 1, 0) + Vector3.new(10,25,20)) 
+    Cf:Set(CFrame.new(392.223, 20.068, -384.346)*CFrame.Angles(0, 1, 0) + Vector3.new(10,25,20)) 
  
     return function()
         maid:Destroy()   
