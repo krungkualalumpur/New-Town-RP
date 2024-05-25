@@ -228,7 +228,15 @@ function optimizationSys.init(maid : Maid)
                 local pointer = LODinst:FindFirstChild("ParentPointer") :: ObjectValue
                 local cf, size
                 if LODinst:IsA("Model") then
-                    cf, size = LODinst:GetBoundingBox()
+                    local parentModel = pointer.Value
+                    if parentModel and parentModel:IsA("Model") and LODinst:GetAttribute("SetParentAsPositionPointer") == true then
+                        cf, size = parentModel:GetBoundingBox()
+                        --if LODinst:GetAttribute("IsOnDebug") == true then
+                           -- print(`itemIs: {parentModel.Name}`)
+                       -- end
+                    else 
+                        cf, size = LODinst:GetBoundingBox()
+                    end
                 elseif LODinst:IsA("BasePart") then
                     cf, size = LODinst.CFrame, LODinst.Size
                 else
@@ -244,6 +252,11 @@ function optimizationSys.init(maid : Maid)
                         else
                             LODinst.Parent = pointer.Value
                         end
+
+                        if LODinst:GetAttribute("IsOnDebug") == true then
+                            print(`currentDist: {currentDist}\nitemIs: {LODinst.Name}`)
+                        end
+                        
                     end)
                     if not s and e then
                         local i = table.find(lodItems, LODinst)
