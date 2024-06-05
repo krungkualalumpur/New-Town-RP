@@ -25,7 +25,7 @@ type State<T> = ColdFusion.State<T>
 type ValueState<T> = ColdFusion.ValueState<T>
 type CanBeState<T> = ColdFusion.CanBeState<T>
 
-type PhoneUIStatus = "Message" | "Settings" | nil
+type PhoneUIStatus = "Message" | "Info" | "Settings" | nil
 --constants
 local CHAT_LIMIT = 8
 
@@ -33,10 +33,11 @@ local BACKGROUND_COLOR = Color3.fromRGB(200,200,200)
 local PRIMARY_COLOR = Color3.fromRGB(150,150,150)
 
 local BUTTON_COLOR = Color3.fromRGB(82, 131, 160)
-local GREEN_COLOR = Color3.fromRGB(15,155,15)
+local GREEN_COLOR =  Color3.fromRGB(15,155,15)
 local WHITE_COLOR = Color3.fromRGB(255,255,255)
 local GREY_COLOR = Color3.fromRGB(70,70,70)
 local RED_COLOR = Color3.fromRGB(141, 72, 72)
+local BLACK_COLOR = Color3.fromRGB(15,15,15)
 
 local PADDING_SIZE =  UDim.new(0.025, 0)
 local TOP_PADDING_SIZE =  UDim.new(0.07, 0)
@@ -45,6 +46,7 @@ local DAY_VALUE_KEY = "DayValue"
 --remotes
 local ON_PHONE_MESSAGE_START = "OnPhoneMessageStart"
 local IS_PLAYER_TYPING_CHECK = "IsPlayerTypingCheck"
+local ON_SILENT_SWITCH = "OnSilentSwitch"
 --variables
 --references
 local Player = Players.LocalPlayer
@@ -229,6 +231,7 @@ local function getPlayerList(maid : Maid, player : Player, onMessagePlayerClickS
                         Size = UDim2.fromScale(1, 0.5),
                         BackgroundTransparency = 1,
                         RichText = true,
+                        TextColor3 = BLACK_COLOR,
                         Text = "<b>" .. player.Name .. "</b>",
                         TextScaled = true
                     }),
@@ -272,6 +275,7 @@ return function(
 
     local onMessageClick = maid:GiveTask(Signal.new())
     local onSettingsClick = maid:GiveTask(Signal.new())
+    local onInfoClick = maid:GiveTask(Signal.new())
 
     local onMessagePlayerClick = maid:GiveTask(Signal.new())
 
@@ -595,9 +599,9 @@ return function(
         }
     })
 
-    local SettingsFrame = _new("Frame")({
+    local InfoFrame = _new("Frame")({
         Visible = _Computed(function(uiStatus : PhoneUIStatus)
-            return uiStatus == "Settings"
+            return uiStatus == "Info"
         end, UIStatus),
         Size = UDim2.fromScale(1, 1),
         Children = {
@@ -621,6 +625,71 @@ return function(
             }),
         }
     })
+
+    local function getSettingsFrameList(layoutOrder : number, optName : string, onButtonSignal : Signal, switchState : ValueState<boolean>)
+        local out = _new("Frame")({
+            Name = "StyleModeOptFrame",
+            LayoutOrder = layoutOrder,
+            BackgroundTransparency = 1,
+            Size = UDim2.fromScale(1, 0.15),
+            Children = {
+                _new("UIListLayout")({
+                    FillDirection = Enum.FillDirection.Horizontal,
+                    SortOrder = Enum.SortOrder.LayoutOrder
+                }),
+                _new("TextLabel")({
+                    LayoutOrder = 1,
+                    Size = UDim2.fromScale(0.7, 1),
+                    Text = optName,
+                }),
+                _bind(getButton(maid, "Off", onButtonSignal))({
+                    LayoutOrder = 2,
+                    BackgroundColor3 = _Computed(function(switch : boolean)
+                        return if switch == true then GREEN_COLOR else RED_COLOR
+                    end, switchState),
+                    Size = UDim2.fromScale(0.3, 1),
+                    Text = _Computed(function(switch : boolean)
+                        return if switch == true then "On" else "Off"
+                    end, switchState)
+                })
+            }
+        })
+        return out
+    end
+
+    local silentModeSignal = maid:GiveTask(Signal.new())
+    local silentMode = maid:GiveTask(_Value(false))
+
+    local SettingFrame = _new("Frame"){
+        Visible = _Computed(function(uiStatus : PhoneUIStatus)
+            return uiStatus == "Settings"
+        end, UIStatus),
+        Size = UDim2.fromScale(1, 1),
+        Children = {
+            _new("UICorner")({}),
+            _new("UIListLayout")({
+                Padding = PADDING_SIZE, 
+                SortOrder = Enum.SortOrder.LayoutOrder,
+            }),
+            _new("TextLabel")({
+                LayoutOrder = 0,
+                Size = UDim2.fromScale(1, 0.1),
+                RichText = _Computed(function(isSilent : boolean) 
+                    if RunService:IsRunning() then
+                        NetworkUtil.fireServer(ON_SILENT_SWITCH, isSilent)
+                    end
+                    return true 
+                end, silentMode),
+                Text = "<b>Settings</b>",
+                TextColor3 = BLACK_COLOR,
+            }),
+            getSettingsFrameList(1, "Silent Mode", silentModeSignal, silentMode),
+        }
+    }
+
+    maid:GiveTask(silentModeSignal:Connect(function()
+        silentMode:Set(not silentMode:Get())
+    end))
 
     local backButton = _bind(getButton(maid, "<", onBack, RED_COLOR))({
         ZIndex = 2,
@@ -647,7 +716,8 @@ return function(
                 Size = UDim2.fromScale(1, 1),
                 TextScaled = true,
                 RichText = true,
-                Text = currentTime
+                Text = currentTime,
+                TextColor3 = BLACK_COLOR,
             })
         }
     }
@@ -713,24 +783,28 @@ return function(
                                     totalMsgNotifText :: any
                                 }
                             }),
-                            getImageButton(maid, 9753762469, onSettingsClick, "Settings"),
-                        }
+                            getImageButton(maid, 13568966069, onSettingsClick, "Settings"),
+                            getImageButton(maid, 9405926389, onInfoClick, "Info"),
+                        } 
                     }),
                 }
             }),
           
             messageFrame,
-            SettingsFrame
+            InfoFrame,
+            SettingFrame
         }
     }
 
     maid:GiveTask(onMessageClick:Connect(function()
         UIStatus:Set("Message")
     end))
+    maid:GiveTask(onInfoClick:Connect(function()
+        UIStatus:Set("Info") 
+    end))
     maid:GiveTask(onSettingsClick:Connect(function()
         UIStatus:Set("Settings") 
     end))
-
  
     local function updateNotif(plr : Player)
         --update notif
@@ -833,6 +907,8 @@ return function(
             else
                 UIStatus:Set(nil)
             end
+        elseif UIStatus:Get() == "Info" then
+            UIStatus:Set(nil)
         elseif UIStatus:Get() == "Settings" then
             UIStatus:Set(nil)
         end

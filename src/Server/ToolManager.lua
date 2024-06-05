@@ -12,12 +12,16 @@ local BackpackUtil = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChi
 --types
 type Maid = Maid.Maid
 --constants
+local IS_PHONE_SILENT_ATTRIBUTE_KEY = "IsPhoneSilent"
+
 local WRITING_MAX_PTS = 50
 --remotes
 local ON_WRITING_FINISHED = "OnWritingFinished"
 
 local ON_PHONE_MESSAGE_START = "OnPhoneMessageStart"
 local IS_PLAYER_TYPING_CHECK = "IsPlayerTypingCheck"
+local ON_SILENT_SWITCH = "OnSilentSwitch"
+
 --variables
 --references
 local ToolsAsset = ReplicatedStorage:WaitForChild("Assets"):WaitForChild("Tools")
@@ -191,7 +195,7 @@ function ToolManager.init(maid : Maid)
         end
 
         --then notify sound if plr has phone
-        if plrHasPhone then 
+        if plrHasPhone and not reciever:GetAttribute(IS_PHONE_SILENT_ATTRIBUTE_KEY) then 
             PlaySound(826129174,reciever.Character.PrimaryPart, 2)
         end
 
@@ -203,6 +207,15 @@ function ToolManager.init(maid : Maid)
         local reciever = Players:FindFirstChild(recieverName)
         assert(reciever)
         NetworkUtil.fireClient(IS_PLAYER_TYPING_CHECK, reciever, plr.Name, isTyping)
+    end))
+
+    maid:GiveTask(NetworkUtil.onServerEvent(ON_SILENT_SWITCH, function(plr : Player, isSilent : boolean)
+        if isSilent then
+            plr:SetAttribute(IS_PHONE_SILENT_ATTRIBUTE_KEY, true)
+        else
+            plr:SetAttribute(IS_PHONE_SILENT_ATTRIBUTE_KEY, nil)
+        end
+        return
     end))
 
     NetworkUtil.getRemoteFunction(ON_PHONE_MESSAGE_START)
