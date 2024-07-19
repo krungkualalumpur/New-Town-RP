@@ -226,6 +226,11 @@ function optimizationSys.init(maid : Maid)
 
             for _,LODinst in pairs(lodItems) do
                 local pointer = LODinst:FindFirstChild("ParentPointer") :: ObjectValue
+                if not pointer then 
+                    --print(LODinst, " no parent pointer!!"); 
+                    continue 
+                end;
+
                 local cf, size
                 if LODinst:IsA("Model") then
                     local parentModel = pointer.Value
