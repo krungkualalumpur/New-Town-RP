@@ -147,23 +147,18 @@ function Vehicle.init(maid : Maid)
             
             local _maid = Maid.new()
 
-            --[[if vehicleModel:GetAttribute("Class") == ENV_BOAT_CLASS_KEY then
-                _maid:GiveTask(vehicleSeat:GetPropertyChangedSignal("Occupant"):Connect(function()
-                    local hum = vehicleSeat.Occupant
-                    local char = if hum then hum.Parent else nil
-                   
-                    return
-                end))
-            end]]
-            -- local attachment0 = Instance.new("Attachment")
-            -- local VectorForce = Instance.new("VectorForce")  
-            -- VectorForce.Name = "GeneratedVectorForce" 
+            local hasChassis = if vehicleModel:FindFirstChild("Chassis") then true else false 
+            if hasChassis == false then 
+                local attachment0 = Instance.new("Attachment")
+                local VectorForce = Instance.new("VectorForce")  
+                VectorForce.Name = "GeneratedVectorForce" 
 
-            -- attachment0.Parent = vehicleModel.PrimaryPart
-            -- VectorForce.Parent = vehicleModel.PrimaryPart
-            
-            -- VectorForce.Attachment0 = attachment0
-            -- VectorForce.Force = Vector3.new(0,0,0)
+                attachment0.Parent = vehicleModel.PrimaryPart
+                VectorForce.Parent = vehicleModel.PrimaryPart
+                
+                VectorForce.Attachment0 = attachment0
+                VectorForce.Force = Vector3.new(0,0,0)
+            end
 
             _maid:GiveTask(vehicleModel:GetAttributeChangedSignal(CUSTOM_THROTTLE_KEY):Connect(function()
                 local customThrottleNum = vehicleModel:GetAttribute(CUSTOM_THROTTLE_KEY) :: number
@@ -613,329 +608,312 @@ function Vehicle.init(maid : Maid)
                     PhysicsService:CollisionGroupSetCollidable(vipPlayerCollisionKey, borderCollisionKey, false)
                     PhysicsService:CollisionGroupSetCollidable("Player", borderCollisionKey, false)
 
-                elseif (vehicleModel:GetAttribute("Class") == CAR_CLASS_KEY) then
+                elseif (vehicleModel:GetAttribute("Class") == BOAT_CLASS_KEY) or (vehicleModel:GetAttribute("Class") == CAR_CLASS_KEY) then
                     --local occupantMaid = _maid:GiveTask(Maid.new())
+                    print(hasChassis, vehicleModel:FindFirstChild("Chassis"))
+                    if hasChassis then 
+                        local chassisModel = vehicleModel:FindFirstChild("Chassis")
+                        assert(chassisModel)
+                        local wheels = chassisModel:FindFirstChild("Wheels")
 
-                    local chassisModel = vehicleModel:FindFirstChild("Chassis")
-                    assert(chassisModel)
-                    local wheels = chassisModel:FindFirstChild("Wheels")
+                        local chassis = chassisModel:FindFirstChild("Chassis")
 
-                    local chassis = chassisModel:FindFirstChild("Chassis")
+                        local mass = 0
 
-                    local mass = 0
-
-                    local height = vehicleModel:GetAttribute("Height") 
-                    local suspension = vehicleModel:GetAttribute("Suspension") 
-                    local bounce = vehicleModel:GetAttribute("Bounce") 
-                    local turnSpeed = vehicleModel:GetAttribute("TurnSpeed") 
-                    local maxSpeed = vehicleModel:GetAttribute("Speed") 
-
-
-
-                    local throttlespeed = 0
-
-                    for i, v in pairs(vehicleModel:GetChildren()) do
-                        if v:IsA("BasePart") then
-                            mass = mass + (v:GetMass() * 196.2)
-                        end
-                    end
-                  
-
-                    --local movement = Vector2.new()
+                        local height = vehicleModel:GetAttribute("Height") 
+                        local suspension = vehicleModel:GetAttribute("Suspension") 
+                        local bounce = vehicleModel:GetAttribute("Bounce") 
+                        local turnSpeed = vehicleModel:GetAttribute("TurnSpeed") 
+                        local maxSpeed = vehicleModel:GetAttribute("Speed") 
 
 
-                    local raycastParams = RaycastParams.new()
-                    raycastParams.FilterDescendantsInstances = {vehicleModel}
 
-                    local function updateWheel(wheelModel : Model)
-                        local wheelPart = wheelModel:FindFirstChild("WheelPart") :: BasePart
-                        local thruster = wheelModel:FindFirstChild("Thruster") :: BasePart
+                        local throttlespeed = 0
 
-                        local realThrusterHeight = math.huge
-                        assert(wheelPart and thruster)
-
-                        local raycastResult = workspace:Raycast(thruster.Position, thruster.CFrame.UpVector*Vector3.new(0, -height*1.2, 0), raycastParams)
-                        if raycastResult and raycastResult.Instance.CanCollide then
-                            realThrusterHeight = thruster.CFrame:PointToObjectSpace(raycastResult.Position).Y
-                            --local pos, normal = raycast.Position, raycast.Normal
-                            --local chassisWeld = thruster:FindFirstChild("ChassisWeld") :: Weld
-                        end
-                        local wheelWeld = thruster:FindFirstChild("WheelWeld") :: Weld
-                        local wheelDisplayWeld = wheelPart:FindFirstChild("WheelDisplayWeld") :: Weld
-                        wheelWeld.C0 = CFrame.new(wheelWeld.C0.Position):Lerp(CFrame.new(0, -math.min(math.abs(realThrusterHeight), height) + wheelPart.Size.Y*0.5, 0), 0.1)--*CFrame.Angles(math.pi/2, 0, 0)
-                        wheelWeld.C1 = CFrame.Angles(0, math.pi, 0)
-
-                        local speed = chassis.CFrame:VectorToObjectSpace(chassis.AssemblyLinearVelocity)
-
-                        local wheelIsInFront = (chassis.CFrame:Inverse()*thruster.CFrame).Position.Z < 0
-                        local wheelIsInRight = (chassis.CFrame:Inverse()*thruster.CFrame).Position.X > 0
-
-                        local direction = -math.sign(speed.Z)
-                        if wheelIsInFront then
-                            local turnVel = (chassis.CFrame:VectorToObjectSpace(chassis.AssemblyAngularVelocity).Y*40)*direction
-                            wheelWeld.C0 = wheelWeld.C0*CFrame.Angles(0, math.rad(turnVel), 0)
-                        end
-                        wheelDisplayWeld.C0 = wheelDisplayWeld.C0*CFrame.Angles(math.rad(if wheelIsInRight then speed.Z else -speed.Z), 0, 0)
-                        return
-                    end
-
-
-                    for _,wheelModel : Model in pairs(wheels:GetChildren()) do 
-                        local wheelPart = wheelModel:FindFirstChild("WheelPart") :: BasePart
-                        local thruster = wheelModel:FindFirstChild("Thruster") :: BasePart
-                        local wheelDisplay = wheelModel:FindFirstChild("WheelDisplay") :: BasePart
-
-                        assert(wheelPart and thruster)
-
-                        local chassisWeld = Instance.new("Weld")
-                        chassisWeld.Name = "ChassisWeld"
-                        chassisWeld.Part0 = thruster
-                        chassisWeld.Part1 = chassis
-                        chassisWeld.C0 = thruster.CFrame:ToObjectSpace(chassis.CFrame) 
-                        chassisWeld.C1 = CFrame.new()
-                        chassisWeld.Parent = thruster
-
-                        local wheelWeld = Instance.new("Weld")
-                        wheelWeld.Name = "WheelWeld"
-                        wheelWeld.Part0 = thruster
-                        wheelWeld.Part1 = wheelPart
-                        wheelWeld.C0 = CFrame.new() 
-                        wheelWeld.C1 = CFrame.new()
-                        wheelWeld.Parent = thruster
-                        
-                        local wheelDisplayWeld = Instance.new("Weld")
-                        wheelDisplayWeld.Name = "WheelDisplayWeld"
-                        wheelDisplayWeld.Part0 = wheelPart
-                        wheelDisplayWeld.Part1 = wheelDisplay
-                        wheelDisplayWeld.C0 = CFrame.new(0,0,0)*CFrame.Angles(0, math.pi, 0) 
-                        wheelDisplayWeld.C1 = CFrame.new()
-                        wheelDisplayWeld.Parent = wheelPart
-
-                        task.spawn(function()
-                            while task.wait() do 
-                                updateWheel(wheelModel)
-                            end
-                        end)
-                    end
-
-                    local linearVelocity = Instance.new("LinearVelocity")
-                    linearVelocity.VectorVelocity = Vector3.new(0, 0, 0)
-                    linearVelocity.RelativeTo = Enum.ActuatorRelativeTo.Attachment0
-                    linearVelocity.ForceLimitMode = Enum.ForceLimitMode.PerAxis
-                    linearVelocity.MaxAxesForce = Vector3.new(0, 0, 0)
-                    linearVelocity.Parent = chassis
-                    do
-                        local attachment = Instance.new("Attachment")
-                        attachment.Parent = chassis
-                        linearVelocity.Attachment0 = attachment
-                    end
-                    local angularVelocity = Instance.new("AngularVelocity")
-                    angularVelocity.AngularVelocity = Vector3.new()
-                    angularVelocity.RelativeTo = Enum.ActuatorRelativeTo.Attachment0
-                    angularVelocity.MaxTorque = 0
-                    angularVelocity.Parent = chassis
-                    do
-                        local attachment = angularVelocity.Attachment0 or Instance.new("Attachment")
-                        attachment.Parent = chassis
-                        angularVelocity.Attachment0 = attachment
-                    end
-                    linearVelocity.Enabled = false
-                    angularVelocity.Enabled = false
-
-                    local alignPosition = Instance.new("AlignPosition")
-                    alignPosition.ForceLimitMode = Enum.ForceLimitMode.PerAxis
-                    alignPosition.MaxAxesForce = Vector3.new()
-                    alignPosition.Mode = Enum.PositionAlignmentMode.OneAttachment
-                    alignPosition.Parent = chassis
-                    do
-                        local attachment = Instance.new("Attachment")
-                        attachment.Parent = chassis
-                        alignPosition.Attachment0 = attachment
-                    end
-
-                    local alignOrientation = Instance.new("AlignOrientation")
-                    alignOrientation.Enabled = false
-                    alignOrientation.MaxTorque = 0
-
-                    alignOrientation.AlignType = Enum.AlignType.Perpendicular
-                    alignOrientation.Mode = Enum.OrientationAlignmentMode.OneAttachment
-                    alignOrientation.Parent = chassis
-                    do
-                        local attachment = Instance.new("Attachment")
-                        attachment.Parent = chassis
-                        alignOrientation.Attachment0 = attachment
-                    end
-
-                    local function setCarOwnership(player : Player?)
-                        if player ~= nil then 
-                            vehicleSeat:SetNetworkOwner(player)
-
-                            alignOrientation.Enabled = false
-                            alignPosition.Enabled = false
-
-                            linearVelocity.Enabled = true
-                            angularVelocity.Enabled = true
-                            
-                            
-                            -- if not player.PlayerGui:FindFirstChild("LocalScript") then 
-                            --     local ls = script.LocalScript:Clone()
-                            --     ls.Disabled = false
-                            --     ls.Parent = player.PlayerGui
-                            -- end
-                        else
-                            print(vehicleSeat)
-                            task.wait()
-                            vehicleSeat:SetNetworkOwnershipAuto()
-
-                            linearVelocity.Enabled = false
-                            angularVelocity.Enabled = false
-
-                            alignPosition.Enabled = true
-                            alignOrientation.Enabled = true
-                            
-                            --TEMPORARY!!
-                            -- for _, plr in pairs(game.Players:GetPlayers()) do
-                            --     if plr:WaitForChild("PlayerGui"):FindFirstChild("LocalScript") then 
-                            --         plr:WaitForChild("PlayerGui"):FindFirstChild("LocalScript"):Destroy()
-                            --     end
-                            -- end
-                        end
-                    end
-
-                    _maid:GiveTask(vehicleSeat.Changed:Connect(function(property)
-                        local hum = vehicleSeat.Occupant
-                        local player = if hum then game:GetService("Players"):GetPlayerFromCharacter(hum.Parent) else nil
-                        
-                        if property == "Occupant" then
-                            if player then
-                                setCarOwnership(player)
-                            else
-                                setCarOwnership()
+                        for i, v in pairs(vehicleModel:GetChildren()) do
+                            if v:IsA("BasePart") then
+                                mass = mass + (v:GetMass() * 196.2)
                             end
                         end
-                    end))
-
-                    setCarOwnership()
-                    _maid:GiveTask(RunService.Stepped:Connect(function()
-                        local raycastResult = workspace:Raycast(chassis.Position, chassis.CFrame.UpVector*Vector3.new(0, -height*1.2, 0), raycastParams)
-                        if raycastResult then 
-                            local position, normal = raycastResult.Position, raycastResult.Normal
-                            local chassisHeight = math.abs(chassis.CFrame:PointToObjectSpace(raycastResult.Position).Y) --(position - chassis.Position).Magnitude
-
-                            if vehicleSeat.Occupant == nil then			
-                                chassis.AssemblyLinearVelocity = chassis.AssemblyLinearVelocity:Lerp(Vector3.new(0, chassis.AssemblyLinearVelocity.Y, 0), 0.1)
-                                
-                                local rotCf = (CFrame.new(position, position + normal)*CFrame.Angles(-math.pi/2, 0, 0))
-                                local x, y, z = rotCf:ToOrientation()
-
-                                if vehicleSeat.Throttle ~= 0 then
-                                    throttlespeed = math.min(throttlespeed + vehicleSeat.Throttle, 75)
-                                else
-                                    throttlespeed = math.max(throttlespeed - 5, 0)
-                                end
-                                --chassis.LinearVelocity.VectorVelocity = Vector3.new(0,0,-throttlespeed)
-
-                                alignPosition.MaxAxesForce = Vector3.new(1,math.huge,1)
-
-                                alignPosition.Position = position + normal*((height))
-
-
-                                alignOrientation.CFrame = CFrame.Angles(math.rad(x), math.rad(chassis.Orientation.Y - vehicleSeat.Steer*20*math.sign(vehicleSeat.Throttle)), math.rad(z))
-                                alignOrientation.MaxTorque = math.huge
-
-                            end
-                           
-                            --alignOrientation.CFrame = CFrame.Angles(math.rad(x), math.rad(chassis.Orientation.Y - vehicleSeat.Steer*20*math.sign(vehicleSeat.Throttle)), math.rad(z))
-                            --alignOrientation.MaxTorque = math.huge
-                        else
-                            alignPosition.MaxAxesForce = Vector3.new()
-                            alignOrientation.MaxTorque = 0
-
-                        end
-                    end))
-
                     
-                elseif (vehicleModel:GetAttribute("Class") == BOAT_CLASS_KEY) then
-                    local occupantMaid = _maid:GiveTask(Maid.new())
-                    
-                    local seat = vehicleModel:FindFirstChild("VehicleSeat") :: VehicleSeat ?
-                    local wheels = vehicleModel:FindFirstChild("Wheels") :: Model ?
 
-                    if seat and wheels then
-                        for _,v in pairs(wheels:GetDescendants()) do
-                            if v:IsA("HingeConstraint") and v.ActuatorType == Enum.ActuatorType.Motor then
-                                v.MotorMaxTorque = 999999999999
-                                v.MotorMaxAcceleration = 0
-                                v.AngularVelocity = 0                            
+                        --local movement = Vector2.new()
+
+
+                        local raycastParams = RaycastParams.new()
+                        raycastParams.FilterDescendantsInstances = {vehicleModel}
+
+                        local function updateWheel(wheelModel : Model)
+                            local wheelPart = wheelModel:FindFirstChild("WheelPart") :: BasePart
+                            local thruster = wheelModel:FindFirstChild("Thruster") :: BasePart
+
+                            local realThrusterHeight = math.huge
+                            assert(wheelPart and thruster)
+
+                            local raycastResult = workspace:Raycast(thruster.Position, thruster.CFrame.UpVector*Vector3.new(0, -height*1.2, 0), raycastParams)
+                            if raycastResult and raycastResult.Instance.CanCollide then
+                                realThrusterHeight = thruster.CFrame:PointToObjectSpace(raycastResult.Position).Y
+                                --local pos, normal = raycast.Position, raycast.Normal
+                                --local chassisWeld = thruster:FindFirstChild("ChassisWeld") :: Weld
                             end
-                        end
-                    end
+                            local wheelWeld = thruster:FindFirstChild("WheelWeld") :: Weld
+                            local wheelDisplayWeld = wheelPart:FindFirstChild("WheelDisplayWeld") :: Weld
+                            wheelWeld.C0 = CFrame.new(wheelWeld.C0.Position):Lerp(CFrame.new(0, -math.min(math.abs(realThrusterHeight), height) + wheelPart.Size.Y*0.5, 0), 0.1)--*CFrame.Angles(math.pi/2, 0, 0)
+                            wheelWeld.C1 = CFrame.Angles(0, math.pi, 0)
 
-                    _maid:GiveTask(vehicleSeat:GetPropertyChangedSignal("Occupant"):Connect(function()
-                        occupantMaid:DoCleaning()
+                            local speed = chassis.CFrame:VectorToObjectSpace(chassis.AssemblyLinearVelocity)
 
-                        --detecting lock
-                        local humanoid = vehicleSeat.Occupant
-                        local plr = if humanoid and humanoid.Parent then Players:GetPlayerFromCharacter(humanoid.Parent) else nil
-                        local vehicleData = getVehicleData(vehicleModel)
-                        if humanoid and vehicleModel:GetAttribute("isLocked") and plr.UserId ~= vehicleData.OwnerId then                            
-                            local seatWeld = vehicleSeat:FindFirstChild("SeatWeld")
-                            local char = humanoid.Parent
-                            humanoid.Sit = false
-                            if seatWeld then
-                                game:GetService("Debris"):AddItem(seatWeld,0)
+                            local wheelIsInFront = (chassis.CFrame:Inverse()*thruster.CFrame).Position.Z < 0
+                            local wheelIsInRight = (chassis.CFrame:Inverse()*thruster.CFrame).Position.X > 0
+
+                            local direction = -math.sign(speed.Z)
+                            if wheelIsInFront then
+                                local turnVel = (chassis.CFrame:VectorToObjectSpace(chassis.AssemblyAngularVelocity).Y*40)*direction
+                                wheelWeld.C0 = wheelWeld.C0*CFrame.Angles(0, math.rad(turnVel), 0)
                             end
-                            if char then
-                                char:PivotTo(char.PrimaryPart.CFrame - char.PrimaryPart.CFrame.LookVector*5) --FIX DIS!
-                            end 
+                            wheelDisplayWeld.C0 = wheelDisplayWeld.C0*CFrame.Angles(math.rad(if wheelIsInRight then speed.Z else -speed.Z), 0, 0)
                             return
                         end
-                        
-                        if vehicleSeat.Occupant then
-                            vehicleSeat:SetNetworkOwner(plr)
-                            playSound(912961304, vehicleModel.PrimaryPart, false)
-                        
+
+
+                        for _,wheelModel : Model in pairs(wheels:GetChildren()) do 
+                            local wheelPart = wheelModel:FindFirstChild("WheelPart") :: BasePart
+                            local thruster = wheelModel:FindFirstChild("Thruster") :: BasePart
+                            local wheelDisplay = wheelModel:FindFirstChild("WheelDisplay") :: BasePart
+
+                            assert(wheelPart and thruster)
+
+                            local chassisWeld = Instance.new("Weld")
+                            chassisWeld.Name = "ChassisWeld"
+                            chassisWeld.Part0 = thruster
+                            chassisWeld.Part1 = chassis
+                            chassisWeld.C0 = thruster.CFrame:ToObjectSpace(chassis.CFrame) 
+                            chassisWeld.C1 = CFrame.new()
+                            chassisWeld.Parent = thruster
+
+                            local wheelWeld = Instance.new("Weld")
+                            wheelWeld.Name = "WheelWeld"
+                            wheelWeld.Part0 = thruster
+                            wheelWeld.Part1 = wheelPart
+                            wheelWeld.C0 = CFrame.new() 
+                            wheelWeld.C1 = CFrame.new()
+                            wheelWeld.Parent = thruster
+                            
+                            local wheelDisplayWeld = Instance.new("Weld")
+                            wheelDisplayWeld.Name = "WheelDisplayWeld"
+                            wheelDisplayWeld.Part0 = wheelPart
+                            wheelDisplayWeld.Part1 = wheelDisplay
+                            wheelDisplayWeld.C0 = CFrame.new(0,0,0)*CFrame.Angles(0, math.pi, 0) 
+                            wheelDisplayWeld.C1 = CFrame.new()
+                            wheelDisplayWeld.Parent = wheelPart
+
                             task.spawn(function()
-                                task.wait(1)
-                                local pripart = vehicleModel.PrimaryPart :: BasePart ?
-                                if pripart then
-                                    local sound = occupantMaid:GiveTask(playSound(vehicleModel:GetAttribute("EngineSound") or 532147820, vehicleModel.PrimaryPart, true, 35))
-                                    occupantMaid:GiveTask(RunService.Stepped:Connect(function()
-                                        
-                                        if (vehicleModel.PrimaryPart :: BasePart ?) == nil then
-                                            print("destroyed")
-                                            occupantMaid:Destroy()
-                                            _maid:Destroy()
-                                        else
-                                            sound.PlaybackSpeed = 1 + math.sqrt(pripart.AssemblyLinearVelocity.Magnitude)/4
-                                        end
-                                    end))
+                                while task.wait() do 
+                                    updateWheel(wheelModel)
                                 end
                             end)
-                        else
-                            vehicleSeat:SetNetworkOwnershipAuto()
-                            vehicleSeat.AssemblyLinearVelocity = Vector3.new()
                         end
-                    end)) 
 
-                    --[[if vehicleModel:GetAttribute("Class") == BOAT_CLASS_KEY then
-                        local vectorMaxForce = vehicleModel:GetAttribute("Power") or 30000
-                        _maid:GiveTask(RunService.Stepped:Connect(function()
-                            local customThrottleNum = vehicleModel:GetAttribute(CUSTOM_THROTTLE_KEY)
-                            local seat = vehicleModel:FindFirstChild("VehicleSeat") :: VehicleSeat
+                        local linearVelocity = Instance.new("LinearVelocity")
+                        linearVelocity.VectorVelocity = Vector3.new(0, 0, 0)
+                        linearVelocity.RelativeTo = Enum.ActuatorRelativeTo.Attachment0
+                        linearVelocity.ForceLimitMode = Enum.ForceLimitMode.PerAxis
+                        linearVelocity.MaxAxesForce = Vector3.new(0, 0, 0)
+                        linearVelocity.Parent = chassis
+                        do
+                            local attachment = Instance.new("Attachment")
+                            attachment.Parent = chassis
+                            linearVelocity.Attachment0 = attachment
+                        end
+                        local angularVelocity = Instance.new("AngularVelocity")
+                        angularVelocity.AngularVelocity = Vector3.new()
+                        angularVelocity.RelativeTo = Enum.ActuatorRelativeTo.Attachment0
+                        angularVelocity.MaxTorque = 0
+                        angularVelocity.Parent = chassis
+                        do
+                            local attachment = angularVelocity.Attachment0 or Instance.new("Attachment")
+                            attachment.Parent = chassis
+                            angularVelocity.Attachment0 = attachment
+                        end
+                        linearVelocity.Enabled = false
+                        angularVelocity.Enabled = false
 
-                            if seat then
-                                local direction = math.sign(seat.CFrame.LookVector:Dot(seat.AssemblyLinearVelocity.Unit))
-                                local currentVelocity = vehicleModel.PrimaryPart.AssemblyLinearVelocity.Magnitude
-                                VectorForce.Force = Vector3.new(0,0,-customThrottleNum*(math.clamp(vectorMaxForce - ((vectorMaxForce)*(((currentVelocity)/ speedLimit))), 0, vectorMaxForce)))
-                                if customThrottleNum ~= 0 and direction ~= customThrottleNum then
-                                    VectorForce.Force = Vector3.new(0,0, direction*vectorMaxForce)
-                                end
+                        local alignPosition = Instance.new("AlignPosition")
+                        alignPosition.ForceLimitMode = Enum.ForceLimitMode.PerAxis
+                        alignPosition.MaxAxesForce = Vector3.new()
+                        alignPosition.Mode = Enum.PositionAlignmentMode.OneAttachment
+                        alignPosition.Parent = chassis
+                        do
+                            local attachment = Instance.new("Attachment")
+                            attachment.Parent = chassis
+                            alignPosition.Attachment0 = attachment
+                        end
+
+                        local alignOrientation = Instance.new("AlignOrientation")
+                        alignOrientation.Enabled = false
+                        alignOrientation.MaxTorque = 0
+
+                        alignOrientation.AlignType = Enum.AlignType.Perpendicular
+                        alignOrientation.Mode = Enum.OrientationAlignmentMode.OneAttachment
+                        alignOrientation.Parent = chassis
+                        do
+                            local attachment = Instance.new("Attachment")
+                            attachment.Parent = chassis
+                            alignOrientation.Attachment0 = attachment
+                        end
+
+                        local function setCarOwnership(player : Player?)
+                            if player ~= nil then 
+                                vehicleSeat:SetNetworkOwner(player)
+
+                                alignOrientation.Enabled = false
+                                alignPosition.Enabled = false
+
+                                linearVelocity.Enabled = true
+                                angularVelocity.Enabled = true
+                                
+                                
+                                -- if not player.PlayerGui:FindFirstChild("LocalScript") then 
+                                --     local ls = script.LocalScript:Clone()
+                                --     ls.Disabled = false
+                                --     ls.Parent = player.PlayerGui
+                                -- end
                             else
-                                _maid:Destroy()
+                                print(vehicleSeat)
+                                task.wait()
+                                vehicleSeat:SetNetworkOwnershipAuto()
+
+                                linearVelocity.Enabled = false
+                                angularVelocity.Enabled = false
+
+                                alignPosition.Enabled = true
+                                alignOrientation.Enabled = true
+                                
+                                --TEMPORARY!!
+                                -- for _, plr in pairs(game.Players:GetPlayers()) do
+                                --     if plr:WaitForChild("PlayerGui"):FindFirstChild("LocalScript") then 
+                                --         plr:WaitForChild("PlayerGui"):FindFirstChild("LocalScript"):Destroy()
+                                --     end
+                                -- end
+                            end
+                        end
+
+                        _maid:GiveTask(vehicleSeat.Changed:Connect(function(property)
+                            local hum = vehicleSeat.Occupant
+                            local player = if hum then game:GetService("Players"):GetPlayerFromCharacter(hum.Parent) else nil
+                            
+                            if property == "Occupant" then
+                                if player then
+                                    setCarOwnership(player)
+                                else
+                                    setCarOwnership()
+                                end
                             end
                         end))
-                    end]]
+
+                        setCarOwnership()
+                        _maid:GiveTask(RunService.Stepped:Connect(function()
+                            local raycastResult = workspace:Raycast(chassis.Position, chassis.CFrame.UpVector*Vector3.new(0, -height*1.2, 0), raycastParams)
+                            if raycastResult then 
+                                local position, normal = raycastResult.Position, raycastResult.Normal
+                                local chassisHeight = math.abs(chassis.CFrame:PointToObjectSpace(raycastResult.Position).Y) --(position - chassis.Position).Magnitude
+
+                                if vehicleSeat.Occupant == nil then			
+                                    chassis.AssemblyLinearVelocity = chassis.AssemblyLinearVelocity:Lerp(Vector3.new(0, chassis.AssemblyLinearVelocity.Y, 0), 0.1)
+                                    
+                                    local rotCf = (CFrame.new(position, position + normal)*CFrame.Angles(-math.pi/2, 0, 0))
+                                    local x, y, z = rotCf:ToOrientation()
+
+                                    if vehicleSeat.Throttle ~= 0 then
+                                        throttlespeed = math.min(throttlespeed + vehicleSeat.Throttle, 75)
+                                    else
+                                        throttlespeed = math.max(throttlespeed - 5, 0)
+                                    end
+                                    --chassis.LinearVelocity.VectorVelocity = Vector3.new(0,0,-throttlespeed)
+
+                                    alignPosition.MaxAxesForce = Vector3.new(1,math.huge,1)
+
+                                    alignPosition.Position = position + normal*((height))
+
+
+                                    alignOrientation.CFrame = CFrame.Angles(math.rad(x), math.rad(chassis.Orientation.Y - vehicleSeat.Steer*20*math.sign(vehicleSeat.Throttle)), math.rad(z))
+                                    alignOrientation.MaxTorque = math.huge
+
+                                end
+                            
+                                --alignOrientation.CFrame = CFrame.Angles(math.rad(x), math.rad(chassis.Orientation.Y - vehicleSeat.Steer*20*math.sign(vehicleSeat.Throttle)), math.rad(z))
+                                --alignOrientation.MaxTorque = math.huge
+                            else
+                                alignPosition.MaxAxesForce = Vector3.new()
+                                alignOrientation.MaxTorque = 0
+
+                            end
+                        end))
+
+                    else 
+                        
+                        local occupantMaid = _maid:GiveTask(Maid.new())
+                    
+                        local seat = vehicleModel:FindFirstChild("VehicleSeat") :: VehicleSeat ?
+                        local wheels = vehicleModel:FindFirstChild("Wheels") :: Model ?
+    
+                        if seat and wheels then
+                            for _,v in pairs(wheels:GetDescendants()) do
+                                if v:IsA("HingeConstraint") and v.ActuatorType == Enum.ActuatorType.Motor then
+                                    v.MotorMaxTorque = 999999999999
+                                    v.MotorMaxAcceleration = 0
+                                    v.AngularVelocity = 0                            
+                                end
+                            end
+                        end
+    
+                        _maid:GiveTask(vehicleSeat:GetPropertyChangedSignal("Occupant"):Connect(function()
+                            occupantMaid:DoCleaning()
+    
+                            --detecting lock
+                            local humanoid = vehicleSeat.Occupant
+                            local plr = if humanoid and humanoid.Parent then Players:GetPlayerFromCharacter(humanoid.Parent) else nil
+                            local vehicleData = getVehicleData(vehicleModel)
+                            if humanoid and vehicleModel:GetAttribute("isLocked") and plr.UserId ~= vehicleData.OwnerId then                            
+                                local seatWeld = vehicleSeat:FindFirstChild("SeatWeld")
+                                local char = humanoid.Parent
+                                humanoid.Sit = false
+                                if seatWeld then
+                                    game:GetService("Debris"):AddItem(seatWeld,0)
+                                end
+                                if char then
+                                    char:PivotTo(char.PrimaryPart.CFrame - char.PrimaryPart.CFrame.LookVector*5) --FIX DIS!
+                                end 
+                                return
+                            end
+                            
+                            if vehicleSeat.Occupant then
+                                vehicleSeat:SetNetworkOwner(plr)
+                                playSound(912961304, vehicleModel.PrimaryPart, false)
+                            
+                                task.spawn(function()
+                                    task.wait(1)
+                                    local pripart = vehicleModel.PrimaryPart :: BasePart ?
+                                    if pripart then
+                                        local sound = occupantMaid:GiveTask(playSound(vehicleModel:GetAttribute("EngineSound") or 532147820, vehicleModel.PrimaryPart, true, 35))
+                                        occupantMaid:GiveTask(RunService.Stepped:Connect(function()
+                                            
+                                            if (vehicleModel.PrimaryPart :: BasePart ?) == nil then
+                                                print("destroyed")
+                                                occupantMaid:Destroy()
+                                                _maid:Destroy()
+                                            else
+                                                sound.PlaybackSpeed = 1 + math.sqrt(pripart.AssemblyLinearVelocity.Magnitude)/4
+                                            end
+                                        end))
+                                    end
+                                end)
+                            else
+                                vehicleSeat:SetNetworkOwnershipAuto()
+                                vehicleSeat.AssemblyLinearVelocity = Vector3.new()
+                            end
+                        end)) 
+                    end                    
                 end
             end
             _maid:GiveTask(vehicleModel.AncestryChanged:Connect(function()

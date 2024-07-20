@@ -68,6 +68,9 @@ local function vehicleMovementUpdate(maid : Maid, vehicleModel : Model, movement
 
     if movementType == "Throttle" then
         if vehicleModel:GetAttribute("Class") == CAR_CLASS_KEY then
+            local hasChassis = vehicleModel:FindFirstChild("Chassis")
+            if hasChassis then return end
+
             local customThrottleNum = movementQuantity or (if seat:IsA("VehicleSeat") then seat.Throttle else 0) :: number
 
             vehicleModel:SetAttribute(CUSTOM_THROTTLE_KEY, customThrottleNum)
@@ -344,14 +347,18 @@ local function onCharacterAdded(char : Model)
     _maid:GiveTask(humanoid:GetPropertyChangedSignal("SeatPart"):Connect(function()
         local seat = humanoid.SeatPart
         if seat and seat:IsDescendantOf(workspace:WaitForChild("Assets"):WaitForChild("Temporaries"):WaitForChild("Vehicles")) then
-           
-            onCarSuspensionCheck()
-
             local vehicleModel = seat.Parent :: Model?  
             assert(vehicleModel and vehicleModel.PrimaryPart)
             local speedLimit = vehicleModel:GetAttribute("Speed") or 45
 
             local vehicleData = getVehicleData(vehicleModel)
+
+            local hasChassis = false 
+            if vehicleData.Class == CAR_CLASS_KEY and vehicleModel:FindFirstChild("Chassis") then
+                hasChassis = true 
+                onCarSuspensionCheck()
+            end
+
             Player.CameraMaxZoomDistance = 26;
             if vehicleModel:GetAttribute("Class") ~= "Vehicle" then
                 return
@@ -436,26 +443,27 @@ local function onCharacterAdded(char : Model)
                 end
                 --NetworkUtil.fireServer(ON_VEHICLE_CONTROL_EVENT, vehicleModel, "Move", directionStr)
             end))
+            if vehicleData.Class == BOAT_CLASS_KEY or vehicleData.Class == CAR_CLASS_KEY then
+                local VectorForce = vehicleModel.PrimaryPart:FindFirstChild("GeneratedVectorForce") :: VectorForce?
+                if hasChassis == false and VectorForce then 
+                    local vectorMaxForce = vehicleModel:GetAttribute("Power") or 30000
+                    vehicleControlMaid:GiveTask(RunService.Stepped:Connect(function()
+                        local customThrottleNum = vehicleModel:GetAttribute(CUSTOM_THROTTLE_KEY)
+                        local seat = vehicleModel:FindFirstChild("VehicleSeat") :: VehicleSeat
 
-            if vehicleModel:GetAttribute("Class") == BOAT_CLASS_KEY then
-                local vectorMaxForce = vehicleModel:GetAttribute("Power") or 30000
-                local VectorForce = vehicleModel.PrimaryPart:FindFirstChild("GeneratedVectorForce") :: VectorForce;
-                vehicleControlMaid:GiveTask(RunService.Stepped:Connect(function()
-                    local customThrottleNum = vehicleModel:GetAttribute(CUSTOM_THROTTLE_KEY)
-                    local seat = vehicleModel:FindFirstChild("VehicleSeat") :: VehicleSeat
+                        if seat then
+                            local direction = math.sign(seat.CFrame.LookVector:Dot(seat.AssemblyLinearVelocity.Unit))
+                            local currentVelocity = vehicleModel.PrimaryPart.AssemblyLinearVelocity.Magnitude
 
-                    if seat then
-                        local direction = math.sign(seat.CFrame.LookVector:Dot(seat.AssemblyLinearVelocity.Unit))
-                        local currentVelocity = vehicleModel.PrimaryPart.AssemblyLinearVelocity.Magnitude
-
-                        VectorForce.Force = Vector3.new(0,0,-customThrottleNum*(math.clamp(vectorMaxForce - ((vectorMaxForce)*(((currentVelocity)/ speedLimit))), 0, vectorMaxForce)))
-                        if customThrottleNum ~= 0 and direction ~= customThrottleNum then
-                            VectorForce.Force = Vector3.new(0,0, direction*vectorMaxForce)
+                            VectorForce.Force = Vector3.new(0,0,-customThrottleNum*(math.clamp(vectorMaxForce - ((vectorMaxForce)*(((currentVelocity)/ speedLimit))), 0, vectorMaxForce)))
+                            if customThrottleNum ~= 0 and direction ~= customThrottleNum then
+                                VectorForce.Force = Vector3.new(0,0, direction*vectorMaxForce)
+                            end
+                        else
+                            _maid:Destroy()
                         end
-                    else
-                        _maid:Destroy()
-                    end
-                end))
+                    end))
+                end
             end
         else
             Player.CameraMaxZoomDistance = CAR_CAMERA_ZOOM_DIST
