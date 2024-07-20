@@ -185,15 +185,17 @@ local function onCarSuspensionCheck()
     local angularVelocity = chassis:FindFirstChild("AngularVelocity") :: AngularVelocity
 
     local alignPosition = chassis:FindFirstChild("AlignPosition") :: AlignPosition
+    local alignOrientation = chassis:FindFirstChild("AlignOrientation") :: AlignOrientation
 
     local raycastParams = RaycastParams.new()
     raycastParams.FilterDescendantsInstances = {vehicle}
 
     for i, v in pairs(vehicle:GetDescendants()) do
-        if v:IsA("BasePart") then
+        if v:IsA("BasePart") and not v.Massless then
             mass = mass + (v:GetMass() * 196.2)
         end
     end
+
 
     local function updateWheel(wheelModel : Model)
         local wheelPart = wheelModel:FindFirstChild("WheelPart") :: BasePart
@@ -257,16 +259,10 @@ local function onCarSuspensionCheck()
         --game.Players.LocalPlayer.PlayerGui.LocalScript:Destroy()
     end
 
-    local db = false
     _maid:GiveTask(RunService.Stepped:Connect(function()
         if vehicleSeat.Occupant then
             if alignPosition.Enabled then return end 
-            
-            if db then return end 
-            db = true
-            for _,wheelModel : Model in pairs(wheels:GetChildren()) do 
-                updateWheel(wheelModel)
-            end
+            if alignOrientation.Enabled then return end
 
             linearVelocity.MaxAxesForce = Vector3.new()  --Vector3.one*math.huge
 
@@ -329,7 +325,10 @@ local function onCarSuspensionCheck()
             else
                 onCarResetSpecs()
             end
-            db = false
+            
+            for _,wheelModel : Model in pairs(wheels:GetChildren()) do 
+                updateWheel(wheelModel)
+            end
         else
             onClientCarCleanup()
         end
