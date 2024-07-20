@@ -65,15 +65,14 @@ local function vehicleMovementUpdate(maid : Maid, vehicleModel : Model, movement
     local speedLimit = vehicleModel:GetAttribute("Speed") or 45
 
     assert(seat and vehicleModel.PrimaryPart)
+    local hasChassis = vehicleModel:FindFirstChild("Chassis")
 
     if movementType == "Throttle" then
+        local customThrottleNum = movementQuantity or (if seat:IsA("VehicleSeat") then seat.Throttle else 0) :: number
+        vehicleModel:SetAttribute(CUSTOM_THROTTLE_KEY, customThrottleNum)
+
+        if hasChassis then return end
         if vehicleModel:GetAttribute("Class") == CAR_CLASS_KEY then
-            local hasChassis = vehicleModel:FindFirstChild("Chassis")
-            if hasChassis then return end
-
-            local customThrottleNum = movementQuantity or (if seat:IsA("VehicleSeat") then seat.Throttle else 0) :: number
-
-            vehicleModel:SetAttribute(CUSTOM_THROTTLE_KEY, customThrottleNum)
             local wheels = vehicleModel:FindFirstChild("Wheels") :: Model
 
             if seat and wheels then
@@ -86,7 +85,7 @@ local function vehicleMovementUpdate(maid : Maid, vehicleModel : Model, movement
                         if customThrottleNum ~= 0 then
                             v.MotorMaxTorque = 5--999999999999
                             v.MotorMaxAcceleration = if math.sign(accDir*customThrottleNum) == 1 then 60 else 25
-                            if math.sign(accDir*customThrottleNum) == 1 then
+                            if math.sign(accDir*customThrottleNum) == 1 then 
                                 v.AngularVelocity = 0
                             end
                         else
@@ -100,7 +99,9 @@ local function vehicleMovementUpdate(maid : Maid, vehicleModel : Model, movement
         end
     else
         local customSteer =  movementQuantity or (if seat:IsA("VehicleSeat") then seat.Steer else 0) :: number
+        vehicleModel:SetAttribute(CUSTOM_STEER_KEY, customSteer) 
 
+        if hasChassis then return end
         if vehicleModel:GetAttribute("Class") == CAR_CLASS_KEY then
             local wheels = vehicleModel:FindFirstChild("Wheels") :: Model ?
 
@@ -269,6 +270,9 @@ local function onCarSuspensionCheck()
 
     _maid:GiveTask(RunService.Stepped:Connect(function()
         if vehicleSeat.Occupant then
+            local customThrottleNum = vehicle:GetAttribute(CUSTOM_THROTTLE_KEY) :: number 
+            local customSteerNum = vehicle:GetAttribute(CUSTOM_STEER_KEY) :: number
+
             if alignPosition.Enabled then return end 
             if alignOrientation.Enabled then return end
 
@@ -283,14 +287,14 @@ local function onCarSuspensionCheck()
 
                 local speed = chassis.CFrame:VectorToObjectSpace(chassis.AssemblyLinearVelocity)
 
-                if vehicleSeat.Throttle ~= 0 then
+                if customThrottleNum ~= 0 then
 
                 --[[local velocity = chassis.CFrame.lookVector * vehicleSeat.Throttle * maxSpeed
                 chassis.AssemblyLinearVelocity = car.Chassis.AssemblyLinearVelocity:Lerp(velocity, 0.1)
                 linearVelocity.MaxAxesForce = Vector3.new(0, 0, 0)]]
                     throttlespeed = math.clamp(
-                        (if (-speed.Z)*vehicleSeat.Throttle < 6 then -speed.Z else throttlespeed) 
-                            + (if (-speed.Z)*vehicleSeat.Throttle < 6 then 15 else 0.3)*vehicleSeat.Throttle*(1 - throttlespeed/maxSpeed), -maxSpeed*0.4, maxSpeed)
+                        (if (-speed.Z)*customThrottleNum < 6 then -speed.Z else throttlespeed) 
+                            + (if (-speed.Z)*customThrottleNum < 6 then 15 else 0.3)*customThrottleNum*(1 - throttlespeed/maxSpeed), -maxSpeed*0.4, maxSpeed)
                     -- local velocity = forwardV3*throttlespeed
                     -- chassis.AssemblyLinearVelocity = chassis.AssemblyLinearVelocity:Lerp(velocity, 0.1)
                     -- linearVelocity.MaxAxesForce = Vector3.new()
@@ -315,14 +319,14 @@ local function onCarSuspensionCheck()
 
                 local rotVelocity = chassis.CFrame:VectorToWorldSpace(
                     Vector3.new(
-                        vehicleSeat.Throttle * maxSpeed / 50, 
+                        customThrottleNum * maxSpeed / 50, 
                         0, 
-                        -chassis.AssemblyAngularVelocity.Y * 5 * vehicleSeat.Throttle
+                        -chassis.AssemblyAngularVelocity.Y * 5 * customThrottleNum
                     )
                 )
 
                 if math.abs(-speed.Z) > 2 then
-                    rotVelocity = rotVelocity + chassis.CFrame:VectorToWorldSpace((Vector3.new(0, -vehicleSeat.Steer * turnSpeed * (math.clamp(-speed.Z/10, -1, 1)), 0)))
+                    rotVelocity = rotVelocity + chassis.CFrame:VectorToWorldSpace((Vector3.new(0, -customSteerNum * turnSpeed * (math.clamp(-speed.Z/10, -1, 1)), 0)))
                     --angularVelocity.MaxTorque = math.huge
                 else
                     --angularVelocity.MaxTorque = mass/((4+2+4)/3) --math.huge --mass*12 --

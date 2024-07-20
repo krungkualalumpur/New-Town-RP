@@ -618,7 +618,6 @@ function Vehicle.init(maid : Maid)
                         assert(wheels)
                         local chassis = chassisModel:FindFirstChild("Chassis") :: BasePart
                         assert(chassis)
-                        local mass = 0
 
                         local height = vehicleModel:GetAttribute("Height") 
                         local suspension = vehicleModel:GetAttribute("Suspension") 
@@ -630,12 +629,6 @@ function Vehicle.init(maid : Maid)
 
                         local throttlespeed = 0
 
-                        for i, v in pairs(vehicleModel:GetChildren()) do
-                            if v:IsA("BasePart") then
-                                mass = mass + (v:GetMass() * 196.2)
-                            end
-                        end
-                    
 
                         --local movement = Vector2.new()
 
@@ -819,6 +812,24 @@ function Vehicle.init(maid : Maid)
                                 local chassisHeight = math.abs(chassis.CFrame:PointToObjectSpace(raycastResult.Position).Y) --(position - chassis.Position).Magnitude
 
                                 if vehicleSeat.Occupant == nil then			
+                                            
+                                    local mass = 0
+
+                                    for i, v in pairs(vehicleModel:GetChildren()) do
+                                        if v:IsA("BasePart") then
+                                            mass = mass + (v:GetMass() * 196.2)
+                                            if v:IsA("Seat") then
+                                                local humanoid = v.Occupant
+                                                local char = if humanoid then humanoid.Parent else nil 
+                                                if char then
+                                                     for _,v in pairs(char:GetDescendants()) do
+                                                        if v:IsA("BasePart") and not v.Massless then mass += v:GetMass()*196.2 end 
+                                                     end
+                                                end
+                                            end
+                                        end
+                                    end
+                    
                                     chassis.AssemblyLinearVelocity = chassis.AssemblyLinearVelocity:Lerp(Vector3.new(0, chassis.AssemblyLinearVelocity.Y, 0), 0.1)
                                     
                                     local rotCf = (CFrame.new(position, position + normal)*CFrame.Angles(-math.pi/2, 0, 0))
@@ -831,12 +842,12 @@ function Vehicle.init(maid : Maid)
                                     end
                                     --chassis.LinearVelocity.VectorVelocity = Vector3.new(0,0,-throttlespeed)
 
-                                    alignPosition.MaxAxesForce = Vector3.new(1,math.huge,1)
+                                    alignPosition.MaxAxesForce = Vector3.new(mass/4,math.huge,mass/4)
 
                                     alignPosition.Position = position + normal*((height*0.5))
 
 
-                                    alignOrientation.CFrame = CFrame.Angles(math.rad(x), math.rad(chassis.Orientation.Y - vehicleSeat.Steer*20*math.sign(vehicleSeat.Throttle)), math.rad(z))
+                                    alignOrientation.CFrame = CFrame.Angles(math.rad(x), --[[math.rad(chassis.Orientation.Y - vehicleSeat.Steer*20*math.sign(vehicleSeat.Throttle))]]0, math.rad(z))
                                     alignOrientation.MaxTorque = math.huge
 
                                 end
