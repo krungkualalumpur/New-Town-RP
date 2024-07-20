@@ -356,7 +356,7 @@ local function onCharacterAdded(char : Model)
     local vehicleControlMaid = _maid:GiveTask(Maid.new())
     _maid:GiveTask(humanoid:GetPropertyChangedSignal("SeatPart"):Connect(function()
         local seat = humanoid.SeatPart
-        if seat and seat:IsDescendantOf(workspace:WaitForChild("Assets"):WaitForChild("Temporaries"):WaitForChild("Vehicles")) then
+        if seat and seat:IsA("VehicleSeat") and seat:IsDescendantOf(workspace:WaitForChild("Assets"):WaitForChild("Temporaries"):WaitForChild("Vehicles")) then
             local vehicleModel = seat.Parent :: Model?  
             assert(vehicleModel and vehicleModel.PrimaryPart)
             local speedLimit = vehicleModel:GetAttribute("Speed") or 45

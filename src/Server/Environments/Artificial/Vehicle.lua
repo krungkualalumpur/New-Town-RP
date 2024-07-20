@@ -735,6 +735,7 @@ function Vehicle.init(maid : Maid)
                         alignPosition.ForceLimitMode = Enum.ForceLimitMode.PerAxis
                         alignPosition.MaxAxesForce = Vector3.new()
                         alignPosition.Mode = Enum.PositionAlignmentMode.OneAttachment
+                        alignPosition.ReactionForceEnabled = true
                         alignPosition.Parent = chassis
                         do
                             local attachment = Instance.new("Attachment")
@@ -742,7 +743,8 @@ function Vehicle.init(maid : Maid)
                             alignPosition.Attachment0 = attachment
                         end
 
-                        local alignOrientation = Instance.new("AlignOrientation")
+                        local alignOrientation = Instance.new("AlignOrientation") 
+                        alignOrientation.ReactionTorqueEnabled = true
                         alignOrientation.Enabled = false
                         alignOrientation.MaxTorque = 0
 
@@ -844,10 +846,10 @@ function Vehicle.init(maid : Maid)
 
                                     alignPosition.MaxAxesForce = Vector3.new(mass/4,math.huge,mass/4)
 
-                                    alignPosition.Position = position + normal*((height*0.5))
+                                    alignPosition.Position = position + normal*((height*0.57))
+ 
 
-
-                                    alignOrientation.CFrame = CFrame.Angles(math.rad(x), --[[math.rad(chassis.Orientation.Y - vehicleSeat.Steer*20*math.sign(vehicleSeat.Throttle))]]0, math.rad(z))
+                                    alignOrientation.CFrame = CFrame.Angles(math.rad(x), math.rad(chassis.Orientation.Y - vehicleSeat.Steer*20*math.sign(vehicleSeat.Throttle)), math.rad(z))
                                     alignOrientation.MaxTorque = math.huge
 
                                 end
