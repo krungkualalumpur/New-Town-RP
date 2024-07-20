@@ -198,7 +198,8 @@ local function onCarSuspensionCheck()
             mass = mass + (v:GetMass() * 196.2)
         end
     end
-
+    local force = mass * suspension
+    local damping = force/bounce -- 100 is bounce
 
     local function updateWheel(wheelModel : Model)
         local wheelPart = wheelModel:FindFirstChild("WheelPart") :: BasePart
@@ -210,30 +211,31 @@ local function onCarSuspensionCheck()
         local vectorForce = thruster:FindFirstChild("VectorForce") :: VectorForce or Instance.new("VectorForce")
 
         local attachment = vectorForce.Attachment0 ::Attachment or Instance.new("Attachment")
+        attachment.Parent = thruster
         vectorForce.Attachment0 = attachment
         vectorForce.RelativeTo = Enum.ActuatorRelativeTo.Attachment0
         vectorForce.Parent = thruster
-        attachment.Parent = thruster
 
 
-        local raycastResult = workspace:Raycast(thruster.Position, thruster.CFrame.UpVector*Vector3.new(0, -height, 0), raycastParams)
+        local raycastResult = workspace:Raycast(thruster.Position, -thruster.CFrame.UpVector*height, raycastParams)
         if raycastResult and raycastResult.Instance.CanCollide and vehicleSeat.Occupant then
-            local force = mass * suspension
+            
             realThrusterHeight = (raycastResult.Position - thruster.Position).Magnitude--math.abs(thruster.CFrame:PointToObjectSpace(raycastResult.Position).Y)
             --local pos, normal = raycast.Position, raycast.Normal
             --local chassisWeld = thruster:FindFirstChild("ChassisWeld") :: Weld
-            local damping = force/bounce -- 100 is bounce
             local rawForce = Vector3.new(0,((height - realThrusterHeight)^2) * (force / height^2),0)
-            local thrusterDamping = thruster.CFrame:ToObjectSpace(CFrame.new(thruster.AssemblyLinearVelocity + thruster.Position)).Position * damping
+            local thrusterDamping = thruster.CFrame:ToObjectSpace(CFrame.new(thruster.Velocity + thruster.Position)).Position * damping
             vectorForce.Force = rawForce - Vector3.new(0, thrusterDamping.Y, 0)	
         else
             vectorForce.Force = Vector3.new()
         end
         local wheelWeld = thruster:FindFirstChild("WheelWeld") :: Weld
+        local wheelDisplayWeld = wheelPart:FindFirstChild("WheelDisplayWeld") :: Weld
 
         local speed = chassis.CFrame:VectorToObjectSpace(chassis.AssemblyLinearVelocity)
 
         local wheelIsInFront = (chassis.CFrame:Inverse()*thruster.CFrame).Position.Z < 0
+        local wheelIsInRight = (chassis.CFrame:Inverse()*thruster.CFrame).Position.X > 0
         local direction = -math.sign(speed.Z)
         --if wheelIsInFront then
         --	local turnVel = (chassis.CFrame:VectorToObjectSpace(chassis.AssemblyAngularVelocity).Y*40)*direction
@@ -244,6 +246,9 @@ local function onCarSuspensionCheck()
         wheelWeld.C0 = wheelWeld.C0:Lerp(c0, 0.1) --*CFrame.Angles(math.pi/2, 0, 0)
         wheelWeld.C1 = CFrame.Angles(0, math.pi, 0)
 
+        if raycastResult then
+            wheelDisplayWeld.C0 = wheelDisplayWeld.C0*CFrame.Angles(math.rad(if wheelIsInRight then speed.Z else -speed.Z), 0, 0)
+        end
         return
     end
 
@@ -284,8 +289,8 @@ local function onCarSuspensionCheck()
                 chassis.AssemblyLinearVelocity = car.Chassis.AssemblyLinearVelocity:Lerp(velocity, 0.1)
                 linearVelocity.MaxAxesForce = Vector3.new(0, 0, 0)]]
                     throttlespeed = math.clamp(
-                        (if math.abs(speed.Z) < 3 then -speed.Z else throttlespeed) 
-                            + (if math.abs(speed.Z) < 3 then 5 else 0.3)*vehicleSeat.Throttle*(1 - throttlespeed/maxSpeed), -maxSpeed*0.4, maxSpeed)
+                        (if (-speed.Z)*vehicleSeat.Throttle < 6 then -speed.Z else throttlespeed) 
+                            + (if (-speed.Z)*vehicleSeat.Throttle < 6 then 15 else 0.3)*vehicleSeat.Throttle*(1 - throttlespeed/maxSpeed), -maxSpeed*0.4, maxSpeed)
                     -- local velocity = forwardV3*throttlespeed
                     -- chassis.AssemblyLinearVelocity = chassis.AssemblyLinearVelocity:Lerp(velocity, 0.1)
                     -- linearVelocity.MaxAxesForce = Vector3.new()
@@ -314,18 +319,19 @@ local function onCarSuspensionCheck()
                         0, 
                         -chassis.AssemblyAngularVelocity.Y * 5 * vehicleSeat.Throttle
                     )
-                )*0.3
+                )
 
-                if math.abs(-speed.Z) > 1 then
-                    rotVelocity = rotVelocity + chassis.CFrame:VectorToWorldSpace((Vector3.new(0, -vehicleSeat.Steer * (math.clamp(-speed.Z, -maxSpeed*0.5, maxSpeed*0.5)/(maxSpeed)) * turnSpeed, 0)))
+                if math.abs(-speed.Z) > 2 then
+                    rotVelocity = rotVelocity + chassis.CFrame:VectorToWorldSpace((Vector3.new(0, -vehicleSeat.Steer * turnSpeed * (math.clamp(-speed.Z/10, -1, 1)), 0)))
                     --angularVelocity.MaxTorque = math.huge
                 else
                     --angularVelocity.MaxTorque = mass/((4+2+4)/3) --math.huge --mass*12 --
                 end
                 angularVelocity.MaxTorque = 0
-                chassis.AssemblyAngularVelocity = chassis.AssemblyAngularVelocity:Lerp(rotVelocity, 0.1)
+                chassis.RotVelocity = chassis.RotVelocity:Lerp(rotVelocity, 0.1)
 
             else
+                throttlespeed = 0
                 onCarResetSpecs()
             end
             

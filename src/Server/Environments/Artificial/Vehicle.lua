@@ -612,12 +612,12 @@ function Vehicle.init(maid : Maid)
                     --local occupantMaid = _maid:GiveTask(Maid.new())
                     print(hasChassis, vehicleModel:FindFirstChild("Chassis"))
                     if hasChassis then 
-                        local chassisModel = vehicleModel:FindFirstChild("Chassis")
+                        local chassisModel = vehicleModel:FindFirstChild("Chassis") :: Model
                         assert(chassisModel)
-                        local wheels = chassisModel:FindFirstChild("Wheels")
-
-                        local chassis = chassisModel:FindFirstChild("Chassis")
-
+                        local wheels = chassisModel:FindFirstChild("Wheels") :: Model
+                        assert(wheels)
+                        local chassis = chassisModel:FindFirstChild("Chassis") :: BasePart
+                        assert(chassis)
                         local mass = 0
 
                         local height = vehicleModel:GetAttribute("Height") 
@@ -676,7 +676,7 @@ function Vehicle.init(maid : Maid)
                         end
 
 
-                        for _,wheelModel : Model in pairs(wheels:GetChildren()) do 
+                        for _,wheelModel : Model in pairs(wheels:GetChildren() :: any) do 
                             local wheelPart = wheelModel:FindFirstChild("WheelPart") :: BasePart
                             local thruster = wheelModel:FindFirstChild("Thruster") :: BasePart
                             local wheelDisplay = wheelModel:FindFirstChild("WheelDisplay") :: BasePart
@@ -833,7 +833,7 @@ function Vehicle.init(maid : Maid)
 
                                     alignPosition.MaxAxesForce = Vector3.new(1,math.huge,1)
 
-                                    alignPosition.Position = position + normal*((height))
+                                    alignPosition.Position = position + normal*((height*0.5))
 
 
                                     alignOrientation.CFrame = CFrame.Angles(math.rad(x), math.rad(chassis.Orientation.Y - vehicleSeat.Steer*20*math.sign(vehicleSeat.Throttle)), math.rad(z))
@@ -852,7 +852,6 @@ function Vehicle.init(maid : Maid)
 
                     else 
                         
-                        local occupantMaid = _maid:GiveTask(Maid.new())
                     
                         local seat = vehicleModel:FindFirstChild("VehicleSeat") :: VehicleSeat ?
                         local wheels = vehicleModel:FindFirstChild("Wheels") :: Model ?
@@ -867,53 +866,52 @@ function Vehicle.init(maid : Maid)
                             end
                         end
     
-                        _maid:GiveTask(vehicleSeat:GetPropertyChangedSignal("Occupant"):Connect(function()
-                            occupantMaid:DoCleaning()
-    
-                            --detecting lock
-                            local humanoid = vehicleSeat.Occupant
-                            local plr = if humanoid and humanoid.Parent then Players:GetPlayerFromCharacter(humanoid.Parent) else nil
-                            local vehicleData = getVehicleData(vehicleModel)
-                            if humanoid and vehicleModel:GetAttribute("isLocked") and plr.UserId ~= vehicleData.OwnerId then                            
-                                local seatWeld = vehicleSeat:FindFirstChild("SeatWeld")
-                                local char = humanoid.Parent
-                                humanoid.Sit = false
-                                if seatWeld then
-                                    game:GetService("Debris"):AddItem(seatWeld,0)
-                                end
-                                if char then
-                                    char:PivotTo(char.PrimaryPart.CFrame - char.PrimaryPart.CFrame.LookVector*5) --FIX DIS!
-                                end 
-                                return
+                       
+                    end  
+                    local occupantMaid = _maid:GiveTask(Maid.new())
+
+                    _maid:GiveTask(vehicleSeat:GetPropertyChangedSignal("Occupant"):Connect(function()
+                        occupantMaid:DoCleaning()
+
+                        --detecting lock
+                        local humanoid = vehicleSeat.Occupant
+                        local plr = if humanoid and humanoid.Parent then Players:GetPlayerFromCharacter(humanoid.Parent) else nil
+                        local vehicleData = getVehicleData(vehicleModel)
+                        if humanoid and vehicleModel:GetAttribute("isLocked") and plr.UserId ~= vehicleData.OwnerId then                            
+                            local seatWeld = vehicleSeat:FindFirstChild("SeatWeld")
+                            local char = humanoid.Parent
+                            humanoid.Sit = false
+                            if seatWeld then
+                                game:GetService("Debris"):AddItem(seatWeld,0)
                             end
-                            
-                            if vehicleSeat.Occupant then
-                                vehicleSeat:SetNetworkOwner(plr)
-                                playSound(912961304, vehicleModel.PrimaryPart, false)
-                            
-                                task.spawn(function()
-                                    task.wait(1)
+                            if char then
+                                char:PivotTo(char.PrimaryPart.CFrame - char.PrimaryPart.CFrame.LookVector*5) --FIX DIS!
+                            end 
+                            return
+                        end
+                        
+                        if vehicleSeat.Occupant then
+                            vehicleSeat:SetNetworkOwner(plr)
+                            playSound(912961304, vehicleModel.PrimaryPart, false)
+                        
+                            local delayTime = 1
+                            local t = tick()
+                            local sound = occupantMaid:GiveTask(playSound(vehicleModel:GetAttribute("EngineSound") or 532147820, vehicleModel.PrimaryPart, true, 35))
+                            sound.Volume = 0
+                            occupantMaid:GiveTask(RunService.Stepped:Connect(function()
+                                if tick() - t > delayTime then     
+                                    sound.Volume = 1  
                                     local pripart = vehicleModel.PrimaryPart :: BasePart ?
-                                    if pripart then
-                                        local sound = occupantMaid:GiveTask(playSound(vehicleModel:GetAttribute("EngineSound") or 532147820, vehicleModel.PrimaryPart, true, 35))
-                                        occupantMaid:GiveTask(RunService.Stepped:Connect(function()
-                                            
-                                            if (vehicleModel.PrimaryPart :: BasePart ?) == nil then
-                                                print("destroyed")
-                                                occupantMaid:Destroy()
-                                                _maid:Destroy()
-                                            else
-                                                sound.PlaybackSpeed = 1 + math.sqrt(pripart.AssemblyLinearVelocity.Magnitude)/4
-                                            end
-                                        end))
+                                    if pripart then         
+                                        sound.PlaybackSpeed = 1 + math.sqrt(pripart.AssemblyLinearVelocity.Magnitude)/4     
                                     end
-                                end)
-                            else
-                                vehicleSeat:SetNetworkOwnershipAuto()
-                                vehicleSeat.AssemblyLinearVelocity = Vector3.new()
-                            end
-                        end)) 
-                    end                    
+                                end
+                            end))
+                        else
+                            vehicleSeat:SetNetworkOwnershipAuto()
+                            vehicleSeat.AssemblyLinearVelocity = Vector3.new()
+                        end
+                    end)) 
                 end
             end
             _maid:GiveTask(vehicleModel.AncestryChanged:Connect(function()
