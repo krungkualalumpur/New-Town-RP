@@ -958,17 +958,18 @@ return function(
     })
 
     if RunService:IsRunning() then
-        InputHandler:Map("ThrowItemConsole", "Keyboard", {Enum.KeyCode.F}, "Press", onThrow, function()
+        local inputHandler = maid:GiveTask(InputHandler.new())
+        inputHandler:Map("ThrowItemConsole", "Keyboard", {Enum.KeyCode.F}, "Press", onThrow, function()
 
         end)
-        InputHandler:Map("ThrowItemPC", "Console", {Enum.KeyCode.ButtonB}, "Press", onThrow, function()
+        inputHandler:Map("ThrowItemPC", "Console", {Enum.KeyCode.ButtonB}, "Press", onThrow, function()
 
         end)
 
-        InputHandler:Map("DeleteItemConsole", "Keyboard", {Enum.KeyCode.X}, "Press", onDelete, function()
+        inputHandler:Map("DeleteItemConsole", "Keyboard", {Enum.KeyCode.X}, "Press", onDelete, function()
 
         end)
-        InputHandler:Map("DeleteItemPC", "Console", {Enum.KeyCode.ButtonX}, "Press", onDelete, function()
+        inputHandler:Map("DeleteItemPC", "Console", {Enum.KeyCode.ButtonX}, "Press", onDelete, function()
 
         end)
        

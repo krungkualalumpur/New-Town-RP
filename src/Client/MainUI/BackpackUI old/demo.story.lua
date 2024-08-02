@@ -149,7 +149,10 @@ return function(target : CoreGui)
         onEquip, 
         onDelete,
 
-        maid:GiveTask(Signal.new())
+        stateList,
+
+        onVehicleSpawn,
+        onVehicleDelete
     )
     backpackUI.Parent = target
     print(backpackUI)
