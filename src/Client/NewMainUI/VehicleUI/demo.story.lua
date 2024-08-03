@@ -6,10 +6,19 @@ local Maid = require(ReplicatedStorage:WaitForChild("Packages"):WaitForChild("Ma
 local ColdFusion = require(ReplicatedStorage:WaitForChild("Packages"):WaitForChild("ColdFusion8"))
 local Signal = require(ReplicatedStorage:WaitForChild("Packages"):WaitForChild("Signal"))
 --modules
+local VehicleUI = require(ReplicatedStorage:WaitForChild("Client"):WaitForChild("NewMainUI"):WaitForChild("VehicleUI"))
+
 local BackpackUtil = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("BackpackUtil"))
 local BackpackUI = require(ReplicatedStorage:WaitForChild("Client"):WaitForChild("MainUI"):WaitForChild("BackpackUI"))
 local ItemUtil = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("ItemUtil"))
 --types
+type Signal = Signal.Signal
+
+type Fuse = ColdFusion.Fuse
+type State<T> = ColdFusion.State<T>
+type ValueState<T> = ColdFusion.ValueState<T>
+type CanBeState<T> = ColdFusion.CanBeState<T>
+
 type ToolData = BackpackUtil.ToolData<boolean>
 export type VehicleData = ItemUtil.ItemInfo & {
     Key : string,
@@ -17,6 +26,10 @@ export type VehicleData = ItemUtil.ItemInfo & {
     OwnerId : number,
     DestroyLocked : boolean
 }
+--constants
+--variables
+--references
+--local functions
 local function newVehicleData(
     itemType : ItemUtil.ItemType,
     class : string,
@@ -36,66 +49,13 @@ local function newVehicleData(
         DestroyLocked = destroyLocked
     }
 end
-
---constants
---variables
---references
---local functions
-local function getItemInfo(
-    class : string,
-    name : string
-) : ToolData
-    return {
-        Class = class,
-        Name = name,
-        IsEquipped = false,
-        OnRelease = false
-    }
-end
 --class
 return function(target : CoreGui)
-    local maid = Maid.new() 
-
+    local maid = Maid.new()
     local _fuse = ColdFusion.fuse(maid)
-    local _new = _fuse.new
-    local _import = _fuse.import
-    local _bind = _fuse.bind
-    local _clone = _fuse.clone
-
-    local _Computed = _fuse.Computed
     local _Value = _fuse.Value
 
-    local function getRandomItemInfo()
-        local rand1 = math.random(1,2)
-        
-        local function getRandomNum()
-            return math.random(1, 120)
-        end
-         
-        return getItemInfo(
-            if rand1 == 1 then "ha" else "hi", 
-            string.format("%s%s%s", string.char(getRandomNum()), string.char(getRandomNum()), string.char(getRandomNum()))
-        )
-    end 
-
-    local items = _Value({
-        getRandomItemInfo(),
-        getRandomItemInfo(),
-        getRandomItemInfo(),
-        getRandomItemInfo(),
-        getRandomItemInfo(),
-        getRandomItemInfo(),
-        getRandomItemInfo(), 
-        getRandomItemInfo(),
-        getRandomItemInfo(),
-        getRandomItemInfo(),
-
-    }) 
-
-    local onEquip = maid:GiveTask(Signal.new())
-    local onDelete = maid:GiveTask(Signal.new())
-
-    local list = {
+    local vehicleList = {
         _Value(newVehicleData(
             "Vehicle",
             "Motorcycle",
@@ -129,47 +89,22 @@ return function(target : CoreGui)
             true
         )),
     }
-    for i = 1, 15 do
-        table.insert(list,  _Value(newVehicleData(
-            "Vehicle",
-            "Motorcycle",
-            false,
-            "Motorcycle",
-            12121211,
-            true
-        )))
-    end
-    local stateList : {[number] : ColdFusion.ValueState<VehicleData ?>} = list :: any
 
     local onVehicleSpawn = maid:GiveTask(Signal.new())
     local onVehicleDelete = maid:GiveTask(Signal.new())
-    local backpackUI = BackpackUI(
-        maid, 
-        items,
-        onEquip, 
-        onDelete,
 
-        stateList,
-
+    local onBack = maid:GiveTask(Signal.new())
+    local out = VehicleUI(
+        maid,
+        vehicleList :: any,
         onVehicleSpawn,
-        onVehicleDelete
+        onVehicleDelete,
+        onBack,
+        
+        false
     )
-    backpackUI.Parent = target
-    print(backpackUI)
-
-    maid:GiveTask(onEquip:Connect(function(itemName : string)
-        print("Onclick1 ", itemName)
-    end))
-    maid:GiveTask(onDelete:Connect(function(itemName : string)
-        print("Onclick2 ", itemName)
-
-    end))
-
-    maid:GiveTask(onVehicleSpawn:Connect(function(t1, vName)
-        print("Test1 ", vName)
-    end))
-
-    return function() 
+    out.Parent = target
+    return function()
         maid:Destroy()
     end
 end

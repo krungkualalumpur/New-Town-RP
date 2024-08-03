@@ -16,6 +16,7 @@ local ToolActions = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChil
 local NotificationUtil = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("NotificationUtil"))
 local RarityUtil = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("RarityUtil"))
 local Fishes = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Fishing"))
+local CustomEnums = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("CustomEnum"))
 
 local PhoneDisplay = require(ReplicatedStorage:WaitForChild("Client"):WaitForChild("ToolManager"):WaitForChild("PhoneDisplay")) 
 --types
@@ -32,6 +33,8 @@ local ON_TOOL_ACTIVATED = "OnToolActivated"
 local ON_WRITING_FINISHED = "OnWritingFinished"
 
 local ON_PHONE_MESSAGE_START = "OnPhoneMessageStart"
+
+local ON_TOOL_ANIM_PLAY = "OnAnimPlau"
 --variables
 --references
 local Player = Players.LocalPlayer
@@ -43,8 +46,6 @@ local raycastParams = RaycastParams.new()
 raycastParams.FilterType = Enum.RaycastFilterType.Include
 raycastParams.FilterDescendantsInstances = {workspace:WaitForChild("Assets"):GetChildren()}
 --local functions
-
-
 function PlaySound(id, parent, volumeOptional: number ?, maxDistance : number ?)
     local s = Instance.new("Sound")
 
@@ -62,7 +63,16 @@ function PlaySound(id, parent, volumeOptional: number ?, maxDistance : number ?)
     return s
 end
  
-
+local function playAnimation(plr : Player, anim : string)
+    local animEnum
+    for _,v : CustomEnums.AnimationAction in pairs(CustomEnums.AnimationAction:GetEnumItems() :: any) do
+        if v.Name == anim then
+            animEnum = v
+        end
+    end
+    local AnimationManager = require(ReplicatedStorage:WaitForChild("Client"):WaitForChild("AnimationManager"))
+    AnimationManager.playAnim(animEnum or anim)
+end 
 --class
 local ToolManager = {}
 
@@ -114,7 +124,7 @@ function ToolManager.init(maid : Maid)
                     end
                 end))  
             elseif toolData.Class == "Phone" then
-                
+                print("Huh??")
                 phoneUI.Parent = target
     
             end
@@ -131,12 +141,12 @@ function ToolManager.init(maid : Maid)
         end
     end
    
-   
+    print("tool manger?")
     local function onCharAdded(char : Model)
         local _maid = Maid.new()
 
         _maid:GiveTask(char.ChildAdded:Connect(function(toolHeld : Instance)
-            if toolHeld:IsA("Tool") then
+            if toolHeld:IsA("Tool") then 
                 onToolOnBackpack(toolHeld, char)
             end
         end))
@@ -415,6 +425,9 @@ function ToolManager.init(maid : Maid)
         return nil
     end)
     
+    NetworkUtil.onClientEvent(ON_TOOL_ANIM_PLAY, function(anim : string)
+        playAnimation(Player, anim)
+    end)
     --maid:GiveTask(Players.PlayerRemoving:Connect(onPlayerRemoving))
 end
 

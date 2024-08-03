@@ -39,6 +39,8 @@ local KEY_VALUE_NAME = "KeyValue"
 
 local ON_VEHICLE_CONTROL_EVENT = "OnVehicleControlEvent"
 local ON_VEHICLE_CHANGE_COLOR = "OnVehicleChangeColor"
+
+local ON_TOOL_ANIM_PLAY = "OnAnimPlau"
 --variables
 --references
 local CarSpawns = workspace:WaitForChild("Miscs"):WaitForChild("CarSpawns")

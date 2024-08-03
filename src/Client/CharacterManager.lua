@@ -11,6 +11,8 @@ local Signal = require(ReplicatedStorage:WaitForChild("Packages"):WaitForChild("
 --modules
 local InputHandler = require(ReplicatedStorage:WaitForChild("Client"):WaitForChild("InputHandler"))
 local ItemUtil = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("ItemUtil"))
+local AnimationManager = require(ReplicatedStorage:WaitForChild("Client"):WaitForChild("AnimationManager"))
+local CustomEnums = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("CustomEnum"))
 --local MidasEventTree = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("MidasEventTree"))
 --local MidasStateTree = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("MidasStateTree"))
 --types
@@ -28,6 +30,9 @@ local FIELD_OF_VIEW = 70
 local CAM_SHAKE_TIME = 0.16
 --remotes
 local ON_CAMERA_SHAKE = "OnCameraShake"
+local ON_ANIMATION_PLAY = "OnAnimationPlay"
+local ON_ANIMATION_STOP = "OnAnimationStop"
+
 local ON_ANIMATION_SET = "OnAnimationSet"
 local ON_RAW_ANIMATION_SET = "OnRawAnimationSet"
 local GET_CATALOG_FROM_CATALOG_INFO = "GetCatalogFromCatalogInfo"
@@ -80,7 +85,7 @@ local function playAnimationByRawId(char : Model, id : number)
     end))
 end
 
-local function playAnimation(char : Model, id : number)   
+local function playAnimationByCharacter(char : Model, id : number)   
     
     if RunService:IsServer() then
         local plr = Players:GetPlayerFromCharacter(char)
@@ -114,6 +119,30 @@ local function playAnimation(char : Model, id : number)
 
     end
 end
+
+local function playAnimation(plr : Player, anim : string)
+    local animEnum
+    for _,v : CustomEnums.AnimationAction in pairs(CustomEnums.AnimationAction:GetEnumItems() :: any) do
+        if v.Name == anim then
+            animEnum = v
+        end
+    end
+    AnimationManager.playAnim(animEnum or anim)
+end 
+local function stopAnimation(plr : Player, anim : string?)
+    local animEnum
+    for _,v : CustomEnums.AnimationAction in pairs(CustomEnums.AnimationAction:GetEnumItems() :: any) do
+        if v.Name == anim then
+            animEnum = v
+        end
+    end
+    if anim then 
+        AnimationManager.stopAnim(animEnum or anim)
+    else
+        AnimationManager.stopAllPlayerAnims()
+    end
+    
+end 
 
 local function camSprinting(on : boolean)
     local currentCamera = workspace.CurrentCamera
@@ -211,7 +240,6 @@ local function onCharacterAdded(char : Model)
     local humanoid = char:WaitForChild("Humanoid") :: Humanoid
 
     Player.CameraMaxZoomDistance = 8
-
     _maid:GiveTask(char:GetAttributeChangedSignal("IsSprinting"):Connect(function()
         if char:GetAttribute("IsSprinting") then
             humanoid.WalkSpeed = WALK_SPEED*1.6
@@ -229,24 +257,12 @@ local function onCharacterAdded(char : Model)
         end
     end))
 
-    
+
     _maid:GiveTask(humanoid:GetPropertyChangedSignal("MoveDirection"):Connect(function()
         if char:GetAttribute("IsSprinting") then
             camSprinting(true)
         end
     end))
-
-    InputHandler:Map("Sprint", "Keyboard", {Enum.KeyCode.LeftShift}, "Hold"
-    ,function()
-        local character: Model = Player.Character or Player.CharacterAdded:Wait()
-        character:SetAttribute("IsSprinting", not character:GetAttribute("IsSprinting"))
-    end
-
-    ,function()
-        local character: Model = Player.Character or Player.CharacterAdded:Wait()
-        character:SetAttribute("IsSprinting", not character:GetAttribute("IsSprinting"))
-    end)
-
 
     --sprint setup 2
     local abValue = "A" --getRandomAB()
@@ -274,7 +290,8 @@ function CharacterManager.init(maid: Maid)
     local camera = workspace.CurrentCamera
     local char = Player.Character or Player.CharacterAdded:Wait()
     onCharacterAdded(char)
-    
+
+    local inputHandler = maid:GiveTask(InputHandler.new())
     maid:GiveTask(Player.CharacterAdded:Connect(onCharacterAdded))
 
     maid:GiveTask(NetworkUtil.onClientEvent(ON_CAMERA_SHAKE, function()
@@ -296,13 +313,29 @@ function CharacterManager.init(maid: Maid)
         end
     end))
 
+    maid:GiveTask(NetworkUtil.onClientEvent(ON_ANIMATION_PLAY, function(animName : string)
+        playAnimation(Player, animName)
+    end))
+    maid:GiveTask(NetworkUtil.onClientEvent(ON_ANIMATION_STOP, function(animName : string?)
+        stopAnimation(Player, animName)
+    end))
+
     maid:GiveTask(NetworkUtil.onClientEvent(ON_ANIMATION_SET, function(char : Model, id : number)
-        playAnimation(char, id)
+        playAnimationByCharacter(char, id)
     end))
 
     maid:GiveTask(NetworkUtil.onClientEvent(ON_RAW_ANIMATION_SET, function(char : Model, id : number)
         playAnimationByRawId(char, id)
     end))
+
+    inputHandler:Map("Sprint", "Keyboard", {Enum.KeyCode.LeftShift}, "Hold"
+    ,function()
+        local character: Model = Player.Character or Player.CharacterAdded:Wait()
+        character:SetAttribute("IsSprinting", not character:GetAttribute("IsSprinting"))
+    end,function()
+        local character: Model = Player.Character or Player.CharacterAdded:Wait()
+        character:SetAttribute("IsSprinting", not character:GetAttribute("IsSprinting"))
+    end)
 end
 
 return CharacterManager

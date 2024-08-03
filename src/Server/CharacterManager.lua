@@ -28,6 +28,9 @@ local GET_AVATAR_FROM_CHARACTER_DATA = "GetAvatarFromCharacterData"
 
 local ON_CHARACTER_INFO_SET_FROM_CHARACTER_DATA = "OnCharacterInfoSetFromCharacterData"
 
+local ON_ANIMATION_PLAY = "OnAnimationPlay"
+local ON_ANIMATION_STOP = "OnAnimationStop"
+
 local ON_ANIMATION_SET = "OnAnimationSet"
 local ON_RAW_ANIMATION_SET = "OnRawAnimationSet"
 --variables
@@ -266,6 +269,9 @@ function CharacterManager.init(maid : Maid)
 
     NetworkUtil.getRemoteEvent(ON_ANIMATION_SET)
     NetworkUtil.getRemoteEvent(ON_RAW_ANIMATION_SET)
+
+    NetworkUtil.getRemoteEvent(ON_ANIMATION_PLAY)
+    NetworkUtil.getRemoteEvent(ON_ANIMATION_STOP)
 end
 
 return CharacterManager

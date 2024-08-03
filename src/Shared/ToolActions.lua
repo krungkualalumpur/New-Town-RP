@@ -8,7 +8,8 @@ local Maid = require(ReplicatedStorage:WaitForChild("Packages"):WaitForChild("Ma
 local NetworkUtil = require(ReplicatedStorage:WaitForChild("Packages"):WaitForChild("NetworkUtil"))
 --modules
 local BackpackUtil = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("BackpackUtil"))
-local AnimationUtil = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("AnimationUtil"))
+local CustomEnums = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("CustomEnum"))
+
 --types
 type Maid = Maid.Maid
 --constants
@@ -18,6 +19,7 @@ local TOOL_IS_WRITING_KEY = "IsWriting"
 --remotes
 local ON_TOOL_ACTIVATED = "OnToolActivated"
 local ON_CAMERA_SHAKE = "OnCameraShake"
+local ON_TOOL_ANIM_PLAY = "OnAnimPlau"
 --variables
 local raycastParams = RaycastParams.new()
 raycastParams.FilterType = Enum.RaycastFilterType.Include
@@ -41,6 +43,20 @@ local function playSound(soundId : number, onLoop : boolean, parent : Instance ?
     end)
     return sound
 end
+local function playAnimation(plr : Player, anim : string)
+    if RunService:IsClient() then
+        local animEnum
+        for _,v : CustomEnums.AnimationAction in pairs(CustomEnums.AnimationAction:GetEnumItems() :: any) do
+            if v.Name == anim then
+                animEnum = v
+            end
+        end
+        local AnimationManager = require(ReplicatedStorage:WaitForChild("Client"):WaitForChild("AnimationManager"))
+        AnimationManager.playAnim(animEnum or anim)
+    else
+        NetworkUtil.fireClient(ON_TOOL_ANIM_PLAY, plr, anim)
+    end
+end
 --class
 local ActionLists = {
     {
@@ -57,31 +73,25 @@ local ActionLists = {
             end
 
             assert(foodInst, "Unable to find the equipped tool!")
+            assert(character)
 
-            local animId = 0
-            local soundId = 0
-
-            print(toolData.Class) 
             if toolData.Class == "Food" then
-                animId = 5569663688
-                soundId = 4511723890
-            elseif toolData.Class == "Drink" then 
-                animId = 5569673797
-                soundId = 1820372394
-            end
-            AnimationUtil.playAnim(player, animId, false)
+               -- playAnimation(player, )
                 
-            --play sound
-            if character then
-                local hrp = character.PrimaryPart
-                playSound(soundId, false, hrp)
+                --animId = 5569663688
+                playAnimation(player, CustomEnums.AnimationAction.Eating.Name)
+                playSound(4511723890, false, character.PrimaryPart)
+            elseif toolData.Class == "Drink" then 
+                --animId = 5569673797
+                playAnimation(player, CustomEnums.AnimationAction.Drinking.Name)
+                playSound(18203723944511723890, false, character.PrimaryPart)
             end
         end
     },
     {
         ToolClass = "Reading",
         Activated = function(player : Player, toolData : BackpackUtil.ToolData<nil>, plrInfo : any, IsReleased : boolean ?)
-            AnimationUtil.playAnim(player, 6831327167, false)
+            playAnimation(player, CustomEnums.AnimationAction.Reading.Name)
         end
     },
 
@@ -106,7 +116,8 @@ local ActionLists = {
     {
         ToolClass = "BathBucket",
         Activated = function(player : Player, toolData : BackpackUtil.ToolData<nil>, plrInfo : any, IsReleased : boolean ?)
-            AnimationUtil.playAnim(player, 15370187795, false)
+            --AnimationUtil.playAnim(player, 15370187795, false)
+            playAnimation(player, CustomEnums.AnimationAction.ShowerWithBucket.Name)
 
             local character = player.Character or player.CharacterAdded:Wait()
             local toolInst : Instance
@@ -439,7 +450,12 @@ function ToolActions.getActionInfo(toolClass : string)
             return v 
         end
     end
-    error("Tool info not found!")
+    for _,v in pairs(ActionLists) do
+        if v.ToolClass == "Miscs" then
+            return v
+        end
+    end 
+    error("Tool info search exhausted!")
 end
 
 --function ToolActions.init(maid) 

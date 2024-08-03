@@ -15,20 +15,19 @@ local Signal = require(ReplicatedStorage:WaitForChild("Packages"):WaitForChild("
 --modules
 local Jobs = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Jobs"))
 
-local BackpackUI = require(ReplicatedStorage:WaitForChild("Client"):WaitForChild("MainUI"):WaitForChild("BackpackUI"))
-local RoleplayUI = require(ReplicatedStorage:WaitForChild("Client"):WaitForChild("MainUI"):WaitForChild("RoleplayUI"))
+local BackpackUI = require(ReplicatedStorage:WaitForChild("Client"):WaitForChild("NewMainUI"):WaitForChild("BackpackUI"))
+local RoleplayUI = require(ReplicatedStorage:WaitForChild("Client"):WaitForChild("NewMainUI"):WaitForChild("RoleplayUI"))
 local NewCustomizationUI = require(ReplicatedStorage:WaitForChild("Client"):WaitForChild("MainUI"):WaitForChild("NewCustomizationUI"))
 local CustomizationUI = require(ReplicatedStorage:WaitForChild("Client"):WaitForChild("MainUI"):WaitForChild("CustomizationUI"))
 local ItemOptionsUI = require(ReplicatedStorage:WaitForChild("Client"):WaitForChild("ItemOptionsUI"))
-local HouseUI = require(ReplicatedStorage:WaitForChild("Client"):WaitForChild("MainUI"):WaitForChild("HouseUI"))
-local VehicleUI = require(ReplicatedStorage:WaitForChild("Client"):WaitForChild("MainUI"):WaitForChild("VehicleUI"))
+local HouseUI = require(ReplicatedStorage:WaitForChild("Client"):WaitForChild("NewMainUI"):WaitForChild("HouseUI"))
+local VehicleUI = require(ReplicatedStorage:WaitForChild("Client"):WaitForChild("NewMainUI"):WaitForChild("VehicleUI"))
 local ColorWheel = require(ReplicatedStorage:WaitForChild("Client"):WaitForChild("ColorWheel"))
 local LoadingFrame = require(ReplicatedStorage:WaitForChild("Client"):WaitForChild("LoadingFrame"))
 local StatusUtil = require(ReplicatedStorage:WaitForChild("Client"):WaitForChild("StatusUtil"))
 
 local ExitButton = require(ReplicatedStorage:WaitForChild("Client"):WaitForChild("ExitButton"))
 local BackpackUtil = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("BackpackUtil"))
-local AnimationUtil = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("AnimationUtil"))
 local ItemUtil = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("ItemUtil"))
 local NotificationChoice = require(ReplicatedStorage:WaitForChild("Client"):WaitForChild("NotificationUI"):WaitForChild("NotificationChoice"))
 
@@ -152,22 +151,18 @@ return function(
 
     local currentPage : ValueState<UIStatus?> = _Value(nil) :: any
 
+    local houseIndex = _Value(1)
+    local houseName = _Value("House 1")
+
     local onBackpackButtonAddClickSignal = maid:GiveTask(Signal.new())
     local onBackpackButtonDeleteClickSignal = maid:GiveTask(Signal.new())
 
+    local onHouseNext = maid:GiveTask(Signal.new())
+    local onHousePrev = maid:GiveTask(Signal.new())
+
     local onBack = maid:GiveTask(Signal.new())
 
-    local function getExitButton(ui : GuiObject, onCloseButtonClick : () -> ())
-        local exitButton = ExitButton.new(
-            ui:WaitForChild("ContentFrame") :: GuiObject, 
-            isExitButtonVisible,
-            onCloseButtonClick
-            
-        ) 
-        exitButton.Instance.Parent = ui:FindFirstChild("ContentFrame")
-        return exitButton.Instance 
-    end
-
+   
     local function switchPage(pageName : UIStatus?)
         mainPageMaid:DoCleaning()
 
@@ -184,7 +179,9 @@ return function(
                     onBackpackButtonAddClickSignal,
                     onBackpackButtonDeleteClickSignal,
 
-                    onBack
+                    onBack,
+
+                    isDark
                 )
             
                 backpackPageUI.Parent = target
@@ -199,8 +196,127 @@ return function(
                     vehiclesList:Set(NetworkUtil.invokeServer(GET_PLAYER_VEHICLES))
                 end
                 game:GetService("StarterGui"):SetCoreGuiEnabled(Enum.CoreGuiType.Chat, false)
-            else
+            elseif pageName == "House" then
+                local housesList = {}
+
+                if RunService:IsRunning() then
+                    for _,house in pairs(HousesFolder:GetChildren()) do
+                        local houseIndex = house:GetAttribute("Index")
+                        if houseIndex then
+                            housesList[houseIndex] = house 
+                        end
+                    end
+                end
+
+                houseIndex:Set(1)
+                --houseName:Set("House 1")
+                local function updateCamCf()
+                    if RunService:IsRunning() then
+                        local camera = workspace.CurrentCamera
+                        camera.CameraType = Enum.CameraType.Scriptable
+
+                        local index = houseIndex:Get()
+                        local house = housesList[index] :: Model
+                        local cf, size 
+                        if house.PrimaryPart then
+                            cf, size = house.PrimaryPart.CFrame, house.PrimaryPart.Size
+                        else    
+                            cf, size = house:GetBoundingBox()
+                        end
+                        camera.CFrame = CFrame.lookAt(cf.Position + cf.LookVector*size.Z*0.65 + cf.UpVector*size.Y*0.5, cf.Position)
+                    end
+                end
+              
+                _new("StringValue")({
+                    Value = _Computed(function(index : number)
+                        houseName:Set(if housesList[index] then housesList[index].Name else "")
+                        return ""
+                    end, houseIndex)
+                })
+
+                local housePageUI = HouseUI(
+                    mainPageMaid, 
+                    houseIndex, 
+                    houseName, 
+                    onHouseNext, 
+                    onHousePrev,
+                    onHouseClaim,
+                    onBack,
+                    1,
+                    #housesList
+                )
+                housePageUI.Parent = target
+
+                updateCamCf()
+
+                maid:GiveTask(onHouseNext:Connect(function()
+                    houseIndex:Set(houseIndex:Get() + 1) 
+        
+                    updateCamCf()
+                end))
+                maid:GiveTask(onHousePrev:Connect(function()
+                    houseIndex:Set(houseIndex:Get() - 1)
+        
+                    updateCamCf()
+                end))
+            elseif pageName == "Vehicle" then
+                local function getNewVehiclesListVersion(maxNum : number ?) : {[number] : ValueState<VehicleData ?>}
+                    local defMaxNum = maxNum or 50
+                    local newVehicleListVersion = {}
+                    for i = 1, defMaxNum do
+                        table.insert(newVehicleListVersion, _Value(nil))
+                    end
+                    return newVehicleListVersion :: any
+                end
                 
+                local newVehiclesListVersion = getNewVehiclesListVersion()
+                _new("StringValue")({
+                    Value = _Computed(function(list : {[number] : VehicleData})
+                        --[[for k, vehicleData in pairs(list) do
+                            local dynamicVehicleData = newVehiclesListVersion[k]
+                            if dynamicVehicleData then
+                                dynamicVehicleData:Set(vehicleData)
+                            end
+                            print(k, vehicleData, dynamicVehicleData, " seyy!")
+                        end]]
+                        for k, dynamicVehicleData in pairs(newVehiclesListVersion) do
+                            local vehicleData = list[k]
+                            dynamicVehicleData:Set(vehicleData)
+                            
+                        end
+                        return ""
+                    end, vehiclesList)
+                })
+
+                local vehicleUI = VehicleUI( 
+                    mainPageMaid,
+                
+                    newVehiclesListVersion,
+
+                    onVehicleSpawn,
+                    onVehicleDelete,
+
+                    onBack,
+                    
+                    isDark
+                ) 
+                vehicleUI.Parent = target
+            elseif pageName == "Roleplay" then
+                -- local roleplayPageUI = RoleplayUI(
+                --     mainPageMaid,
+                --     Animations : {[number] : AnimationInfo},
+                
+                --     OnAnimClick : Signal,
+                --     onItemCartSpawn : Signal,
+                --     onJobChange : Signal,
+                
+                --     backpack : ValueState<{BackpackUtil.ToolData<boolean>}>,
+                --     jobsList : {
+                --         [number] : Jobs.JobData
+                --     },
+                
+                --     UIStatus : ValueState<string ?>
+                -- )
             end
         end
         isMainUIPageVisible:Set(currentPage:Get() == nil)
@@ -215,10 +331,10 @@ return function(
     local houseUI = Sintesa.Molecules.FAB.ColdFusion.new(maid,Sintesa.IconLists.places.house, function()
         switchPage("House")
     end, isDark)
-    local vehicleUI = Sintesa.Molecules.FAB.ColdFusion.new(maid,Sintesa.IconLists.maps.directions_car, function()
+    local vehicleUI = Sintesa.Molecules.FAB.ColdFusion.new(maid,Sintesa.IconLists.social.emoji_transportation, function()
         switchPage("Vehicle")
     end, isDark)
-    local roleplayUI = Sintesa.Molecules.FAB.ColdFusion.new(maid,Sintesa.IconLists.maps.theater_comedy, function()
+    local roleplayUI = Sintesa.Molecules.FAB.ColdFusion.new(maid,Sintesa.IconLists.social.emoji_emotions, function()
         switchPage("Roleplay")
     end, isDark)
 

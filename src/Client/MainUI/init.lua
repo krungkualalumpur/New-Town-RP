@@ -20,7 +20,7 @@ local NewCustomizationUI = require(ReplicatedStorage:WaitForChild("Client"):Wait
 local CustomizationUI = require(ReplicatedStorage:WaitForChild("Client"):WaitForChild("MainUI"):WaitForChild("CustomizationUI"))
 local ItemOptionsUI = require(ReplicatedStorage:WaitForChild("Client"):WaitForChild("ItemOptionsUI"))
 local HouseUI = require(ReplicatedStorage:WaitForChild("Client"):WaitForChild("MainUI"):WaitForChild("HouseUI"))
-local VehicleUI = require(ReplicatedStorage:WaitForChild("Client"):WaitForChild("MainUI"):WaitForChild("VehicleUI"))
+local VehicleUI = require(ReplicatedStorage:WaitForChild("Client"):WaitForChild("NewMainUI"):WaitForChild("VehicleUI"))
 local ColorWheel = require(ReplicatedStorage:WaitForChild("Client"):WaitForChild("ColorWheel"))
 local LoadingFrame = require(ReplicatedStorage:WaitForChild("Client"):WaitForChild("LoadingFrame"))
 local StatusUtil = require(ReplicatedStorage:WaitForChild("Client"):WaitForChild("StatusUtil"))
@@ -1716,7 +1716,11 @@ return function(
                 newVehiclesListVersion,
 
                 onVehicleSpawn,
-                onVehicleDelete
+                onVehicleDelete,
+
+                onHouseBack,
+
+                _Value(false)
             ) 
             vehicleUI.Parent = out
 

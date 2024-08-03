@@ -4,11 +4,13 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local CollectionService = game:GetService("CollectionService")
 local Players = game:GetService("Players")
 local TextService = game:GetService("TextService")
+local RunService = game:GetService("RunService")
 --packages
 local Maid = require(ReplicatedStorage:WaitForChild("Packages"):WaitForChild("Maid"))
 --modules
 local NetworkUtil = require(ReplicatedStorage:WaitForChild("Packages"):WaitForChild("NetworkUtil"))
 local BackpackUtil = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("BackpackUtil"))
+local CustomEnums = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("CustomEnum"))
 --types
 type Maid = Maid.Maid
 --constants
@@ -22,6 +24,7 @@ local ON_PHONE_MESSAGE_START = "OnPhoneMessageStart"
 local IS_PLAYER_TYPING_CHECK = "IsPlayerTypingCheck"
 local ON_SILENT_SWITCH = "OnSilentSwitch"
 
+local ON_TOOL_ANIM_PLAY = "OnAnimPlau"
 --variables
 --references
 local ToolsAsset = ReplicatedStorage:WaitForChild("Assets"):WaitForChild("Tools")
@@ -218,6 +221,8 @@ function ToolManager.init(maid : Maid)
         return
     end))
 
+
+    NetworkUtil.getRemoteEvent(ON_TOOL_ANIM_PLAY)
     NetworkUtil.getRemoteFunction(ON_PHONE_MESSAGE_START)
 end
 

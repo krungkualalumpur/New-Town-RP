@@ -7,7 +7,7 @@ local ColdFusion = require(ReplicatedStorage:WaitForChild("Packages"):WaitForChi
 local Signal = require(ReplicatedStorage:WaitForChild("Packages"):WaitForChild("Signal"))
 --modules
 local BackpackUtil = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("BackpackUtil"))
-local BackpackUI = require(ReplicatedStorage:WaitForChild("Client"):WaitForChild("MainUI"):WaitForChild("BackpackUI"))
+local BackpackUI = require(ReplicatedStorage:WaitForChild("Client"):WaitForChild("NewMainUI"):WaitForChild("BackpackUI"))
 local ItemUtil = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("ItemUtil"))
 --types
 type ToolData = BackpackUtil.ToolData<boolean>
@@ -149,10 +149,9 @@ return function(target : CoreGui)
         onEquip, 
         onDelete,
 
-        stateList,
+        maid:GiveTask(Signal.new()),
 
-        onVehicleSpawn,
-        onVehicleDelete
+        false
     )
     backpackUI.Parent = target
     print(backpackUI)

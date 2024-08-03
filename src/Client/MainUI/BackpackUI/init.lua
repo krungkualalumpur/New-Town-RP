@@ -10,7 +10,6 @@ local Maid = require(ReplicatedStorage:WaitForChild("Packages"):WaitForChild("Ma
 local ColdFusion = require(ReplicatedStorage:WaitForChild("Packages"):WaitForChild("ColdFusion8"))
 local Signal = require(ReplicatedStorage:WaitForChild("Packages"):WaitForChild("Signal"))
 local NetworkUtil = require(ReplicatedStorage:WaitForChild("Packages"):WaitForChild("NetworkUtil"))
-local Sintesa = require(ReplicatedStorage:WaitForChild("Packages"):WaitForChild("Sintesa"))
 --modules
 local BackpackUtil = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("BackpackUtil"))
 local ListUI = require(ReplicatedStorage:WaitForChild("Client"):WaitForChild("ListUI"))
@@ -34,7 +33,7 @@ type ValueState<T> = ColdFusion.ValueState<T>
 type State<T> = ColdFusion.State<T>
 
 --constants
-local BACKGROUND_COLOR = Color3.fromRGB(255,255,255)
+local BACKGROUND_COLOR = Color3.fromRGB(90,90,90)
 local PRIMARY_COLOR = Color3.fromRGB(255,255,255)
 local SECONDARY_COLOR = Color3.fromRGB(25,25,25)
 local TERTIARY_COLOR = Color3.fromRGB(80,80,80)
@@ -153,8 +152,7 @@ local function getItemButton(
     maid : Maid, 
     key : number,
     itemInfo: ToolData,
-    onBackpackButtonAddClickSignal : Signal,
-    isDark : CanBeState<boolean>
+    onBackpackButtonAddClickSignal : Signal
 )
 
     local _fuse = ColdFusion.fuse(maid)
@@ -166,7 +164,6 @@ local function getItemButton(
     local _Computed = _fuse.Computed
     local _Value = _fuse.Value
 
-    local isDarkState = _import(isDark, isDark)
     local viewportVisualZoom = 0.75
 
     local toolModel = BackpackUtil.getToolFromName(itemInfo.Name) 
@@ -191,65 +188,141 @@ local function getItemButton(
         end
     end
 
-    assert(toolModel)
-    for _,v in pairs(toolModel:GetDescendants()) do
-        if v:IsA("Script") or v:IsA("ModuleScript") or v:IsA("LocalScript") then
-            v:Destroy() 
+    if toolModel then
+         
+        for _,v in pairs(toolModel:GetDescendants()) do
+            if v:IsA("Script") or v:IsA("ModuleScript") or v:IsA("LocalScript") then
+                v:Destroy() 
+            end
+        end
+
+        if toolModel:IsA("BasePart") then
+            viewportVisualZoom *= toolModel.Size.Magnitude*1.5
+        elseif toolModel:IsA("Model") then
+            viewportVisualZoom *= toolModel:GetExtentsSize().Magnitude*1
         end
     end
 
-    if toolModel:IsA("BasePart") then
-        viewportVisualZoom *= toolModel.Size.Magnitude*1.5
-    elseif toolModel:IsA("Model") then
-        viewportVisualZoom *= toolModel:GetExtentsSize().Magnitude*1
+    local cf, size 
+    if toolModel and toolModel:IsA("Model") then
+        cf, size = toolModel:GetBoundingBox()  
+    elseif toolModel and toolModel:IsA("BasePart") then 
+        cf, size = toolModel.CFrame, toolModel.Size
     end
+    local viewportCam = _new("Camera")({
+        CFrame = if toolModel then (if toolModel:IsA("Model") and toolModel.PrimaryPart then 
+            CFrame.lookAt(cf.Position + cf.LookVector*size.Z + cf.RightVector*size.X + cf.UpVector, cf.Position) 
+        elseif toolModel:IsA("BasePart") then
+            CFrame.lookAt(toolModel.Position + toolModel.CFrame.LookVector*size.Z + toolModel.CFrame.RightVector*size.X + toolModel.CFrame.UpVector, toolModel.Position) 
+        else CFrame.new()) else nil
+    })
 
+    local optionButtonsPosition = _Value(UDim2.new())
 
-    local out2 =_new("ImageButton")({
+    local optionButtonsFrame = _new("Frame")({
+        LayoutOrder = 1,
         BackgroundTransparency = 1,
+        Position = optionButtonsPosition:Tween(0.1),
+        Size = UDim2.fromScale(1,1),
         Children = {
-            _bind(Sintesa.InterfaceUtil.ViewportFrame.ColdFusion.new(
+            _new("UIListLayout")({
+                VerticalAlignment = Enum.VerticalAlignment.Bottom,
+                Padding = UDim.new(PADDING_SIZE.Scale*0.5, PADDING_SIZE.Offset*0.5),
+            }),
+           
+            --[[getButton(
                 maid, 
-                toolModel, 
-                40, 
-                true, 
-                isDarkState,
-                Sintesa.SintesaEnum.ShapeStyle.ExtraSmall
-            ))({
-                Size = UDim2.new(1,0,1,0),
+                2,
+                "Delete",
+                function()
+                    onBackpackButtonDeleteClickSignal:Fire(key, itemInfo.Name)
+                end
+            )]]
+            --getButton(maid, text, fn)
+        }
+    })
+
+    local out = _new("ImageButton")({
+        BackgroundTransparency = 0,
+        ClipsDescendants = true,
+        BackgroundColor3 = BACKGROUND_COLOR,
+        Children = {
+            _new("UIStroke")({
+                Color = SECONDARY_COLOR,
+                Thickness = 1.5
+            }),
+            _new("UICorner")({}),
+            _new("UIListLayout")({
+                SortOrder = Enum.SortOrder.LayoutOrder
+            }),
+            _new("TextLabel")({
+                LayoutOrder = 1,
+                BackgroundTransparency = 1,
+                Size = UDim2.fromScale(1, 0.25),
+                TextColor3 = PRIMARY_COLOR,
+                TextStrokeTransparency = 0.5,
+                Font = Enum.Font.Gotham,
+                Text = itemInfo.Name,
+                TextScaled = true,
+                TextWrapped = true,
                 Children = {
-                    _new("UIListLayout")({
-                        HorizontalAlignment = Enum.HorizontalAlignment.Right,
-                        VerticalAlignment = Enum.VerticalAlignment.Bottom
+                    _new("UITextSizeConstraint")({
+                        MaxTextSize = 15,
+                        MinTextSize = 0,
+                    })
+                }
+            }),
+            _new("ViewportFrame")({
+                LayoutOrder = 2,
+                BackgroundTransparency = 1,
+                Size = UDim2.fromScale(1, 0.75),
+                CurrentCamera = viewportCam,
+                
+                Children = {
+                    _new("UIPadding")({
+                        PaddingBottom = PADDING_SIZE,
+                        PaddingTop = PADDING_SIZE,
+                        PaddingLeft = PADDING_SIZE,
+                        PaddingRight = PADDING_SIZE
                     }),
-                    _bind(Sintesa.InterfaceUtil.TextLabel.ColdFusion.new(
-                        maid, 
-                        1, 
-                        itemInfo.Name, 
-                        _Computed(function(dark  : boolean)
-                            return Sintesa.StyleUtil.MaterialColor.Color3FromARGB(Sintesa.ColorUtil.getDynamicScheme(dark):get_onSurfaceVariant())
-                        end, isDarkState),
-                        Sintesa.TypeUtil.createTypographyData(Sintesa.StyleUtil.Typography.get(Sintesa.SintesaEnum.TypographyStyle.LabelLarge)), 
-                        25
-                    ))({
-                        TextXAlignment = Enum.TextXAlignment.Right,
-                        TextWrapped = true,
+                   
+                    optionButtonsFrame,
+
+                    viewportCam,
+                    _new("WorldModel")({
                         Children = {
-                            _new("UISizeConstraint")({
-                                MaxSize = Vector2.new(70,100)
-                            })
+                            toolModel
                         }
                     })
                 }
             })
         },
-        Events = {
-            Activated = function()
-                onBackpackButtonAddClickSignal:Fire(itemInfo)
-            end
+       
+    })
+
+    local out2 = _new("Frame")({
+        BackgroundTransparency = 1,
+        Children = {
+            _bind(out)({
+                Size = UDim2.fromScale(1, 1),
+                
+            }),
+
+            
+            _bind(getButton(
+                maid, 
+                1,
+                "",
+                function()
+                    onBackpackButtonAddClickSignal:Fire(itemInfo)
+                end,
+                TERTIARY_COLOR
+            ))({
+                Size = UDim2.fromScale(1, 1),
+                BackgroundTransparency = 1
+            }),
         }
-    }) 
-    
+    })
     
     return out2
 end
@@ -270,7 +343,6 @@ local function getVehicleButton(
     local _Computed = _fuse.Computed
     local _Value = _fuse.Value
 
- 
     local dynamicVehicleModel = _Computed(function(vehicleInfo : VehicleData ?)
         local vehicleModel  = if vehicleInfo then 
            vehicles:FindFirstChild(vehicleInfo.Name):Clone()
@@ -475,8 +547,7 @@ local function getItemTypeFrame(
         [number] : ToolData & {Key : number}
     }>,
     onBackpackButtonAddClickSignal : Signal,
-    frameOrder : number,
-    isDark : CanBeState<boolean>
+    frameOrder : number
 )
     local _fuse = ColdFusion.fuse(maid)
     local _new = _fuse.new
@@ -486,8 +557,6 @@ local function getItemTypeFrame(
 
     local _Computed = _fuse.Computed
     local _Value = _fuse.Value
-
-    local isDarkState = _import(isDark, isDark)
 
     local itemFrameList = _new("Frame")({
         LayoutOrder = 2,
@@ -531,29 +600,22 @@ local function getItemTypeFrame(
         Children = {
             _new("UIListLayout")({
                 SortOrder = Enum.SortOrder.LayoutOrder,
-                HorizontalAlignment = Enum.HorizontalAlignment.Left
+                HorizontalAlignment = Enum.HorizontalAlignment.Center
             }),
-            Sintesa.InterfaceUtil.TextLabel.ColdFusion.new(maid, 1, typeName, _Computed(function(dark : boolean)
-                return Sintesa.StyleUtil.MaterialColor.Color3FromARGB(Sintesa.ColorUtil.getDynamicScheme(dark):get_onSurfaceVariant())  
-            end, isDarkState), Sintesa.TypeUtil.createTypographyData(Sintesa.StyleUtil.Typography.get(Sintesa.SintesaEnum.TypographyStyle.TitleMedium)), 
-            25),
-            -- _new("TextLabel")({
-            --     Name = "Title",
-            --     BackgroundTransparency = 1,
-            --     AutomaticSize = Enum.AutomaticSize.XY,
-            --     LayoutOrder = 1,
-            --     TextSize = 25,
-            --     RichText = true,
-            --     Font = Enum.Font.Gotham,
-            --     Text = typeName,
-            --     TextColor3 = PRIMARY_COLOR,
-            --     TextStrokeTransparency = 0.5,
-            -- }),
+            _new("TextLabel")({
+                Name = "Title",
+                BackgroundTransparency = 1,
+                AutomaticSize = Enum.AutomaticSize.XY,
+                LayoutOrder = 1,
+                TextSize = 25,
+                RichText = true,
+                Font = Enum.Font.Gotham,
+                Text = typeName,
+                TextColor3 = PRIMARY_COLOR,
+                TextStrokeTransparency = 0.5,
+            }),
             isNAFrame,
-            itemFrameList,
-            _bind(Sintesa.Molecules.Divider.ColdFusion.new(maid, isDark))({
-                LayoutOrder = 4
-            })
+            itemFrameList
         }
     }) :: Frame
 
@@ -566,8 +628,7 @@ local function getItemTypeFrame(
             pairMaid,
             v.Key,  
             v,
-            onBackpackButtonAddClickSignal,
-            isDarkState
+            onBackpackButtonAddClickSignal
         )
         
         itemButton.Parent = itemFrameList
@@ -627,11 +688,9 @@ return function(
     itemsOwned : ValueState<{[number] : ToolData}>,
 
     onBackpackButtonAddClickSignal : Signal,
-    onBackpackButtonDeleteClickSignal : Signal,
-
-    onBack : Signal)
-
-
+    onBackpackButtonDeleteClickSignal : Signal
+)
+    
     local _fuse = ColdFusion.fuse(maid)
     local _new = _fuse.new
     local _import = _fuse.import
@@ -642,71 +701,33 @@ return function(
     local _Value = _fuse.Value
     
     itemsOwned = _Value(itemsOwned:Get())
-    local width = 350
 
     local itemTypes = BackpackUtil.getAllItemClasses()
 
-    local isDarkState = _Value(false)
     local isVisible = _Value(true) --fixing the wierd state not working thing by attaching it to the properties table for the sake of updating the equip
     
-    local isOnScroll = _Value(false)
-
-    local inputText = _Value("")
-
     local selectedPage = _Value("Items")
-
-    local isSearchVisible = _Value(false)
     
-    local primaryColor, 
-    secondaryColor,
-    tertiaryColor,
-    neutralColor,
-    neutralVariantColor,
-    shadowColor = Sintesa.ColorUtil.getColorTheme()
+    local header = _new("Frame")({
+        Name = "Header",
+        BackgroundColor3 = BACKGROUND_COLOR,
+        Size = UDim2.fromScale(1, 0.1),
+        Children = {
+            _new("UIListLayout")({
+                SortOrder = Enum.SortOrder.LayoutOrder,
+                FillDirection = Enum.FillDirection.Horizontal,
+                HorizontalAlignment = Enum.HorizontalAlignment.Center,
+                Padding = PADDING_SIZE,
 
-    local backgroundColorState = _Computed(function(isDark : boolean)
-        local dynamicScheme = Sintesa.ColorUtil.getDynamicScheme(isDark)
-        return Sintesa.StyleUtil.MaterialColor.Color3FromARGB(dynamicScheme:get_surface())
-    end, isDarkState)
-    -- local header = _new("Frame")({
-    --     Name = "Header",
-    --     BackgroundColor3 = BACKGROUND_COLOR,
-    --     Size = UDim2.fromScale(1, 0.1),
-    --     Children = {
-    --         _new("UIListLayout")({
-    --             SortOrder = Enum.SortOrder.LayoutOrder,
-    --             FillDirection = Enum.FillDirection.Horizontal,
-    --             HorizontalAlignment = Enum.HorizontalAlignment.Center,
-    --             Padding = PADDING_SIZE,
-
-    --         }),
-    --         getSelectButton(maid, 1, "Items", _Computed(function(page)
-    --             return page == "Items"
-    --         end, selectedPage),function()
-    --             selectedPage:Set("Items")
-    --         end),
+            }),
+            getSelectButton(maid, 1, "Items", _Computed(function(page)
+                return page == "Items"
+            end, selectedPage),function()
+                selectedPage:Set("Items")
+            end),
           
-    --     }
-    -- })
-    local header = Sintesa.Molecules.SmallTopTopAppBar.ColdFusion.new(
-        maid, 
-        isDarkState, 
-        "Item", 
-        Sintesa.TypeUtil.createFusionButtonData("Back", Sintesa.IconLists.navigation.arrow_back), 
-        {
-            Sintesa.TypeUtil.createFusionButtonData("Search", Sintesa.IconLists.action.search),
-        }, 
-        isOnScroll, 
-        function(buttonData : Sintesa.ButtonData)
-            if buttonData.Name == "Search" then
-                isSearchVisible:Set(not isSearchVisible:Get())
-            elseif buttonData.Name == "Back" then
-                onBack:Fire()
-            end
-        end    
-    )
-    header.Size = UDim2.new(0,width- 50,0,header.Size.Y.Offset)
-    header.Main.UIListLayout.HorizontalAlignment = Enum.HorizontalAlignment.Left
+        }
+    })
 
     local onSearch = maid:GiveTask(Signal.new())
     
@@ -714,7 +735,7 @@ return function(
         LayoutOrder = 1,
         BackgroundColor3 = BACKGROUND_COLOR,
         BackgroundTransparency = 0.5,
-        PlaceholderText = "Search...", 
+        PlaceholderText = "Search...",
         TextColor3 = PRIMARY_COLOR,
         Size = UDim2.fromScale(0.9, 1),
         TextXAlignment = Enum.TextXAlignment.Left,
@@ -727,32 +748,23 @@ return function(
             end :: any,
         }
     }) :: TextBox
-    -- local searchBarFrame = _new("Frame")({
-    --     LayoutOrder = 1,
-    --     BackgroundColor3 = BACKGROUND_COLOR,
-    --     BackgroundTransparency = 0.74,
-    --     Size = UDim2.fromScale(1, 0.05), 
-    --     Children = {
-    --         _new("UIListLayout")({
-    --             FillDirection = Enum.FillDirection.Horizontal,
-    --             SortOrder = Enum.SortOrder.LayoutOrder
-    --         }),
-    --         _bind(getImageButton(maid, 4359655183, onSearch, nil, BACKGROUND_COLOR))({
-    --             Size = UDim2.fromScale(0.1, 1)
-    --         }),
-    --         searchTextBox
-    --     }
-    -- })
-    local searchBarFrame = _bind(Sintesa.Molecules.SearchBar.ColdFusion.new(
-        maid, 
-        isDarkState, 
-        Sintesa.IconLists.search.manage_search, 
-        "Search for items by name", 
-        width - PADDING_SIZE.Offset*2, 
-        inputText
-    ))({
-        Visible = isSearchVisible
+    local searchBarFrame = _new("Frame")({
+        LayoutOrder = 1,
+        BackgroundColor3 = BACKGROUND_COLOR,
+        BackgroundTransparency = 0.74,
+        Size = UDim2.fromScale(1, 0.05), 
+        Children = {
+            _new("UIListLayout")({
+                FillDirection = Enum.FillDirection.Horizontal,
+                SortOrder = Enum.SortOrder.LayoutOrder
+            }),
+            _bind(getImageButton(maid, 4359655183, onSearch, nil, BACKGROUND_COLOR))({
+                Size = UDim2.fromScale(0.1, 1)
+            }),
+            searchTextBox
+        }
     })
+   
     
     local backpackUIListLayout =  _new("UIListLayout")({
         SortOrder = Enum.SortOrder.LayoutOrder,
@@ -765,7 +777,8 @@ return function(
            return page == "Items" 
         end, selectedPage),
         AutomaticCanvasSize = Enum.AutomaticSize.None,
-        BackgroundColor3 = backgroundColorState,
+        BackgroundColor3 = BACKGROUND_COLOR,
+        BackgroundTransparency = 0.74,
         Position = UDim2.fromScale(0,0),
         Size = UDim2.fromScale(1,0.75),
         Children = {
@@ -853,14 +866,14 @@ return function(
 
             for k,v in pairs(toolsData) do
                 if v.Name:lower():find(toolSearchText:lower()) then
-                    local itemButton = getItemButton(maid, k, v, onBackpackButtonAddClickSignal, isDarkState)
+                    local itemButton = getItemButton(maid, k, v, onBackpackButtonAddClickSignal)
                     itemButton.Parent = searchContentFrameList
                 end
             end
         else
             searchContentFrame.Visible = false
             backpackContentFrame.Visible = true 
-        end 
+        end
         print(toolSearchText)
     end))
     
@@ -908,18 +921,20 @@ return function(
         Size = UDim2.fromScale(1, 0.8)
     })]]
     
+   
     local contentFrame = _new("Frame")({
         Name = "ContentFrame",
         Visible = isVisible,
-        BackgroundColor3 = backgroundColorState,
-        BackgroundTransparency = 0,
+        BackgroundColor3 = BACKGROUND_COLOR,
+        BackgroundTransparency = 1,
         Position = UDim2.fromScale(0,0),
-        Size = UDim2.new(0,width,1,0),
+        Size = UDim2.fromScale(0.3,1),
         Children = {
-           
+            _new("UICorner")({
+                CornerRadius = UDim.new(1,0)
+            }),
             _new("UIListLayout")({
                 SortOrder = Enum.SortOrder.LayoutOrder,
-                HorizontalAlignment = Enum.HorizontalAlignment.Center,
                 Padding = PADDING_SIZE
             }),
             --[[_new("TextLabel")({
@@ -985,17 +1000,21 @@ return function(
         BackgroundTransparency = 1,
         Size = UDim2.fromScale(1, 1),
         Children = {
-           
+            _new("UIPadding")({
+                PaddingBottom = PADDING_SIZE,
+                PaddingTop = PADDING_SIZE,
+                PaddingLeft = PADDING_SIZE,
+                PaddingRight = PADDING_SIZE
+            }),
             _new("UIListLayout")({
                 FillDirection = Enum.FillDirection.Horizontal,
                 VerticalAlignment = Enum.VerticalAlignment.Bottom,
-                HorizontalAlignment = Enum.HorizontalAlignment.Left,
                 SortOrder = Enum.SortOrder.LayoutOrder,
             }),
             _new("Frame")({
                 LayoutOrder = 0,
                 BackgroundTransparency = 1,
-                Size = UDim2.new(0, 50,0.8,0)
+                Size = UDim2.fromScale(0.035, 1)
             }),
             contentFrame        
         }

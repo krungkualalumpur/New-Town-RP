@@ -36,100 +36,100 @@ local Interactables = {} :: {[number] : Model}
 local Player = Players.LocalPlayer
 local Mouse = Player:GetMouse()
 --local functions
-local function createInteract(maid : Maid, interactFrame : Frame, interactNameTag : string, interactInputKey : string, interactCode : Enum.KeyCode | Enum.UserInputType, currentInputKeyCodeState : ValueState<Enum.KeyCode | Enum.UserInputType>)
-    local instancePointer = interactFrame:FindFirstChild("InstancePointer") :: ObjectValue    
+-- local function createInteract(maid : Maid, interactFrame : Frame, interactNameTag : string, interactInputKey : string, interactCode : Enum.KeyCode | Enum.UserInputType, currentInputKeyCodeState : ValueState<Enum.KeyCode | Enum.UserInputType>)
+--     local instancePointer = interactFrame:FindFirstChild("InstancePointer") :: ObjectValue    
 
-    InputHandler:Map(
-        interactInputKey, 
-        "Keyboard", 
-        {interactCode},
-        "Press" ,
-        function(inputObject : InputObject) 
-            local inst = instancePointer.Value
-            if (inst) then
-                if  (inst:HasTag(interactNameTag)) then
-                    if (interactCode == inputObject.KeyCode) then 
-                        InteractableUtil.Interact(inst :: Model, Player)                        
-                    end
-                   -- NetworkUtil.fireServer(ON_INTERACT, inst)
-                end
-            end
-            return 
-        end, 
-        function() 
-            return 
-        end
-    )
+--     inputHandler:Map(
+--         interactInputKey, 
+--         "Keyboard", 
+--         {interactCode},
+--         "Press" ,
+--         function(inputObject : InputObject) 
+--             local inst = instancePointer.Value
+--             if (inst) then
+--                 if  (inst:HasTag(interactNameTag)) then
+--                     if (interactCode == inputObject.KeyCode) then 
+--                         InteractableUtil.Interact(inst :: Model, Player)                        
+--                     end
+--                    -- NetworkUtil.fireServer(ON_INTERACT, inst)
+--                 end
+--             end
+--             return 
+--         end, 
+--         function() 
+--             return 
+--         end
+--     )
 
-    maid:GiveTask(instancePointer.Changed:Connect(function()
-        local newInst = instancePointer.Value
-        if newInst and newInst:HasTag(interactNameTag) then
-            print(interactCode.Name)
-            currentInputKeyCodeState:Set(interactCode)
-        end
-    end))
+--     maid:GiveTask(instancePointer.Changed:Connect(function()
+--         local newInst = instancePointer.Value
+--         if newInst and newInst:HasTag(interactNameTag) then
+--             print(interactCode.Name)
+--             currentInputKeyCodeState:Set(interactCode)
+--         end
+--     end))
 
-    if interactCode.EnumType == Enum.KeyCode then
-        for _,v: Model in pairs(CollectionService:GetTagged(interactNameTag)) do
-            if v:IsA("Model") and v:IsDescendantOf(workspace) then
-                table.insert(Interactables, v)
-            end
-        end
-        CollectionService:GetInstanceAddedSignal(interactNameTag):Connect(function(inst)
-            if inst:IsDescendantOf(workspace) then
-                table.insert(Interactables, inst)
-            end
-        end)
+--     if interactCode.EnumType == Enum.KeyCode then
+--         for _,v: Model in pairs(CollectionService:GetTagged(interactNameTag)) do
+--             if v:IsA("Model") and v:IsDescendantOf(workspace) then
+--                 table.insert(Interactables, v)
+--             end
+--         end
+--         CollectionService:GetInstanceAddedSignal(interactNameTag):Connect(function(inst)
+--             if inst:IsDescendantOf(workspace) then
+--                 table.insert(Interactables, inst)
+--             end
+--         end)
 
-        CollectionService:GetInstanceRemovedSignal(interactNameTag):Connect(function(inst)
-            local n = table.find(Interactables, inst)
-            if n then
-                table.remove(Interactables, n)
-            end
-        end)
-    elseif interactCode.EnumType == Enum.UserInputType then
-        local _fuse = ColdFusion.fuse(maid)
-        local _new = _fuse.new
-        local _import = _fuse.import
-        local _bind = _fuse.bind
-        local _clone = _fuse.clone
+--         CollectionService:GetInstanceRemovedSignal(interactNameTag):Connect(function(inst)
+--             local n = table.find(Interactables, inst)
+--             if n then
+--                 table.remove(Interactables, n)
+--             end
+--         end)
+--     elseif interactCode.EnumType == Enum.UserInputType then
+--         local _fuse = ColdFusion.fuse(maid)
+--         local _new = _fuse.new
+--         local _import = _fuse.import
+--         local _bind = _fuse.bind
+--         local _clone = _fuse.clone
         
-        local _Computed = _fuse.Computed
-        local _Value = _fuse.Value
+--         local _Computed = _fuse.Computed
+--         local _Value = _fuse.Value
 
-        for _,inst in pairs(CollectionService:GetTagged(interactNameTag)) do
-            local _maid = Maid.new()
+--         for _,inst in pairs(CollectionService:GetTagged(interactNameTag)) do
+--             local _maid = Maid.new()
 
-            _maid:GiveTask(_new("BillboardGui")({
-                AlwaysOnTop = true,
-                MaxDistance = MAXIMUM_INTERACT_DISTANCE,
-                Size = UDim2.fromScale(0.6, 0.6),
-                Parent = inst,
-                Children = {
-                    _new("ImageLabel")({
-                        BackgroundTransparency = 1,
-                        Size = UDim2.fromScale(1, 1),
-                        Image = "rbxassetid://12804017021"
-                    })
-                }
-            }))
+--             _maid:GiveTask(_new("BillboardGui")({
+--                 AlwaysOnTop = true,
+--                 MaxDistance = MAXIMUM_INTERACT_DISTANCE,
+--                 Size = UDim2.fromScale(0.6, 0.6),
+--                 Parent = inst,
+--                 Children = {
+--                     _new("ImageLabel")({
+--                         BackgroundTransparency = 1,
+--                         Size = UDim2.fromScale(1, 1),
+--                         Image = "rbxassetid://12804017021"
+--                     })
+--                 }
+--             }))
 
-            local clickDetector = Instance.new("ClickDetector")
-            clickDetector.MaxActivationDistance = 18
-            clickDetector.Parent = inst
+--             local clickDetector = Instance.new("ClickDetector")
+--             clickDetector.MaxActivationDistance = 18
+--             clickDetector.Parent = inst
             
-            _maid:GiveTask(clickDetector.MouseClick:Connect(function()
-                InteractableUtil.Interact(inst :: Model, Player)                        
-            end))
+--             _maid:GiveTask(clickDetector.MouseClick:Connect(function()
+--                 InteractableUtil.Interact(inst :: Model, Player)                        
+--             end))
 
-            _maid:GiveTask(clickDetector.Destroying:Connect(function()
-                if clickDetector.Parent == nil then
-                    _maid:Destroy()
-                end
-            end))
-        end
-    end
-end
+--             _maid:GiveTask(clickDetector.Destroying:Connect(function()
+--                 if clickDetector.Parent == nil then
+--                     _maid:Destroy()
+--                 end
+--             end))
+--         end
+--     end
+-- end
 
 function createInteractByPrompt(
     maid : Maid, 
