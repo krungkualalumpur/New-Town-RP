@@ -165,167 +165,112 @@ return function(
 
     local toolsMaid = maid:GiveTask(Maid.new())
      
-    local strValue = _new("StringValue")({
-        Value = _Computed(function(backpackTbl : {[number] : BackpackUtil.ToolData<boolean>}, items : {[number] : BackpackUtil.ToolData<nil>})
-            toolsMaid:DoCleaning()
-
-            local _fuse = ColdFusion.fuse(toolsMaid)
-            local _new = _fuse.new
-            local _import = _fuse.import
-            local _bind = _fuse.bind
-            local _clone = _fuse.clone
+    local cartListFrame = _bind(Sintesa.Molecules.Lists.ColdFusion.new(maid, isDark, false, _Computed(function(backpackTbl : {[number] : BackpackUtil.ToolData<boolean>}, items : {[number] : BackpackUtil.ToolData<nil>}) 
+        toolsMaid:DoCleaning()
         
-            local _Computed = _fuse.Computed
-            local _Value = _fuse.Value
+        local _fuse = ColdFusion.fuse(toolsMaid)
+        local _new = _fuse.new
+        local _import = _fuse.import
+        local _bind = _fuse.bind
+        local _clone = _fuse.clone
+    
+        local _Computed = _fuse.Computed
+        local _Value = _fuse.Value
 
-            for k,v in pairs(tools) do
-                local ownsTool = false
-                for _,backpackTool in pairs(backpackTbl) do
-                    if backpackTool.Name == v.Name then
-                        ownsTool = true
-                        break
-                    end
-                end  
-                if not v:GetAttribute("DescendantsAreTools") and ownsTool then
-                    --print(v) 
-                    local modelDisplay = v:Clone()
-                    modelDisplay:PivotTo(CFrame.new())
-                    for _,v in pairs(modelDisplay:GetDescendants()) do
-                        if v:IsA("Script") or v:IsA("LocalScript") or v:IsA("ModuleScript") then
-                            v:Destroy()
-                        end
-                    end
-                    -- local button =  getViewportFrame(
-                    --     toolsMaid,
-                    --     k,
-                    --     Vector3.new(1.4,1,1.4),
-                    --     modelDisplay,
-                    --     function()
-                    --         local currentSelectedItems = table.clone(selectedItems:Get())
-                           
-                    --         local selectedToolData
-                    --         for _,toolData in pairs(currentSelectedItems) do
-                    --             if toolData.Name == modelDisplay.Name then
-                    --                 selectedToolData = toolData
-                    --                 break
-                    --             end
-                    --         end
-
-                    --         if not selectedToolData and #currentSelectedItems >= 5 then
-                    --             return
-                    --         end
-                        
-                    --         if not selectedToolData then
-                    --             table.insert(currentSelectedItems, BackpackUtil.getData(v :: Model, true))
-                    --         else
-                    --             table.remove(currentSelectedItems, table.find(currentSelectedItems, selectedToolData))
-                    --         end
-                    --         selectedItems:Set(currentSelectedItems)
-                    --     end
-                    -- )
-                    local button = _new("ImageButton")({
-                        BackgroundTransparency = 1,
-                        Children = {
-                            _new("UIListLayout")({
-                                SortOrder = Enum.SortOrder.LayoutOrder
-                            }),
-                            _bind(Sintesa.InterfaceUtil.ViewportFrame.ColdFusion.new(
-                                maid, 
-                                modelDisplay, 
-                                65, 
-                                true, 
-                                isDarkState, 
-                                Sintesa.SintesaEnum.ShapeStyle.ExtraSmall
-                            ))({
-                                LayoutOrder = 1
-                            }),
-                            Sintesa.InterfaceUtil.TextLabel.ColdFusion.new(
-                                maid, 
-                                2, 
-                                modelDisplay.Name, 
-                                _Computed(function(dark  : boolean)
-                                    return Sintesa.StyleUtil.MaterialColor.Color3FromARGB(Sintesa.ColorUtil.getDynamicScheme(dark):get_onSurfaceVariant())
-                                end, isDarkState), 
-                                Sintesa.TypeUtil.createTypographyData(Sintesa.StyleUtil.Typography.get(Sintesa.SintesaEnum.TypographyStyle.LabelLarge)), 
-                                15
-                            )
-                        },
-                        Events = {
-                            Activated = function()
-                                local currentSelectedItems = table.clone(selectedItems:Get())
-                           
-                                local selectedToolData
-                                for _,toolData in pairs(currentSelectedItems) do
-                                    if toolData.Name == modelDisplay.Name then
-                                        selectedToolData = toolData
-                                        break
-                                    end
-                                end
-
-                                if not selectedToolData and #currentSelectedItems >= 5 then
-                                    return
-                                end
-                            
-                                if not selectedToolData then
-                                    table.insert(currentSelectedItems, BackpackUtil.getData(v :: Model, true))
-                                else
-                                    table.remove(currentSelectedItems, table.find(currentSelectedItems, selectedToolData))
-                                end
-                                selectedItems:Set(currentSelectedItems)
-                            end
-                        },
-                        Parent = gerobakItemsPut
-                    })
-
-
-                    local isSelected = false
-                    for _,item in pairs(items) do
-                        if v.Name == item.Name then
-                            isSelected = true
-                            break
-                        end
-                    end
-
-                    _new("ImageLabel")({
-                        Visible = isSelected,
-                        BackgroundTransparency = 1,
-                        Size = UDim2.fromScale(1, 1),
-                        Image = "rbxassetid://72382658",
-                        Parent = button
-                    })
-
-                    if isSelected then
-                        _bind(button)({
-                            LayoutOrder = -1
-                        })
+        local list = {}
+        for k,v in pairs(tools) do
+            local ownsTool = false
+            for _,backpackTool in pairs(backpackTbl) do
+                if backpackTool.Name == v.Name then
+                    ownsTool = true
+                    break
+                end
+            end  
+            if not v:GetAttribute("DescendantsAreTools") and ownsTool then
+                --print(v) 
+                local modelDisplay = toolsMaid:GiveTask(v:Clone())
+                modelDisplay:PivotTo(CFrame.new())
+                for _,v in pairs(modelDisplay:GetDescendants()) do
+                    if v:IsA("Script") or v:IsA("LocalScript") or v:IsA("ModuleScript") then
+                        v:Destroy()
                     end
                 end
-            end
 
-            return ""
-        end, backpack, selectedItems)
+                table.insert(list, Sintesa.TypeUtil.createFusionListInstance(
+                    modelDisplay.Name, 
+                    "Owned item", 
+                    nil, 
+                    Sintesa.Molecules.Checkbox.ColdFusion.new(maid, _Computed(function(items : {[number] : BackpackUtil.ToolData<nil>})
+                        local isSelected: boolean? = false
+                        for _,item in pairs(items) do
+                            if v.Name == item.Name then
+                                isSelected = true
+                                break
+                            end
+                        end
+                        return isSelected 
+                    end, selectedItems), function() 
+                        local currentSelectedItems = table.clone(selectedItems:Get())
+                           
+                        local selectedToolData
+                        for _,toolData in pairs(currentSelectedItems) do
+                            if toolData.Name == modelDisplay.Name then
+                                selectedToolData = toolData
+                                break
+                            end
+                        end
+
+                        if not selectedToolData and #currentSelectedItems >= 5 then
+                            return
+                        end
+                    
+                        if not selectedToolData then
+                            table.insert(currentSelectedItems, BackpackUtil.getData(v :: Model, true))
+                        else
+                            table.remove(currentSelectedItems, table.find(currentSelectedItems, selectedToolData))
+                        end
+                        selectedItems:Set(currentSelectedItems)
+                    end, false),
+                    nil,
+                    _new("ImageButton")({
+                        BackgroundTransparency = 1,
+                        Size = UDim2.new(0,25,0,25),
+                        Children = {
+                            Sintesa.InterfaceUtil.ViewportFrame.ColdFusion.new(
+                                toolsMaid, 
+                                modelDisplay, 
+                                25, 
+                                true, 
+                                isDarkState
+                            )
+                        }
+                    }) :: ImageButton
+                   
+                ))
+            end
+        end
+
+        return list
+    end, backpack, selectedItems), width))({
+        LayoutOrder = 3,
+        Size = UDim2.new(0, width, 0.85,0)
     })
 
     local gerobakFrameContent = _new("Frame")({
         LayoutOrder = 2,
         BackgroundTransparency = 1,
-        Size = UDim2.fromScale(1, 0.85),
+        Size = UDim2.fromScale(1, 1),
         Children = {
-            _new("UIPadding")({
-                PaddingTop = PADDING_SIZE,
-                PaddingBottom = PADDING_SIZE,
-                PaddingLeft = PADDING_SIZE,
-                PaddingRight = PADDING_SIZE,
-            }),
+            
             _new("UIListLayout")({
+                Padding = PADDING_SIZE,
                 SortOrder = Enum.SortOrder.LayoutOrder,
                 FillDirection = Enum.FillDirection.Vertical,
                 HorizontalAlignment = Enum.HorizontalAlignment.Center,
                 VerticalAlignment = Enum.VerticalAlignment.Center,
-                Padding = PADDING_SIZE
             }),
            
-            Sintesa.InterfaceUtil.TextLabel.ColdFusion.new(
+            _bind(Sintesa.InterfaceUtil.TextLabel.ColdFusion.new(
                 maid, 
                 1, 
                 _Computed(function(tbl : {})
@@ -335,9 +280,33 @@ return function(
                     return Sintesa.StyleUtil.MaterialColor.Color3FromARGB(Sintesa.ColorUtil.getDynamicScheme(dark):get_onSurfaceVariant())
                 end, isDarkState),
                 Sintesa.TypeUtil.createTypographyData(Sintesa.StyleUtil.Typography.get(Sintesa.SintesaEnum.TypographyStyle.LabelLarge)), 
-                25
-            ),
-            gerobakItemsPut
+                10
+            ))({
+                TextYAlignment = Enum.TextYAlignment.Bottom
+            }),
+            cartListFrame,
+            _new("Frame")({
+                LayoutOrder = 3,
+                AutomaticSize = Enum.AutomaticSize.Y,
+                BackgroundTransparency = 1,
+                Size = UDim2.fromScale(1, 0),
+                Children = {
+                    _new("UIListLayout")({
+                        FillDirection = Enum.FillDirection.Horizontal,
+                        VerticalAlignment = Enum.VerticalAlignment.Center,
+                        HorizontalAlignment = Enum.HorizontalAlignment.Right,
+                    }),
+                    _bind(Sintesa.Molecules.FilledCommonButton.ColdFusion.new(maid, _Computed(function(bool : boolean)
+                        --gerobakFrameContent.Visible = not bool
+                        return if bool then "Despawn cart" else "Spawn cart"
+                    end, cartSpawned), function()  
+                        onItemCartSpawn:Fire(selectedItems:Get(), cartSpawned)
+                    end, isDarkState, 40))({
+                        LayoutOrder = 3
+                    })
+                   
+                }
+            }),
         } 
     })
 
@@ -350,12 +319,7 @@ return function(
         end, selectedCategory),
         Size = UDim2.fromScale(0.9,0.85), 
         Children = {
-            _new("UIPadding")({
-                PaddingTop = PADDING_SIZE,
-                PaddingBottom = PADDING_SIZE,
-                PaddingLeft = PADDING_SIZE,
-                PaddingRight = PADDING_SIZE,
-            }),
+           
             _new("UIListLayout")({
                 SortOrder = Enum.SortOrder.LayoutOrder,
                 FillDirection = Enum.FillDirection.Vertical,
@@ -364,30 +328,10 @@ return function(
                 HorizontalAlignment = Enum.HorizontalAlignment.Center
             }),
         
-            _new("Frame")({
-                LayoutOrder = 0,
-                Size = UDim2.new(1,0,0,2)
-            }),
 
             gerobakFrameContent,
 
-            _new("Frame")({
-                LayoutOrder = 3,
-                BackgroundTransparency = 1,
-                Size = UDim2.fromScale(1, 0.08),
-                Children = {
-                    _new("UIListLayout")({
-                        HorizontalAlignment = Enum.HorizontalAlignment.Center
-                    }),
-                    Sintesa.Molecules.FilledCommonButton.ColdFusion.new(maid, _Computed(function(bool : boolean)
-                        --gerobakFrameContent.Visible = not bool
-                        return if bool then "Despawn cart" else "Spawn cart"
-                    end, cartSpawned), function()  
-                        onItemCartSpawn:Fire(selectedItems:Get(), cartSpawned)
-                    end)
-                   
-                }
-            }),
+            
             
         }
     })
@@ -431,7 +375,11 @@ return function(
                         end, false), 
                         v.Name:match("%a"), nil, true))
     end
-    local jobFrameContent = Sintesa.Molecules.Lists.ColdFusion.new(maid, isDarkState, false, _joblists, width)
+    local jobFrameContent = _bind(Sintesa.Molecules.Lists.ColdFusion.new(maid, isDarkState, false, _joblists, width))({
+        LayoutOrder = 2,
+        AutomaticSize = Enum.AutomaticSize.None,
+        Size = UDim2.new(0, width, 0.9,0)
+    })  
 
    
     local jobFrame = _new("Frame")({
@@ -442,7 +390,7 @@ return function(
         Visible = _Computed(function(category : string) 
             return category == "Job" 
         end, selectedCategory),
-        Size = UDim2.fromScale(1,0.85), 
+        Size = UDim2.fromScale(1,1), 
         Children = {
           
             _new("UIListLayout")({
@@ -452,7 +400,19 @@ return function(
                 VerticalAlignment = Enum.VerticalAlignment.Top,
                 HorizontalAlignment = Enum.HorizontalAlignment.Center
             }),
-          
+            _bind(Sintesa.InterfaceUtil.TextLabel.ColdFusion.new(
+                maid, 
+                1, 
+                "Choose your roleplay job", 
+                _Computed(function(dark  : boolean)
+                    return Sintesa.StyleUtil.MaterialColor.Color3FromARGB(Sintesa.ColorUtil.getDynamicScheme(dark):get_onSurfaceVariant())
+                end, isDarkState),
+                Sintesa.TypeUtil.createTypographyData(Sintesa.StyleUtil.Typography.get(Sintesa.SintesaEnum.TypographyStyle.LabelLarge)), 
+                35
+            ))({
+                TextXAlignment = Enum.TextXAlignment.Center,
+                TextYAlignment = Enum.TextYAlignment.Bottom
+            }),
             jobFrameContent
         }
     })
@@ -473,7 +433,7 @@ return function(
         Visible = _Computed(function(category : string) 
             return category == "Animation" 
         end, selectedCategory),
-        Size = UDim2.fromScale(1,0.85), 
+        Size = UDim2.fromScale(1,1), 
     })
 
     
@@ -481,18 +441,17 @@ return function(
         Name = "ContentFrame",
         BackgroundTransparency = 0,
         BackgroundColor3 = containerColorState,
-        Size = UDim2.new(0,width,0.85,0), 
+        Size = UDim2.new(0,width,0.7,0), 
         Children = {
             _new("UIListLayout")({
                 SortOrder = Enum.SortOrder.LayoutOrder,
                 FillDirection = Enum.FillDirection.Vertical,
                 HorizontalAlignment = Enum.HorizontalAlignment.Center,
-                VerticalAlignment = Enum.VerticalAlignment.Bottom,
+                VerticalAlignment = Enum.VerticalAlignment.Center,
             }),
             animFrameContent,
             jobFrame,
             gerobakFrame,
-            footer
         }
     })
     
@@ -508,20 +467,32 @@ return function(
                 HorizontalAlignment = Enum.HorizontalAlignment.Right
  
             }),
-            _bind(header)({
-                ZIndex = 2,
-                Size = UDim2.new(0, width- 12, 0.15,0),
+            header,
+            -- ZIndex = 2,
+            --    -- Size = UDim2.new(0, width- 12, 0,15),
                
-                Children = {
-                    _new("UISizeConstraint")({
-                        MaxSize = Vector2.new(width- 12, header.Size.Y.Offset)
-                    })
-                }
-            }),
+            --     Children = {
+            --         _new("UISizeConstraint")({
+            --             MaxSize = Vector2.new(width - 12, header.Size.Y.Offset)
+            --         })
+            --     }
+            -- }),
            
             contentFrame,
+            footer
         }
     }) :: Frame
+
+    local screenAbsoluteSize = _Value(workspace.CurrentCamera.ViewportSize)
+    
+    maid:GiveTask(workspace.CurrentCamera:GetPropertyChangedSignal("ViewportSize"):Connect(function()
+        screenAbsoluteSize:Set(workspace.CurrentCamera.ViewportSize)
+    end))
+    _bind(contentFrame)({
+        Size = _Computed(function(absSize : Vector2)
+            return UDim2.fromOffset(width, absSize.Y - footer.AbsoluteSize.Y - header.AbsoluteSize.Y)
+        end, screenAbsoluteSize)
+    })
 
     return out
 end
