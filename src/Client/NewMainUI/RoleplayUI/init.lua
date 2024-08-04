@@ -506,7 +506,7 @@ return function(
                 SortOrder = Enum.SortOrder.LayoutOrder,
                 VerticalAlignment = Enum.VerticalAlignment.Center,
                 HorizontalAlignment = Enum.HorizontalAlignment.Right
-
+ 
             }),
             _bind(header)({
                 ZIndex = 2,
