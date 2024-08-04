@@ -33,8 +33,9 @@ local ON_CAMERA_SHAKE = "OnCameraShake"
 local ON_ANIMATION_PLAY = "OnAnimationPlay"
 local ON_ANIMATION_STOP = "OnAnimationStop"
 
-local ON_ANIMATION_SET = "OnAnimationSet"
-local ON_RAW_ANIMATION_SET = "OnRawAnimationSet"
+local ON_AVATAR_ANIMATION_SET = "OnAvatarAnimationSet"
+local ON_AVATAR_RAW_ANIMATION_SET = "OnAvatarRawAnimationSet"
+
 local GET_CATALOG_FROM_CATALOG_INFO = "GetCatalogFromCatalogInfo"
 --variables
 --references
@@ -90,7 +91,7 @@ local function playAnimationByCharacter(char : Model, id : number)
     if RunService:IsServer() then
         local plr = Players:GetPlayerFromCharacter(char)
         assert(plr)
-        NetworkUtil.fireClient(ON_ANIMATION_SET, plr, char, id)
+        NetworkUtil.fireClient(ON_AVATAR_ANIMATION_SET, plr, char, id)
     else  
         local maid = Maid.new()
         local charHumanoid = char:WaitForChild("Humanoid") :: Humanoid
@@ -320,11 +321,11 @@ function CharacterManager.init(maid: Maid)
         stopAnimation(Player, animName)
     end))
 
-    maid:GiveTask(NetworkUtil.onClientEvent(ON_ANIMATION_SET, function(char : Model, id : number)
+    maid:GiveTask(NetworkUtil.onClientEvent(ON_AVATAR_ANIMATION_SET, function(char : Model, id : number)
         playAnimationByCharacter(char, id)
     end))
 
-    maid:GiveTask(NetworkUtil.onClientEvent(ON_RAW_ANIMATION_SET, function(char : Model, id : number)
+    maid:GiveTask(NetworkUtil.onClientEvent(ON_AVATAR_RAW_ANIMATION_SET, function(char : Model, id : number)
         playAnimationByRawId(char, id)
     end))
 

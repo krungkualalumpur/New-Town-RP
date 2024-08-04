@@ -160,8 +160,6 @@ local function getItemButton(
             end
         }
     }) 
-    
-    
     return out2
 end
 
@@ -196,8 +194,6 @@ local function getItemTypeFrame(
                 CellPadding = UDim2.fromOffset(5, 5),
                 CellSize = UDim2.fromOffset(100, 100)
             }),
-            
-
         }
     }) :: Frame
 
@@ -221,7 +217,6 @@ local function getItemTypeFrame(
                 return Sintesa.StyleUtil.MaterialColor.Color3FromARGB(Sintesa.ColorUtil.getDynamicScheme(dark):get_onSurfaceVariant())  
             end, isDarkState), Sintesa.TypeUtil.createTypographyData(Sintesa.StyleUtil.Typography.get(Sintesa.SintesaEnum.TypographyStyle.TitleMedium)), 
             25),
-            -- isNAFrame,
             itemFrameList,
             _bind(Sintesa.Molecules.Divider.ColdFusion.new(maid, isDark))({
                 LayoutOrder = 4
@@ -309,7 +304,7 @@ return function(
     ))({
         LayoutOrder = 1,
     })
-    header.Size = UDim2.new(0,width- 50,0,header.Size.Y.Offset)
+    header.Size = UDim2.new(0,width- 27,0,header.Size.Y.Offset)
     
     local backpackUIListLayout =  _new("UIListLayout")({
         SortOrder = Enum.SortOrder.LayoutOrder,
@@ -322,7 +317,8 @@ return function(
             return #text == 0 
         end, inputText),
         AutomaticCanvasSize = Enum.AutomaticSize.Y,
-        BackgroundTransparency = 1,
+        BackgroundTransparency = 0,
+        BackgroundColor3 = containerColorState,
         Position = UDim2.fromScale(0,0),
         Size = UDim2.fromScale(1,0.75),
         Children = {
@@ -336,7 +332,8 @@ return function(
     }) :: UIListLayout
     local searchContentFrameList = _new("Frame")({
         LayoutOrder = 2,
-        BackgroundTransparency = 1,
+        BackgroundTransparency = 0,
+        BackgroundColor3 = containerColorState,
         AutomaticSize = Enum.AutomaticSize.Y,
         Size = UDim2.fromScale(1, 0),
         Children = {
@@ -383,20 +380,32 @@ return function(
         end 
         return toolSearchText
     end
-    local searchBarFrame = _bind(Sintesa.Molecules.SearchBar.ColdFusion.new(
-        maid, 
-        isDarkState, 
-        Sintesa.IconLists.search.manage_search, 
-        "Search for items by name", 
-        width - PADDING_SIZE.Offset*2,
-        inputText,
-        function()
-            searchUpdate(inputText:Get())
-        end
 
-    ))({
+    local searchBarFrame = _new("Frame")({
         LayoutOrder = 2,
-        Visible = isSearchVisible
+        AutomaticSize = Enum.AutomaticSize.XY,
+        Size = UDim2.new(0, width, 0, 0),
+        BackgroundColor3 = containerColorState,
+        Children = {
+            _new("UIListLayout")({
+                HorizontalAlignment = Enum.HorizontalAlignment.Center,
+            }),
+            _bind(Sintesa.Molecules.SearchBar.ColdFusion.new(
+                maid, 
+                isDarkState, 
+                Sintesa.IconLists.search.manage_search, 
+                "Search for items by name", 
+                width - PADDING_SIZE.Offset*2,
+                inputText,
+                function()
+                    searchUpdate(inputText:Get())
+                end
+
+            ))({
+                LayoutOrder = 2,
+                Visible = isSearchVisible
+            })
+        }
     })
 
     do
@@ -421,39 +430,28 @@ return function(
         })
     end    
    
-    -- _bind(backpackUIListLayout)({
-    --     Events = {
-    --         Changed = function()
-    --             backpackContentFrame.CanvasSize = UDim2.new(0,0,0,backpackUIListLayout.AbsoluteContentSize.Y + PADDING_SIZE.Offset*2)
-    --         end
-    --     }
-    -- })
-    -- _bind(backpackSearchUIListLayout)({
-    --     Events = {
-    --         Changed = function()
-    --             searchContentFrame.CanvasSize = UDim2.new(0,0,0,backpackSearchUIListLayout.AbsoluteContentSize.Y + PADDING_SIZE.Offset*2)
-    --         end
-    --     }
-    -- })
     local contentFrame = _new("Frame")({
         Name = "ContentFrame",
         Visible = isVisible,
-        BackgroundColor3 = containerColorState,
-        BackgroundTransparency = 0,
+        --BackgroundColor3 = containerColorState,
+        BackgroundTransparency = 1,
         Position = UDim2.fromScale(0,0),
         Size = UDim2.new(0,width,1,0),
         Children = {
-            _new("UIPadding")({
-                PaddingLeft = PADDING_SIZE,
-                PaddingRight = PADDING_SIZE
-            }),
+           
             _new("UIListLayout")({
                 SortOrder = Enum.SortOrder.LayoutOrder,
                 HorizontalAlignment = Enum.HorizontalAlignment.Center,
-                Padding = PADDING_SIZE
+                VerticalAlignment = Enum.VerticalAlignment.Center
             }),
             header,
             searchBarFrame,
+            _new("Frame")({
+                LayoutOrder = 2, 
+                Name = "Buffer",
+                BackgroundColor3 = containerColorState,
+                Size = UDim2.new(0, width, 0, 6)
+            }),
             _bind(Sintesa.InterfaceUtil.TextLabel.ColdFusion.new(
                 maid, 
                 3, 
@@ -526,18 +524,12 @@ return function(
     local out = _new("Frame")({
         BackgroundTransparency = 1,
         Size = UDim2.fromScale(1, 1),
-        Children = {
-           
+        Children = {    
             _new("UIListLayout")({
                 FillDirection = Enum.FillDirection.Horizontal,
-                VerticalAlignment = Enum.VerticalAlignment.Bottom,
+                VerticalAlignment = Enum.VerticalAlignment.Center,
                 HorizontalAlignment = Enum.HorizontalAlignment.Right,
                 SortOrder = Enum.SortOrder.LayoutOrder,
-            }),
-            _new("Frame")({
-                LayoutOrder = 0,
-                BackgroundTransparency = 1,
-                Size = UDim2.new(0, 50,0.8,0)
             }),
             contentFrame        
         }

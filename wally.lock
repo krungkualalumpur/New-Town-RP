@@ -15,7 +15,7 @@ dependencies = []
 [[package]]
 name = "do-not-publish/xyz"
 version = "0.1.0"
-dependencies = [["ColdFusion8", "nightcycle/cold-fusion@8.0.0"], ["Fusion", "elttob/fusion@0.1.1-beta"], ["HashUtil", "boatbomber/hashlib@1.0.0"], ["Maid", "nightcycle/maid@1.1.4"], ["MeshUtil", "nightcycle/mesh-util@1.0.3"], ["Midas", "nightcycle/midas@5.1.1"], ["NetworkUtil", "nightcycle/network-util@1.7.0"], ["ProfileService", "brittonfischer/profileservice@2.1.5"], ["ServiceProxy", "nightcycle/service-proxy@1.0.0"], ["Signal", "nightcycle/signal@1.0.2"], ["Sintesa", "krungkualalumpur/sintesa@0.1.8"], ["TableUtil", "nightcycle/table-util@1.1.0"]]
+dependencies = [["ColdFusion8", "nightcycle/cold-fusion@8.0.0"], ["Fusion", "elttob/fusion@0.1.1-beta"], ["HashUtil", "boatbomber/hashlib@1.0.0"], ["Maid", "nightcycle/maid@1.1.4"], ["MeshUtil", "nightcycle/mesh-util@1.0.3"], ["Midas", "nightcycle/midas@5.1.1"], ["NetworkUtil", "nightcycle/network-util@1.7.0"], ["ProfileService", "brittonfischer/profileservice@2.1.5"], ["ServiceProxy", "nightcycle/service-proxy@1.0.0"], ["Signal", "nightcycle/signal@1.0.2"], ["Sintesa", "krungkualalumpur/sintesa@0.1.86"], ["TableUtil", "nightcycle/table-util@1.1.0"]]
 
 [[package]]
 name = "elttob/fusion"
@@ -24,7 +24,7 @@ dependencies = []
 
 [[package]]
 name = "krungkualalumpur/sintesa"
-version = "0.1.8"
+version = "0.1.86"
 dependencies = [["ColdFusion8", "nightcycle/cold-fusion@8.0.0"], ["Fusion", "elttob/fusion@0.1.1-beta"], ["Maid", "nightcycle/maid@1.1.4"]]
 
 [[package]]

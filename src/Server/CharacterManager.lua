@@ -31,8 +31,8 @@ local ON_CHARACTER_INFO_SET_FROM_CHARACTER_DATA = "OnCharacterInfoSetFromCharact
 local ON_ANIMATION_PLAY = "OnAnimationPlay"
 local ON_ANIMATION_STOP = "OnAnimationStop"
 
-local ON_ANIMATION_SET = "OnAnimationSet"
-local ON_RAW_ANIMATION_SET = "OnRawAnimationSet"
+local ON_AVATAR_ANIMATION_SET = "OnAvatarAnimationSet"
+local ON_AVATAR_RAW_ANIMATION_SET = "OnAvatarRawAnimationSet"
 --variables
 --references
 --local functions
@@ -41,7 +41,7 @@ local function playAnimation(char : Model, id : number)
     if RunService:IsServer() then
         local plr = Players:GetPlayerFromCharacter(char)
         assert(plr)
-        NetworkUtil.fireClient(ON_ANIMATION_SET, plr, char, id)
+        NetworkUtil.fireClient(ON_AVATAR_ANIMATION_SET, plr, char, id)
     else  
         local maid = Maid.new()
         local charHumanoid = char:WaitForChild("Humanoid") :: Humanoid
@@ -267,8 +267,8 @@ function CharacterManager.init(maid : Maid)
         return nil
     end)
 
-    NetworkUtil.getRemoteEvent(ON_ANIMATION_SET)
-    NetworkUtil.getRemoteEvent(ON_RAW_ANIMATION_SET)
+    NetworkUtil.getRemoteEvent(ON_AVATAR_ANIMATION_SET)
+    NetworkUtil.getRemoteEvent(ON_AVATAR_RAW_ANIMATION_SET)
 
     NetworkUtil.getRemoteEvent(ON_ANIMATION_PLAY)
     NetworkUtil.getRemoteEvent(ON_ANIMATION_STOP)

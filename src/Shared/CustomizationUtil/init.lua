@@ -115,7 +115,8 @@ local STR_CHAR_LIMIT =  10
 local CHARACTER_BUNDLE_ID_ATTRIBUTE_KEY = "BundleId"
 
 local CATALOG_FOLDER_NAME = "CatalogFolder"
-local ON_ANIMATION_SET = "OnAnimationSet"
+local ON_AVATAR_ANIMATION_SET = "OnAvatarAnimationSet"
+local ON_AVATAR_RAW_ANIMATION_SET = "OnAvatarRawAnimationSet"
 
 local ON_CUSTOMIZE_CHAR = "OnCustomizeCharacter"
 local ON_CUSTOMIZE_CHAR_COLOR = "OnCustomizeCharColor"
@@ -172,7 +173,7 @@ local function playAnimation(char : Model, id : number)
     if RunService:IsServer() then
         local plr = Players:GetPlayerFromCharacter(char)
         assert(plr)
-        NetworkUtil.fireClient(ON_ANIMATION_SET, plr, char, id)
+        NetworkUtil.fireClient(ON_AVATAR_ANIMATION_SET, plr, char, id)
     else  
         local maid = Maid.new()
         local charHumanoid = char:WaitForChild("Humanoid") :: Humanoid

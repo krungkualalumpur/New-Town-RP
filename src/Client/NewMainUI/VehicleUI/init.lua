@@ -231,7 +231,7 @@ return function(
     ))({
         LayoutOrder = 1,
     }) :: GuiObject
-    header.Size = UDim2.new(0,width- 50,0,header.Size.Y.Offset)
+    header.Size = UDim2.new(0,width- 28,0,header.Size.Y.Offset)
 
     local searchContentFrameList = _new("Frame")({
         LayoutOrder = 5,
@@ -270,20 +270,31 @@ return function(
         end 
         return toolSearchText
     end
-    local searchBarFrame = _bind(Sintesa.Molecules.SearchBar.ColdFusion.new(
-        maid, 
-        isDarkState, 
-        Sintesa.IconLists.search.manage_search, 
-        "Search for items by name", 
-        width - PADDING_SIZE.Offset*2,
-        inputText,
-        function()
-            searchUpdate(inputText:Get())
-        end
+    local searchBarFrame = _new("Frame")({
+        LayoutOrder = 2,
+        AutomaticSize = Enum.AutomaticSize.XY,
+        Size = UDim2.new(0, width, 0, 0),
+        BackgroundColor3 = containerColorState,
+        Children = {
+            _new("UIListLayout")({
+                HorizontalAlignment = Enum.HorizontalAlignment.Center,
+            }),
+            _bind(Sintesa.Molecules.SearchBar.ColdFusion.new(
+                maid, 
+                isDarkState, 
+                Sintesa.IconLists.search.manage_search, 
+                "Search for vehicles by name", 
+                width - PADDING_SIZE.Offset*2,
+                inputText,
+                function()
+                    searchUpdate(inputText:Get())
+                end
 
-    ))({
-        LayoutOrder = 3,
-        Visible = isSearchVisible
+            ))({
+                LayoutOrder = 2,
+                Visible = isSearchVisible
+            })
+        }
     })
     do
         local t = tick()
@@ -311,7 +322,8 @@ return function(
         LayoutOrder = 2,
         AutomaticSize = Enum.AutomaticSize.Y,
         BackgroundTransparency = 1,
-        Size = UDim2.new(0.88, 0,0,0),
+        BackgroundColor3 = containerColorState,
+        Size = UDim2.new(1, 0,0,0),
         Children = {
             _new("UIGridLayout")({
                 CellSize = UDim2.fromOffset(100, 25)
@@ -320,11 +332,16 @@ return function(
     })
     local filtersFrame = _new("Frame")({
         LayoutOrder = 2,
-        BackgroundTransparency = 1,
+        BackgroundTransparency = 0,
+        BackgroundColor3 = containerColorState,
         AutomaticSize = Enum.AutomaticSize.Y,
         Visible = isFilterVisible,
         Size = UDim2.new(1, 0,0,0),
         Children = {
+            _new("UIPadding")({
+                PaddingRight = PADDING_SIZE,
+                PaddingLeft = PADDING_SIZE,
+            }),
             _new("UIListLayout")({
                 SortOrder = Enum.SortOrder.LayoutOrder,
                 FillDirection = Enum.FillDirection.Horizontal,
@@ -393,7 +410,7 @@ return function(
         AutomaticCanvasSize = Enum.AutomaticSize.Y,
         Size = _Computed(function(filter : boolean, search : boolean)
             return if filter or search then UDim2.fromScale(1, 0.7) else UDim2.fromScale(1, 0.8)
-        end, isFilterVisible, isSearchVisible) ,
+        end, isFilterVisible, isSearchVisible),
         CanvasSize = UDim2.new(),
         Children = {
             vehicleUIGridLayout :: any,
@@ -422,23 +439,26 @@ return function(
     local contentFrame = _new("Frame")({
         Name = "ContentFrame",
         BackgroundColor3 = containerColorState,
-        BackgroundTransparency = 0,
+        BackgroundTransparency = 1,
         Position = UDim2.fromScale(0,0),
-        Size = UDim2.new(0,width, 1, 0),
+        Size = UDim2.new(0,width,1, 0),
         Children = {
-            _new("UIPadding")({
-                PaddingLeft = PADDING_SIZE,
-                PaddingRight = PADDING_SIZE
-            }) ,
+        
             _new("UIListLayout")({
                 SortOrder = Enum.SortOrder.LayoutOrder,
+                VerticalAlignment = Enum.VerticalAlignment.Top,
                 HorizontalAlignment = Enum.HorizontalAlignment.Center,
-                Padding = PADDING_SIZE
             }),
           
             header,
             searchBarFrame,
-
+            _new("Frame")({
+                LayoutOrder = 2, 
+                Name = "Buffer",
+                BackgroundColor3 = containerColorState,
+                Size = UDim2.new(0, width, 0, 6)
+            }),
+            
             _bind(Sintesa.InterfaceUtil.TextLabel.ColdFusion.new(
                 maid, 
                 3, 
@@ -465,7 +485,18 @@ return function(
             
             searchContentFrameList,
 
-            newVehiclesContentFrame
+            _new("Frame")({
+                LayoutOrder = 5,
+                Size = UDim2.new(0, width, 0.8, 0),
+                BackgroundColor3 = containerColorState,
+                Children = {
+                    _new("UIPadding")({
+                        PaddingRight = PADDING_SIZE,
+                        PaddingLeft = PADDING_SIZE,
+                    }),
+                    newVehiclesContentFrame
+                }
+            })
         }
     }) :: GuiObject
     local out = _new("Frame")({
@@ -475,7 +506,7 @@ return function(
            
             _new("UIListLayout")({
                 FillDirection = Enum.FillDirection.Horizontal,
-                VerticalAlignment = Enum.VerticalAlignment.Bottom,
+                VerticalAlignment = Enum.VerticalAlignment.Center,
                 HorizontalAlignment = Enum.HorizontalAlignment.Right,
                 SortOrder = Enum.SortOrder.LayoutOrder,
             }),

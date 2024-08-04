@@ -8,10 +8,12 @@ local Maid = require(ReplicatedStorage:WaitForChild("Packages"):WaitForChild("Ma
 local ColdFusion = require(ReplicatedStorage:WaitForChild("Packages"):WaitForChild("ColdFusion8"))
 local Signal = require(ReplicatedStorage:WaitForChild("Packages"):WaitForChild("Signal"))
 local NetworkUtil = require(ReplicatedStorage:WaitForChild("Packages"):WaitForChild("NetworkUtil"))
+local Sintesa = require(ReplicatedStorage:WaitForChild("Packages"):WaitForChild("Sintesa"))
 --modules
 local BackpackUtil = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("BackpackUtil"))
 local ExitButton = require(ReplicatedStorage:WaitForChild("Client"):WaitForChild("ExitButton"))
 local Jobs = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Jobs"))
+local CustomEnums = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("CustomEnum"))
 --types
 type Maid = Maid.Maid
 type Signal = Signal.Signal
@@ -29,156 +31,15 @@ type State<T> = ColdFusion.State<T>
 --constants
 
 local BACKGROUND_COLOR = Color3.fromRGB(90,90,90)
-local PRIMARY_COLOR = Color3.fromRGB(255,255,255)
-local SECONDARY_COLOR =  Color3.fromRGB(180,180,180)
 local TERTIARY_COLOR = Color3.fromRGB(70,70,70)
 local TEXT_COLOR = Color3.fromRGB(255,255,255)
-local SELECT_COLOR = Color3.fromRGB(75, 210, 80)
-local RED_COLOR = Color3.fromRGB(200,50,50)
-
-local TEST_COLOR = Color3.fromRGB(255,0,0)
 
 local PADDING_SIZE = UDim.new(0,10)
-
-local TEXT_SIZE = 15
-
 --remotes
 local GET_ITEM_CART = "GetItemCart"
 --variables
 --references
 --local functions
-local function getButton(
-    maid : Maid,
-    order : number,
-    text : CanBeState<string>,
-    fn : () -> (),
-    color :  CanBeState<Color3> ?
-)
-    local _fuse = ColdFusion.fuse(maid)
-    local _new = _fuse.new
-    local _import = _fuse.import
-    local _bind = _fuse.bind
-    local _clone = _fuse.clone
-
-    local _Computed = _fuse.Computed
-    local _Value = _fuse.Value
-
-    local out = _new("TextButton")({
-        AutoButtonColor = true,
-        LayoutOrder = order,
-        BackgroundColor3 = color,
-        Size = UDim2.fromScale(0.25, 0.15),
-        Font = Enum.Font.Gotham,
-        Text = text,
-        TextColor3 = TEXT_COLOR,
-        TextStrokeTransparency = 0.75,
-        TextScaled = true,
-        TextWrapped = true,
-        Children = {
-            _new("UICorner")({}),
-            _new("UIListLayout")({
-                FillDirection = Enum.FillDirection.Vertical,
-                VerticalAlignment = Enum.VerticalAlignment.Bottom,
-                HorizontalAlignment = Enum.HorizontalAlignment.Center
-            }),
-            _new("UITextSizeConstraint")({
-                MaxTextSize = 20
-            })
-        },
-        Events = {
-            Activated = function()
-                fn()
-                --onClick:Fire(interactedItem)
-            end
-        }
-    })
-    return out
-end
-
-local function getImageButton(
-    maid : Maid,
-    order : number,
-    image : string,
-    text : string ?,
-    fn : (() -> ()) ?
-)
-    local _fuse = ColdFusion.fuse(maid)
-    local _new = _fuse.new
-    local _import = _fuse.import
-    local _bind = _fuse.bind
-    local _clone = _fuse.clone
-
-
-    local previewFrame = _new("ImageLabel")({
-        LayoutOrder = 1,
-        ClipsDescendants = true,
-        Name = "PreviewFrame",
-        BackgroundTransparency = 1,
-        Size = UDim2.fromScale(1,0.7),
-        Image = image,
-        Children = {
-            _new("UIAspectRatioConstraint")({}),
-            _new("UIListLayout")({
-                FillDirection = Enum.FillDirection.Horizontal,
-                HorizontalAlignment = Enum.HorizontalAlignment.Left
-            })
-        }
-    })
-
-    local out = _new("TextButton")({
-        Name = text or "",
-        LayoutOrder = order,
-        AutoButtonColor = true,
-        --Image = image,
-        Size = UDim2.fromScale(1, 1),
-        Children = {
-            _new("UIListLayout")({ 
-                FillDirection = Enum.FillDirection.Vertical,
-                HorizontalAlignment = Enum.HorizontalAlignment.Center,
-                SortOrder = Enum.SortOrder.LayoutOrder,
-                Padding = PADDING_SIZE,
-            }),
-            _new("UIPadding")({
-                PaddingTop = PADDING_SIZE,
-                PaddingBottom = PADDING_SIZE,
-                PaddingLeft = PADDING_SIZE,
-                PaddingRight = PADDING_SIZE
-            }),
-            
-            previewFrame
-        },
-        Events = {
-            Activated = function()
-                if fn then
-                    fn()
-                end
-            end
-        }
-    })
-
-    if text then
-        _new("TextLabel")({
-            LayoutOrder = 2,
-            BackgroundTransparency = 1,
-            Size = UDim2.new(1,0,0.3,0),
-            RichText = true,
-            Font = Enum.Font.Gotham,
-            Text = text,
-            TextColor3 = TEXT_COLOR,
-            TextSize = TEXT_SIZE,
-            TextWrapped = true,
-            TextStrokeTransparency = 0.5,
-
-            Parent = out,
-            TextXAlignment = Enum.TextXAlignment.Center,
-            TextYAlignment = Enum.TextYAlignment.Top,
-        })
-    end
-
-    return out
-end
-
-
 local function getViewportFrame(
     maid : Maid,
     order : number,
@@ -234,99 +95,25 @@ local function getViewportFrame(
     return out
 end
 
-
-local function getAnimationButton(maid : Maid, animationInfo : AnimationInfo, onAnimClick : Signal)
-    local _fuse = ColdFusion.fuse(maid)
-    local _new = _fuse.new
-    local _import = _fuse.import
-    local _bind = _fuse.bind
-    local _clone = _fuse.clone
-
-    local _Computed = _fuse.Computed
-    local _Value = _fuse.Value
-
-    local out = _new("ImageButton")({
-        BackgroundColor3 = TERTIARY_COLOR,
-        BackgroundTransparency = 0.5,
-        Size = UDim2.new(1, 0,0,40),
-        AutoButtonColor = true,
-        Children = {
-            _new("UIStroke")({
-                Color = SECONDARY_COLOR,
-                Thickness = 1.5
-            }),
-            _new("UICorner")({}),
-            
-            _new("UIListLayout")({
-                SortOrder = Enum.SortOrder.LayoutOrder
-            }),
-            _new("TextLabel")({
-                LayoutOrder = 1,
-                BackgroundTransparency = 1,
-                Size = UDim2.fromScale(1, 1),
-                TextColor3 = TEXT_COLOR,
-                TextSize = 22,
-                Font = Enum.Font.Gotham,
-                Text = animationInfo.Name,
-            })
-        },
-        Events = {
-            Activated = function()
-                onAnimClick:Fire(animationInfo)
-            end
-        }
-    })
-
-    return out
-end
-
-
-local function getSelectButton(maid : Maid, order : number, text : string, isSelected : State<boolean>, fn : () -> (), color : Color3?)
-    local _fuse = ColdFusion.fuse(maid)
-    local _new = _fuse.new
-    local _import = _fuse.import
-    local _bind = _fuse.bind
-    local _clone = _fuse.clone
-
-    local _Computed = _fuse.Computed
-    local _Value = _fuse.Value
-
-    local out = getButton(maid, order, text, fn, color)
-    _bind(out)({
-        AutoButtonColor = true,
-        BackgroundColor3 = color,
-        Size = UDim2.new(0.25, 0,1,0),
-        Children = {
-            _new("Frame")({
-                BackgroundColor3 = SELECT_COLOR,
-                Visible = isSelected,
-                Size = _Computed(function(selected : boolean)
-                    return if selected then UDim2.fromScale(0.8, 0.1) else UDim2.fromScale(0, 0.15)
-                end, isSelected):Tween(0.2),
-                Children = {
-                    _new("UICorner")({})
-                }
-            })
-        }
-    })
-
-    return out
-end
 --class
 return function(
     maid : Maid,
-    Animations : {[number] : AnimationInfo},
+    Animations : {[number] : CustomEnums.AnimationAction},
 
     OnAnimClick : Signal,
     onItemCartSpawn : Signal,
     onJobChange : Signal,
 
     backpack : ValueState<{BackpackUtil.ToolData<boolean>}>,
+    currentJob : State<Jobs.JobData?>,
+
     jobsList : {
         [number] : Jobs.JobData
-    },
+    }, 
 
-    UIStatus : ValueState<string ?>
+    UIStatus : ValueState<string ?>,
+
+    isDark : CanBeState<boolean>
 )
     local _fuse = ColdFusion.fuse(maid)
     local _new = _fuse.new
@@ -337,65 +124,22 @@ return function(
     local _Computed = _fuse.Computed
     local _Value = _fuse.Value
 
+    local width = 380
+
     local cartSpawned : ValueState<boolean> = _Value(  if RunService:IsRunning() then if NetworkUtil.invokeServer(GET_ITEM_CART) then true else false else false)
     
     local selectedItems : ValueState<{[number] : BackpackUtil.ToolData<nil>}> = _Value({})
 
     local selectedCategory = _Value("Job")
+    local isScrolling = _Value(false)
 
-    local animationFrameContent = _new("ScrollingFrame")({
-        AutomaticCanvasSize = Enum.AutomaticSize.Y,
-        CanvasSize = UDim2.new(),
-        BackgroundColor3 = BACKGROUND_COLOR,
-        BackgroundTransparency = 1,
-        Position = UDim2.fromScale(0,0),
-        Size = UDim2.fromScale(0.88,1), 
-        Children = {
-            _new("UIPadding")({
-                PaddingBottom = PADDING_SIZE,
-                PaddingTop = PADDING_SIZE,
-                PaddingLeft = PADDING_SIZE,
-                PaddingRight = PADDING_SIZE
-            }),
-            _new("UICorner")({}),
-            _new("UIGridLayout")({
-                SortOrder = Enum.SortOrder.LayoutOrder,
-                CellSize = UDim2.fromOffset(150, 150),
-                CellPadding =  UDim2.fromOffset(15, 15)
-            }),
-        }
-    })
-
-    local animationFrame = _new("Frame")({
-        LayoutOrder = 2,
-        Name = "AnimationFrame",
-        Visible = _Computed(function(category : string) 
-            return category == "Basic Animation" 
-        end, selectedCategory),
-        BackgroundTransparency = 0.5,
-        BackgroundColor3 = BACKGROUND_COLOR,
-        Position = UDim2.fromScale(0,0),
-        Size = UDim2.fromScale(0.9,0.85), 
-        Children = {
-            _new("UIPadding")({
-                PaddingBottom = PADDING_SIZE,
-                PaddingTop = PADDING_SIZE,
-                PaddingLeft = PADDING_SIZE,
-                PaddingRight = PADDING_SIZE
-            }),
-            _new("UIListLayout")({
-                SortOrder = Enum.SortOrder.LayoutOrder,
-                Padding = PADDING_SIZE
-            }),
-            _new("Frame")({
-                LayoutOrder = 0,
-                Size = UDim2.new(1,0,0,2)
-            }),
-            animationFrameContent
-        }
-    })
-
+    local isDarkState = _import(isDark, isDark)
     
+    local containerColorState = _Computed(function(isDark : boolean)
+        local dynamicScheme = Sintesa.ColorUtil.getDynamicScheme(isDark)
+        return Sintesa.StyleUtil.MaterialColor.Color3FromARGB(dynamicScheme:get_surface())
+    end, isDarkState)
+   
     local gerobakItemsPut =  _new("ScrollingFrame")({
         LayoutOrder = 2,
         BackgroundTransparency = 1,
@@ -424,6 +168,16 @@ return function(
     local strValue = _new("StringValue")({
         Value = _Computed(function(backpackTbl : {[number] : BackpackUtil.ToolData<boolean>}, items : {[number] : BackpackUtil.ToolData<nil>})
             toolsMaid:DoCleaning()
+
+            local _fuse = ColdFusion.fuse(toolsMaid)
+            local _new = _fuse.new
+            local _import = _fuse.import
+            local _bind = _fuse.bind
+            local _clone = _fuse.clone
+        
+            local _Computed = _fuse.Computed
+            local _Value = _fuse.Value
+
             for k,v in pairs(tools) do
                 local ownsTool = false
                 for _,backpackTool in pairs(backpackTbl) do
@@ -441,47 +195,88 @@ return function(
                             v:Destroy()
                         end
                     end
-                    local button =  getViewportFrame(
-                        toolsMaid,
-                        k,
-                        Vector3.new(1.4,1,1.4),
-                        modelDisplay,
-                        function()
-                            local currentSelectedItems = table.clone(selectedItems:Get())
+                    -- local button =  getViewportFrame(
+                    --     toolsMaid,
+                    --     k,
+                    --     Vector3.new(1.4,1,1.4),
+                    --     modelDisplay,
+                    --     function()
+                    --         local currentSelectedItems = table.clone(selectedItems:Get())
                            
-                            local selectedToolData
-                            for _,toolData in pairs(currentSelectedItems) do
-                                if toolData.Name == modelDisplay.Name then
-                                    selectedToolData = toolData
-                                    break
-                                end
-                            end
+                    --         local selectedToolData
+                    --         for _,toolData in pairs(currentSelectedItems) do
+                    --             if toolData.Name == modelDisplay.Name then
+                    --                 selectedToolData = toolData
+                    --                 break
+                    --             end
+                    --         end
 
-                            if not selectedToolData and #currentSelectedItems >= 5 then
-                                return
-                            end
+                    --         if not selectedToolData and #currentSelectedItems >= 5 then
+                    --             return
+                    --         end
                         
-                            if not selectedToolData then
-                                table.insert(currentSelectedItems, BackpackUtil.getData(v :: Model, true))
-                            else
-                                table.remove(currentSelectedItems, table.find(currentSelectedItems, selectedToolData))
-                            end
-                            selectedItems:Set(currentSelectedItems)
-                        end
-                    )
-                    _new("TextLabel")({
+                    --         if not selectedToolData then
+                    --             table.insert(currentSelectedItems, BackpackUtil.getData(v :: Model, true))
+                    --         else
+                    --             table.remove(currentSelectedItems, table.find(currentSelectedItems, selectedToolData))
+                    --         end
+                    --         selectedItems:Set(currentSelectedItems)
+                    --     end
+                    -- )
+                    local button = _new("ImageButton")({
                         BackgroundTransparency = 1,
-                        Position = UDim2.fromScale(0, 0.7),
-                        Size = UDim2.fromScale(1, 0.3),
-                        Font = Enum.Font.Gotham,
-                        Text = modelDisplay.Name,
-                        TextColor3 = TEXT_COLOR,
-                        TextStrokeTransparency = 0.5,
-                        TextScaled = true,
-                        TextWrapped = true,
-                        Parent = button
+                        Children = {
+                            _new("UIListLayout")({
+                                SortOrder = Enum.SortOrder.LayoutOrder
+                            }),
+                            _bind(Sintesa.InterfaceUtil.ViewportFrame.ColdFusion.new(
+                                maid, 
+                                modelDisplay, 
+                                65, 
+                                true, 
+                                isDarkState, 
+                                Sintesa.SintesaEnum.ShapeStyle.ExtraSmall
+                            ))({
+                                LayoutOrder = 1
+                            }),
+                            Sintesa.InterfaceUtil.TextLabel.ColdFusion.new(
+                                maid, 
+                                2, 
+                                modelDisplay.Name, 
+                                _Computed(function(dark  : boolean)
+                                    return Sintesa.StyleUtil.MaterialColor.Color3FromARGB(Sintesa.ColorUtil.getDynamicScheme(dark):get_onSurfaceVariant())
+                                end, isDarkState), 
+                                Sintesa.TypeUtil.createTypographyData(Sintesa.StyleUtil.Typography.get(Sintesa.SintesaEnum.TypographyStyle.LabelLarge)), 
+                                15
+                            )
+                        },
+                        Events = {
+                            Activated = function()
+                                local currentSelectedItems = table.clone(selectedItems:Get())
+                           
+                                local selectedToolData
+                                for _,toolData in pairs(currentSelectedItems) do
+                                    if toolData.Name == modelDisplay.Name then
+                                        selectedToolData = toolData
+                                        break
+                                    end
+                                end
+
+                                if not selectedToolData and #currentSelectedItems >= 5 then
+                                    return
+                                end
+                            
+                                if not selectedToolData then
+                                    table.insert(currentSelectedItems, BackpackUtil.getData(v :: Model, true))
+                                else
+                                    table.remove(currentSelectedItems, table.find(currentSelectedItems, selectedToolData))
+                                end
+                                selectedItems:Set(currentSelectedItems)
+                            end
+                        },
+                        Parent = gerobakItemsPut
                     })
-                    button.Parent = gerobakItemsPut
+
 
                     local isSelected = false
                     for _,item in pairs(items) do
@@ -529,22 +324,19 @@ return function(
                 VerticalAlignment = Enum.VerticalAlignment.Center,
                 Padding = PADDING_SIZE
             }),
-            _new("TextLabel")({
-                LayoutOrder = 1,
-                BackgroundColor3 = BACKGROUND_COLOR,
-                Size = UDim2.fromScale(1, 0.07),
-                Font = Enum.Font.Gotham,
-                RichText = true,
-                Text = _Computed(function(tbl : {})
-                    return ("Select items to be put into the cart. %s"):format(if #tbl < 1 then "\n<b>(You currently do not have items in your backpack)</b>" else "")
-                end, backpack),
-                TextScaled = true,
-                TextWrapped = true,
-                TextColor3 = TEXT_COLOR,
-                TextStrokeTransparency = 0.8,
-                TextXAlignment = Enum.TextXAlignment.Left
-            }),
-            
+           
+            Sintesa.InterfaceUtil.TextLabel.ColdFusion.new(
+                maid, 
+                1, 
+                _Computed(function(tbl : {})
+                     return ("Select items to be put into the cart. %s"):format(if #tbl < 1 then "\n<b>(You currently do not have items in your backpack)</b>" else "")
+                 end, backpack), 
+                _Computed(function(dark  : boolean)
+                    return Sintesa.StyleUtil.MaterialColor.Color3FromARGB(Sintesa.ColorUtil.getDynamicScheme(dark):get_onSurfaceVariant())
+                end, isDarkState),
+                Sintesa.TypeUtil.createTypographyData(Sintesa.StyleUtil.Typography.get(Sintesa.SintesaEnum.TypographyStyle.LabelLarge)), 
+                25
+            ),
             gerobakItemsPut
         } 
     })
@@ -552,7 +344,7 @@ return function(
     local gerobakFrame = _new("Frame")({
         Name = "GerobakFrame",
         LayoutOrder = 2,
-        BackgroundColor3 = BACKGROUND_COLOR,
+        BackgroundTransparency = 1,
         Visible = _Computed(function(category : string) 
             return category == "Cart" 
         end, selectedCategory),
@@ -581,115 +373,78 @@ return function(
 
             _new("Frame")({
                 LayoutOrder = 3,
-                BackgroundColor3 = BACKGROUND_COLOR,
+                BackgroundTransparency = 1,
                 Size = UDim2.fromScale(1, 0.08),
                 Children = {
                     _new("UIListLayout")({
                         HorizontalAlignment = Enum.HorizontalAlignment.Center
                     }),
-                    _bind(getButton(maid, 3,
-                    _Computed(function(bool : boolean)
-                        gerobakFrameContent.Visible = not bool
+                    Sintesa.Molecules.FilledCommonButton.ColdFusion.new(maid, _Computed(function(bool : boolean)
+                        --gerobakFrameContent.Visible = not bool
                         return if bool then "Despawn cart" else "Spawn cart"
-                    end, cartSpawned), function()
+                    end, cartSpawned), function()  
                         onItemCartSpawn:Fire(selectedItems:Get(), cartSpawned)
-                    end, _Computed(function(bool : boolean) 
-                        return if not bool then SELECT_COLOR else RED_COLOR
-                    end, cartSpawned)))({
-                        Size = UDim2.fromScale(0.25, 1)
-                    })
+                    end)
+                   
                 }
             }),
             
         }
     })
 
-    for _,v in pairs(Animations) do
-        local animButton = getAnimationButton(
-            maid, 
-            v,
-            OnAnimClick
-        )
-        animButton.Parent = animationFrameContent
+    local header = Sintesa.Molecules.SmallTopTopAppBar.ColdFusion.new(
+        maid, 
+        isDarkState, 
+        "Roleplay Tools", 
+        Sintesa.TypeUtil.createFusionButtonData("Back", Sintesa.IconLists.navigation.arrow_back), 
+        {}, 
+        isScrolling, 
+        function(buttonData: Sintesa.ButtonData)  
+            onBack:Fire()
+        end
+    ) :: GuiObject
+    header.Size = UDim2.new(0,width- 12,0, header.Size.Y.Offset) 
+    local footer = _bind(Sintesa.Molecules.NavigationBar.ColdFusion.new(maid, isDarkState, "", {
+        Sintesa.TypeUtil.createFusionButtonData("Job", Sintesa.IconLists.action1.work, _Computed(function(selectedCat : string)
+            return if selectedCat == "Job" then true else false
+        end, selectedCategory)),
+        Sintesa.TypeUtil.createFusionButtonData("Animation", Sintesa.IconLists.image.animation, _Computed(function(selectedCat : string)
+            return if selectedCat == "Animation" then true else false
+        end, selectedCategory)),
+        Sintesa.TypeUtil.createFusionButtonData("Cart", Sintesa.IconLists.action.shopping_cart, _Computed(function(selectedCat : string)
+            return if selectedCat == "Cart" then true else false
+        end, selectedCategory))
+    }, function(button: Sintesa.ButtonData)  
+        selectedCategory:Set(button.Name :: Status)
+    end))({
+        LayoutOrder = 10
+    }) :: GuiButton
+    footer.Size = UDim2.new(0,width, 0, footer.Size.Y.Offset)
+  
+    local _joblists = {}
+    for k,v in pairs(jobsList) do
+        table.insert(_joblists, Sintesa.TypeUtil.createFusionListInstance(v.Name, nil, nil, 
+            Sintesa.Molecules.Checkbox.ColdFusion.new(maid, _Computed(function(job : Jobs.JobData?)
+                            return (if job and job == v then true else false) :: boolean?
+                        end, currentJob), function() 
+                            onJobChange:Fire(v)
+                        end, false), 
+                        v.Name:match("%a"), nil, true))
     end
+    local jobFrameContent = Sintesa.Molecules.Lists.ColdFusion.new(maid, isDarkState, false, _joblists, width)
 
-    local header = _new("ScrollingFrame")({
-        LayoutOrder = 1,
-        BackgroundColor3 = BACKGROUND_COLOR,
-        Size = UDim2.fromScale(0.9, 0.15),
-        AutomaticCanvasSize = Enum.AutomaticSize.X,
-        CanvasSize = UDim2.fromScale(0, 0),
-        Children = {
-           
-            _new("UIListLayout")({
-                FillDirection = Enum.FillDirection.Horizontal,
-                SortOrder = Enum.SortOrder.LayoutOrder,
-                Padding = PADDING_SIZE
-            }),
-           
-            getSelectButton(maid, 1, "Job", _Computed(function(category : string)
-                return category == "Job" 
-            end, selectedCategory), function()
-                if selectedCategory:Get() ~= "Job" then
-                    selectedCategory:Set("Job")          
-                end
-            end, BACKGROUND_COLOR),
-            getSelectButton(maid, 2, "Basic Animation", _Computed(function(category : string)
-                return category == "Basic Animation" 
-            end, selectedCategory), function()
-                if selectedCategory:Get() ~= "Basic Animation" then
-                    selectedCategory:Set("Basic Animation")          
-                end
-            end, BACKGROUND_COLOR),
-            getSelectButton(maid, 3, "Cart", _Computed(function(category : string)
-                return category == "Cart"
-            end, selectedCategory), function()
-                if selectedCategory:Get() ~= "Cart" then
-                    selectedCategory:Set("Cart")   
-                end
-            end, BACKGROUND_COLOR),
-        }
-    })
-
-    local jobFrameContent = _new("ScrollingFrame")({
-        AutomaticCanvasSize = Enum.AutomaticSize.Y,
-        CanvasSize = UDim2.new(),
-        BackgroundColor3 = BACKGROUND_COLOR,
-        BackgroundTransparency = 1,
-        Position = UDim2.fromScale(0,0),
-        Size = UDim2.fromScale(0.88,1), 
-        Children = {
-            _new("UIPadding")({
-                PaddingBottom = PADDING_SIZE,
-                PaddingTop = PADDING_SIZE,
-                PaddingLeft = PADDING_SIZE,
-                PaddingRight = PADDING_SIZE
-            }),
-            _new("UICorner")({}),
-            _new("UIGridLayout")({
-                SortOrder = Enum.SortOrder.LayoutOrder,
-                CellSize = UDim2.fromOffset(100, 100),
-                CellPadding =  UDim2.fromOffset(15, 15)
-            }),
-        }
-    })
-
+   
     local jobFrame = _new("Frame")({
         Name = "JobFrame",
         LayoutOrder = 2,
-        BackgroundTransparency = 0.5,
+        BackgroundTransparency = 1,
         BackgroundColor3 = BACKGROUND_COLOR,
         Visible = _Computed(function(category : string) 
             return category == "Job" 
         end, selectedCategory),
-        Size = UDim2.fromScale(0.9,0.85), 
+        Size = UDim2.fromScale(1,0.85), 
         Children = {
-            _new("UIPadding")({
-                PaddingTop = PADDING_SIZE,
-                PaddingBottom = PADDING_SIZE,
-                PaddingLeft = PADDING_SIZE,
-                PaddingRight = PADDING_SIZE,
-            }),
+          
             _new("UIListLayout")({
                 SortOrder = Enum.SortOrder.LayoutOrder,
                 FillDirection = Enum.FillDirection.Vertical,
@@ -697,46 +452,47 @@ return function(
                 VerticalAlignment = Enum.VerticalAlignment.Top,
                 HorizontalAlignment = Enum.HorizontalAlignment.Center
             }),
-            _new("Frame")({
-                LayoutOrder = 0,
-                Size = UDim2.new(1,0,0,2)
-            }),
-
+          
             jobFrameContent
         }
     })
 
-    --testing only
-    for k,v in pairs(jobsList) do
-        local b = _bind(getImageButton(
-            maid,
-            k,
-            "rbxassetid://" .. tostring(v.ImageId),
-            v.Name,
-            function()
-                onJobChange:Fire(v)
-            end
-        ))({
-            BackgroundTransparency = 0.5,
-            BackgroundColor3 = TERTIARY_COLOR
-        })
-        b.Parent = jobFrameContent
+    local _animLists = {}
+    for _,v in pairs(Animations) do
+        table.insert(_animLists, Sintesa.TypeUtil.createFusionListInstance(v.Name, "Animation", nil, Sintesa.Molecules.FilledCommonButton.ColdFusion.new(
+            maid, 
+            "Play", 
+            function() 
+                OnAnimClick:Fire(v)
+            end, 
+            isDarkState
+        )))
     end
+    local animFrameContent = _bind(Sintesa.Molecules.Lists.ColdFusion.new(maid, isDarkState, false, _animLists, width))({
+        LayoutOrder = 2,
+        Visible = _Computed(function(category : string) 
+            return category == "Animation" 
+        end, selectedCategory),
+        Size = UDim2.fromScale(1,0.85), 
+    })
+
     
     local contentFrame = _new("Frame")({
         Name = "ContentFrame",
-        BackgroundTransparency = 1,
-        Position = UDim2.fromScale(0,0),
-        Size = UDim2.fromScale(0.5,0.75), 
+        BackgroundTransparency = 0,
+        BackgroundColor3 = containerColorState,
+        Size = UDim2.new(0,width,0.85,0), 
         Children = {
             _new("UIListLayout")({
                 SortOrder = Enum.SortOrder.LayoutOrder,
                 FillDirection = Enum.FillDirection.Vertical,
+                HorizontalAlignment = Enum.HorizontalAlignment.Center,
+                VerticalAlignment = Enum.VerticalAlignment.Bottom,
             }),
-            header,
-            animationFrame,
+            animFrameContent,
             jobFrame,
             gerobakFrame,
+            footer
         }
     })
     
@@ -744,33 +500,28 @@ return function(
         BackgroundTransparency = 1,
         Size = UDim2.fromScale(1, 1),
         Children = {
-            _new("UIPadding")({
-                PaddingBottom = PADDING_SIZE,
-                PaddingTop = PADDING_SIZE,
-                PaddingLeft = PADDING_SIZE,
-                PaddingRight = PADDING_SIZE
-            }),
+           
             _new("UIListLayout")({
-                FillDirection = Enum.FillDirection.Horizontal,
+                FillDirection = Enum.FillDirection.Vertical,
                 SortOrder = Enum.SortOrder.LayoutOrder,
-                VerticalAlignment = Enum.VerticalAlignment.Center
+                VerticalAlignment = Enum.VerticalAlignment.Center,
+                HorizontalAlignment = Enum.HorizontalAlignment.Right
+
             }),
-            _new("Frame")({
-                Name = "Buffer",
-                BackgroundTransparency = 1,
-                Size = UDim2.fromScale(0.285, 1)
+            _bind(header)({
+                ZIndex = 2,
+                Size = UDim2.new(0, width- 12, 0.15,0),
+               
+                Children = {
+                    _new("UISizeConstraint")({
+                        MaxSize = Vector2.new(width- 12, header.Size.Y.Offset)
+                    })
+                }
             }),
+           
             contentFrame,
         }
     }) :: Frame
 
-   -- game:GetService("StarterGui"):SetCoreGuiEnabled(Enum.CoreGuiType.Chat, false)
-
-    local isExitButtonVisible = _Value(false)
-    local exitButton = ExitButton.new(header :: Frame, isExitButtonVisible, function()
-        UIStatus:Set(nil)
-        game:GetService("StarterGui"):SetCoreGuiEnabled(Enum.CoreGuiType.Chat, true)
-        return
-    end)
     return out
 end

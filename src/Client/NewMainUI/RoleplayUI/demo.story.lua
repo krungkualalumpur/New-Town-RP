@@ -8,8 +8,10 @@ local Signal = require(ReplicatedStorage:WaitForChild("Packages"):WaitForChild("
 --modules
 local Jobs = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Jobs"))
 
-local RoleplayUI = require(ReplicatedStorage:WaitForChild("Client"):WaitForChild("MainUI"):WaitForChild("RoleplayUI"))
+local RoleplayUI = require(ReplicatedStorage:WaitForChild("Client"):WaitForChild("NewMainUI"):WaitForChild("RoleplayUI"))
 local BackpackUtil = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("BackpackUtil"))
+local CustomEnums = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("CustomEnum"))
+
 --types
 type Maid = Maid.Maid
 
@@ -51,16 +53,20 @@ return function(target : CoreGui)
     local onItemCartSpawn = maid:GiveTask(Signal.new())
     local onJobChange = maid:GiveTask(Signal.new())
 
+    local currentJob = _Value(nil :: any)
+
     local backpack : ValueState<{BackpackUtil.ToolData<boolean>}> = _Value({
         BackpackUtil.newData("Jamu", "Consumption") :: any,
-        BackpackUtil.newData("Satay", "Consumption")
     })
 
     local animationUI = RoleplayUI(
         maid,
         {
-            getAnimInfo("Hepi", 1223131),
-            getAnimInfo("Sed", 1223131)
+            CustomEnums.AnimationAction.Happy,
+            CustomEnums.AnimationAction.Sad,
+            CustomEnums.AnimationAction.Wave,
+            CustomEnums.AnimationAction.Dance1,
+            CustomEnums.AnimationAction.Dance2
         },
 
         onAnimClick,
@@ -69,16 +75,23 @@ return function(target : CoreGui)
 
         onJobChange,
         backpack,
+        currentJob,
         Jobs.getJobs(),
-        _Value("test" :: string ?)
+        _Value("test" :: string ?),
+
+        false
     )
 
-    maid:GiveTask(onAnimClick:Connect(function(animInfo : AnimationInfo)
-        print("faiaaah ", animInfo.Name)
+    maid:GiveTask(onAnimClick:Connect(function(animationAction : CustomEnums.AnimationAction)
+        print("faiaaah ", animationAction.Name)
     end))
     animationUI.Parent = target
     maid:GiveTask(onItemCartSpawn:Connect(function(selectedItems : {[number] : BackpackUtil.ToolData<nil>})
         print("Item cart spawn! ", selectedItems)
+    end))
+
+    maid:GiveTask(onJobChange:Connect(function(jobData)
+        currentJob:Set(jobData)
     end))
 
     return function() 

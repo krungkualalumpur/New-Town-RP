@@ -87,7 +87,8 @@ local ON_ITEM_THROW = "OnItemThrow"
 
 local ON_ROLEPLAY_BIO_CHANGE = "OnRoleplayBioChange"
 
-local ON_ANIMATION_SET = "OnAnimationSet"
+local ON_AVATAR_ANIMATION_SET = "OnAvatarAnimationSet"
+local ON_AVATAR_RAW_ANIMATION_SET = "OnAvatarRawAnimationSet"
 local GET_CATALOG_FROM_CATALOG_INFO = "GetCatalogFromCatalogInfo"
 
 local ON_HOUSE_CHANGE_COLOR = "OnHouseChangeColor"

@@ -10,7 +10,8 @@ local NetworkUtil = require(ReplicatedStorage:WaitForChild("Packages"):WaitForCh
 --types
 --constants
 --remotes
-local ON_ANIMATION_SET = "OnAnimationSet"
+local ON_AVATAR_ANIMATION_SET = "OnAvatarAnimationSet"
+local ON_AVATAR_RAW_ANIMATION_SET = "OnAvatarRawAnimationSet"
 local ON_RAW_ANIMATION_SET = "OnRawAnimationSet"
 local GET_CATALOG_FROM_CATALOG_INFO = "GetCatalogFromCatalogInfo"
 --variables
@@ -48,7 +49,7 @@ local function playAnimation(char : Model, id : number)
     if RunService:IsServer() then
         local plr = Players:GetPlayerFromCharacter(char)
         assert(plr)
-        NetworkUtil.fireClient(ON_ANIMATION_SET, plr, char, id)
+        NetworkUtil.fireClient(ON_AVATAR_ANIMATION_SET, plr, char, id)
     else  
         local maid = Maid.new()
         local charHumanoid = char:WaitForChild("Humanoid") :: Humanoid

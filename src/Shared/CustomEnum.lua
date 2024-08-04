@@ -21,7 +21,7 @@ type DayEnum = CustomEnum<"Day">
 export type Day = CustomEnumItem<DayEnum, "Sunday"|"Monday"|"Tuesday"|"Wednesday"|"Thursday"|"Friday"|"Saturday">
 
 type AnimationActionEnum = CustomEnum<"AnimationAction">
-export type AnimationAction = CustomEnumItem<AnimationActionEnum, "ShowerWithBucket"|"Rowing"|"TagAnObject"|"TypingStanding"|"TypingSitting"|"Sleeping"|"ScooterAnim"|"Reading"|"Texting"|"Eating"|"Drinking">
+export type AnimationAction = CustomEnumItem<AnimationActionEnum, "ShowerWithBucket"|"Rowing"|"TagAnObject"|"TypingStanding"|"TypingSitting"|"ScooterAnim"|"Reading"|"Texting"|"Eating"|"Drinking"|"Sleeping"|"Dance1"|"Dance2"|"GetOut"|"Happy"|"Laugh"|"No"|"Point"|"Sad"|"Shy"|"Standing"|"Wave"|"Yawning"|"Yes">
 
 export type CustomEnums = {
 
@@ -47,12 +47,25 @@ export type CustomEnums = {
 		TagAnObject : CustomEnumItem <AnimationActionEnum, "TagAnObject">,
 		TypingStanding : CustomEnumItem <AnimationActionEnum, "TypingStanding">,
 		TypingSitting : CustomEnumItem <AnimationActionEnum, "TypingSitting">,
-		Sleeping : CustomEnumItem <AnimationActionEnum, "Sleeping">,
 		ScooterAnim : CustomEnumItem <AnimationActionEnum, "ScooterAnim">,
 		Reading : CustomEnumItem <AnimationActionEnum, "Reading">,
 		Texting : CustomEnumItem <AnimationActionEnum, "Texting">,
 		Eating : CustomEnumItem <AnimationActionEnum, "Eating">,
 		Drinking : CustomEnumItem <AnimationActionEnum, "Drinking">,
+		Sleeping : CustomEnumItem <AnimationActionEnum, "Sleeping">,
+		Dance1 : CustomEnumItem <AnimationActionEnum, "Dance1">,
+		Dance2 : CustomEnumItem <AnimationActionEnum, "Dance2">,
+		GetOut : CustomEnumItem <AnimationActionEnum, "GetOut">,
+		Happy : CustomEnumItem <AnimationActionEnum, "Happy">,
+		Laugh : CustomEnumItem <AnimationActionEnum, "Laugh">,
+		No : CustomEnumItem <AnimationActionEnum, "No">,
+		Point : CustomEnumItem <AnimationActionEnum, "Point">,
+		Sad : CustomEnumItem <AnimationActionEnum, "Sad">,
+		Shy : CustomEnumItem <AnimationActionEnum, "Shy">,
+		Standing : CustomEnumItem <AnimationActionEnum, "Standing">,
+		Wave : CustomEnumItem <AnimationActionEnum, "Wave">,
+		Yawning : CustomEnumItem <AnimationActionEnum, "Yawning">,
+		Yes : CustomEnumItem <AnimationActionEnum, "Yes">,
 	} & AnimationActionEnum,
 
 }
@@ -190,39 +203,117 @@ AnimationAction.TypingSitting = {
 	EnumType = AnimationAction
 }
 
-AnimationAction.Sleeping = {
-	Name = "Sleeping",
-	Value = 6,
-	EnumType = AnimationAction
-}
-
 AnimationAction.ScooterAnim = {
 	Name = "ScooterAnim",
-	Value = 7,
+	Value = 6,
 	EnumType = AnimationAction
 }
 
 AnimationAction.Reading = {
 	Name = "Reading",
-	Value = 8,
+	Value = 7,
 	EnumType = AnimationAction
 }
 
 AnimationAction.Texting = {
 	Name = "Texting",
-	Value = 9,
+	Value = 8,
 	EnumType = AnimationAction
 }
 
 AnimationAction.Eating = {
 	Name = "Eating",
-	Value = 10,
+	Value = 9,
 	EnumType = AnimationAction
 }
 
 AnimationAction.Drinking = {
 	Name = "Drinking",
+	Value = 10,
+	EnumType = AnimationAction
+}
+
+AnimationAction.Sleeping = {
+	Name = "Sleeping",
 	Value = 11,
+	EnumType = AnimationAction
+}
+
+AnimationAction.Dance1 = {
+	Name = "Dance1",
+	Value = 12,
+	EnumType = AnimationAction
+}
+
+AnimationAction.Dance2 = {
+	Name = "Dance2",
+	Value = 13,
+	EnumType = AnimationAction
+}
+
+AnimationAction.GetOut = {
+	Name = "GetOut",
+	Value = 14,
+	EnumType = AnimationAction
+}
+
+AnimationAction.Happy = {
+	Name = "Happy",
+	Value = 15,
+	EnumType = AnimationAction
+}
+
+AnimationAction.Laugh = {
+	Name = "Laugh",
+	Value = 16,
+	EnumType = AnimationAction
+}
+
+AnimationAction.No = {
+	Name = "No",
+	Value = 17,
+	EnumType = AnimationAction
+}
+
+AnimationAction.Point = {
+	Name = "Point",
+	Value = 18,
+	EnumType = AnimationAction
+}
+
+AnimationAction.Sad = {
+	Name = "Sad",
+	Value = 19,
+	EnumType = AnimationAction
+}
+
+AnimationAction.Shy = {
+	Name = "Shy",
+	Value = 20,
+	EnumType = AnimationAction
+}
+
+AnimationAction.Standing = {
+	Name = "Standing",
+	Value = 21,
+	EnumType = AnimationAction
+}
+
+AnimationAction.Wave = {
+	Name = "Wave",
+	Value = 22,
+	EnumType = AnimationAction
+}
+
+AnimationAction.Yawning = {
+	Name = "Yawning",
+	Value = 23,
+	EnumType = AnimationAction
+}
+
+AnimationAction.Yes = {
+	Name = "Yes",
+	Value = 24,
 	EnumType = AnimationAction
 }
 
