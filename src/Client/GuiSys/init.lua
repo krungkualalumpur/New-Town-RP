@@ -23,11 +23,12 @@ local SideOptions = require(ReplicatedStorage:WaitForChild("Client"):WaitForChil
 local NotificationUI = require(ReplicatedStorage:WaitForChild("Client"):WaitForChild("NotificationUI"))
 local MapUI = require(ReplicatedStorage:WaitForChild("Client"):WaitForChild("MapUI"))
 local ExitButton = require(ReplicatedStorage:WaitForChild("Client"):WaitForChild("ExitButton"))
-local NewCustomizationUI = require(ReplicatedStorage:WaitForChild("Client"):WaitForChild("MainUI"):WaitForChild("NewCustomizationUI"))
+--local NewCustomizationUI = require(ReplicatedStorage:WaitForChild("Client"):WaitForChild("MainUI"):WaitForChild("NewCustomizationUI"))
 local LoadingFrame = require(ReplicatedStorage:WaitForChild("Client"):WaitForChild("LoadingFrame"))
 local StatusUtil = require(ReplicatedStorage:WaitForChild("Client"):WaitForChild("StatusUtil"))
+local AnimationManager = require(ReplicatedStorage:WaitForChild("Client"):WaitForChild("AnimationManager"))
 
-local CustomEnum = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("CustomEnum"))
+local CustomEnums = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("CustomEnum"))
 local NumberUtil = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("NumberUtil"))
 local ItemUtil = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("ItemUtil"))
 local BackpackUtil = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("BackpackUtil"))
@@ -189,8 +190,8 @@ local function getEnumItemFromName(enum : Enum, enumItemName : string)
     return enumItem
 end
 
-local function getDayEnumFromNum(num : number) : CustomEnum.Day
-    for _,v in pairs(CustomEnum.Day:GetEnumItems()) do
+local function getDayEnumFromNum(num : number) : CustomEnums.Day
+    for _,v in pairs(CustomEnums.Day:GetEnumItems()) do
         if v.Value == num then
             return v
         end
@@ -198,7 +199,7 @@ local function getDayEnumFromNum(num : number) : CustomEnum.Day
     error("Unable to find the enum")
 end
 
-local function getCurrentDay() : CustomEnum.Day
+local function getCurrentDay() : CustomEnums.Day
     return getDayEnumFromNum(workspace:WaitForChild(DAY_VALUE_KEY).Value)
 end
 
@@ -287,10 +288,13 @@ function guiSys.new()
     local isOwnHouse = _Value(false)
     local isOwnVehicle = _Value(false)
 
+
     local houseIsLocked = _Value(true)
     local vehicleIsLocked = _Value(true)
 
     local currentJob : ValueState<JobData ?>  = _Value(nil) :: any
+
+    local onAnimClick = maid:GiveTask(Signal.new())
 
     self.MainUI = MainUI(
         maid,
@@ -313,6 +317,7 @@ function guiSys.new()
         onHouseLocked,
         onVehicleLocked,
         onHouseClaim,
+        onAnimClick,
         onNotify,
 
         onItemCartSpawn,
@@ -346,6 +351,10 @@ function guiSys.new()
         )
     end))
 
+    maid:GiveTask(onAnimClick:Connect(function(animAction : CustomEnums.AnimationAction)
+        AnimationManager.playAnim(animAction)
+    end))
+
     maid:GiveTask(onNotify:Connect(function(msg : string)
         self:Notify(msg)
     end))
@@ -365,6 +374,7 @@ function guiSys.new()
     maid:GiveTask(onJobChange:Connect(function(job)
         NetworkUtil.fireServer(ON_JOB_CHANGE, job)
         currentJob:Set(job)
+        print(job and job.Name, " do by urself jooj!")
     end))
 
     maid:GiveTask(onHouseLocked:Connect(function()

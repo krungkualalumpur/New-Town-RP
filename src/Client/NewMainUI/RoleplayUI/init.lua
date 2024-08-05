@@ -40,61 +40,6 @@ local GET_ITEM_CART = "GetItemCart"
 --variables
 --references
 --local functions
-local function getViewportFrame(
-    maid : Maid,
-    order : number,
-    relativePos : CanBeState<Vector3>,
-    contentInstance : CanBeState<Model ?>,
-    fn : (() -> ()) ?
-)
-    local _fuse = ColdFusion.fuse(maid)
-    local _new = _fuse.new
-    local _import = _fuse.import
-    local _bind = _fuse.bind
-    local _clone = _fuse.clone
-
-    local _Computed = _fuse.Computed
-
-    local importedCf : State<Vector3> = _import(relativePos, Vector3.new(5,0,0))
-
-    local camera = _new("Camera")({
-        CFrame = _Computed(function (localv3 : Vector3)
-            
-            return CFrame.lookAt(localv3, Vector3.new())
-        end, importedCf)
-    })
-
-    local out = _new("ViewportFrame")({
-        LayoutOrder = order,
-        CurrentCamera = camera,
-        Size = UDim2.fromScale(1, 1),
-        BackgroundColor3 = TERTIARY_COLOR,
-        Children = {
-            camera,
-            _new("WorldModel")({
-                Children = {
-                    _import(contentInstance, nil) 
-                }
-            }),
-        }
-    })
- 
-    if fn then
-        _new("ImageButton")({
-            BackgroundTransparency = 1,
-            Size = UDim2.fromScale(1, 1),
-            Events = {
-                Activated = function()
-                    fn()
-                end
-            },
-            Parent = out
-        })
-    end
-
-    return out
-end
-
 --class
 return function(
     maid : Maid,
@@ -139,26 +84,26 @@ return function(
         return Sintesa.StyleUtil.MaterialColor.Color3FromARGB(dynamicScheme:get_surface())
     end, isDarkState)
    
-    local gerobakItemsPut =  _new("ScrollingFrame")({
-        LayoutOrder = 2,
-        BackgroundTransparency = 1,
-        CanvasSize = UDim2.fromScale(0, 0),
-        AutomaticCanvasSize = Enum.AutomaticSize.Y,
-        Size = UDim2.fromScale(1, 0.9),
-        Children = {
-            _new("UIPadding")({
-                PaddingBottom = PADDING_SIZE,
-                PaddingTop = PADDING_SIZE,
-                PaddingLeft = PADDING_SIZE,
-                PaddingRight = PADDING_SIZE
-            }),
-            _new("UIGridLayout")({
-                SortOrder = Enum.SortOrder.LayoutOrder,
-                CellSize = UDim2.fromOffset(80, 80),
-            }),
-            --_new("")({})
-        }
-    })
+    -- local gerobakItemsPut =  _new("ScrollingFrame")({
+    --     LayoutOrder = 2,
+    --     BackgroundTransparency = 1,
+    --     CanvasSize = UDim2.fromScale(0, 0),
+    --     AutomaticCanvasSize = Enum.AutomaticSize.Y,
+    --     Size = UDim2.fromScale(1, 0.9),
+    --     Children = {
+    --         _new("UIPadding")({
+    --             PaddingBottom = PADDING_SIZE,
+    --             PaddingTop = PADDING_SIZE,
+    --             PaddingLeft = PADDING_SIZE,
+    --             PaddingRight = PADDING_SIZE
+    --         }),
+    --         _new("UIGridLayout")({
+    --             SortOrder = Enum.SortOrder.LayoutOrder,
+    --             CellSize = UDim2.fromOffset(80, 80),
+    --         }),
+    --         --_new("")({})
+    --     }
+    -- })
 
     local tools = game:GetService("CollectionService"):GetTagged("Tool")
 
@@ -187,6 +132,7 @@ return function(
             end  
             if not v:GetAttribute("DescendantsAreTools") and ownsTool then
                 --print(v) 
+                task.wait()
                 local modelDisplay = toolsMaid:GiveTask(v:Clone())
                 modelDisplay:PivotTo(CFrame.new())
                 for _,v in pairs(modelDisplay:GetDescendants()) do
@@ -368,11 +314,12 @@ return function(
     for k,v in pairs(jobsList) do
         table.insert(_joblists, Sintesa.TypeUtil.createFusionListInstance(v.Name, nil, nil, 
             Sintesa.Molecules.Checkbox.ColdFusion.new(maid, _Computed(function(job : Jobs.JobData?)
-                            return (if job and job == v then true else false) :: boolean?
-                        end, currentJob), function() 
-                            onJobChange:Fire(v)
-                        end, false), 
-                        v.Name:match("%a"), nil, true))
+            print('whoop whoop' , job and job.Name)
+                return (if job and job == v then true else false) :: boolean?
+        end, currentJob), function() 
+            onJobChange:Fire(v)
+        end, false), 
+            v.Name:match("%a"), nil, true))
     end
     local jobFrameContent = _bind(Sintesa.Molecules.Lists.ColdFusion.new(maid, isDarkState, false, _joblists, width))({
         LayoutOrder = 2,

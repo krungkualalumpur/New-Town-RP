@@ -193,6 +193,8 @@ return function(
 
     onHouseClaim : Signal,
 
+    onAnimClick : Signal,
+
     onNotify : Signal,
 
     onItemCartSpawn : Signal,
@@ -634,6 +636,9 @@ return function(
     end
    
     local function switchPage(pageName : UIStatus?)
+        local camera = workspace.CurrentCamera
+
+        camera.CameraType = Enum.CameraType.Custom
         mainPageMaid:DoCleaning()
 
         if currentPage:Get() == pageName then 
@@ -682,7 +687,6 @@ return function(
                 --houseName:Set("House 1")
                 local function updateCamCf()
                     if RunService:IsRunning() then
-                        local camera = workspace.CurrentCamera
                         camera.CameraType = Enum.CameraType.Scriptable
 
                         local index = houseIndex:Get()
@@ -788,10 +792,7 @@ return function(
                     CustomEnums.AnimationAction.Yes
                 }
 
-                local onAnimClick = maid:GiveTask(Signal.new())
-                local onItemCartSpawn = maid:GiveTask(Signal.new())
-                local onJobChange = maid:GiveTask(Signal.new())
-
+                
 
                 local roleplayPageUI = RoleplayUI(
                     mainPageMaid,
@@ -889,6 +890,7 @@ return function(
 
     }, onButtonClicked)
     local out = _new("Frame")({
+        Name = "MainUI",
         BackgroundTransparency = 1,
         Size = UDim2.new(1,0,1,0),
         Parent = target,

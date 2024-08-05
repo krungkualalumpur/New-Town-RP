@@ -74,6 +74,8 @@ return function(target : CoreGui)
     local vehicleIsLocked = _Value(true)
 
     local nameOnCustomize = maid:GiveTask(Signal.new())
+    
+    local onAnimClick = maid:GiveTask(Signal.new())
 
     local onItemCartSpawn = maid:GiveTask(Signal.new())
 
@@ -109,6 +111,7 @@ return function(target : CoreGui)
 
         onHouseClaim,
 
+        onAnimClick,
         onNotify,
 
         onItemCartSpawn,
