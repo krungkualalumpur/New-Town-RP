@@ -352,10 +352,17 @@ return function(
         end, inputText),
         CanvasSize = UDim2.fromOffset(0, 0),
         AutomaticCanvasSize = Enum.AutomaticSize.Y,
-        BackgroundTransparency = 1,
+        BackgroundTransparency = 0,
+        BackgroundColor3 = containerColorState,
         Position = UDim2.fromScale(0,0),
         Size = UDim2.fromScale(1,0.75),
         Children = {
+            _new("UIPadding")({
+                PaddingBottom = PADDING_SIZE,
+                PaddingTop = PADDING_SIZE,
+                PaddingLeft = PADDING_SIZE,
+                PaddingRight = PADDING_SIZE
+            }),
             backpackSearchUIListLayout,
             searchContentFrameList
         }
@@ -466,7 +473,9 @@ return function(
                 Visible = _Computed(function(text : string, itext : string)
                     return #text > 0 and #itext > 0
                 end, fillerText, inputText),
-                TextXAlignment = Enum.TextXAlignment.Left,
+                BackgroundTransparency = 0,
+                BackgroundColor3 = containerColorState,
+                Size = UDim2.new(0, width, 0, 25),
                 TextWrapped = true,
                 Children = {
                     _new("UISizeConstraint")({

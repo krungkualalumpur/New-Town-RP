@@ -373,8 +373,8 @@ function guiSys.new()
     
     maid:GiveTask(onJobChange:Connect(function(job)
         NetworkUtil.fireServer(ON_JOB_CHANGE, job)
-        currentJob:Set(job)
-        print(job and job.Name, " do by urself jooj!")
+        --currentJob:Set(job)
+        --print(job and job.Name, " do by urself jooj!")
     end))
 
     maid:GiveTask(onHouseLocked:Connect(function()
@@ -676,10 +676,15 @@ function guiSys.new()
     
     do
         local _maid = maid:GiveTask(Maid.new())
-
+        local function updateJob()
+            local _job = Jobs.getJob(Player)
+            currentJob:Set(if _job then Jobs.getJobByName(_job) else nil)
+        end
+        
         maid:GiveTask(NetworkUtil.onClientEvent(ON_JOB_CHANGE, function(jobData)
-            currentJob:Set(jobData)
-           
+            --print(jobData)
+           --currentJob:Set(jobData)
+           -- print(currentJob:Get().Name) 
             _maid:DoCleaning()
 
             local _fuse = ColdFusion.fuse(_maid)
@@ -711,6 +716,11 @@ function guiSys.new()
             dynamicPos:Set(UDim2.fromScale(1, 0.5))
             task.wait(0.2)
             _maid:DoCleaning()
+        end))
+      
+        updateJob()
+        maid:GiveTask(Player:GetAttributeChangedSignal("Job"):Connect(function()
+            updateJob()
         end))
     end
 

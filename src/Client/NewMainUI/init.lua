@@ -6,6 +6,7 @@ local UserInputService = game:GetService("UserInputService")
 local RunService = game:GetService("RunService")
 local AvatarEditorService = game:GetService("AvatarEditorService")
 local MarketplaceService = game:GetService("MarketplaceService")
+local Lighting =  game:GetService("Lighting")
 --packages
 local Maid = require(ReplicatedStorage:WaitForChild("Packages"):WaitForChild("Maid"))
 local NetworkUtil = require(ReplicatedStorage:WaitForChild("Packages"):WaitForChild("NetworkUtil"))
@@ -639,6 +640,8 @@ return function(
         local camera = workspace.CurrentCamera
 
         camera.CameraType = Enum.CameraType.Custom
+        local blur = Lighting:FindFirstChild("Blur")
+        if blur then blur.Enabled = false end
         mainPageMaid:DoCleaning()
 
         if currentPage:Get() == pageName then 

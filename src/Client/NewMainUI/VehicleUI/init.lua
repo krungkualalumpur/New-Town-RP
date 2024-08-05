@@ -89,7 +89,6 @@ local function getVehicleButton(
 
     local isDarkState = _import(isDark, isDark)
     
-
     local dynamicVehicleModel = _Computed(function(vehicleInfo : VehicleData ?)
         local vehicleModel  = if vehicleInfo then 
            vehicles:FindFirstChild(vehicleInfo.Name):Clone()
@@ -235,7 +234,7 @@ return function(
 
     local searchContentFrameList = _new("Frame")({
         LayoutOrder = 5,
-        BackgroundTransparency = 1,
+        BackgroundTransparency = 0,
         --AutomaticSize = Enum.AutomaticSize.Y,
         Visible = _Computed(function(text : string)
             return #text > 0
@@ -270,6 +269,7 @@ return function(
         end 
         return toolSearchText
     end
+
     local searchBarFrame = _new("Frame")({
         LayoutOrder = 2,
         AutomaticSize = Enum.AutomaticSize.XY,
@@ -317,7 +317,7 @@ return function(
             end, inputText)
         })
     end   
-    
+
     local filtersFrameContent =  _new("Frame")({
         LayoutOrder = 2,
         AutomaticSize = Enum.AutomaticSize.Y,
@@ -416,13 +416,13 @@ return function(
             vehicleUIGridLayout :: any,
         }
     }) :: ScrollingFrame
-   
+
     for k,v in pairs(vehicleList) do
         local button = getVehicleButton(
             maid,
             k, 
             v,
-            onVehicleButtonInteract,
+            onVehicleButtonInteract, 
             isDarkState,
             classFilters
         )
@@ -469,6 +469,8 @@ return function(
                 Sintesa.TypeUtil.createTypographyData(Sintesa.StyleUtil.Typography.get(Sintesa.SintesaEnum.TypographyStyle.LabelLarge)), 
                 25
             ))({
+                BackgroundTransparency = 0,
+                Size = UDim2.new(0, width, 0, 25),
                 Visible = _Computed(function(text : string, itext : string)
                     return #text > 0 and #itext > 0
                 end, fillerText, inputText),

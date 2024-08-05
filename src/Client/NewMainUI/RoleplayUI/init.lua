@@ -83,27 +83,6 @@ return function(
         local dynamicScheme = Sintesa.ColorUtil.getDynamicScheme(isDark)
         return Sintesa.StyleUtil.MaterialColor.Color3FromARGB(dynamicScheme:get_surface())
     end, isDarkState)
-   
-    -- local gerobakItemsPut =  _new("ScrollingFrame")({
-    --     LayoutOrder = 2,
-    --     BackgroundTransparency = 1,
-    --     CanvasSize = UDim2.fromScale(0, 0),
-    --     AutomaticCanvasSize = Enum.AutomaticSize.Y,
-    --     Size = UDim2.fromScale(1, 0.9),
-    --     Children = {
-    --         _new("UIPadding")({
-    --             PaddingBottom = PADDING_SIZE,
-    --             PaddingTop = PADDING_SIZE,
-    --             PaddingLeft = PADDING_SIZE,
-    --             PaddingRight = PADDING_SIZE
-    --         }),
-    --         _new("UIGridLayout")({
-    --             SortOrder = Enum.SortOrder.LayoutOrder,
-    --             CellSize = UDim2.fromOffset(80, 80),
-    --         }),
-    --         --_new("")({})
-    --     }
-    -- })
 
     local tools = game:GetService("CollectionService"):GetTagged("Tool")
 
@@ -132,7 +111,6 @@ return function(
             end  
             if not v:GetAttribute("DescendantsAreTools") and ownsTool then
                 --print(v) 
-                task.wait()
                 local modelDisplay = toolsMaid:GiveTask(v:Clone())
                 modelDisplay:PivotTo(CFrame.new())
                 for _,v in pairs(modelDisplay:GetDescendants()) do
@@ -314,8 +292,7 @@ return function(
     for k,v in pairs(jobsList) do
         table.insert(_joblists, Sintesa.TypeUtil.createFusionListInstance(v.Name, nil, nil, 
             Sintesa.Molecules.Checkbox.ColdFusion.new(maid, _Computed(function(job : Jobs.JobData?)
-            print('whoop whoop' , job and job.Name)
-                return (if job and job == v then true else false) :: boolean?
+            return (if job and job.Name == v.Name then true else false) :: boolean?
         end, currentJob), function() 
             onJobChange:Fire(v)
         end, false), 

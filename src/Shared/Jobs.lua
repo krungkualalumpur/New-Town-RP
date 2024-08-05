@@ -107,7 +107,9 @@ function Jobs.setJob(plr : Player, name : string ?)
     iconImage.ImageTransparency = 1
 
     if job then
-        if job.Name ~= plr:GetAttribute("Job") then
+       -- print('1')
+        if job.Name ~= Jobs.getJob(plr) then
+        --    print('2')
             NetworkUtil.fireClient(ON_JOB_CHANGE, plr, job)
         end
 
@@ -116,6 +118,7 @@ function Jobs.setJob(plr : Player, name : string ?)
         iconImage.ImageTransparency = 0
         iconImage.Image = string.format("rbxassetid://%d", job.ImageId)  
     else 
+       -- print('3')
         plr:SetAttribute("Job", nil)
     end
 
