@@ -52,6 +52,7 @@ return function(target : CoreGui)
     local onAnimClick = maid:GiveTask(Signal.new())
     local onItemCartSpawn = maid:GiveTask(Signal.new())
     local onJobChange = maid:GiveTask(Signal.new())
+    local onBack = maid:GiveTask(Signal.new())
 
     local currentJob = _Value(nil :: any)
 
@@ -74,10 +75,11 @@ return function(target : CoreGui)
 
 
         onJobChange,
+        onBack,
+        
         backpack,
         currentJob,
         Jobs.getJobs(),
-        _Value("test" :: string ?),
 
         false
     )

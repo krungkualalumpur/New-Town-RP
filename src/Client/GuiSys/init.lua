@@ -18,7 +18,7 @@ local ColdFusion = require(ReplicatedStorage:WaitForChild("Packages"):WaitForChi
 --modules
 local InteractSys = require(ReplicatedStorage:WaitForChild("Client"):WaitForChild("GuiSys"):WaitForChild("InteractSys"))
 local InteractUI = require(ReplicatedStorage:WaitForChild("Client"):WaitForChild("InteractUI"))
-local MainUI = require(ReplicatedStorage:WaitForChild("Client"):WaitForChild("MainUI"))
+local MainUI = require(ReplicatedStorage:WaitForChild("Client"):WaitForChild("NewMainUI"))
 local SideOptions = require(ReplicatedStorage:WaitForChild("Client"):WaitForChild("MainUI"):WaitForChild("SideOptions"))
 local NotificationUI = require(ReplicatedStorage:WaitForChild("Client"):WaitForChild("NotificationUI"))
 local MapUI = require(ReplicatedStorage:WaitForChild("Client"):WaitForChild("MapUI"))
@@ -322,6 +322,7 @@ function guiSys.new()
 
         target
     )
+
 
     maid:GiveTask(game.Lighting.Changed:Connect(function()
         date:Set(string.format("%s, %s", getCurrentDay().Name, NumberUtil.NumberToClock(game.Lighting.ClockTime*60*60, false)))

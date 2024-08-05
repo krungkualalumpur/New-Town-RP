@@ -21,7 +21,7 @@ local loadingFrame = LoadingFrame(loadingMaid, "Loading the game")
 loadingFrame.Parent = target
 
     --yields the main UI
-Player:WaitForChild("PlayerGui"):WaitForChild("ScreenGui"):WaitForChild("MainUI")
+Player:WaitForChild("PlayerGui"):WaitForChild("ScreenGui"):WaitForChild("NewMainUI")
 
     --then finishes loading
 loadingMaid:Destroy()

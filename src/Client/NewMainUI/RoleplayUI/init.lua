@@ -103,6 +103,7 @@ return function(
     OnAnimClick : Signal,
     onItemCartSpawn : Signal,
     onJobChange : Signal,
+    onBack : Signal,
 
     backpack : ValueState<{BackpackUtil.ToolData<boolean>}>,
     currentJob : State<Jobs.JobData?>,
@@ -110,8 +111,6 @@ return function(
     jobsList : {
         [number] : Jobs.JobData
     }, 
-
-    UIStatus : ValueState<string ?>,
 
     isDark : CanBeState<boolean>
 )
