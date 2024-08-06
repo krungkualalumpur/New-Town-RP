@@ -70,7 +70,7 @@ local TERTIARY_COLOR = Color3.fromRGB(70,70,70)
 
 local TEXT_COLOR = Color3.fromRGB(255,255,255)
 
-local PADDING_SIZE = UDim.new(0.01,0)
+local PADDING_SIZE = UDim.new(0,15)
 
 local DAY_VALUE_KEY = "DayValue"
 
@@ -639,10 +639,15 @@ return function(
     local function switchPage(pageName : UIStatus?)
         local camera = workspace.CurrentCamera
 
-        camera.CameraType = Enum.CameraType.Custom
-        local blur = Lighting:FindFirstChild("Blur")
-        if blur then blur.Enabled = false end
-        mainPageMaid:DoCleaning()
+        local function reset()
+            camera.CameraType = Enum.CameraType.Custom
+            local blur = Lighting:FindFirstChild("Blur")
+            if blur then blur.Enabled = false end
+            game:GetService("StarterGui"):SetCoreGuiEnabled(Enum.CoreGuiType.Chat, true)
+            mainPageMaid:DoCleaning()
+        end
+
+        reset()
 
         if currentPage:Get() == pageName then 
             currentPage:Set(nil)
@@ -882,16 +887,53 @@ return function(
         switchPage(buttonData.Name :: UIStatus)
     end
 
-    local navBar = Sintesa.Molecules.NavigationBar.ColdFusion.new(maid, isDark, "Main Menu", {
-        Sintesa.TypeUtil.createFusionButtonData("Backpack", Sintesa.IconLists.places.backpack, _Computed(function(page : UIStatus)
-            return page == "Backpack"
-        end, currentPage),  nil),
-        Sintesa.TypeUtil.createFusionButtonData("Customization", Sintesa.IconLists.social.person),
-        Sintesa.TypeUtil.createFusionButtonData("House", Sintesa.IconLists.places.house),
-        Sintesa.TypeUtil.createFusionButtonData("Vehicle", Sintesa.IconLists.social.emoji_transportation),
-        Sintesa.TypeUtil.createFusionButtonData("Roleplay", Sintesa.IconLists.social.emoji_emotions),
+    -- local navBar = Sintesa.Molecules.NavigationBar.ColdFusion.new(maid, isDark, "Main Menu", {
+    --     Sintesa.TypeUtil.createFusionButtonData("Backpack", Sintesa.IconLists.places.backpack, _Computed(function(page : UIStatus)
+    --         return page == "Backpack"
+    --     end, currentPage),  nil),
+    --     Sintesa.TypeUtil.createFusionButtonData("Customization", Sintesa.IconLists.social.person),
+    --     Sintesa.TypeUtil.createFusionButtonData("House", Sintesa.IconLists.places.house),
+    --     Sintesa.TypeUtil.createFusionButtonData("Vehicle", Sintesa.IconLists.social.emoji_transportation),
+    --     Sintesa.TypeUtil.createFusionButtonData("Roleplay", Sintesa.IconLists.social.emoji_emotions),
 
-    }, onButtonClicked)
+    -- }, onButtonClicked)
+    local containerColorState = _Computed(function(isDark : boolean)
+        local dynamicScheme = Sintesa.ColorUtil.getDynamicScheme(isDark)
+        return Sintesa.StyleUtil.MaterialColor.Color3FromARGB(dynamicScheme:get_surface())
+    end, isDarkState)
+
+    local navBar = _new("Frame")({
+        AutomaticSize = Enum.AutomaticSize.XY,
+        BackgroundTransparency = 0,
+        BackgroundColor3 = containerColorState,
+        Size = UDim2.fromOffset(0, 35),
+        Children = {
+            _new("UIListLayout")({
+                Padding = PADDING_SIZE, 
+                SortOrder = Enum.SortOrder.LayoutOrder,
+                FillDirection = Enum.FillDirection.Horizontal,
+                HorizontalAlignment = Enum.HorizontalAlignment.Right,
+                VerticalAlignment = Enum.VerticalAlignment.Bottom
+            }),
+            _new("Frame")({LayoutOrder = 0, Name = "Buffer", BackgroundTransparency = 1, Size = UDim2.new(0,PADDING_SIZE.Offset*0.5,0,0)}),
+            _bind(Sintesa.Molecules.StandardIconButton.ColdFusion.new(maid, Sintesa.IconLists.places.backpack, _Value(false), function()
+                switchPage("Backpack")
+            end, isDarkState, 30))({LayoutOrder = 1}),
+            _bind(Sintesa.Molecules.StandardIconButton.ColdFusion.new(maid, Sintesa.IconLists.social.person, _Value(false), function()
+                switchPage("Customization")
+            end, isDarkState, 30))({LayoutOrder = 2}),
+            _bind(Sintesa.Molecules.StandardIconButton.ColdFusion.new(maid, Sintesa.IconLists.places.house, _Value(false), function()
+                switchPage("House")
+            end, isDarkState, 30))({LayoutOrder = 3}),
+            _bind(Sintesa.Molecules.StandardIconButton.ColdFusion.new(maid, Sintesa.IconLists.social.emoji_transportation, _Value(false), function()
+                switchPage("Vehicle")
+            end, isDarkState, 30))({LayoutOrder = 4}),
+            _bind(Sintesa.Molecules.StandardIconButton.ColdFusion.new(maid, Sintesa.IconLists.social.emoji_emotions, _Value(false), function()
+                switchPage("Roleplay")
+            end, isDarkState, 30))({LayoutOrder = 5}),
+            _new("Frame")({LayoutOrder = 6, Name = "Buffer",  BackgroundTransparency = 1, Size = UDim2.new(0,PADDING_SIZE.Offset*0.5,0,0)}),
+        }
+    })
     local out = _new("Frame")({
         Name = "MainUI",
         BackgroundTransparency = 1,
@@ -899,43 +941,63 @@ return function(
         Parent = target,
         Children = {
             _new("Frame")({
+                Name = "Header",
+                Size = UDim2.new(1,0,0,70),
+                BackgroundTransparency = 1,
+                Children = {
+                    _new("UIListLayout")({
+                        SortOrder = Enum.SortOrder.LayoutOrder,
+                        FillDirection = Enum.FillDirection.Horizontal,
+                        HorizontalAlignment = Enum.HorizontalAlignment.Left,
+                        VerticalAlignment = Enum.VerticalAlignment.Center
+                    }),
+                    _new("Frame")({
+                        LayoutOrder = 1,
+                        Name = "Header",
+                        Size = UDim2.new(0,180,1,0),
+                        BackgroundTransparency = 1,
+                    }),
+                    _bind(Sintesa.InterfaceUtil.TextLabel.ColdFusion.new(
+                        maid, 
+                        2, 
+                        date,
+                        _Computed(function(dark  : boolean)
+                            return Sintesa.StyleUtil.MaterialColor.Color3FromARGB(Sintesa.ColorUtil.getDynamicScheme(dark):get_surface())
+                        end, isDarkState),
+                        Sintesa.TypeUtil.createTypographyData(Sintesa.StyleUtil.Typography.get(Sintesa.SintesaEnum.TypographyStyle.TitleMedium)), 
+                        70
+                    ))({
+                        
+                        TextStrokeTransparency = 0.5,
+                        TextStrokeColor3 = _Computed(function(dark  : boolean)
+                            return Sintesa.StyleUtil.MaterialColor.Color3FromARGB(Sintesa.ColorUtil.getDynamicScheme(dark):get_onSurface())
+                        end, isDarkState)
+                    }),
+                }
+            }),
+           
+            _new("Frame")({
+                Name = "Footer",
                 BackgroundTransparency = 1,
                 Position = _Computed(function(status : UIStatus)
-                    return if status then UDim2.fromScale(0,1) else UDim2.fromScale(0, 0)
+                    return if status then UDim2.fromOffset(0,navBar.Size.Y.Offset) else UDim2.fromScale(0, 0)
                 end, currentPage):Tween(0.5),
                 Size = UDim2.new(1,0,1,0),
                 Children = {
                     _new("UIListLayout")({
                         SortOrder = Enum.SortOrder.LayoutOrder,
                         FillDirection = Enum.FillDirection.Horizontal,
-                        HorizontalAlignment = Enum.HorizontalAlignment.Center,
+                        HorizontalAlignment = Enum.HorizontalAlignment.Right,
                         VerticalAlignment = Enum.VerticalAlignment.Bottom
                     }),
                     navBar
                 }
             }),
-            _bind(Sintesa.InterfaceUtil.TextLabel.ColdFusion.new(
-                maid, 
-                1, 
-                date,
-                _Computed(function(dark  : boolean)
-                    return Sintesa.StyleUtil.MaterialColor.Color3FromARGB(Sintesa.ColorUtil.getDynamicScheme(dark):get_surface())
-                end, isDarkState),
-                Sintesa.TypeUtil.createTypographyData(Sintesa.StyleUtil.Typography.get(Sintesa.SintesaEnum.TypographyStyle.TitleMedium)), 
-                25
-            ))({
-                Size = UDim2.new(1,0,0.1,0),
-                TextStrokeTransparency = 0.5,
-                TextStrokeColor3 = _Computed(function(dark  : boolean)
-                    return Sintesa.StyleUtil.MaterialColor.Color3FromARGB(Sintesa.ColorUtil.getDynamicScheme(dark):get_onSurface())
-                end, isDarkState)
-            }),
+           
         }
     }) 
 
-    _bind(navBar)({
-        Size = UDim2.new(0.5,0,0,navBar.Size.Y.Offset)
-    })
+   
     
 
 

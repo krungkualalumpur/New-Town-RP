@@ -544,5 +544,20 @@ return function(
         }
     }) :: Frame
 
+    -- do -- size adjustments
+    --     local screenAbsoluteSize = _Value(workspace.CurrentCamera.ViewportSize)
+    --     local headerFrameAbsoluteSize = _Value(headerFrame.AbsoluteSize)
+    --     maid:GiveTask(workspace.CurrentCamera:GetPropertyChangedSignal("ViewportSize"):Connect(function()
+    --         screenAbsoluteSize:Set(workspace.CurrentCamera.ViewportSize)
+    --     end))
+    --     maid:GiveTask(headerFrame:GetPropertyChangedSignal("AbsoluteSize"):Connect(function()
+    --         headerFrameAbsoluteSize:Set(headerFrame.AbsoluteSize)
+    --     end))
+    --     _bind(contentFrame)({
+    --         Size = _Computed(function(absSize : Vector2, hfAbsSize : Vector2)
+    --             return UDim2.fromOffset(width, absSize.Y - hfAbsSize.Y)
+    --         end, screenAbsoluteSize, headerFrameAbsoluteSize)
+    --     })
+    -- end
     return out
 end

@@ -234,14 +234,12 @@ return function(
 
     local searchContentFrameList = _new("Frame")({
         LayoutOrder = 5,
-        BackgroundTransparency = 0,
+        BackgroundTransparency = 1,
         --AutomaticSize = Enum.AutomaticSize.Y,
         Visible = _Computed(function(text : string)
             return #text > 0
         end, inputText),
-        Size = _Computed(function(filter : boolean, search : boolean)
-            return if filter or search then UDim2.fromScale(1, 0.7) else UDim2.fromScale(1, 0.8)
-        end, isFilterVisible, isSearchVisible) ,
+        Size =  UDim2.fromScale(1, 1),
         Children = {
             _new("UIGridLayout")({
                 CellPadding = UDim2.fromOffset(5, 5),
@@ -408,9 +406,7 @@ return function(
             return #text == 0
         end, inputText),
         AutomaticCanvasSize = Enum.AutomaticSize.Y,
-        Size = _Computed(function(filter : boolean, search : boolean)
-            return if filter or search then UDim2.fromScale(1, 0.7) else UDim2.fromScale(1, 0.8)
-        end, isFilterVisible, isSearchVisible),
+        Size = UDim2.fromScale(1, 1),
         CanvasSize = UDim2.new(),
         Children = {
             vehicleUIGridLayout :: any,
@@ -437,11 +433,25 @@ return function(
     end))
 
     local contentFrame = _new("Frame")({
+        LayoutOrder = 5,
+        Size = UDim2.new(0, width, 0.8, 0),
+        BackgroundColor3 = containerColorState,
+        Children = {
+            _new("UIPadding")({
+                PaddingRight = PADDING_SIZE,
+                PaddingLeft = PADDING_SIZE,
+            }),
+            newVehiclesContentFrame,
+            searchContentFrameList,
+        }
+    })
+    local headerFrame = _new("Frame")({
         Name = "ContentFrame",
         BackgroundColor3 = containerColorState,
         BackgroundTransparency = 1,
         Position = UDim2.fromScale(0,0),
-        Size = UDim2.new(0,width,1, 0),
+        AutomaticSize = Enum.AutomaticSize.Y,
+        Size = UDim2.new(0,width,0, 0),
         Children = {
         
             _new("UIListLayout")({
@@ -482,23 +492,7 @@ return function(
                     })
                 }
             }),
-
-            filtersFrame,
-            
-            searchContentFrameList,
-
-            _new("Frame")({
-                LayoutOrder = 5,
-                Size = UDim2.new(0, width, 0.8, 0),
-                BackgroundColor3 = containerColorState,
-                Children = {
-                    _new("UIPadding")({
-                        PaddingRight = PADDING_SIZE,
-                        PaddingLeft = PADDING_SIZE,
-                    }),
-                    newVehiclesContentFrame
-                }
-            })
+            filtersFrame
         }
     }) :: GuiObject
     local out = _new("Frame")({
@@ -507,19 +501,37 @@ return function(
         Children = {
            
             _new("UIListLayout")({
-                FillDirection = Enum.FillDirection.Horizontal,
-                VerticalAlignment = Enum.VerticalAlignment.Center,
+                FillDirection = Enum.FillDirection.Vertical,
+                VerticalAlignment = Enum.VerticalAlignment.Top,
                 HorizontalAlignment = Enum.HorizontalAlignment.Right,
                 SortOrder = Enum.SortOrder.LayoutOrder,
             }),
-            _new("Frame")({
-                LayoutOrder = 0,
-                BackgroundTransparency = 1,
-                Size = UDim2.fromScale(0.035, 1)
+            
+            _bind(headerFrame)({
+                LayoutOrder = 1
             }),
-            contentFrame        
+            
+            _bind(contentFrame)({
+                LayoutOrder = 2
+            }),
+            
         }
     }) :: Frame
 
+    do -- size adjustments
+        local screenAbsoluteSize = _Value(workspace.CurrentCamera.ViewportSize)
+        local headerFrameAbsoluteSize = _Value(headerFrame.AbsoluteSize)
+        maid:GiveTask(workspace.CurrentCamera:GetPropertyChangedSignal("ViewportSize"):Connect(function()
+            screenAbsoluteSize:Set(workspace.CurrentCamera.ViewportSize)
+        end))
+        maid:GiveTask(headerFrame:GetPropertyChangedSignal("AbsoluteSize"):Connect(function()
+            headerFrameAbsoluteSize:Set(headerFrame.AbsoluteSize)
+        end))
+        _bind(contentFrame)({
+            Size = _Computed(function(absSize : Vector2, hfAbsSize : Vector2)
+                return UDim2.fromOffset(width, absSize.Y - hfAbsSize.Y)
+            end, screenAbsoluteSize, headerFrameAbsoluteSize)
+        })
+    end
     return out 
 end
