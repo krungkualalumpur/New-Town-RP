@@ -200,7 +200,7 @@ local function getItemTypeFrame(
     local out = _new("Frame")({
         LayoutOrder = frameOrder,
         AutomaticSize = Enum.AutomaticSize.Y,
-        BackgroundTransparency = 0.9,
+        BackgroundTransparency = 1,
         Size = UDim2.new(1, 0, 0, 0),
         Children = {
             _new("UIListLayout")({
@@ -320,7 +320,7 @@ return function(
         BackgroundTransparency = 0,
         BackgroundColor3 = containerColorState,
         Position = UDim2.fromScale(0,0),
-        Size = UDim2.fromScale(1,0.75),
+        Size = UDim2.fromScale(1,1),
         Children = {
             backpackUIListLayout
         }
@@ -355,11 +355,11 @@ return function(
         BackgroundTransparency = 0,
         BackgroundColor3 = containerColorState,
         Position = UDim2.fromScale(0,0),
-        Size = UDim2.fromScale(1,0.75),
+        Size = UDim2.fromScale(1,0),
         Children = {
             _new("UIPadding")({
-                PaddingBottom = PADDING_SIZE,
-                PaddingTop = PADDING_SIZE,
+                -- PaddingBottom = PADDING_SIZE,
+                -- PaddingTop = PADDING_SIZE,
                 PaddingLeft = PADDING_SIZE,
                 PaddingRight = PADDING_SIZE
             }),
@@ -437,19 +437,21 @@ return function(
         })
     end    
    
-    local contentFrame = _new("Frame")({
+    local headerFrame = _new("Frame")({
+        LayoutOrder = 1,
         Name = "ContentFrame",
         Visible = isVisible,
         --BackgroundColor3 = containerColorState,
+        AutomaticSize = Enum.AutomaticSize.Y,
         BackgroundTransparency = 1,
         Position = UDim2.fromScale(0,0),
-        Size = UDim2.new(0,width,1,0),
+        Size = UDim2.new(0,width,0,0),
         Children = {
            
             _new("UIListLayout")({
                 SortOrder = Enum.SortOrder.LayoutOrder,
                 HorizontalAlignment = Enum.HorizontalAlignment.Center,
-                VerticalAlignment = Enum.VerticalAlignment.Center
+                VerticalAlignment = Enum.VerticalAlignment.Top
             }),
             header,
             searchBarFrame,
@@ -483,10 +485,31 @@ return function(
                     })
                 }
             }),
+            -- searchContentFrame,
+            -- backpackContentFrame
+        }
+    }) :: GuiObject
+
+    local contentFrame = _new("Frame")({
+        LayoutOrder = 2,
+        BackgroundTransparency = 0,
+        BackgroundColor3 = containerColorState,
+        --AutomaticSize = Enum.AutomaticSize.Y,
+        Size = UDim2.new(0, width, 0, 0),
+        Children = {
+            _new("UIPadding")({
+                PaddingRight = PADDING_SIZE,
+                PaddingLeft = PADDING_SIZE,
+                PaddingBottom = PADDING_SIZE,
+            }),
+            _new("UIListLayout")({
+                FillDirection = Enum.FillDirection.Vertical,
+                VerticalAlignment = Enum.VerticalAlignment.Top
+            }),
             searchContentFrame,
             backpackContentFrame
         }
-    }) :: GuiObject
+    })
 
     for k,typeName in pairs(itemTypes) do
         local itemsFiltered = _Computed(function(items : {[number] : ToolData})
@@ -535,29 +558,30 @@ return function(
         Size = UDim2.fromScale(1, 1),
         Children = {    
             _new("UIListLayout")({
-                FillDirection = Enum.FillDirection.Horizontal,
-                VerticalAlignment = Enum.VerticalAlignment.Center,
+                FillDirection = Enum.FillDirection.Vertical,
+                VerticalAlignment = Enum.VerticalAlignment.Top,
                 HorizontalAlignment = Enum.HorizontalAlignment.Right,
                 SortOrder = Enum.SortOrder.LayoutOrder,
             }),
-            contentFrame        
+            headerFrame,
+            contentFrame    
         }
     }) :: Frame
 
-    -- do -- size adjustments
-    --     local screenAbsoluteSize = _Value(workspace.CurrentCamera.ViewportSize)
-    --     local headerFrameAbsoluteSize = _Value(headerFrame.AbsoluteSize)
-    --     maid:GiveTask(workspace.CurrentCamera:GetPropertyChangedSignal("ViewportSize"):Connect(function()
-    --         screenAbsoluteSize:Set(workspace.CurrentCamera.ViewportSize)
-    --     end))
-    --     maid:GiveTask(headerFrame:GetPropertyChangedSignal("AbsoluteSize"):Connect(function()
-    --         headerFrameAbsoluteSize:Set(headerFrame.AbsoluteSize)
-    --     end))
-    --     _bind(contentFrame)({
-    --         Size = _Computed(function(absSize : Vector2, hfAbsSize : Vector2)
-    --             return UDim2.fromOffset(width, absSize.Y - hfAbsSize.Y)
-    --         end, screenAbsoluteSize, headerFrameAbsoluteSize)
-    --     })
-    -- end
+    do -- size adjustments
+        local screenAbsoluteSize = _Value(workspace.CurrentCamera.ViewportSize)
+        local headerFrameAbsoluteSize = _Value(headerFrame.AbsoluteSize)
+        maid:GiveTask(workspace.CurrentCamera:GetPropertyChangedSignal("ViewportSize"):Connect(function()
+            screenAbsoluteSize:Set(workspace.CurrentCamera.ViewportSize)
+        end))
+        maid:GiveTask(headerFrame:GetPropertyChangedSignal("AbsoluteSize"):Connect(function()
+            headerFrameAbsoluteSize:Set(headerFrame.AbsoluteSize)
+        end))
+        _bind(contentFrame)({
+            Size = _Computed(function(absSize : Vector2, hfAbsSize : Vector2)
+                return UDim2.fromOffset(width, absSize.Y - hfAbsSize.Y)
+            end, screenAbsoluteSize, headerFrameAbsoluteSize)
+        })
+    end
     return out
 end

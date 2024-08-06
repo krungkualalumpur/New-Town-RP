@@ -440,6 +440,7 @@ return function(
             _new("UIPadding")({
                 PaddingRight = PADDING_SIZE,
                 PaddingLeft = PADDING_SIZE,
+                PaddingBottom = PADDING_SIZE,
             }),
             newVehiclesContentFrame,
             searchContentFrameList,
