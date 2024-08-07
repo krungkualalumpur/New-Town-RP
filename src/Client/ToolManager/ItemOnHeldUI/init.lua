@@ -45,6 +45,7 @@ return function(
 
     onInteract : Signal,
     onThrow : Signal,
+    onDelete : Signal,
 
     toolData : BackpackUtil.ToolData<any>)
 
@@ -100,31 +101,37 @@ return function(
         onThrow:Fire(toolData)
     end
 
+    local function onDeleteFn()
+        onDelete:Fire(toolData)
+    end
+
     local interactButton = Sintesa.Molecules.FilledCommonButton.ColdFusion.new(maid, "Interact", onInteractFn, isDark)
     local throwButton = Sintesa.Molecules.FilledCommonButton.ColdFusion.new(maid, "Throw", onThrowFn, isDark)
+    local removeButton = Sintesa.Molecules.TextCommonButton.ColdFusion.new(maid, "Remove", onDeleteFn, isDark)
 
+    local title = _bind(Sintesa.InterfaceUtil.TextLabel.ColdFusion.new(
+        maid, 
+        1, 
+        itemName, 
+        _Computed(function(dark  : boolean)
+            return Sintesa.StyleUtil.MaterialColor.Color3FromARGB(Sintesa.ColorUtil.getDynamicScheme(dark):get_onSurfaceVariant())
+        end, isDarkState),
+        Sintesa.TypeUtil.createTypographyData(Sintesa.StyleUtil.Typography.get(Sintesa.SintesaEnum.TypographyStyle.TitleMedium)), 
+        25
+    ))({
+        Size = UDim2.new(0,0,0,0),
+        TextXAlignment = Enum.TextXAlignment.Left
+    })
     local contentFrame = _bind(Sintesa.Molecules.ElevatedCard.ColdFusion.new(
         maid, 
         isDark, 
         {
-            _bind(Sintesa.InterfaceUtil.TextLabel.ColdFusion.new(
-                maid, 
-                1, 
-                itemName, 
-                _Computed(function(dark  : boolean)
-                    return Sintesa.StyleUtil.MaterialColor.Color3FromARGB(Sintesa.ColorUtil.getDynamicScheme(dark):get_onSurfaceVariant())
-                end, isDarkState),
-                Sintesa.TypeUtil.createTypographyData(Sintesa.StyleUtil.Typography.get(Sintesa.SintesaEnum.TypographyStyle.TitleMedium)), 
-                25
-            ))({
-                Size = UDim2.new(0,150,0,0),
-                TextXAlignment = Enum.TextXAlignment.Left
-            }),
+            title,
             _new("Frame")({
                 LayoutOrder = 2,
                 Name = "Buttons",
                 BackgroundTransparency = 1,
-                Size = UDim2.new(0,100,0,30),
+                Size = UDim2.new(0,0,0,30),
                 Children = {
                     _new("UIListLayout")({
                         Padding = UDim.new(0,10),
@@ -135,7 +142,10 @@ return function(
                         LayoutOrder = 2
                     }),
                     _bind(throwButton)({
-                        LayoutOrder = 3
+                        LayoutOrder = 3,
+                    }),
+                    _bind(removeButton)({
+                        LayoutOrder = 4
                     })
                 }
             })
@@ -146,7 +156,7 @@ return function(
         end
     ))({
         Position = UDim2.new(0.5,0,0.5,0),
-        Size = UDim2.new(0,200,0,50)
+        Size = UDim2.new(0,0,0,50)
     })
 
     local out = _new("Frame")({
@@ -163,5 +173,7 @@ return function(
             contentFrame
         }
     })
+
+    title.Size = UDim2.new(0, contentFrame.AbsoluteSize.X, 0, 0)
     return out
 end

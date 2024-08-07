@@ -44,6 +44,7 @@ return function(target : CoreGui)
 
     local onInteract = maid:GiveTask(Signal.new())
     local onThrow = maid:GiveTask(Signal.new())
+    local onDelete = maid:GiveTask(Signal.new())
 
     local out = interface(
         maid,
@@ -53,6 +54,7 @@ return function(target : CoreGui)
 
         onInteract,
         onThrow,
+        onDelete,
 
         nil
     )

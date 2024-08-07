@@ -272,6 +272,7 @@ return function(
 
     local houseIndex = _Value(1)
     local houseName = _Value("House 1")
+    local toolTipText : ValueState<string?> = _Value(nil) :: any
 
     local onBackpackButtonAddClickSignal = maid:GiveTask(Signal.new())
     local onBackpackButtonDeleteClickSignal = maid:GiveTask(Signal.new())
@@ -959,6 +960,31 @@ return function(
         return Sintesa.StyleUtil.MaterialColor.Color3FromARGB(dynamicScheme:get_surface())
     end, isDarkState)
 
+    local toolTip = _bind(Sintesa.Molecules.PlainToolTip.ColdFusion.new(maid, isDark, _Computed(function(str : string?)
+        return str or ""
+    end, toolTipText)))({
+        Visible = _Computed(function(txt : string?)
+            return if txt then true else false
+        end, toolTipText) 
+    }) :: GuiObject
+    toolTip.Parent = target
+
+    local backpackButton = Sintesa.Molecules.StandardIconButton.ColdFusion.new(maid, Sintesa.IconLists.places.backpack, _Value(false), function()
+        switchPage("Backpack")
+    end, isDarkState, 32)
+    local customizationButton = Sintesa.Molecules.StandardIconButton.ColdFusion.new(maid, Sintesa.IconLists.social.person, _Value(false), function()
+        switchPage("Customization")
+    end, isDarkState, 32)
+    local houseButton = Sintesa.Molecules.StandardIconButton.ColdFusion.new(maid, Sintesa.IconLists.places.house, _Value(false), function()
+        switchPage("House")
+    end, isDarkState, 32)
+    local vehicleButton = Sintesa.Molecules.StandardIconButton.ColdFusion.new(maid, Sintesa.IconLists.social.emoji_transportation, _Value(false), function()
+        switchPage("Vehicle")
+    end, isDarkState, 32)
+    local roleplayButton = Sintesa.Molecules.StandardIconButton.ColdFusion.new(maid, Sintesa.IconLists.social.emoji_emotions, _Value(false), function()
+        switchPage("Roleplay")
+    end, isDarkState, 32)
+
     local navBar = _new("Frame")({
         AutomaticSize = Enum.AutomaticSize.XY,
         BackgroundTransparency = 0,
@@ -973,22 +999,82 @@ return function(
                 VerticalAlignment = Enum.VerticalAlignment.Bottom
             }),
             _new("Frame")({LayoutOrder = 0, Name = "Buffer", BackgroundTransparency = 1, Size = UDim2.new(0,PADDING_SIZE.Offset*0.5,0,0)}),
-            _bind(Sintesa.Molecules.StandardIconButton.ColdFusion.new(maid, Sintesa.IconLists.places.backpack, _Value(false), function()
-                switchPage("Backpack")
-            end, isDarkState, 30))({LayoutOrder = 1}),
-            _bind(Sintesa.Molecules.StandardIconButton.ColdFusion.new(maid, Sintesa.IconLists.social.person, _Value(false), function()
-                switchPage("Customization")
-            end, isDarkState, 30))({LayoutOrder = 2}),
-            _bind(Sintesa.Molecules.StandardIconButton.ColdFusion.new(maid, Sintesa.IconLists.places.house, _Value(false), function()
-                switchPage("House")
-            end, isDarkState, 30))({LayoutOrder = 3}),
-            _bind(Sintesa.Molecules.StandardIconButton.ColdFusion.new(maid, Sintesa.IconLists.social.emoji_transportation, _Value(false), function()
-                switchPage("Vehicle")
-            end, isDarkState, 30))({LayoutOrder = 4}),
-            _bind(Sintesa.Molecules.StandardIconButton.ColdFusion.new(maid, Sintesa.IconLists.social.emoji_emotions, _Value(false), function()
-                switchPage("Roleplay")
-            end, isDarkState, 30))({LayoutOrder = 5}),
-            _new("Frame")({LayoutOrder = 6, Name = "Buffer",  BackgroundTransparency = 1, Size = UDim2.new(0,PADDING_SIZE.Offset*0.5,0,0)}),
+            _bind(backpackButton)({
+                LayoutOrder = 1,
+                Events = {
+                    MouseEnter = function()
+                        toolTipText:Set("Backpack")
+                        toolTip.Position = UDim2.new(
+                            0, backpackButton.AbsolutePosition.X + backpackButton.AbsoluteSize.X*0.5 + toolTip.AbsoluteSize.X*0.5, 
+                            0, backpackButton.AbsolutePosition.Y 
+                        )
+                    end,
+                    MouseLeave = function()
+                        toolTipText:Set(nil)
+                    end
+                }
+            }),
+            _bind(customizationButton)({
+                LayoutOrder = 2,
+                Events = {
+                    MouseEnter = function()
+                        toolTipText:Set("Customization")
+                        toolTip.Position = UDim2.new(
+                            0, customizationButton.AbsolutePosition.X + customizationButton.AbsoluteSize.X*0.5 + toolTip.AbsoluteSize.X*0.5, 
+                            0, customizationButton.AbsolutePosition.Y
+                        )
+                    end,
+                    MouseLeave = function()
+                        toolTipText:Set()
+                    end
+                }
+            }),
+            _bind(houseButton)({
+                LayoutOrder = 3,
+                Events = {
+                    MouseEnter = function()
+                        toolTipText:Set("House")
+                        toolTip.Position = UDim2.new(
+                            0, houseButton.AbsolutePosition.X + houseButton.AbsoluteSize.X*0.5 + toolTip.AbsoluteSize.X*0.5, 
+                            0, houseButton.AbsolutePosition.Y
+                        )
+                    end,
+                    MouseLeave = function()
+                        toolTipText:Set()
+                    end
+                }
+            }),
+            _bind(vehicleButton)({
+                LayoutOrder = 4,
+                Events = {
+                    MouseEnter = function()
+                        toolTipText:Set("Vehicle")
+                        toolTip.Position = UDim2.new(
+                            0, vehicleButton.AbsolutePosition.X + vehicleButton.AbsoluteSize.X*0.5 + toolTip.AbsoluteSize.X*0.5, 
+                            0, vehicleButton.AbsolutePosition.Y
+                        )
+                    end,
+                    MouseLeave = function()
+                        toolTipText:Set()
+                    end
+                }
+            }),
+            _bind(roleplayButton)({
+                LayoutOrder = 5,
+                Events = {
+                    MouseEnter = function()
+                        toolTipText:Set("Roleplay")
+                        toolTip.Position = UDim2.new(
+                            0, roleplayButton.AbsolutePosition.X + roleplayButton.AbsoluteSize.X*0.5 + toolTip.AbsoluteSize.X*0.5, 
+                            0, roleplayButton.AbsolutePosition.Y 
+                        )
+                    end,
+                    MouseLeave = function()
+                        toolTipText:Set()
+                    end
+                }
+            }),
+        --    _new("Frame")({LayoutOrder = 6, Name = "Buffer",  BackgroundTransparency = 1, Size = UDim2.new(0,PADDING_SIZE.Offset*0.5,0,0)}),
         }
     })
     local out = _new("Frame")({
@@ -999,7 +1085,7 @@ return function(
         Children = {
             _new("Frame")({
                 Name = "Header",
-                Size = UDim2.new(1,0,0,70),
+                Size = UDim2.new(1,0,0,35),
                 BackgroundTransparency = 1,
                 Children = {
                     _new("UIListLayout")({
@@ -1022,7 +1108,7 @@ return function(
                             return Sintesa.StyleUtil.MaterialColor.Color3FromARGB(Sintesa.ColorUtil.getDynamicScheme(dark):get_surface())
                         end, isDarkState),
                         Sintesa.TypeUtil.createTypographyData(Sintesa.StyleUtil.Typography.get(Sintesa.SintesaEnum.TypographyStyle.TitleMedium)), 
-                        70
+                        50
                     ))({
                         
                         TextStrokeTransparency = 0.5,

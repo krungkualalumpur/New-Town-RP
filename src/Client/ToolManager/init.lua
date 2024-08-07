@@ -45,6 +45,7 @@ local ON_PHONE_MESSAGE_START = "OnPhoneMessageStart"
 local ON_TOOL_ANIM_PLAY = "OnAnimPlau"
 
 local GET_PLAYER_BACKPACK = "GetPlayerBackpack"
+local DELETE_BACKPACK = "DeleteBackpack"
 
 --variables
 --references
@@ -98,6 +99,7 @@ function ToolManager.init(maid : Maid)
 
     local toolOnInteract = maid:GiveTask(Signal.new())
     local toolOnThrow = maid:GiveTask(Signal.new())
+    local toolOnDelete = maid:GiveTask(Signal.new())
 
     local onMessageSend = maid:GiveTask(Signal.new())
     local onMessageRecieve = maid:GiveTask(Signal.new())
@@ -159,6 +161,7 @@ function ToolManager.init(maid : Maid)
 
                 toolOnInteract,
                 toolOnThrow,
+                toolOnDelete,
 
                 toolData
             ) ::Frame 
@@ -481,7 +484,30 @@ function ToolManager.init(maid : Maid)
         end  
         return 
     end))
+
+    maid:GiveTask(toolOnDelete:Connect(function()
+        local itemsInPlrBackpack = NetworkUtil.invokeServer(GET_PLAYER_BACKPACK)
+        for k,v in pairs(itemsInPlrBackpack) do
+            if v.IsEquipped then
+                local toolModel = BackpackUtil.getToolFromName(v.Name)
+                if toolModel then
+                    --local toolData = BackpackUtil.getData(toolModel, false)
+                    --ToolActions.onToolActivated(toolData.Class, game.Players.LocalPlayer, BackpackUtil.getData(toolModel, true))
+                    local toolData = BackpackUtil.getData(toolModel, false)
+                    NetworkUtil.invokeServer(
+                        DELETE_BACKPACK,
+                        k, 
+                        toolData.Name
+                    )
+                end
+                break
+            end
+        end  
+        return 
+    end))
     
+    
+
     maid:GiveTask(onMessageSend:Connect(function(reciever : Player, msgText : string)
         PlaySound(6698737249)
         return 
