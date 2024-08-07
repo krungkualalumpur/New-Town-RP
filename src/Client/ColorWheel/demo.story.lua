@@ -26,7 +26,7 @@ return function(target : CoreGui)
 
     local out = ColorWheel(
         _maid,
-
+        false,
         selectedColor,
 
         onColorConfirm,

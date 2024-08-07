@@ -22,7 +22,9 @@ local NewCustomizationUI = require(ReplicatedStorage:WaitForChild("Client"):Wait
 local ItemOptionsUI = require(ReplicatedStorage:WaitForChild("Client"):WaitForChild("ItemOptionsUI"))
 local HouseUI = require(ReplicatedStorage:WaitForChild("Client"):WaitForChild("NewMainUI"):WaitForChild("HouseUI"))
 local VehicleUI = require(ReplicatedStorage:WaitForChild("Client"):WaitForChild("NewMainUI"):WaitForChild("VehicleUI"))
+local OwnershipUI = require(ReplicatedStorage:WaitForChild("Client"):WaitForChild("NewMainUI"):WaitForChild("OwnershipUI"))
 local ColorWheel = require(ReplicatedStorage:WaitForChild("Client"):WaitForChild("ColorWheel"))
+
 local LoadingFrame = require(ReplicatedStorage:WaitForChild("Client"):WaitForChild("LoadingFrame"))
 local StatusUtil = require(ReplicatedStorage:WaitForChild("Client"):WaitForChild("StatusUtil"))
 
@@ -137,7 +139,7 @@ local function getCharacter(fromWorkspace : boolean, plr : Player ?)
     
     return char
 end
-local function playAnimation(char : Model, id : number)   
+local function playCharacterAnimation(char : Model, id : number)   
     
     if RunService:IsServer() then
         local plr = Players:GetPlayerFromCharacter(char)
@@ -171,14 +173,57 @@ local function playAnimation(char : Model, id : number)
 
     end
 end
+local function getVehicleData(model : Instance) : VehicleData
+    local itemType : ItemUtil.ItemType =  ItemUtil.getItemTypeByName(model.Name) :: any
+
+    local keyValue = model:FindFirstChild("KeyValue") :: StringValue ?
+    
+    local key = if keyValue then keyValue.Value else nil
+
+    return {
+        Type = itemType,
+        Class = model:GetAttribute("Class") :: string,
+        IsSpawned = model:IsDescendantOf(SpawnedCarsFolder),
+        Name = model.Name,
+        Key = key or "",
+        OwnerId = model:GetAttribute("OwnerId") :: number,
+        DestroyLocked = model:GetAttribute("DestroyLocked") :: boolean
+    }
+end
+local function getVehicleFromPlayer(plr : Player) : Model ?
+    for _,vehicleModel in pairs(SpawnedCarsFolder:GetChildren()) do
+        local vehicleData = getVehicleData(vehicleModel)
+        if vehicleData.OwnerId == plr.UserId then
+            return vehicleModel
+        end
+    end
+    return nil
+end
+
+local function getHouseOfPlayer(plr : Player)
+    for _,house in pairs(houses:GetChildren()) do
+        local playerPointer = house:FindFirstChild("OwnerPointer")
+        if playerPointer and playerPointer.Value == plr then
+            return house
+        end
+    end
+    return false
+end
+
 return function(
     maid : Maid,
+
+    isDark : CanBeState<boolean>,
 
     backpack : ValueState<{BackpackUtil.ToolData<boolean>}>,
     UIStatus : ValueState<UIStatus>,
     vehiclesList : ValueState<{[number] : VehicleData}>,
     currentJob : ValueState<Jobs.JobData ?>,
     date : ValueState<string>,
+
+    houseColor : ValueState<Color3>,
+    vehicleColor : ValueState<Color3>,
+
     isOwnHouse : ValueState <boolean>,
     isOwnVehicle : ValueState <boolean>,
     isHouseLocked : ValueState<boolean>,
@@ -203,8 +248,9 @@ return function(
 
     onCharacterReset : Signal,
 
+    onHouseOrVehicleColorConfirm : Signal,
+
     target : Instance)
-    local isDark = false
 
     local _fuse = ColdFusion.fuse(maid)
     local _new = _fuse.new
@@ -285,8 +331,6 @@ return function(
                 if param:lower() == "featured" then
                 elseif param:lower() == "faces" then
                     table.clear(list)
-                    --local cat = CatalogSearchParams.new()
-                    --cat.AssetTypes = {Enum.AssetType.DynamicHead}
                     table.insert(list, "Classic")
                     table.insert(list, "3D")
                     table.insert(list, "Dynamic")
@@ -520,7 +564,7 @@ return function(
             char:Set(getCharacter(true))
     
             local s, e = pcall(function()
-                playAnimation(char:Get(), catalogInfo.Id)
+                playCharacterAnimation(char:Get(), catalogInfo.Id)
             end) -- temp read failed
             if not s and (type(e) == "string") then
                 warn("Error loading animation: " .. tostring(e))
@@ -590,13 +634,6 @@ return function(
         mainPageMaid:GiveTask(onScaleChange:Connect(function(humanoidDescProperty : string, value : number, char : ValueState<Model>, isPreview : boolean)
             loadingMaid:DoCleaning()
             local character = getCharacter(true)
-            --local humanoid = character:WaitForChild("Humanoid") :: Humanoid
-            -- character.Parent = workspace
-            --if humanoidDescProperty == "HeadScale" then
-            --    local headScale  = humanoid:WaitForChild("HeadScale") :: NumberValue
-            --    headScale.Value = value 
-            --    print(headScale)
-            --end
             local loadingFrame = LoadingFrame(loadingMaid, "Loading Character Scales")
             loadingFrame.Parent = target
             
@@ -783,6 +820,7 @@ return function(
                     isDark
                 ) 
                 vehicleUI.Parent = target
+                print(vehicleUI)
             elseif pageName == "Roleplay" then
                 local animations : {CustomEnums.AnimationAction} = {
                     CustomEnums.AnimationAction.Dance1,
@@ -799,8 +837,6 @@ return function(
                     CustomEnums.AnimationAction.Yawning,
                     CustomEnums.AnimationAction.Yes
                 }
-
-                
 
                 local roleplayPageUI = RoleplayUI(
                     mainPageMaid,
@@ -827,6 +863,27 @@ return function(
         isMainUIPageVisible:Set(currentPage:Get() == nil)
     end
 
+    local ownershipUI = OwnershipUI(
+        maid,
+        isDarkState,
+
+        houseColor,
+        vehicleColor,
+
+        isOwnHouse,
+        isOwnVehicle,
+        isHouseLocked,
+        isVehicleLocked,
+
+        onHouseLocked,
+        onVehicleLocked,
+
+        onVehicleSpawn,
+
+        onHouseOrVehicleColorConfirm,
+
+        target
+    )
     -- local backpackUI = Sintesa.Molecules.FAB.ColdFusion.new(maid, Sintesa.IconLists.places.backpack, function()
     --     switchPage("Backpack")
     -- end, isDark)
@@ -996,10 +1053,6 @@ return function(
            
         }
     }) 
-
-   
-    
-
 
     maid:GiveTask(onBackpackButtonAddClickSignal:Connect(function(toolData : ToolData)
         backpackOnAdd:Fire(toolData)

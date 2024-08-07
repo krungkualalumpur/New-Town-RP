@@ -481,6 +481,7 @@ return function(
                 25
             ))({
                 BackgroundTransparency = 0,
+                BackgroundColor3 = containerColorState,
                 Size = UDim2.new(0, width, 0, 25),
                 Visible = _Computed(function(text : string, itext : string)
                     return #text > 0 and #itext > 0

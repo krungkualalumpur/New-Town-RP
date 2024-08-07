@@ -19,7 +19,7 @@ local ColdFusion = require(ReplicatedStorage:WaitForChild("Packages"):WaitForChi
 local InteractSys = require(ReplicatedStorage:WaitForChild("Client"):WaitForChild("GuiSys"):WaitForChild("InteractSys"))
 local InteractUI = require(ReplicatedStorage:WaitForChild("Client"):WaitForChild("InteractUI"))
 local MainUI = require(ReplicatedStorage:WaitForChild("Client"):WaitForChild("NewMainUI"))
-local SideOptions = require(ReplicatedStorage:WaitForChild("Client"):WaitForChild("MainUI"):WaitForChild("SideOptions"))
+local SideOptions = require(ReplicatedStorage:WaitForChild("Client"):WaitForChild("NewMainUI"):WaitForChild("SideOptions"))
 local NotificationUI = require(ReplicatedStorage:WaitForChild("Client"):WaitForChild("NotificationUI"))
 local MapUI = require(ReplicatedStorage:WaitForChild("Client"):WaitForChild("MapUI"))
 local ExitButton = require(ReplicatedStorage:WaitForChild("Client"):WaitForChild("ExitButton"))
@@ -68,6 +68,7 @@ type GuiSys = {
     NotificationUI : GuiObject,
     MapUI : MapUI.MapHUD,
 
+    IsDark : ValueState<boolean>,
     NotificationStatus : ValueState<string ?>,
 
     new : () -> GuiSys,
@@ -114,6 +115,8 @@ local SEND_FEEDBACK = "SendFeedback"
 local ON_GAME_LOADING_COMPLETE = "OnGameLoadingComplete"
 local GET_PLAYER_INFO = "GetPlayerInfo"
 
+local ON_HOUSE_CHANGE_COLOR = "OnHouseChangeColor"
+local ON_VEHICLE_CHANGE_COLOR = "OnVehicleChangeColor"
 --variables
 local Player = Players.LocalPlayer
 --references
@@ -278,12 +281,18 @@ function guiSys.new()
     local onVehicleLocked = maid:GiveTask(Signal.new())
     local onHouseClaim =  maid:GiveTask(Signal.new())
 
+    local onAnimClick = maid:GiveTask(Signal.new())
+    local onHouseOrVehicleColorConfirm = maid:GiveTask(Signal.new())
+
     table.insert(buttonlistsInfo, getListButtonInfo(onVehicleSpawn, "Spawn"))
     table.insert(buttonlistsInfo, getListButtonInfo(onVehicleDelete, "Delete"))
 
     local onCharacterReset = maid:GiveTask(Signal.new())
 
     local MainUIStatus : ValueState<StatusUtil.UIStatus> = StatusUtil.getStatusFromName("Ui")
+
+    local houseColor = _Value(Color3.fromRGB())
+    local vehicleColor = _Value(Color3.fromRGB())
 
     local isOwnHouse = _Value(false)
     local isOwnVehicle = _Value(false)
@@ -294,10 +303,13 @@ function guiSys.new()
 
     local currentJob : ValueState<JobData ?>  = _Value(nil) :: any
 
-    local onAnimClick = maid:GiveTask(Signal.new())
+  
+    self.IsDark = _Value(false)
 
     self.MainUI = MainUI(
         maid,
+        self.IsDark,
+
         backpack,
         
         MainUIStatus,
@@ -305,6 +317,10 @@ function guiSys.new()
         vehicleList,
         currentJob,
         date,
+
+        houseColor,
+        vehicleColor,
+
         isOwnHouse,
         isOwnVehicle,
         houseIsLocked,
@@ -325,6 +341,7 @@ function guiSys.new()
         
         onCharacterReset,
 
+        onHouseOrVehicleColorConfirm,
         target
     )
 
@@ -436,6 +453,8 @@ function guiSys.new()
             NetworkUtil.fireServer(SEND_FEEDBACK, feedbackText)
             feedbackGui.Parent = nil
             self:Notify("Feedback sent. Thank you for the feedback!")
+            task.wait(5)
+            sideOptionsUI:Destroy()
         end))
 
         maid:GiveTask(Player.CharacterAdded:Connect(onCharAdded))
@@ -861,15 +880,18 @@ function guiSys.new()
                 break
             end
         end
-
+        print("Mulai deh ", hasSpawnedVehicle)
         if hasSpawnedVehicle then
             isOwnVehicle:Set(true)
             vehicleIsLocked:Set(false)
         else
-            isOwnVehicle:Set(false)
+            isOwnVehicle:Set(false) 
         end
         vehicleList:Set(vehicles)
-        --print(vehicles)
+
+        houseColor:Set(Color3.new(1,1,1))
+        vehicleColor:Set(Color3.new(1,1,1))
+        --print(vehicles)  
     end))
     maid:GiveTask(onVehicleDelete:Connect(function(key, val)
         NetworkUtil.invokeServer(
@@ -907,6 +929,14 @@ function guiSys.new()
     --StarterGui:SetCoreGuiEnabled(Enum.CoreGuiType.Backpack,false)
     --print(Player:WaitForChild("PlayerGui").ScreenOrientation, " : Screen Orientation")
   
+    maid:GiveTask(onHouseOrVehicleColorConfirm:Connect(function(confirmType : "House" | "Vehicle")
+        if confirmType == "House" then
+            NetworkUtil.invokeServer(ON_HOUSE_CHANGE_COLOR, houseColor:Get())
+        elseif confirmType == "Vehicle" then
+            NetworkUtil.invokeServer(ON_VEHICLE_CHANGE_COLOR, vehicleColor:Get())
+        end
+    end))
+
     NetworkUtil.fireServer(ON_GAME_LOADING_COMPLETE, getABValue())
     return self 
 end

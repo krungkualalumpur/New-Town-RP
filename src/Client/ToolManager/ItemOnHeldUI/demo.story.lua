@@ -49,8 +49,12 @@ return function(target : CoreGui)
         maid,
         false,
 
+        "Pencil",
+
         onInteract,
-        onThrow
+        onThrow,
+
+        nil
     )
     out.Parent = target
 

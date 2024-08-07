@@ -31,7 +31,7 @@ type Maid = Maid.Maid
 type Fuse = ColdFusion.Fuse
 type State<T> = ColdFusion.State<T>
 type ValueState<T> = ColdFusion.ValueState<T>
-type CanBeState<T> = ColdFusion.State<T>
+type CanBeState<T> = ColdFusion.CanBeState<T>
 --constants
 --remotes
 --variables
@@ -41,8 +41,12 @@ return function(
     maid : Maid,
     isDark : CanBeState<boolean>,
     
+    itemName : CanBeState<string>,
+
     onInteract : Signal,
-    onThrow : Signal)
+    onThrow : Signal,
+
+    toolData : BackpackUtil.ToolData<any>)
 
     --backpack : ValueState<{BackpackUtil.ToolData<boolean>}>)
     
@@ -90,55 +94,32 @@ return function(
     --     end  
     -- end
     local function onInteractFn()
-        onInteract:Fire()
+        onInteract:Fire(toolData)
     end
     local function onThrowFn()
-        onThrow:Fire()
+        onThrow:Fire(toolData)
     end
 
     local interactButton = Sintesa.Molecules.FilledCommonButton.ColdFusion.new(maid, "Interact", onInteractFn, isDark)
     local throwButton = Sintesa.Molecules.FilledCommonButton.ColdFusion.new(maid, "Throw", onThrowFn, isDark)
 
-    -- local out = _new("Frame")({
-    --     Size = UDim2.new(0,100,0,100),
-    --     Children = {
-    --         _new("UIListLayout")({
-    --             SortOrder = Enum.SortOrder.LayoutOrder,
-    --             HorizontalAlignment = Enum.HorizontalAlignment.Center,
-    --             VerticalAlignment = Enum.VerticalAlignment.Center
-    --         }),
-    --         Sintesa.InterfaceUtil.TextLabel.ColdFusion.new(
-    --             maid, 
-    --             1, 
-    --             "Item Name Here", 
-    --             _Computed(function(dark  : boolean)
-    --                 return Sintesa.StyleUtil.MaterialColor.Color3FromARGB(Sintesa.ColorUtil.getDynamicScheme(dark):get_onSurfaceVariant())
-    --             end, isDarkState),
-    --             Sintesa.TypeUtil.createTypographyData(Sintesa.StyleUtil.Typography.get(Sintesa.SintesaEnum.TypographyStyle.LabelLarge)), 
-    --             25
-    --         ),
-    --         _bind(interactButton)({
-    --             LayoutOrder = 2
-    --         }),
-    --         _bind(throwButton)({
-    --             LayoutOrder = 3
-    --         })
-    --     }
-    -- })
-    local out = _bind(Sintesa.Molecules.ElevatedCard.ColdFusion.new(
+    local contentFrame = _bind(Sintesa.Molecules.ElevatedCard.ColdFusion.new(
         maid, 
         isDark, 
         {
-            Sintesa.InterfaceUtil.TextLabel.ColdFusion.new(
+            _bind(Sintesa.InterfaceUtil.TextLabel.ColdFusion.new(
                 maid, 
                 1, 
-                "Item Name Here", 
+                itemName, 
                 _Computed(function(dark  : boolean)
                     return Sintesa.StyleUtil.MaterialColor.Color3FromARGB(Sintesa.ColorUtil.getDynamicScheme(dark):get_onSurfaceVariant())
                 end, isDarkState),
                 Sintesa.TypeUtil.createTypographyData(Sintesa.StyleUtil.Typography.get(Sintesa.SintesaEnum.TypographyStyle.TitleMedium)), 
                 25
-            ),
+            ))({
+                Size = UDim2.new(0,150,0,0),
+                TextXAlignment = Enum.TextXAlignment.Left
+            }),
             _new("Frame")({
                 LayoutOrder = 2,
                 Name = "Buttons",
@@ -168,5 +149,19 @@ return function(
         Size = UDim2.new(0,200,0,50)
     })
 
+    local out = _new("Frame")({
+        BackgroundTransparency = 1,
+        Size = UDim2.new(1,0,1,0),
+        Children = {
+            _new("UIPadding")({
+                PaddingBottom = UDim.new(0,70)
+            }),
+            _new("UIListLayout")({
+                VerticalAlignment = Enum.VerticalAlignment.Bottom,
+                HorizontalAlignment = Enum.HorizontalAlignment.Right
+            }),
+            contentFrame
+        }
+    })
     return out
 end

@@ -8,8 +8,8 @@ local UserInputService = game:GetService("UserInputService")
 local Maid = require(ReplicatedStorage:WaitForChild("Packages"):WaitForChild("Maid"))
 local ColdFusion = require(ReplicatedStorage:WaitForChild("Packages"):WaitForChild("ColdFusion8"))
 local Signal = require(ReplicatedStorage:WaitForChild("Packages"):WaitForChild("Signal"))
+local Sintesa = require(ReplicatedStorage:WaitForChild("Packages"):WaitForChild("Sintesa"))
 --modules
-local ExitButton = require(ReplicatedStorage:WaitForChild("Client"):WaitForChild("ExitButton"))
 --types
 type Maid = Maid.Maid
 type Signal = Signal.Signal
@@ -181,6 +181,7 @@ end
 return function(
     maid : Maid,
 
+    isDark : CanBeState<boolean>,
     selectedColor : ValueState<Color3>,
 
     onColorConfirm : Signal,
@@ -197,6 +198,25 @@ return function(
     
     local _Value = _fuse.Value
     local _Computed = _fuse.Computed
+
+    local isDarkState = _import(isDark, isDark)
+
+    local containerColorState = _Computed(function(isDark : boolean)
+        local dynamicScheme = Sintesa.ColorUtil.getDynamicScheme(isDark)
+        return Sintesa.StyleUtil.MaterialColor.Color3FromARGB(dynamicScheme:get_surface())
+    end, isDarkState)
+    local containerVariantColorState = _Computed(function(isDark : boolean)
+        local dynamicScheme = Sintesa.ColorUtil.getDynamicScheme(isDark)
+        return Sintesa.StyleUtil.MaterialColor.Color3FromARGB(dynamicScheme:get_surfaceVariant())
+    end, isDarkState)
+    local textColorState = _Computed(function(isDark : boolean)
+        local dynamicScheme = Sintesa.ColorUtil.getDynamicScheme(isDark)
+        return Sintesa.StyleUtil.MaterialColor.Color3FromARGB(dynamicScheme:get_onSurface())
+    end, isDarkState)
+    local textVariantColorState = _Computed(function(isDark : boolean)
+        local dynamicScheme = Sintesa.ColorUtil.getDynamicScheme(isDark)
+        return Sintesa.StyleUtil.MaterialColor.Color3FromARGB(dynamicScheme:get_onSurfaceVariant())
+    end, isDarkState)
 
     local out = _new("Frame")({
         BackgroundTransparency = 1,
@@ -216,28 +236,32 @@ return function(
         BackgroundTransparency = 1,
         Size = UDim2.fromScale(1, 0.06),
         Children = {
-            _new("UIPadding")({
-                PaddingTop = UDim.new(PADDING_SIZE.Scale*0.2, PADDING_SIZE.Offset*0.2),
-                PaddingBottom = UDim.new(PADDING_SIZE.Scale*0.2, PADDING_SIZE.Offset*0.2),
-                PaddingLeft = UDim.new(PADDING_SIZE.Scale*0.2, PADDING_SIZE.Offset*0.2),
-                PaddingRight = UDim.new(PADDING_SIZE.Scale*0.2, PADDING_SIZE.Offset*0.2)
-            }),
+          
             _new("UIListLayout")({
                 SortOrder = Enum.SortOrder.LayoutOrder,
                 FillDirection = Enum.FillDirection.Horizontal,
-                Padding = UDim.new(PADDING_SIZE.Scale*0.2, PADDING_SIZE.Offset*0.2)
+                Padding = UDim.new(PADDING_SIZE.Scale*0.2, PADDING_SIZE.Offset*0.2),
+                HorizontalAlignment = Enum.HorizontalAlignment.Left
             }),
             
-            _new("TextLabel")({
-                LayoutOrder = 2,
-                BackgroundTransparency = 1,
-                Font = Enum.Font.GothamBold,
-                Size = UDim2.fromScale(0.85, 1),
-                Text = colorWheelTitle,
-                TextColor3 = TEXT_COLOR,
-                TextScaled = true,
-                TextXAlignment = Enum.TextXAlignment.Center
-            })
+            _bind(Sintesa.InterfaceUtil.TextLabel.ColdFusion.new(
+                maid, 
+                1, 
+                colorWheelTitle, 
+                textColorState, 
+                Sintesa.TypeUtil.createTypographyData(Sintesa.StyleUtil.Typography.get(Sintesa.SintesaEnum.TypographyStyle.TitleMedium)), 
+                20
+            ))({}),
+            -- _new("TextLabel")({
+            --     LayoutOrder = 2,
+            --     BackgroundTransparency = 1,
+            --     Font = Enum.Font.GothamBold,
+            --     Size = UDim2.fromScale(1, 1),
+            --     Text = colorWheelTitle,
+            --     TextColor3 = textColorState,
+            --     TextScaled = true,
+            --     TextXAlignment = Enum.TextXAlignment.Center
+            -- })
         },
         
     })
@@ -295,92 +319,53 @@ return function(
             selectedColor:Set(Color3.fromHSV(h, s, pos.Y.Scale))
             return 0
         end, sliderPos),
-        BackgroundColor3 = BACKGROUND_COLOR,
-        Size = UDim2.fromScale(0.3, 0.5),
+        BackgroundColor3 = containerColorState,
+        Size = UDim2.new(0, 400, 0, 300),
         Children = {
+            _new("UICorner")({
+                CornerRadius = UDim.new(0, 10)
+            }),
             _new("UIListLayout")({
                 SortOrder = Enum.SortOrder.LayoutOrder,
                 FillDirection = Enum.FillDirection.Vertical,
-                Padding = UDim.new(PADDING_SIZE.Scale*0.2, PADDING_SIZE.Offset*0.2)
+                HorizontalAlignment = Enum.HorizontalAlignment.Left,
+                Padding = UDim.new(0, PADDING_SIZE.Offset)
             }),
             _new("UIPadding")({
-                PaddingTop = UDim.new(PADDING_SIZE.Scale*0.2, PADDING_SIZE.Offset*0.2),
-                PaddingBottom = UDim.new(PADDING_SIZE.Scale*0.2, PADDING_SIZE.Offset*0.2),
-                PaddingLeft = UDim.new(PADDING_SIZE.Scale*0.2, PADDING_SIZE.Offset*0.2),
-                PaddingRight = UDim.new(PADDING_SIZE.Scale*0.2, PADDING_SIZE.Offset*0.2),
+                PaddingTop = UDim.new(0, PADDING_SIZE.Offset),
+                PaddingBottom = UDim.new(0, PADDING_SIZE.Offset),
+                PaddingLeft = UDim.new(0, PADDING_SIZE.Offset),
+                PaddingRight = UDim.new(0, PADDING_SIZE.Offset),
 
             }),
-            colorWheelHeader
-           --[[ _new("TextLabel")({
-                Name = " Title",
-                LayoutOrder = 1,
-                BackgroundColor3 = BACKGROUND_COLOR,
-                Font = Enum.Font.GothamMedium,
-                Size = UDim2.fromScale(1, 0.06),
-                Text = "Body Colour",
-                TextColor3 = TEXT_COLOR,
-                TextScaled = true
-            })]],
+            colorWheelHeader,
             _new("Frame")({
                 Name = "ColorSettings",
                 LayoutOrder = 2,
-                BackgroundColor3 = BACKGROUND_COLOR,
+                BackgroundTransparency = 1,
                 Size = UDim2.fromScale(1, 0.7),
                 Children = {
                     _new("UIListLayout")({
                         SortOrder = Enum.SortOrder.LayoutOrder,
                         FillDirection = Enum.FillDirection.Horizontal,
-                        Padding = UDim.new(PADDING_SIZE.Scale*0.5, PADDING_SIZE.Offset*0.5)
+                        Padding = UDim.new(0, PADDING_SIZE.Offset*0.5),
+                        HorizontalAlignment = Enum.HorizontalAlignment.Center,
                     }),
                     colorWheelFrame,
-                    
-                    
-                    --[[_new("Frame")({
-                        Name = "ValueBar",
-                        BackgroundColor3 = PRIMARY_COLOR,
-                        Size = UDim2.fromScale(0.1, 1),
-                        Children = {
-                            _new("UIGradient")({
-                                Color = ColorSequence.new{
-                                    ColorSequenceKeypoint.new(0, Color3.fromRGB(0,0,0)),
-                                    ColorSequenceKeypoint.new(1, Color3.fromRGB(255,255,255))
-                                },
-                                Rotation = 90
-                            }),
-                            _new("UICorner")({}),
-                            --[[_bind(getButton(maid, 1, nil, function()  
-                                print("AA")
-                            end, BACKGROUND_COLOR))({
-                                Size = UDim2.fromScale(1, 0.06),
-                                Children = {
-                                    _new("UIStroke")({
-                                        Thickness = 2,
-                                        Color = PRIMARY_COLOR
-                                    })
-                                }
-                            }),]]
-                            --[[slider
-                        },
-                        
-                    })]]
-
                 }
             }),
             _new("Frame")({
                 Name = "SelectedColorFooter",
                 LayoutOrder = 3,
+                BackgroundTransparency = 1,
                 BackgroundColor3 = BACKGROUND_COLOR,
-                Size = UDim2.fromScale(1, 0.17),
+                Size = UDim2.fromScale(0.9, 0.17),
                 Children = {
-                    _new("UIPadding")({
-                        PaddingTop = UDim.new(PADDING_SIZE.Scale*0.2, PADDING_SIZE.Offset*0.2),
-                        PaddingBottom = UDim.new(PADDING_SIZE.Scale*0.2, PADDING_SIZE.Offset*0.2),
-                        PaddingLeft = UDim.new(PADDING_SIZE.Scale*0.2, PADDING_SIZE.Offset*0.2),
-                        PaddingRight = UDim.new(PADDING_SIZE.Scale*0.2, PADDING_SIZE.Offset*0.2),
-                    }),
+                 
                     _new("UIListLayout")({
                         SortOrder = Enum.SortOrder.LayoutOrder,
                         FillDirection = Enum.FillDirection.Horizontal,
+                        VerticalAlignment = Enum.VerticalAlignment.Center,
                         HorizontalAlignment = Enum.HorizontalAlignment.Left,
                         Padding = UDim.new(PADDING_SIZE.Scale*0.1, PADDING_SIZE.Offset*0.1)
                     }),
@@ -388,7 +373,8 @@ return function(
                         Name = "SelectedColorDetail",
                         LayoutOrder = 1,
                         BackgroundTransparency = 1,
-                        Size = UDim2.fromScale(0.8, 1),
+                        BackgroundColor3 = BACKGROUND_COLOR,
+                        Size = UDim2.fromOffset(230, 40),
                         Children = {
                             _new("UIListLayout")({
                                 SortOrder = Enum.SortOrder.LayoutOrder,
@@ -402,88 +388,93 @@ return function(
                                 Size = UDim2.fromScale(0.75/4, 1),
                                
                             }),
-                            _new("TextLabel")({
-                                Name = "ColorName",
-                                LayoutOrder = 1,
-                                BackgroundTransparency = 1,
-                                Size = UDim2.fromScale(0.025, 0.5),
-                                Text = "R",
-                                TextScaled = true,
-                                TextColor3 = TEXT_COLOR,
-                                TextXAlignment = Enum.TextXAlignment.Right,
-                                TextYAlignment = Enum.TextYAlignment.Center
+                            _bind(Sintesa.InterfaceUtil.TextLabel.ColdFusion.new(
+                                maid, 
+                                1, 
+                                "R",
+                                textColorState,
+                                Sintesa.TypeUtil.createTypographyData(Sintesa.StyleUtil.Typography.get(Sintesa.SintesaEnum.TypographyStyle.LabelSmall)), 
+                                50
+                            ))({
+                                Size = UDim2.fromOffset(20, 100)
                             }),
-                            _new("TextLabel")({
-                                Name = "ColorName",
-                                LayoutOrder = 2,
-                                BackgroundColor3 = TERTIARY_COLOR,
-                                Size = UDim2.fromScale(0.08, 0.5),
-                                Text = _Computed(function(color : Color3)                                   
+                            _bind(Sintesa.InterfaceUtil.TextLabel.ColdFusion.new(
+                                maid, 
+                                2, 
+                                _Computed(function(color : Color3)                                   
                                     return "\t" .. tostring(math.round(color.R*255)) .. "\t"
                                 end, selectedColor),
-                                TextScaled = true,
-                                TextColor3 = TEXT_COLOR,
-                                TextYAlignment = Enum.TextYAlignment.Center
+                                textColorState,
+                                Sintesa.TypeUtil.createTypographyData(Sintesa.StyleUtil.Typography.get(Sintesa.SintesaEnum.TypographyStyle.LabelSmall)), 
+                                50
+                            ))({
+                                BackgroundTransparency = 0,
+                                BackgroundColor3 = containerVariantColorState,
+                                Size = UDim2.fromOffset(20, 20)
                             }),
-                            _new("TextLabel")({
-                                Name = "ColorName",
-                                LayoutOrder = 3,
-                                BackgroundTransparency = 1,
-                                Size = UDim2.fromScale(0.025, 0.5),
-                                Text = "G",
-                                TextScaled = true,
-                                TextColor3 = TEXT_COLOR,
-                                TextXAlignment = Enum.TextXAlignment.Right,
-                                TextYAlignment = Enum.TextYAlignment.Center
+                            _bind(Sintesa.InterfaceUtil.TextLabel.ColdFusion.new(
+                                maid, 
+                                3, 
+                                "G",
+                                textColorState,
+                                Sintesa.TypeUtil.createTypographyData(Sintesa.StyleUtil.Typography.get(Sintesa.SintesaEnum.TypographyStyle.LabelSmall)), 
+                                50
+                            ))({
+                                Size = UDim2.fromOffset(20, 100)
                             }),
-                            _new("TextLabel")({
-                                Name = "ColorName",
-                                LayoutOrder = 4,
-                                BackgroundColor3 = TERTIARY_COLOR,
-                                Size = UDim2.fromScale(0.08, 0.5),
-                                Text = _Computed(function(color : Color3)
+                            _bind(Sintesa.InterfaceUtil.TextLabel.ColdFusion.new(
+                                maid, 
+                                4, 
+                                _Computed(function(color : Color3)                                   
                                     return "\t" .. tostring(math.round(color.G*255)) .. "\t"
                                 end, selectedColor),
-                                TextScaled = true,
-                                TextColor3 = TEXT_COLOR,
-                                TextYAlignment = Enum.TextYAlignment.Center
+                                textColorState,
+                                Sintesa.TypeUtil.createTypographyData(Sintesa.StyleUtil.Typography.get(Sintesa.SintesaEnum.TypographyStyle.LabelSmall)), 
+                                50
+                            ))({
+                                BackgroundTransparency = 0,
+                                BackgroundColor3 = containerVariantColorState,
+                                Size = UDim2.fromOffset(20, 20)
                             }),
-                            _new("TextLabel")({
-                                Name = "ColorName",
-                                LayoutOrder = 5,
-                                BackgroundTransparency = 1,
-                                Size = UDim2.fromScale(0.025, 0.5),
-                                Text = "B",
-                                TextScaled = true,
-                                TextColor3 = TEXT_COLOR,
-                                TextXAlignment = Enum.TextXAlignment.Right,
-                                TextYAlignment = Enum.TextYAlignment.Center
+                            _bind(Sintesa.InterfaceUtil.TextLabel.ColdFusion.new(
+                                maid, 
+                                5, 
+                                "B",
+                                textColorState,
+                                Sintesa.TypeUtil.createTypographyData(Sintesa.StyleUtil.Typography.get(Sintesa.SintesaEnum.TypographyStyle.LabelSmall)), 
+                                50
+                            ))({
+                                Size = UDim2.fromOffset(20, 100)
                             }),
-                            _new("TextLabel")({
-                                Name = "ColorName",
-                                LayoutOrder = 6,
-                                BackgroundColor3 = TERTIARY_COLOR,
-                                Size = UDim2.fromScale(0.08, 0.5),
-                                Text = _Computed(function(color : Color3)
+                            _bind(Sintesa.InterfaceUtil.TextLabel.ColdFusion.new(
+                                maid, 
+                                6, 
+                                _Computed(function(color : Color3)                                   
                                     return "\t" .. tostring(math.round(color.B*255)) .. "\t"
                                 end, selectedColor),
-                                TextScaled = true,
-                                TextColor3 = TEXT_COLOR,
-                                TextYAlignment = Enum.TextYAlignment.Center
+                                textColorState,
+                                Sintesa.TypeUtil.createTypographyData(Sintesa.StyleUtil.Typography.get(Sintesa.SintesaEnum.TypographyStyle.LabelSmall)), 
+                                50
+                            ))({
+                                BackgroundTransparency = 0,
+                                BackgroundColor3 = containerVariantColorState,
+                                Size = UDim2.fromOffset(20, 20)
                             }),
+                            
                         }
                     }),
                     _new("Frame")({
                         Name = "ConfirmationFrame",
                         BackgroundTransparency = 1,
                         LayoutOrder = 2,
-                        Size = UDim2.fromScale(0.2, 1),
+                        Size = UDim2.new(0,100,0,60),
                         Children = {
                             _new("UIListLayout")({
                                 SortOrder = Enum.SortOrder.LayoutOrder,
                                 Padding = PADDING_SIZE,
                                 FillDirection = Enum.FillDirection.Horizontal,
-                                VerticalAlignment = Enum.VerticalAlignment.Bottom
+                                VerticalAlignment = Enum.VerticalAlignment.Center,
+                                HorizontalAlignment = Enum.HorizontalAlignment.Left
                             }),
                             --[[_bind(getButton(maid, 1, "X", function()
                                 char:Set(getCharacter(true))
@@ -498,21 +489,38 @@ return function(
                                     })
                                 }
                             }),]]
-                            _bind(getButton(maid, 1, "✓", function()
+                            Sintesa.Molecules.FilledCommonButton.ColdFusion.new(maid, "Confirm", function()   
                                 if onConfirmParams then
                                     onColorConfirm:Fire(onConfirmParams())
                                 else
                                     onColorConfirm:Fire()
                                 end
-                            end, SELECT_COLOR))({
-                                Size = UDim2.fromScale(0.5, 0.5),
-                                TextScaled = true,
-                                Children = {
-                                    _new("UIAspectRatioConstraint")({
-                                        AspectRatio = 1
-                                    })
-                                }
-                            })
+                            end, isDarkState),
+                            Sintesa.Molecules.TextCommonButton.ColdFusion.new(maid, "Close", function() 
+                                onBack:Fire()
+                            end, isDarkState),
+                            -- _bind(getButton(maid, 1, "✓", function()
+                            --     if onConfirmParams then
+                            --         onColorConfirm:Fire(onConfirmParams())
+                            --     else
+                            --         onColorConfirm:Fire()
+                            --     end
+                            -- end, SELECT_COLOR))({
+                            --     Size = UDim2.fromScale(0.5, 0.5),
+                            --     TextScaled = true
+                            -- }),
+                            -- Sintesa.Molecules.button.ColdFusion.new(maid, "X", function()
+                            --     onBack:Fire()
+                            -- end),
+                            -- _bind(getButton(maid, 1, "x", function()
+                            --     onBack:Fire()
+                            -- end, RED_COLOR))({
+                            --     Size = UDim2.fromScale(0.5, 0.5),
+                            --     TextScaled = true,
+                            --     Children = {
+                                  
+                            --     }
+                            -- }),
                         }
                     })
                 }
@@ -529,7 +537,6 @@ return function(
     
     slider.Parent = colorWheelPage:WaitForChild("ColorSettings")
 
-        
     do
         local colorWheelMaid = maid:GiveTask(Maid.new())
         local mouse = Players.LocalPlayer:GetMouse()
@@ -566,12 +573,6 @@ return function(
 
     colorWheelPage.Parent = out
 
-    local exitVisible = _Value(true)
-
-    ExitButton.new(colorWheelPage, exitVisible, function()
-        onBack:Fire()
-        return
-    end)
 
     return out
 end

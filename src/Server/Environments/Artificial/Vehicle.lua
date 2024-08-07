@@ -663,7 +663,7 @@ function Vehicle.init(maid : Maid)
 
                             local direction = -math.sign(speed.Z)
                             if wheelIsInFront then
-                                local turnVel = (chassis.CFrame:VectorToObjectSpace(chassis.AssemblyAngularVelocity).Y*40)*direction
+                                local turnVel = (chassis.CFrame:VectorToObjectSpace(chassis.AssemblyAngularVelocity).Y*20)*direction
                                 wheelWeld.C0 = wheelWeld.C0*CFrame.Angles(0, math.rad(turnVel), 0)
                             end
                             wheelDisplayWeld.C0 = wheelDisplayWeld.C0*CFrame.Angles(math.rad(if wheelIsInRight then speed.Z else -speed.Z), 0, 0)

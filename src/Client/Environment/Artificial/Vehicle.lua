@@ -244,7 +244,7 @@ local function onCarSuspensionCheck()
         --end
         local turnVel = (chassis.CFrame:VectorToObjectSpace(chassis.AssemblyAngularVelocity).Y*20)*direction
         local c0 = CFrame.new(0, -math.min(realThrusterHeight, height*(if vehicleSeat.Occupant then 1 else 0.6)) + wheelPart.Size.Y*0.5, 0)*(if wheelIsInFront then CFrame.Angles(0, math.rad(turnVel), 0) else CFrame.new())
-        wheelWeld.C0 = wheelWeld.C0:Lerp(c0, 0.1) --*CFrame.Angles(math.pi/2, 0, 0)
+        wheelWeld.C0 = wheelWeld.C0:Lerp(c0, 0.1) --*CFrame.Angles(math.pi/2, 0, 0) 
         wheelWeld.C1 = CFrame.Angles(0, math.pi, 0)
 
         if raycastResult then

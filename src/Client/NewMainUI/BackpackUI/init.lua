@@ -332,10 +332,9 @@ return function(
     }) :: UIListLayout
     local searchContentFrameList = _new("Frame")({
         LayoutOrder = 2,
-        BackgroundTransparency = 0,
-        BackgroundColor3 = containerColorState,
+        BackgroundTransparency = 1,
         AutomaticSize = Enum.AutomaticSize.Y,
-        Size = UDim2.fromScale(1, 0),
+        Size = UDim2.fromScale(1, 1),
         Children = {
             _new("UIGridLayout")({
                 CellPadding = UDim2.fromOffset(5, 5),
@@ -355,7 +354,7 @@ return function(
         BackgroundTransparency = 0,
         BackgroundColor3 = containerColorState,
         Position = UDim2.fromScale(0,0),
-        Size = UDim2.fromScale(1,0),
+        Size = UDim2.fromScale(1,1),
         Children = {
             _new("UIPadding")({
                 -- PaddingBottom = PADDING_SIZE,

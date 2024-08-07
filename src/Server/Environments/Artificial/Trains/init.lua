@@ -104,6 +104,15 @@ function Trains.init(maid : Maid)
             setVelocity(vel)
         end
         
+          
+        local function setEmergencyStop(trainModel : Model, bool : boolean)
+            --emergencyStop = bool
+            trainModel:SetAttribute("IsEmergencyStop", bool)
+        end
+        local function getEmergencyStop(trainModel : Model)
+            return trainModel:GetAttribute("IsEmergencyStop")
+        end
+
         local function stop(loopState : number, cf : CFrame ?)
             local sound = train.Part.DieselSound
             
@@ -112,13 +121,14 @@ function Trains.init(maid : Maid)
                 local s, e = pcall(function()
                     repeat local dot = cf.LookVector:Dot((cf.Position - train.PrimaryPart.Position).Unit)
                         task.wait()
+                        local emergencyStop = getEmergencyStop(train)
                         local distDir = (train.PrimaryPart.Position - cf.Position).Magnitude*math.sign(dot)
                         --if math.round(distDir) > 0 then
                         local vel = math.clamp(distDir, -3, 3)
                         setVelocity(vel)
                         --print(vel, " :velocity approach")
 
-                        if trainStuckCheck() then
+                        if trainStuckCheck() and not emergencyStop then
                             error(`Train is detected stuck during stop at dist {distDir} studs`)
                         end
                     until (math.round(distDir))*loopState <= 1
@@ -156,7 +166,7 @@ function Trains.init(maid : Maid)
             local dot = train.PrimaryPart.CFrame.RightVector:Dot((part.Position - train.PrimaryPart.Position).Unit)
             return dot > 0
         end
-        
+      
         local function init()
             setVelocity(0)
         
@@ -282,16 +292,9 @@ function Trains.init(maid : Maid)
 
                 end)
 
-                local emergencyStop = false
+                --local emergencyStop = false
                     
-                local function setEmergencyStop(trainModel : Model, bool : boolean)
-                    emergencyStop = bool
-                    trainModel:SetAttribute("IsEmergencyStop", bool)
-                end
-                local function getEmergencyStop(trainModel : Model)
-                    trainModel:GetAttribute("IsEmergencyStop")
-                end
-
+              
                 local function getOtherTrainRelativeDirectionRelativeToTrain(train : Model, otherTrain : Model)
                     assert(otherTrain.PrimaryPart and train.PrimaryPart)
 
@@ -322,7 +325,7 @@ function Trains.init(maid : Maid)
                         end
                     end
 
-                    if not emergencyStop then
+                    if not getEmergencyStop(train) then
                     -- local dot = stationPart.CFrame.LookVector:Dot((stationPart.CFrame.Position - train.PrimaryPart.Position).Unit)
                         
                         if dist <= triggerStopDistanceFromStation*2 then

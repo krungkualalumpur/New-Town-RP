@@ -11,17 +11,24 @@ local ColdFusion = require(ReplicatedStorage:WaitForChild("Packages"):WaitForChi
 local Signal = require(ReplicatedStorage:WaitForChild("Packages"):WaitForChild("Signal"))
 
 --modules
+local GuiSys = require(ReplicatedStorage:WaitForChild("Client"):WaitForChild("GuiSys"))
+
 local BackpackUtil = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("BackpackUtil"))
 local ToolActions = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("ToolActions"))
 local NotificationUtil = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("NotificationUtil"))
 local RarityUtil = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("RarityUtil"))
 local Fishes = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Fishing"))
 local CustomEnums = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("CustomEnum"))
+local ItemOnHeldUI = require(script:WaitForChild("ItemOnHeldUI"))
 
 local PhoneDisplay = require(ReplicatedStorage:WaitForChild("Client"):WaitForChild("ToolManager"):WaitForChild("PhoneDisplay")) 
 --types
 type Maid = Maid.Maid
 type Signal = Signal.Signal
+type Fuse = ColdFusion.Fuse
+type State<T> = ColdFusion.State<T>
+type ValueState<T> = ColdFusion.ValueState<T>
+type CanBeState<T> = ColdFusion.CanBeState<T>
 --constants
 local WRITING_MAX_DISTANCE = 20
 local TOOL_IS_WRITING_KEY = "IsWriting"
@@ -29,12 +36,16 @@ local WRITING_MAX_PTS = 50
 --remotes
 local ADD_BACKPACK = "AddBackpack" 
 local ON_TOOL_ACTIVATED = "OnToolActivated"
+local ON_ITEM_THROW = "OnItemThrow"
 
 local ON_WRITING_FINISHED = "OnWritingFinished"
 
 local ON_PHONE_MESSAGE_START = "OnPhoneMessageStart"
 
 local ON_TOOL_ANIM_PLAY = "OnAnimPlau"
+
+local GET_PLAYER_BACKPACK = "GetPlayerBackpack"
+
 --variables
 --references
 local Player = Players.LocalPlayer
@@ -77,6 +88,17 @@ end
 local ToolManager = {}
 
 function ToolManager.init(maid : Maid)
+    local _fuse = ColdFusion.fuse()
+    local _new = _fuse.new
+    local _import = _fuse.import
+    local _bind = _fuse.bind
+    local _clone = _fuse.clone
+    local _Computed = _fuse.Computed
+    local _Value = _fuse.Value
+
+    local toolOnInteract = maid:GiveTask(Signal.new())
+    local toolOnThrow = maid:GiveTask(Signal.new())
+
     local onMessageSend = maid:GiveTask(Signal.new())
     local onMessageRecieve = maid:GiveTask(Signal.new())
    
@@ -124,24 +146,41 @@ function ToolManager.init(maid : Maid)
                     end
                 end))  
             elseif toolData.Class == "Phone" then
-                print("Huh??")
                 phoneUI.Parent = target
     
             end
     
+             --ui 
+             local out = ItemOnHeldUI(
+                _maid,
+                GuiSys.IsDark,
+
+                toolData.Name,
+
+                toolOnInteract,
+                toolOnThrow,
+
+                toolData
+            ) ::Frame 
+            out.Position = UDim2.fromScale(1, 0)
+            out.Parent = target
+            out:TweenPosition(UDim2.fromScale(0, 0))
+            
             _maid:GiveTask(toolHeld.AncestryChanged:Connect(function()
                 if not toolHeld:IsDescendantOf(char) then
-                    _maid:Destroy()
 
                     if toolData.Class == "Phone" then
                         phoneUI.Parent = nil
                     end
+                    out:TweenPosition(UDim2.fromScale(1, 0))
+                    task.wait(0.25)
+                    _maid:Destroy()
                 end
             end))
+           
         end
     end
    
-    print("tool manger?")
     local function onCharAdded(char : Model)
         local _maid = Maid.new()
 
@@ -153,6 +192,8 @@ function ToolManager.init(maid : Maid)
 
         _maid:GiveTask(char.AncestryChanged:Connect(function()
             if char.Parent == nil then
+                
+                task.wait(0.25)
                 _maid:Destroy()
             end
         end))
@@ -170,9 +211,9 @@ function ToolManager.init(maid : Maid)
         end))
     end
 
-    local function onPlayerRemoving(plr : Player)
+    -- local function onPlayerRemoving(plr : Player)
         
-    end
+    -- end
 
     onPlayerAdded(Player)
 
@@ -404,15 +445,44 @@ function ToolManager.init(maid : Maid)
             p.CanCollide = true
             p.Parent = workspace]]
         else
-            print(toolClass, Player, toolData, nil, isReleased)
+            --print(toolClass, Player, toolData, nil, isReleased)
             ToolActions.onToolActivated(toolClass, Player, toolData, nil, isReleased)
         end
         return
     end))
 
+    maid:GiveTask(toolOnInteract:Connect(function()
+        local itemsInPlrBackpack = NetworkUtil.invokeServer(GET_PLAYER_BACKPACK)
+        for _,v in pairs(itemsInPlrBackpack) do
+            if v.IsEquipped then
+                local toolModel = BackpackUtil.getToolFromName(v.Name)
+                if toolModel then
+                    local toolData = BackpackUtil.getData(toolModel, false)
+                    ToolActions.onToolActivated(toolData.Class, game.Players.LocalPlayer, BackpackUtil.getData(toolModel, true))
+                end
+                break
+            end
+        end  
+        return 
+    end))
+    maid:GiveTask(toolOnThrow:Connect(function()
+        local itemsInPlrBackpack = NetworkUtil.invokeServer(GET_PLAYER_BACKPACK)
+        for _,v in pairs(itemsInPlrBackpack) do
+            if v.IsEquipped then
+                local toolModel = BackpackUtil.getToolFromName(v.Name)
+                if toolModel then
+                    --local toolData = BackpackUtil.getData(toolModel, false)
+                    --ToolActions.onToolActivated(toolData.Class, game.Players.LocalPlayer, BackpackUtil.getData(toolModel, true))
+                    local toolData = BackpackUtil.getData(toolModel, false)
+                    NetworkUtil.fireServer(ON_ITEM_THROW, toolData)
+                end
+                break
+            end
+        end  
+        return 
+    end))
     
     maid:GiveTask(onMessageSend:Connect(function(reciever : Player, msgText : string)
-        --print("Sendos !, ", type(reciever.Name), type(msgText))
         PlaySound(6698737249)
         return 
     end))
@@ -420,7 +490,6 @@ function ToolManager.init(maid : Maid)
     NetworkUtil.onClientInvoke(ON_PHONE_MESSAGE_START, function(senderName : string, msgText : string)
         local sender = Players:FindFirstChild(senderName)
         assert(sender, "Cannot find the sender")
-        --print(sender.Name, " sent a message to yah!, ", msgText)
         onMessageRecieve:Fire(sender, msgText)
         return nil
     end)

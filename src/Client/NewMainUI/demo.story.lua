@@ -88,6 +88,8 @@ return function(target : CoreGui)
 
     MainUI(
         maid,
+
+        false,
         
         backpack :: any,
 
@@ -96,6 +98,8 @@ return function(target : CoreGui)
         _Value({}),
         _Value(nil),
         _Value("Sundus, " .. game.Lighting.TimeOfDay),
+        _Value(Color3.new()),
+       _Value(Color3.new()),
         isOwnHouse,
         isOwnVehicle,
         houseIsLocked,
@@ -119,6 +123,7 @@ return function(target : CoreGui)
         onJobChange,
         onCharReset,
         
+        maid:GiveTask(Signal.new()),
         target
     )
 

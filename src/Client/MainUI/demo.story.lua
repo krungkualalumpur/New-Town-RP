@@ -57,8 +57,8 @@ return function(target : CoreGui)
     local onJobChange = maid:GiveTask(Signal.new())
     local onNotify = maid:GiveTask(Signal.new())
 
-    local isOwnHouse = _Value(false)
-    local isOwnVehicle = _Value(false)
+    local isOwnHouse = _Value(true)
+    local isOwnVehicle = _Value(true)
 
     local houseIsLocked = _Value(true)
     local vehicleIsLocked = _Value(true)
