@@ -43,9 +43,9 @@ return function(
     
     itemName : CanBeState<string>,
 
-    onInteract : Signal,
     onThrow : Signal,
     onDelete : Signal,
+    onInteract : Signal?,
 
     toolData : BackpackUtil.ToolData<any>)
 
@@ -95,7 +95,9 @@ return function(
     --     end  
     -- end
     local function onInteractFn()
-        onInteract:Fire(toolData)
+        if onInteract then 
+            onInteract:Fire(toolData)
+        end
     end
     local function onThrowFn()
         onThrow:Fire(toolData)
@@ -105,7 +107,7 @@ return function(
         onDelete:Fire(toolData)
     end
 
-    local interactButton = Sintesa.Molecules.FilledCommonButton.ColdFusion.new(maid, "Interact", onInteractFn, isDark)
+    local interactButton = if onInteract then Sintesa.Molecules.FilledCommonButton.ColdFusion.new(maid, "Interact", onInteractFn, isDark) else nil
     local throwButton = Sintesa.Molecules.FilledCommonButton.ColdFusion.new(maid, "Throw", onThrowFn, isDark)
     local removeButton = Sintesa.Molecules.TextCommonButton.ColdFusion.new(maid, "Remove", onDeleteFn, isDark)
 
@@ -138,9 +140,11 @@ return function(
                         FillDirection = Enum.FillDirection.Horizontal,
                         HorizontalAlignment = Enum.HorizontalAlignment.Center
                     }),
-                    _bind(interactButton)({
-                        LayoutOrder = 2
-                    }),
+                    if interactButton then 
+                        _bind(interactButton)({
+                            LayoutOrder = 2
+                        }) 
+                    else nil :: any,
                     _bind(throwButton)({
                         LayoutOrder = 3,
                     }),

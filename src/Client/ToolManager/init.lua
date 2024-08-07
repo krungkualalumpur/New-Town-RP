@@ -159,9 +159,14 @@ function ToolManager.init(maid : Maid)
 
                 toolData.Name,
 
-                toolOnInteract,
+                
                 toolOnThrow,
                 toolOnDelete,
+
+                if toolData.Class ~= "Miscs" 
+                and toolData.Class ~= "Phone" 
+                and toolData.Class ~= "Sign" then 
+                toolOnInteract else nil,
 
                 toolData
             ) ::Frame 
