@@ -13,7 +13,7 @@ local Signal = require(ReplicatedStorage:WaitForChild("Packages"):WaitForChild("
 --modules
 local LoadingFrame = require(ReplicatedStorage:WaitForChild("Client"):WaitForChild("LoadingFrame"))
 local CustomizationUtil = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("CustomizationUtil"))
-local BodySizeCustomization = require(ReplicatedStorage:WaitForChild("Client"):WaitForChild("MainUI"):WaitForChild("NewCustomizationUI"):WaitForChild("BodySizeCustomization"))
+local BodySizeCustomization = require(ReplicatedStorage:WaitForChild("Client"):WaitForChild("NewMainUI"):WaitForChild("NewCustomizationUI"):WaitForChild("BodySizeCustomization"))
 local ExitButton = require(ReplicatedStorage:WaitForChild("Client"):WaitForChild("ExitButton"))
 local NumberUtil = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("NumberUtil"))
 

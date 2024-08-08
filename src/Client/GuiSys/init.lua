@@ -23,7 +23,6 @@ local SideOptions = require(ReplicatedStorage:WaitForChild("Client"):WaitForChil
 local NotificationUI = require(ReplicatedStorage:WaitForChild("Client"):WaitForChild("NotificationUI"))
 local MapUI = require(ReplicatedStorage:WaitForChild("Client"):WaitForChild("MapUI"))
 local ExitButton = require(ReplicatedStorage:WaitForChild("Client"):WaitForChild("ExitButton"))
---local NewCustomizationUI = require(ReplicatedStorage:WaitForChild("Client"):WaitForChild("MainUI"):WaitForChild("NewCustomizationUI"))
 local LoadingFrame = require(ReplicatedStorage:WaitForChild("Client"):WaitForChild("LoadingFrame"))
 local StatusUtil = require(ReplicatedStorage:WaitForChild("Client"):WaitForChild("StatusUtil"))
 local AnimationManager = require(ReplicatedStorage:WaitForChild("Client"):WaitForChild("AnimationManager"))

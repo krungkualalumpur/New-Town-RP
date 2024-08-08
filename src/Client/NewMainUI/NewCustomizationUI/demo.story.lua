@@ -12,7 +12,7 @@ local Signal = require(ReplicatedStorage:WaitForChild("Packages"):WaitForChild("
 --modules
 local CustomizationUtil = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("CustomizationUtil"))
 local CustomizationList = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("CustomizationUtil"):WaitForChild("CustomizationList"))
-local CustomizationUI = require(ReplicatedStorage:WaitForChild("Client"):WaitForChild("MainUI"):WaitForChild("NewCustomizationUI"))
+local CustomizationUI = require(ReplicatedStorage:WaitForChild("Client"):WaitForChild("NewMainUI"):WaitForChild("NewCustomizationUI"))
 
 --types
 type Maid = Maid.Maid
@@ -66,6 +66,12 @@ return function(target : CoreGui)
 
     local charSaveExample = game:GetService("ServerStorage"):WaitForChild("aryoseno11") :: Model
 
+    local onCustomizationSave = maid:GiveTask(Signal.new())
+    local onSavedCustomizationLoad = maid:GiveTask(Signal.new())
+    local onSavedCustomizationDelete = maid:GiveTask(Signal.new())
+
+    local onBack = maid:GiveTask(Signal.new())
+
     local saves = _Value({
         [1] = CustomizationUtil.GetInfoFromCharacter(charSaveExample:Clone())
     })
@@ -77,10 +83,6 @@ return function(target : CoreGui)
             
         })
     end) 
-
-    local onCustomizationSave = maid:GiveTask(Signal.new())
-    local onSavedCustomizationLoad = maid:GiveTask(Signal.new())
-    local onSavedCustomizationDelete = maid:GiveTask(Signal.new())
 
     local isVisible = _Value(true)
 
@@ -103,6 +105,7 @@ return function(target : CoreGui)
         onRPNameChange,
         onDescChange,
 
+        onBack,
         saves,
  
         function(param)

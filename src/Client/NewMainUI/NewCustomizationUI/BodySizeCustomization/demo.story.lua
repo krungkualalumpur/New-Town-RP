@@ -8,7 +8,7 @@ local Maid = require(ReplicatedStorage:WaitForChild("Packages"):WaitForChild("Ma
 local ColdFusion = require(ReplicatedStorage:WaitForChild("Packages"):WaitForChild("ColdFusion8"))
 local Signal = require(ReplicatedStorage:WaitForChild("Packages"):WaitForChild("Signal"))
 --modules
-local BodySizeCustomization = require(ReplicatedStorage:WaitForChild("Client"):WaitForChild("MainUI"):WaitForChild("NewCustomizationUI"):WaitForChild("BodySizeCustomization"))
+local BodySizeCustomization = require(ReplicatedStorage:WaitForChild("Client"):WaitForChild("NewMainUI"):WaitForChild("NewCustomizationUI"):WaitForChild("BodySizeCustomization"))
 --types
 type Signal = Signal.Signal
 --constants

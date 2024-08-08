@@ -8,7 +8,6 @@ local Signal = require(ReplicatedStorage:WaitForChild("Packages"):WaitForChild("
 local Sintesa = require(ReplicatedStorage:WaitForChild("Packages"):WaitForChild("Sintesa"))
 --modules
 local MainUI = require(script.Parent)
-local BackpackUI = require(ReplicatedStorage:WaitForChild("Client"):WaitForChild("MainUI"):WaitForChild("BackpackUI"))
 --types
 type Fuse = ColdFusion.Fuse
 type State<T> = ColdFusion.State<T>

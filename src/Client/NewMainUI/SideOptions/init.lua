@@ -8,7 +8,7 @@ local ColdFusion = require(ReplicatedStorage:WaitForChild("Packages"):WaitForChi
 local Signal = require(ReplicatedStorage:WaitForChild("Packages"):WaitForChild("Signal"))
 local NetworkUtil = require(ReplicatedStorage:WaitForChild("Packages"):WaitForChild("NetworkUtil"))
 --modules
-local FeedbackUI = require(ReplicatedStorage:WaitForChild("Client"):WaitForChild("MainUI"):WaitForChild("FeedbackUI"))
+local FeedbackUI = require(ReplicatedStorage:WaitForChild("Client"):WaitForChild("NewMainUI"):WaitForChild("FeedbackUI"))
 local ExitButton = require(ReplicatedStorage:WaitForChild("Client"):WaitForChild("ExitButton"))
 --types
 type Maid = Maid.Maid
