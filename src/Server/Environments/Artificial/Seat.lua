@@ -47,10 +47,12 @@ function Seat.init(maid : Maid)
                         -- local animation = animator:LoadAnimation(v)
                         -- table.insert(animationsPlaying, animation)
                         -- animation:Play()
-                        if seat.Name:lower():find("sleep") then
-                            NetworkUtil.fireClient(ON_ANIMATION_PLAY, plr, CustomEnums.AnimationAction.Sleeping.Name)
-                        else
-                            NetworkUtil.fireClient(ON_ANIMATION_PLAY, plr, CustomEnums.AnimationAction.TypingSitting.Name)
+                        if seat:FindFirstChild("sitanim") then
+                            if seat.Name:lower():find("sleep") then
+                                NetworkUtil.fireClient(ON_ANIMATION_PLAY, plr, CustomEnums.AnimationAction.Sleeping.Name)
+                            else
+                                NetworkUtil.fireClient(ON_ANIMATION_PLAY, plr, CustomEnums.AnimationAction.TypingSitting.Name)
+                            end
                         end
                 --     end
                 -- end

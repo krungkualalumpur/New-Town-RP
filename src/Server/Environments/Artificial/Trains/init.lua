@@ -320,7 +320,9 @@ function Trains.init(maid : Maid)
 
                                 stop(getLoopState())
                                 task.wait(6)
-                                break
+                                 
+                                trainSpeedUpdate()
+                                break 
                             end
                         end
                     end
