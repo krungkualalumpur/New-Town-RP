@@ -7,7 +7,6 @@ local Maid = require(ReplicatedStorage:WaitForChild("Packages"):WaitForChild("Ma
 local Environment = require(ReplicatedStorage:WaitForChild("Client"):WaitForChild("Environment"))
 local EnvironmentSound = require(ReplicatedStorage:WaitForChild("Client"):WaitForChild("EnvironmentSound"))
 
-local InputHandler = require(ReplicatedStorage:WaitForChild("Client"):WaitForChild("InputHandler"))
 local GuiSys = require(ReplicatedStorage:WaitForChild("Client"):WaitForChild("GuiSys"))
 local OptimizationSys = require(ReplicatedStorage:WaitForChild("Client"):WaitForChild("OptimizationSys"))
 local PlayerManager = require(ReplicatedStorage:WaitForChild("Client"):WaitForChild("PlayerManager"))
