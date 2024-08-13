@@ -407,6 +407,7 @@ function guiSys.new()
 
     self.NotificationUI = NotificationUI(
         maid,
+        self.IsDark,
         self.NotificationStatus
     )
 

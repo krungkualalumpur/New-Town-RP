@@ -28,15 +28,16 @@ local DELAY_TIME = 5
 --variables
 --references
 --local functions
-local function getSound(soundId : number, target : Instance ?)
+local function getSound(soundId : number, target : Instance ?, volume : number?)
     local maid = Maid.new()
 
     local sound = maid:GiveTask(Instance.new("Sound"))
     sound.SoundId = "rbxassetid://"..tostring(soundId)
+    sound.Volume = volume or 1
     sound.Parent = target
     sound:Play()
     maid:GiveTask(sound.Ended:Connect(function()
-        maid:Destroy()
+        maid:Destroy() 
     end))
     return
 end
@@ -56,35 +57,41 @@ function getNotificationFrame(
     local _Computed = _fuse.Computed
     local _Value = _fuse.Value
 
-    local pos = _Value(UDim2.fromScale(0, 1))
-    local transp = _Value(1)
+    -- local pos = _Value(UDim2.fromScale(0, 1))
+    -- local transp = _Value(1)
+    local function onBack()
+        maid:Destroy()
+    end
+    local content = Sintesa.Molecules.Snackbar.ColdFusion.new(maid, isDark, text, nil, nil, function()  
+        onBack()
+    end)
 
-    local content = Sintesa.Molecules.Snackbar.ColdFusion.new(maid, isDark, function() end)
-
-    pos:Set(UDim2.fromScale(0, 0))
-    transp:Set(0.5)
+    -- pos:Set(UDim2.fromScale(0, 0))
+    -- transp:Set(0.5)
 
     local out = _new("Frame")({
         BackgroundTransparency = 1,
-        Size = UDim2.fromScale(1, 1),
+        Size = UDim2.new(1, 0,0,50),
         
         Children = {
-            _new("UIAspectRatioConstraint")({
-                AspectRatio = 3,
+        
+            _new("UIListLayout")({
+                VerticalAlignment = Enum.VerticalAlignment.Center,
+                HorizontalAlignment = Enum.HorizontalAlignment.Center, 
             }),
-            --content
+            _bind(content)({AutomaticSize = Enum.AutomaticSize.XY}) 
         }
     })
 
     task.spawn(function()
         task.wait(DELAY_TIME)
-        pos:Set(UDim2.fromScale(0, -1))
-        transp:Set(1)
+        -- pos:Set(UDim2.fromScale(0, -1))
+        -- transp:Set(1)
         task.wait(0.5)
-        maid:Destroy()
+        onBack()
     end)
     
-    return content
+    return out
 end
 --class
 return function(
@@ -104,7 +111,7 @@ return function(
     local isDarkState = _import(isDark, isDark)
     local out = _new("Frame")({
         BackgroundTransparency = 1,
-        Size = UDim2.fromScale(1, 1),
+        Size = UDim2.fromScale(1, 0.85),
         Children = {
             _new("UIPadding")({
                 PaddingTop = PADDING_SIZE,
@@ -122,7 +129,7 @@ return function(
 
     local computedTextStatus = _Computed(function(text : string ?)
         if text then
-            getSound(6647898215, out.Parent)
+            getSound(7518627362, out.Parent, 2)
             local _maid = Maid.new()
             local notifFrame = getNotificationFrame(
                 _maid,   
