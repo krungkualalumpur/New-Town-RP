@@ -5,6 +5,7 @@ local Players = game:GetService("Players")
 --packages
 local Maid = require(ReplicatedStorage:WaitForChild("Packages"):WaitForChild("Maid"))
 local ColdFusion = require(ReplicatedStorage:WaitForChild("Packages"):WaitForChild("ColdFusion8"))
+local Sintesa = require(ReplicatedStorage:WaitForChild("Packages"):WaitForChild("Sintesa"))
 --modules
 --types
 type Maid = Maid.Maid
@@ -12,7 +13,7 @@ type Maid = Maid.Maid
 type Fuse = ColdFusion.Fuse
 type State<T> = ColdFusion.State<T>
 type ValueState<T> = ColdFusion.ValueState<T>
-type CanBeState<T> = ColdFusion.State<T>
+type CanBeState<T> = ColdFusion.CanBeState<T>
 
 --constants
 local PADDING_SIZE =  UDim.new(0, 5)
@@ -42,6 +43,7 @@ end
 
 function getNotificationFrame(
     maid : Maid,
+    isDark : State<boolean>,
     text : string
 )
 
@@ -57,65 +59,20 @@ function getNotificationFrame(
     local pos = _Value(UDim2.fromScale(0, 1))
     local transp = _Value(1)
 
-    local content = _new("Frame")({
-        BackgroundTransparency = transp:Tween(),
-        BackgroundColor3 = TERTIARY_COLOR,
-        Position = pos:Tween(),
-        Size = UDim2.fromScale(1, 1),
-        Children = {
-            _new("UIListLayout")({
-                Padding = PADDING_SIZE,
-                FillDirection = Enum.FillDirection.Horizontal,
-                VerticalAlignment = Enum.VerticalAlignment.Bottom,
-                HorizontalAlignment = Enum.HorizontalAlignment.Right
-            }), 
-            
-            _new("UICorner")({}),
-            --[[_new("UIGradient")({
-                Rotation = -90,
-                Color = ColorSequence.new{
-                    ColorSequenceKeypoint.new(
-                        0,
-                        BACKGROUND_COLOR
-                    ), 
-                    ColorSequenceKeypoint.new(
-                        1,
-                        PRIMARY_COLOR
-                    )},
-                    
-                }
-            ),]]
-
-            _new("TextLabel")({
-                BackgroundTransparency = 1,
-                Size = UDim2.fromScale(0.8, 1),
-                Font = Enum.Font.GothamMedium,
-                Text = text,
-                TextTransparency = _Computed(function(val : number)
-                    return if val < 1 then 0 else 1
-                end, transp):Tween(),
-                TextSize = 15,
-                TextColor3 = TEXT_COLOR,
-                TextStrokeTransparency = _Computed(function(val : number)
-                    return val + 0.3
-                end, transp):Tween(),
-                TextWrapped = true
-            })
-        }
-    })
+    local content = Sintesa.Molecules.Snackbar.ColdFusion.new(maid, isDark, function() end)
 
     pos:Set(UDim2.fromScale(0, 0))
     transp:Set(0.5)
 
     local out = _new("Frame")({
         BackgroundTransparency = 1,
-        Size = UDim2.fromScale(0.2, 0.2),
+        Size = UDim2.fromScale(1, 1),
         
         Children = {
             _new("UIAspectRatioConstraint")({
                 AspectRatio = 3,
             }),
-            content
+            --content
         }
     })
 
@@ -127,11 +84,12 @@ function getNotificationFrame(
         maid:Destroy()
     end)
     
-    return out
+    return content
 end
 --class
 return function(
     maid : Maid,
+    isDark : CanBeState<boolean>,
     textStatus : ValueState<string ?>
 )
     local _fuse = ColdFusion.fuse(maid)
@@ -143,7 +101,7 @@ return function(
     local _Computed = _fuse.Computed
     local _Value = _fuse.Value
 
-  
+    local isDarkState = _import(isDark, isDark)
     local out = _new("Frame")({
         BackgroundTransparency = 1,
         Size = UDim2.fromScale(1, 1),
@@ -156,7 +114,8 @@ return function(
             }),
             _new("UIListLayout")({
                 Padding = PADDING_SIZE,
-                VerticalAlignment = Enum.VerticalAlignment.Bottom
+                VerticalAlignment = Enum.VerticalAlignment.Bottom,
+                HorizontalAlignment = Enum.HorizontalAlignment.Left
             })
         }
     }) :: Frame
@@ -167,6 +126,7 @@ return function(
             local _maid = Maid.new()
             local notifFrame = getNotificationFrame(
                 _maid,   
+                isDarkState,
                 text
             )
             notifFrame.Parent = out

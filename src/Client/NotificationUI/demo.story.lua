@@ -24,6 +24,7 @@ return function(target : CoreGui)
 
     local out = NotificationUI(
         maid,
+        false,
         textStatus
     )
 
